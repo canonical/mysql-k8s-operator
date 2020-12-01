@@ -8,3 +8,7 @@ options:
     default: 🎁
     description: A thing used by the charm.
     type: string
+  preferred-storage-engine:
+    default: InnoDB
+    type: string
+    description: Tune the server for usage of this storage engine. Other possible value is MyISAM. Comma separated will cause settings to split resources evenly among given engines.
