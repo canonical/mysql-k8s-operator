@@ -1,10 +1,24 @@
-# Copyright 2020 Justin
+# Copyright 2020 jose
 # See LICENSE file for licensing details.
-name: mysql-operator
+name: mysql
 description: |
-  TODO: fill out the charm's description
+  MySQL is a widely used, open-source relational database management system (RDBMS).
 summary: |
-  TODO: fill out the charm's summary
-series: [kubernetes]
-
-
+  Kubernetes charm for MySQL
+series:
+  - kubernetes
+deployment:
+  type: stateful
+provides:
+  database:
+    interface: mysql
+resources:
+  mysql-image:
+    type: oci-image
+    description: upstream docker image for MySQL
+    auto-fetch: true
+    upstream-source: 'mysql:8.0.22'
+# storage:
+#     mysqlstorage:
+#         type: filesystem
+#         location: /var/lib/mysql
