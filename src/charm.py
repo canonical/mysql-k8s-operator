@@ -31,10 +31,8 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self._stored.set_default(things=[])
 
-
     def _on_config_changed(self, _):
         self._configure_pod()
-
 
     def _configure_pod(self):
         """Configure the K8s pod spec for Graylog."""
