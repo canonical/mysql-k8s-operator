@@ -10,10 +10,12 @@ from ops.main import main
 from ops.model import (
     ActiveStatus,
     BlockedStatus,
+    WaitingStatus,
 )
 from ops.framework import StoredState
 
 logger = logging.getLogger(__name__)
+MYSQL_PORT = 3306
 
 
 class MySQLOperatorCharm(CharmBase):
@@ -24,8 +26,8 @@ class MySQLOperatorCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        # initialize image resource
         self.image = OCIImageResource(self, 'mysql-image')
+        self.port = MYSQL_PORT
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self._stored.set_default(things=[])
 
@@ -48,20 +50,23 @@ class MySQLOperatorCharm(CharmBase):
 
     def _build_pod_spec(self):
         try:
+            self.unit.status = WaitingStatus("Fetching image information")
             image_info = self.image.fetch()
         except OCIImageResourceError:
-            logging.exception('An error occurred while fetching the image info')
-            self.unit.status = BlockedStatus('Error fetching image information')
+            logging.exception(
+                'An error occurred while fetching the image info')
+            self.unit.status = BlockedStatus(
+                'Error fetching image information')
             return {}
 
-        # baseline pod spec
-        spec = {
+        self.unit.status = WaitingStatus("Assembling pod spec")
+        pod_spec = {
             'version': 3,
             'containers': [{
                 'name': self.app.name,
                 'imageDetails': image_info,
                 'ports': [{
-                    'containerPort': 3306,
+                    'containerPort': self.port,
                     'protocol': 'TCP'
                 }],
                 'envConfig': {
@@ -70,7 +75,7 @@ class MySQLOperatorCharm(CharmBase):
             }]
         }
 
-        return spec
+        return pod_spec
 
 
 if __name__ == "__main__":
