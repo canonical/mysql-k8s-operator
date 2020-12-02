@@ -15,7 +15,6 @@ from ops.model import (
 from ops.framework import StoredState
 
 logger = logging.getLogger(__name__)
-MYSQL_PORT = 3306
 
 
 class MySQLOperatorCharm(CharmBase):
@@ -27,7 +26,7 @@ class MySQLOperatorCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self.image = OCIImageResource(self, 'mysql-image')
-        self.port = MYSQL_PORT
+        self.port = self.model.config['port']
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self._stored.set_default(things=[])
 
