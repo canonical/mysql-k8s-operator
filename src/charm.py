@@ -78,6 +78,13 @@ class MySQLOperatorCharm(CharmBase):
                         "periodSeconds": 5,
                         "initialDelaySeconds": 10,
                     },
+                    'livenessProbe': {
+                        'exec': {
+                            'command': ['pgrep', 'mysql']
+                        },
+                        'initialDelaySeconds': 45,
+                        'timeoutSeconds': 5,
+                    }
                 },
             }]
         }
