@@ -68,7 +68,17 @@ class MySQLOperatorCharm(CharmBase):
                 }],
                 'envConfig': {
                     'MYSQL_ROOT_PASSWORD': 'Password',
-                }
+                },
+                'kubernetes': {
+                    'readinessProbe': {
+                        "tcpSocket": {
+                            "port": self.port
+                        },
+                        "timeoutSeconds": 5,
+                        "periodSeconds": 5,
+                        "initialDelaySeconds": 10,
+                    },
+                },
             }]
         }
 
