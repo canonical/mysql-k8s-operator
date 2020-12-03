@@ -71,19 +71,20 @@ class MySQLOperatorCharm(CharmBase):
                 },
                 'kubernetes': {
                     'readinessProbe': {
-                        "tcpSocket": {
-                            "port": self.port
+                        'exec': {
+                            'command': ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
                         },
                         "timeoutSeconds": 5,
                         "periodSeconds": 5,
-                        "initialDelaySeconds": 10,
+                        "initialDelaySeconds": 30,
                     },
                     'livenessProbe': {
                         'exec': {
-                            'command': ['pgrep', 'mysql']
+                            'command': ["mysqladmin", "ping"]
                         },
-                        'initialDelaySeconds': 45,
+                        'periodSeconds': 5,
                         'timeoutSeconds': 5,
+                        'initialDelaySeconds': 5,
                     }
                 },
             }]
