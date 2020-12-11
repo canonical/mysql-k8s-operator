@@ -4,7 +4,6 @@
 
 import logging
 import mysql.connector
-from mysql.connector import errorcode
 
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
@@ -76,7 +75,13 @@ class MySQLOperatorCharm(CharmBase):
                 'kubernetes': {
                     'readinessProbe': {
                         'exec': {
-                            'command': ["mysql", "-u", "root", "-h", "127.0.0.1", "-p", "Password", "-e", "SELECT 1"]
+                            'command': [
+                                "mysql",
+                                "-u", "root",
+                                "-h", "127.0.0.1",
+                                "-p", "Password",  # FIXME: Harcoded password
+                                "-e", "SELECT 1",
+                            ]
                         },
                         "timeoutSeconds": 5,
                         "periodSeconds": 5,
@@ -132,20 +137,19 @@ class MySQLOperatorCharm(CharmBase):
         try:
             config = {
                 'user': 'root',
-                'password': 'Password',
+                'password': 'Password',  # FIXME: Remove harcoded password
                 'host': hostname,
             }
             cnx = mysql.connector.connect(**config)
             logger.info("MySQL service is ready.")
             ready = True
-        except mysql.connector.Error as err:
+        except mysql.connector.Error:
             # TODO: Improve exceptions handling
             logger.info("MySQL service is not ready yet.")
         else:
             cnx.close()
 
         return ready
-
 
     def _get_unit_hostname(self, _id: int) -> str:
         """
