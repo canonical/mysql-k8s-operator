@@ -12,13 +12,12 @@ deployment:
 provides:
   database:
     interface: mysql
+peers:
+  mysql:
+    interface: mysql
 resources:
   mysql-image:
     type: oci-image
     description: upstream docker image for MySQL
     auto-fetch: true
     upstream-source: 'mysql:8.0.22'
-# storage:
-#     mysqlstorage:
-#         type: filesystem
-#         location: /var/lib/mysql
