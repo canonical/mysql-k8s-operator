@@ -2,12 +2,10 @@
 
 import logging
 import os
-import random
-import string
 
-from kubernetes import client, config
-from kubernetes.client.rest import ApiException
-from kubernetes.stream import stream
+from kubernetes import client, config # noqa
+from kubernetes.client.rest import ApiException # noqa
+from kubernetes.stream import stream # noqa
 
 logger = logging.getLogger(__name__)
 
