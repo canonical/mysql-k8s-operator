@@ -1,19 +1,15 @@
-# Copyright 2020 Justin
+# Copyright 2020 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import unittest
 
 from ops.testing import Harness
-from charm import MySQLOperatorCharm
+from charm import MySQLCharm
 
 
 class TestCharm(unittest.TestCase):
 
-    def test_config_changed(self):
-        """
-        TODO: Fix this test
-        """
-        harness = Harness(MySQLOperatorCharm)
+    def setUp(self):
+        harness = Harness(MySQLCharm)
         self.addCleanup(harness.cleanup)
         harness.begin()
-        self.assertEqual(list(harness.charm._stored.things), [])
