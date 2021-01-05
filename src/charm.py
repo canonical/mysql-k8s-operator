@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2020 jose
+# Copyright 2020 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import logging
@@ -19,19 +19,64 @@ logger = logging.getLogger(__name__)
 PEER = "mysql"
 
 
-class MySQLOperatorCharm(CharmBase):
-    """
-    Charm to run MySQL on Kubernetes.
-    """
+class MySQLCharm(CharmBase):
+    """Charm to run MySQL on Kubernetes."""
     _stored = StoredState()
 
     def __init__(self, *args):
         super().__init__(*args)
         self.image = OCIImageResource(self, 'mysql-image')
-        self.port = self.model.config['port']
+        self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.config_changed, self.on_start)
-        self._stored.set_default(things=[])
+
+    @property
+    def cluster_size(self) -> int:
+        """Return the size of the cluster."""
+        rel = self.model.get_relation(PEER)
+        return len(rel.units) + 1 if rel is not None else 1
+
+    @property
+    def hostnames(self) -> list:
+        """Return a list of Kubernetes hostnames."""
+        return [self._get_unit_hostname(i) for i in range(self.cluster_size)]
+
+    def _on_start(self, event):
+        """Initialize MySQL InnoDB cluster.
+
+        This event handler is deferred if initialization of MySQL
+        replica set fails. By doing so it is guaranteed that another
+        attempt at initialization will be made.
+        """
+        if not self.unit.is_leader():
+            return
+
+        if not self._mysql_is_ready():
+            message = "Waiting for MySQL Service"
+            self.unit.status = WaitingStatus(message)
+            logger.info(message)
+            event.defer()
+            return
+        else:
+            self.unit.status = ActiveStatus("MySQL Service is ready")
+
+        # create admin users on all hosts
+        for hostname in self.hostnames:
+            self._create_user_on_host(hostname)
+
+    def _create_user_on_host(self, hostname):
+        """This method will execute a user creation query for the admin user."""
+        logger.warning('Creating user on {}'.format(hostname))
+        query = """
+                CREATE USER 'idcAdmin'@'%'
+                IDENTIFIED BY 'idcAdmin';
+                GRANT ALL ON *.* TO 'idcAdmin'@'%'
+                WITH GRANT OPTION";
+                """
+
+        cnx = self._get_sql_connection_for_host(hostname)
+        cur = cnx.cursor()
+        cur.execute(query)
+        cnx.close()
 
     def _on_config_changed(self, _):
         self._configure_pod()
@@ -59,6 +104,7 @@ class MySQLOperatorCharm(CharmBase):
                 'Error fetching image information')
             return {}
 
+        config = self.model.config
         self.unit.status = WaitingStatus("Assembling pod spec")
         pod_spec = {
             'version': 3,
@@ -66,99 +112,49 @@ class MySQLOperatorCharm(CharmBase):
                 'name': self.app.name,
                 'imageDetails': image_info,
                 'ports': [{
-                    'containerPort': self.port,
+                    'containerPort': config['port'],
                     'protocol': 'TCP'
                 }],
                 'envConfig': {
-                    'MYSQL_ROOT_PASSWORD': 'Password',
-                },
-                'kubernetes': {
-                    'readinessProbe': {
-                        'exec': {
-                            'command': [
-                                "mysql",
-                                "-u", "root",
-                                "-h", "127.0.0.1",
-                                "-p", "Password",  # FIXME: Harcoded password
-                                "-e", "SELECT 1",
-                            ]
-                        },
-                        "timeoutSeconds": 5,
-                        "periodSeconds": 5,
-                        "initialDelaySeconds": 30,
-                    },
-                    'livenessProbe': {
-                        'exec': {
-                            'command': ["mysqladmin", "ping"]
-                        },
-                        'periodSeconds': 5,
-                        'timeoutSeconds': 5,
-                        'initialDelaySeconds': 5,
-                    }
+                    'MYSQL_ROOT_PASSWORD': config['admin-password'],
                 },
             }]
         }
 
         return pod_spec
 
-    # Handles start event
-    def on_start(self, event):
-        """Initialize MySQL
-
-        This event handler is deferred if initialization of MySQL
-        replica set fails. By doing so it is gauranteed that another
-        attempt at initialization will be made.
-        """
-        if not self.unit.is_leader():
-            return
-
-        # FIXME: This is awful!!! Only for development purpouses.
-        # We need to find a better way to wait for MySQL pod is ready
-        import time
-        time.sleep(40)
-
-        if not self._mysql_is_ready():
-            message = "Waiting for MySQL Service"
-            self.unit.status = WaitingStatus(message)
-            logger.info(message)
-            event.defer()
-        else:
-            self.unit.status = ActiveStatus("MySQL Service is ready")
-            # TODO: If MySQL is up and running we have to create
-            # an admin user for InnoDB Cluster on all nodes
-
     def _mysql_is_ready(self):
-        ready = False
+        """Check that every unit has mysql running.
 
-        # FIXME: We are harcoding the 0 unit for development porpouses
-        # We have to check if MySQL is ready in every unit.
-        hostname = self._get_unit_hostname('0')
+        Until we have a good event-driven way of using the Kubernetes
+        readiness probe, we will attempt
+        """
+        for hostname in self.hostnames:
+            try:
+                cnx = self._get_sql_connection_for_host(hostname)
+                logger.warning("MySQL service is ready for {}.".format(hostname))
+            except mysql.connector.Error:
+                # TODO: Improve exceptions handling
+                logger.warning("MySQL service is not ready for {}.".format(hostname))
+                return False
+            else:
+                cnx.close()
 
-        try:
-            config = {
-                'user': 'root',
-                'password': 'Password',  # FIXME: Remove harcoded password
-                'host': hostname,
-            }
-            cnx = mysql.connector.connect(**config)
-            logger.info("MySQL service is ready.")
-            ready = True
-        except mysql.connector.Error:
-            # TODO: Improve exceptions handling
-            logger.info("MySQL service is not ready yet.")
-        else:
-            cnx.close()
+        return True
 
-        return ready
+    def _get_sql_connection_for_host(self, hostname):
+        config = {
+            'user': 'root',
+            'password': self.model.config['admin-password'],
+            'host': hostname,
+            'port': self.model.config['port']
+        }
+        return mysql.connector.connect(**config)
 
     def _get_unit_hostname(self, _id: int) -> str:
-        """
-        Construct a DNS name for a MySQL unit
-        """
-        return "{}-{}.{}-endpoints".format(self.model.app.name,
-                                           _id,
-                                           self.model.app.name)
+        """Construct a DNS name for a MySQL unit."""
+        return "{0}-{1}.{0}-endpoints".format(self.model.app.name, _id)
 
 
 if __name__ == "__main__":
-    main(MySQLOperatorCharm)
+    main(MySQLCharm)
