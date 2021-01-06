@@ -10,7 +10,7 @@ options:
     description: Port used by MySQL
   admin-password:
     type: string
-    default: ''
+    default: 'Password'
     descriptions: Password used by root user to setup cluster
 #  preferred-storage-engine:
 #    default: InnoDB
