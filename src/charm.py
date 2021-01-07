@@ -61,17 +61,15 @@ class MySQLCharm(CharmBase):
 
         # create admin users on all hosts
         for hostname in self.hostnames:
-            self._create_user_on_host(hostname)
+            self._create_idcadmin_user_on_host(hostname)
 
-    def _create_user_on_host(self, hostname):
+    def _create_idcadmin_user_on_host(self, hostname):
         """This method will execute a user creation query for the admin user."""
         logger.warning('Creating user on {}'.format(hostname))
         query = """
-                CREATE USER 'idcAdmin'@'%'
-                IDENTIFIED BY 'idcAdmin';
-                GRANT ALL ON *.* TO 'idcAdmin'@'%'
-                WITH GRANT OPTION";
-                """
+                CREATE USER 'idcAdmin'@'%' IDENTIFIED BY '{}';
+                GRANT ALL ON *.* TO 'idcAdmin'@'%' WITH GRANT OPTION";
+                """.format(self.model.config['idcAdmin-password'])
 
         cnx = self._get_sql_connection_for_host(hostname)
         cur = cnx.cursor()
