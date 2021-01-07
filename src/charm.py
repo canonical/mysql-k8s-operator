@@ -116,7 +116,7 @@ class MySQLCharm(CharmBase):
                     'protocol': 'TCP'
                 }],
                 'envConfig': {
-                    'MYSQL_ROOT_PASSWORD': config['admin-password'],
+                    'MYSQL_ROOT_PASSWORD': config['root-password'],
                 },
             }]
         }
@@ -145,7 +145,7 @@ class MySQLCharm(CharmBase):
     def _get_sql_connection_for_host(self, hostname):
         config = {
             'user': 'root',
-            'password': self.model.config['admin-password'],
+            'password': self.model.config['root-password'],
             'host': hostname,
             'port': self.model.config['port']
         }
