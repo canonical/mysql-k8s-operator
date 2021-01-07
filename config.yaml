@@ -12,6 +12,10 @@ options:
     type: string
     default: ''
     descriptions: Password used by root user
+  idcAdmin-password:
+    type: string
+    default: ''
+    descriptions: Password used by idcAdmin user to setup cluster
 #  preferred-storage-engine:
 #    default: InnoDB
 #    type: string
