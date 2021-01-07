@@ -8,10 +8,10 @@ options:
     type: int
     default: 3306
     description: Port used by MySQL
-  admin-password:
+  root-password:
     type: string
-    default: 'Password'
-    descriptions: Password used by root user to setup cluster
+    default: ''
+    descriptions: Password used by root user
 #  preferred-storage-engine:
 #    default: InnoDB
 #    type: string
