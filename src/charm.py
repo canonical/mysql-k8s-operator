@@ -64,7 +64,14 @@ class MySQLCharm(CharmBase):
             self._create_idcadmin_user_on_host(hostname)
 
     def _create_idcadmin_user_on_host(self, hostname):
-        """This method will execute a user creation query for the admin user."""
+        """This method will execute a user creation query for the idcAdmin user."""
+
+        if len(self.model.config['idcAdmin-password']) == 0:
+            message = 'idcAdmin-password not provided'
+            logger.error(message)
+            self.unit.status = BlockedStatus(message)
+            return
+
         logger.warning('Creating user on {}'.format(hostname))
         query = """
                 CREATE USER 'idcAdmin'@'%' IDENTIFIED BY '{}';
