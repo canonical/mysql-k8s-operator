@@ -63,13 +63,12 @@ class MySQLCharm(CharmBase):
             return
         else:
             for hostname in self.hostnames:
-                logger.warning('************************************ ITEROOOO')
-                logger.warning('************************************ {}'.format(self._stored.mysql_setup.get(hostname)))
                 if self._stored.mysql_setup.get(hostname) is None:
                     self._change_mysql_variables(hostname)
                     self._create_idcadmin_user_on_host(hostname)
                     self._setup_cluster(hostname)
                     self._stored.mysql_setup[hostname] = True
+                    self.unit.status = ActiveStatus("MySQL up un running!")
 
     def _on_install(self, event) -> None:
         if not self.unit.is_leader():
@@ -80,13 +79,13 @@ class MySQLCharm(CharmBase):
         self._install_mysql_shell()
 
     def _install_required_packages(self) -> None:
-        logger.warning('************************************ APT GET UPDATE')
+        logger.info('Running apt-get update...')
         subprocess.run("DEBIAN_FRONTEND=noninteractive apt-get update", shell=True, check=True)
-        logger.warning('************************************ APT GET INSTALL REQUIRED PACKAGES')
+        logger.info('Installing required packages...')
         subprocess.run("DEBIAN_FRONTEND=noninteractive apt-get install -y apt-utils mysql-client wget lsb-release gnupg add-apt-key", shell=True, check=True)
 
     def _add_mysql_repo(self) -> None:
-        logger.warning('************************************ ADDING GPG KEY')
+        logger.debug('Adding mysql repo gpg key')
         with open('/tmp/mysql_pubkey.asc', 'w') as file:
             file.write(KEY)
 
@@ -96,14 +95,13 @@ class MySQLCharm(CharmBase):
         subprocess.run("echo 'deb http://repo.mysql.com/apt/ubuntu/ focal mysql-tools' > /etc/apt/sources.list.d/mysql.list", shell=True, check=True)
 
     def _install_mysql_shell(self) -> None:
-        logger.warning('************************************ APT GET UPDATE')
+        logger.info('Running apt-get update...')
         subprocess.run("DEBIAN_FRONTEND=noninteractive apt-get update", shell=True, check=True)
-        logger.warning('************************************ APT GET INSTALL MYSQL-SHELL')
+        logger.info('Installing mysql-shell...')
         subprocess.run("DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-shell", shell=True, check=True)
 
     def _change_mysql_variables(self, hostname) -> None:
-        logger.warning('************************************ CAMBIANDO VARIABLES')
-        logger.warning('************************************ {}'.format(hostname))
+        logger.info('Changing mysql global variables in {}'.format(hostname))
         unit_number = self._get_unit_number_from_hostname(hostname)
         commands = [
             "SET GLOBAL enforce_gtid_consistency = 'ON';",
@@ -115,7 +113,7 @@ class MySQLCharm(CharmBase):
 
         for cmd in commands:
             command = 'mysql -u{0} -p{1} -h {2} -e "{3}"'.format('root', self.model.config['root-password'], hostname, cmd)
-            logger.warning('************************************ {}'.format(command))
+            logger.info('Executing command: {}'.format(command))
             subprocess.run(command, shell=True, check=True)
 
     def _create_idcadmin_user_on_host(self, hostname):
@@ -127,7 +125,7 @@ class MySQLCharm(CharmBase):
             self.unit.status = BlockedStatus(message)
             return
 
-        logger.warning('Creating user on {}'.format(hostname))
+        logger.info('Creating user idcAdmin in {}'.format(hostname))
         query = """
                 SET SQL_LOG_BIN=0;
                 CREATE USER 'idcAdmin'@'%' IDENTIFIED BY '{}';
@@ -145,7 +143,7 @@ class MySQLCharm(CharmBase):
         mysqlsh_command = "dba.configureInstance('idcAdmin@{0}:3306',{{password:'{1}',interactive:false,restart:false}});".format(hostname, self.model.config['idcAdmin-password'])
 
         cmd = '{0} "{1}"'.format(command, mysqlsh_command)
-        logger.warning('************************************ MYSQL-SHELL: {}'.format(cmd))
+        logger.info('Executing mysqlsh - dba.configureInstance in {}...'.format(hostname))
         subprocess.run(cmd, shell=True, check=True)
 
     def _on_config_changed(self, _):
@@ -187,8 +185,6 @@ class MySQLCharm(CharmBase):
                 }],
                 'envConfig': {
                     'MYSQL_ROOT_PASSWORD': config['root-password'],
-                    'MYSQL_USER': config['mysql_user'],
-                    'MYSQL_PASSWORD': config['mysql_user_password'],
                 },
             }]
         }
@@ -204,10 +200,10 @@ class MySQLCharm(CharmBase):
         for hostname in self.hostnames:
             try:
                 cnx = self._get_sql_connection_for_host(hostname)
-                logger.warning("MySQL service is ready for {}.".format(hostname))
+                logger.info("MySQL service is ready for {}.".format(hostname))
             except mysql.connector.Error:
                 # TODO: Improve exceptions handling
-                logger.warning("MySQL service is not ready for {}.".format(hostname))
+                logger.info("MySQL service is not ready for {}.".format(hostname))
                 return False
             else:
                 cnx.close()
