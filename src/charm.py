@@ -71,7 +71,7 @@ class MySQLCharm(CharmBase):
                 self._create_idcadmin_user_on_host(hostname)
                 self._setup_cluster(hostname)
                 self._stored.mysql_setup[hostname] = True
-                self.unit.status = ActiveStatus("MySQL up un running!")
+                self.unit.status = ActiveStatus("MySQL is up and running!")
 
     def _on_install(self, event) -> None:
         if not self.unit.is_leader():
