@@ -55,7 +55,7 @@ class MySQLCharm(CharmBase):
         """
         # if not self.unit.is_leader():
         #     return
-        logger.warning(self.unit.name)
+
         if not self._mysql_is_ready():
             message = "Waiting for MySQL Service"
             self.unit.status = WaitingStatus(message)
@@ -63,13 +63,15 @@ class MySQLCharm(CharmBase):
             event.defer()
             return
         else:
-            for hostname in self.hostnames:
-                if self._stored.mysql_setup.get(hostname) is None:
-                    self._change_mysql_variables(hostname)
-                    self._create_idcadmin_user_on_host(hostname)
-                    self._setup_cluster(hostname)
-                    self._stored.mysql_setup[hostname] = True
-                    self.unit.status = ActiveStatus("MySQL up un running!")
+            unit_number = self._get_unit_number_from_unit_name(self.unit.name)
+            hostname = self._get_unit_hostname(unit_number)
+
+            if self._stored.mysql_setup.get(hostname) is None:
+                self._change_mysql_variables(hostname)
+                self._create_idcadmin_user_on_host(hostname)
+                self._setup_cluster(hostname)
+                self._stored.mysql_setup[hostname] = True
+                self.unit.status = ActiveStatus("MySQL up un running!")
 
     def _on_install(self, event) -> None:
         if not self.unit.is_leader():
@@ -258,6 +260,14 @@ class MySQLCharm(CharmBase):
     def _get_unit_number_from_hostname(self, hostname):
         UNIT_RE = re.compile(".+-(?P<unit>[0-9]+).+")
         match = UNIT_RE.match(hostname)
+
+        if match is not None:
+            return int(match.group("unit"))
+        return None
+
+    def _get_unit_number_from_unit_name(self, unit_name):
+        UNIT_RE = re.compile(".+(?P<unit>[0-9]+)")
+        match = UNIT_RE.match(unit_name)
 
         if match is not None:
             return int(match.group("unit"))
