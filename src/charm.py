@@ -46,6 +46,12 @@ class MySQLCharm(CharmBase):
         """Return a list of Kubernetes hostnames."""
         return [self._get_unit_hostname(i) for i in range(self.cluster_size)]
 
+    @property
+    def hostname(self) -> str:
+        """Return the Kubernetes hostname."""
+        unit_number = self._get_unit_number_from_unit_name(self.unit.name)
+        return self._get_unit_hostname(unit_number)
+
     def _on_start(self, event):
         """Initialize MySQL InnoDB cluster.
 
@@ -53,21 +59,21 @@ class MySQLCharm(CharmBase):
         fails. By doing so it is guaranteed that another
         attempt at initialization will be made.
         """
-        unit_number = self._get_unit_number_from_unit_name(self.unit.name)
-        hostname = self._get_unit_hostname(unit_number)
+        # unit_number = self._get_unit_number_from_unit_name(self.unit.name)
+        # hostname = self._get_unit_hostname(unit_number)
 
-        if not self._mysql_is_ready(hostname):
-            message = "Waiting for MySQL Service in {}".format(hostname)
+        if not self._mysql_is_ready():
+            message = "Waiting for MySQL Service"
             self.unit.status = WaitingStatus(message)
             logger.info(message)
             event.defer()
             return
 
-        if self._stored.mysql_setup.get(hostname) is None:
-            self._change_mysql_variables(hostname)
-            self._create_idcadmin_user_on_host(hostname)
-            self._setup_cluster(hostname)
-            self._stored.mysql_setup[hostname] = True
+        if self._stored.mysql_setup.get(self.hostname) is None:
+            self._change_mysql_variables()
+            self._create_idcadmin_user_on_host()
+            self._setup_cluster()
+            self._stored.mysql_setup[self.hostname] = True
             self.unit.status = ActiveStatus("MySQL is up and running!")
 
     def _on_install(self, event) -> None:
@@ -107,7 +113,9 @@ class MySQLCharm(CharmBase):
             shell=True,
             check=True,
         )
-        subprocess.run("touch /etc/apt/sources.list.d/mysql.list", shell=True, check=True)
+        subprocess.run(
+            "touch /etc/apt/sources.list.d/mysql.list", shell=True, check=True
+        )
         subprocess.run(
             "echo 'deb http://repo.mysql.com/apt/ubuntu/ focal mysql-tools' > \
             /etc/apt/sources.list.d/mysql.list",
@@ -127,9 +135,9 @@ class MySQLCharm(CharmBase):
             check=True,
         )
 
-    def _change_mysql_variables(self, hostname) -> None:
-        logger.info("Changing mysql global variables in {}".format(hostname))
-        unit_number = self._get_unit_number_from_hostname(hostname)
+    def _change_mysql_variables(self) -> None:
+        logger.info("Changing mysql global variables in {}".format(self.hostname))
+        unit_number = self._get_unit_number_from_hostname(self.hostname)
         queries = [
             "SET GLOBAL enforce_gtid_consistency = 'ON';",
             "SET GLOBAL gtid_mode = 'OFF_PERMISSIVE';",
@@ -138,13 +146,13 @@ class MySQLCharm(CharmBase):
         ]
 
         for query in queries:
-            cnx = self._get_sql_connection_for_host(hostname)
+            cnx = self._get_sql_connection_for_host()
             cur = cnx.cursor()
             cur.execute(query)
             cnx.close()
             logger.info("Executing query: {}".format(query))
 
-    def _create_idcadmin_user_on_host(self, hostname):
+    def _create_idcadmin_user_on_host(self):
         """This method will execute a user creation query for the idcAdmin user."""
 
         if len(self.model.config["idcAdmin-password"]) == 0:
@@ -153,7 +161,7 @@ class MySQLCharm(CharmBase):
             self.unit.status = BlockedStatus(message)
             return
 
-        logger.info("Creating user idcAdmin in {}".format(hostname))
+        logger.info("Creating user idcAdmin in {}".format(self.hostname))
         query = """
                 SET SQL_LOG_BIN=0;
                 CREATE USER 'idcAdmin'@'%' IDENTIFIED BY '{}';
@@ -162,22 +170,24 @@ class MySQLCharm(CharmBase):
             self.model.config["idcAdmin-password"]
         )
 
-        cnx = self._get_sql_connection_for_host(hostname)
+        cnx = self._get_sql_connection_for_host()
         cur = cnx.cursor()
         cur.execute(query)
         cnx.close()
 
-    def _setup_cluster(self, hostname) -> None:
+    def _setup_cluster(self) -> None:
         command = "mysqlsh -uidcAdmin -p{0} -h {1} --execute".format(
-            self.model.config["idcAdmin-password"], hostname
+            self.model.config["idcAdmin-password"], self.hostname
         )
         mysqlsh_command = "dba.configureInstance('idcAdmin@{0}:3306',{{password:'{1}',\
         interactive:false,restart:false}});".format(
-            hostname, self.model.config["idcAdmin-password"]
+            self.hostname, self.model.config["idcAdmin-password"]
         )
 
         cmd = '{0} "{1}"'.format(command, mysqlsh_command)
-        logger.info("Executing mysqlsh - dba.configureInstance in {}...".format(hostname))
+        logger.info(
+            "Executing mysqlsh - dba.configureInstance in {}...".format(self.hostname)
+        )
         subprocess.run(cmd, shell=True, check=True)
 
     def _on_config_changed(self, _):
@@ -222,29 +232,29 @@ class MySQLCharm(CharmBase):
 
         return pod_spec
 
-    def _mysql_is_ready(self, hostname):
+    def _mysql_is_ready(self):
         """Check that every unit has mysql running.
 
         Until we have a good event-driven way of using the Kubernetes
         readiness probe, we will attempt
         """
         try:
-            cnx = self._get_sql_connection_for_host(hostname)
-            logger.info("MySQL service is ready for {}.".format(hostname))
+            cnx = self._get_sql_connection_for_host()
+            logger.info("MySQL service is ready for {}.".format(self.hostname))
         except mysql.connector.Error:
             # TODO: Improve exceptions handling
-            logger.info("MySQL service is not ready for {}.".format(hostname))
+            logger.info("MySQL service is not ready for {}.".format(self.hostname))
             return False
         else:
             cnx.close()
 
         return True
 
-    def _get_sql_connection_for_host(self, hostname):
+    def _get_sql_connection_for_host(self):
         config = {
             "user": "root",
             "password": self.model.config["root-password"],
-            "host": hostname,
+            "host": self.hostname,
             "port": self.model.config["port"],
         }
         return mysql.connector.connect(**config)
