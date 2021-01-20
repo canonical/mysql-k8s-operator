@@ -50,28 +50,25 @@ class MySQLCharm(CharmBase):
         """Initialize MySQL InnoDB cluster.
 
         This event handler is deferred if initialization of MySQL
-        replica set fails. By doing so it is guaranteed that another
+        fails. By doing so it is guaranteed that another
         attempt at initialization will be made.
         """
-        # if not self.unit.is_leader():
-        #     return
+        unit_number = self._get_unit_number_from_unit_name(self.unit.name)
+        hostname = self._get_unit_hostname(unit_number)
 
-        if not self._mysql_is_ready():
-            message = "Waiting for MySQL Service"
+        if not self._mysql_is_ready(hostname):
+            message = "Waiting for MySQL Service in {}".format(hostname)
             self.unit.status = WaitingStatus(message)
             logger.info(message)
             event.defer()
             return
-        else:
-            unit_number = self._get_unit_number_from_unit_name(self.unit.name)
-            hostname = self._get_unit_hostname(unit_number)
 
-            if self._stored.mysql_setup.get(hostname) is None:
-                self._change_mysql_variables(hostname)
-                self._create_idcadmin_user_on_host(hostname)
-                self._setup_cluster(hostname)
-                self._stored.mysql_setup[hostname] = True
-                self.unit.status = ActiveStatus("MySQL is up and running!")
+        if self._stored.mysql_setup.get(hostname) is None:
+            self._change_mysql_variables(hostname)
+            self._create_idcadmin_user_on_host(hostname)
+            self._setup_cluster(hostname)
+            self._stored.mysql_setup[hostname] = True
+            self.unit.status = ActiveStatus("MySQL is up and running!")
 
     def _on_install(self, event) -> None:
         if not self.unit.is_leader():
@@ -225,22 +222,21 @@ class MySQLCharm(CharmBase):
 
         return pod_spec
 
-    def _mysql_is_ready(self):
+    def _mysql_is_ready(self, hostname):
         """Check that every unit has mysql running.
 
         Until we have a good event-driven way of using the Kubernetes
         readiness probe, we will attempt
         """
-        for hostname in self.hostnames:
-            try:
-                cnx = self._get_sql_connection_for_host(hostname)
-                logger.info("MySQL service is ready for {}.".format(hostname))
-            except mysql.connector.Error:
-                # TODO: Improve exceptions handling
-                logger.info("MySQL service is not ready for {}.".format(hostname))
-                return False
-            else:
-                cnx.close()
+        try:
+            cnx = self._get_sql_connection_for_host(hostname)
+            logger.info("MySQL service is ready for {}.".format(hostname))
+        except mysql.connector.Error:
+            # TODO: Improve exceptions handling
+            logger.info("MySQL service is not ready for {}.".format(hostname))
+            return False
+        else:
+            cnx.close()
 
         return True
 
