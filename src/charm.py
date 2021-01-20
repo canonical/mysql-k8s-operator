@@ -133,19 +133,19 @@ class MySQLCharm(CharmBase):
     def _change_mysql_variables(self, hostname) -> None:
         logger.info("Changing mysql global variables in {}".format(hostname))
         unit_number = self._get_unit_number_from_hostname(hostname)
-        commands = [
+        queries = [
             "SET GLOBAL enforce_gtid_consistency = 'ON';",
             "SET GLOBAL gtid_mode = 'OFF_PERMISSIVE';",
             "SET GLOBAL gtid_mode = 'ON_PERMISSIVE';" "SET GLOBAL gtid_mode = 'ON';",
             "SET GLOBAL server_id = {0};".format(unit_number),
         ]
 
-        for cmd in commands:
-            command = 'mysql -u{0} -p{1} -h {2} -e "{3}"'.format(
-                "root", self.model.config["root-password"], hostname, cmd
-            )
-            logger.info("Executing command: {}".format(command))
-            subprocess.run(command, shell=True, check=True)
+        for query in queries:
+            cnx = self._get_sql_connection_for_host(hostname)
+            cur = cnx.cursor()
+            cur.execute(query)
+            cnx.close()
+            logger.info("Executing query: {}".format(query))
 
     def _create_idcadmin_user_on_host(self, hostname):
         """This method will execute a user creation query for the idcAdmin user."""
