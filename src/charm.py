@@ -5,7 +5,6 @@
 import logging
 import mysql.connector
 import re
-import subprocess
 
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
@@ -16,7 +15,7 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.framework import StoredState
-from repo import KEY
+
 
 logger = logging.getLogger(__name__)
 PEER = "mysql"
@@ -31,20 +30,9 @@ class MySQLCharm(CharmBase):
         super().__init__(*args)
         self._stored.set_default(mysql_setup={})
         self.image = OCIImageResource(self, "mysql-image")
-        self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
-    @property
-    def cluster_size(self) -> int:
-        """Return the size of the cluster."""
-        rel = self.model.get_relation(PEER)
-        return len(rel.units) + 1 if rel is not None else 1
-
-    @property
-    def hostnames(self) -> list:
-        """Return a list of Kubernetes hostnames."""
-        return [self._get_unit_hostname(i) for i in range(self.cluster_size)]
 
     @property
     def hostname(self) -> str:
@@ -59,8 +47,6 @@ class MySQLCharm(CharmBase):
         fails. By doing so it is guaranteed that another
         attempt at initialization will be made.
         """
-        # unit_number = self._get_unit_number_from_unit_name(self.unit.name)
-        # hostname = self._get_unit_hostname(unit_number)
 
         if not self._mysql_is_ready():
             message = "Waiting for MySQL Service"
@@ -69,126 +55,7 @@ class MySQLCharm(CharmBase):
             event.defer()
             return
 
-        if self._stored.mysql_setup.get(self.hostname) is None:
-            self._change_mysql_variables()
-            self._create_idcadmin_user_on_host()
-            self._setup_cluster()
-            self._stored.mysql_setup[self.hostname] = True
-            self.unit.status = ActiveStatus("MySQL is up and running!")
-
-    def _on_install(self, event) -> None:
-        if not self.unit.is_leader():
-            return
-
-        self._install_required_packages()
-        self._add_mysql_repo()
-        self._install_mysql_shell()
-
-    def _install_required_packages(self) -> None:
-        logger.info("Running apt-get update...")
-        subprocess.run(
-            "DEBIAN_FRONTEND=noninteractive apt-get update", shell=True, check=True
-        )
-        logger.info("Installing required packages...")
-        subprocess.run(
-            "apt-get install -y apt-utils mysql-client wget lsb-release gnupg add-apt-key",
-            shell=True,
-            check=True,
-        )
-
-    def _add_mysql_repo(self) -> None:
-        logger.debug("Adding mysql repo gpg key")
-        with open("/tmp/mysql_pubkey.asc", "w") as file:
-            file.write(KEY)
-
-        subprocess.run(
-            "gpg --import /tmp/mysql_pubkey.asc",
-            capture_output=True,
-            shell=True,
-            check=True,
-        )
-        subprocess.run(
-            "apt-key add /tmp/mysql_pubkey.asc",
-            capture_output=True,
-            shell=True,
-            check=True,
-        )
-        subprocess.run(
-            "touch /etc/apt/sources.list.d/mysql.list", shell=True, check=True
-        )
-        subprocess.run(
-            "echo 'deb http://repo.mysql.com/apt/ubuntu/ focal mysql-tools' > \
-            /etc/apt/sources.list.d/mysql.list",
-            shell=True,
-            check=True,
-        )
-
-    def _install_mysql_shell(self) -> None:
-        logger.info("Running apt-get update...")
-        subprocess.run(
-            "DEBIAN_FRONTEND=noninteractive apt-get update", shell=True, check=True
-        )
-        logger.info("Installing mysql-shell...")
-        subprocess.run(
-            "DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-shell",
-            shell=True,
-            check=True,
-        )
-
-    def _change_mysql_variables(self) -> None:
-        logger.info("Changing mysql global variables in {}".format(self.hostname))
-        unit_number = self._get_unit_number_from_hostname(self.hostname)
-        queries = [
-            "SET GLOBAL enforce_gtid_consistency = 'ON';",
-            "SET GLOBAL gtid_mode = 'OFF_PERMISSIVE';",
-            "SET GLOBAL gtid_mode = 'ON_PERMISSIVE';" "SET GLOBAL gtid_mode = 'ON';",
-            "SET GLOBAL server_id = {0};".format(unit_number),
-        ]
-
-        for query in queries:
-            cnx = self._get_sql_connection_for_host()
-            cur = cnx.cursor()
-            cur.execute(query)
-            cnx.close()
-            logger.info("Executing query: {}".format(query))
-
-    def _create_idcadmin_user_on_host(self):
-        """This method will execute a user creation query for the idcAdmin user."""
-
-        if len(self.model.config["idcAdmin-password"]) == 0:
-            message = "idcAdmin-password not provided"
-            logger.error(message)
-            self.unit.status = BlockedStatus(message)
-            return
-
-        logger.info("Creating user idcAdmin in {}".format(self.hostname))
-        query = """
-                SET SQL_LOG_BIN=0;
-                CREATE USER 'idcAdmin'@'%' IDENTIFIED BY '{}';
-                GRANT ALL ON *.* TO 'idcAdmin'@'%' WITH GRANT OPTION;
-                """.format(
-            self.model.config["idcAdmin-password"]
-        )
-
-        cnx = self._get_sql_connection_for_host()
-        cur = cnx.cursor()
-        cur.execute(query)
-        cnx.close()
-
-    def _setup_cluster(self) -> None:
-        command = "mysqlsh -uidcAdmin -p{0} -h {1} --execute".format(
-            self.model.config["idcAdmin-password"], self.hostname
-        )
-        mysqlsh_command = "dba.configureInstance('idcAdmin@{0}:3306',{{password:'{1}',\
-        interactive:false,restart:false}});".format(
-            self.hostname, self.model.config["idcAdmin-password"]
-        )
-
-        cmd = '{0} "{1}"'.format(command, mysqlsh_command)
-        logger.info(
-            "Executing mysqlsh - dba.configureInstance in {}...".format(self.hostname)
-        )
-        subprocess.run(cmd, shell=True, check=True)
+        self.unit.status = ActiveStatus("MySQL is up and running!")
 
     def _on_config_changed(self, _):
         self._configure_pod()
@@ -232,6 +99,7 @@ class MySQLCharm(CharmBase):
 
         return pod_spec
 
+
     def _mysql_is_ready(self):
         """Check that every unit has mysql running.
 
@@ -263,7 +131,7 @@ class MySQLCharm(CharmBase):
         """Construct a DNS name for a MySQL unit."""
         return "{0}-{1}.{0}-endpoints".format(self.model.app.name, _id)
 
-    def _get_unit_number_from_hostname(self, hostname: str):
+    def _get_unit_number_from_hostname(self, hostname: str) -> int:
         UNIT_RE = re.compile(".+-(?P<unit>[0-9]+).+")
         match = UNIT_RE.match(hostname)
 
@@ -271,7 +139,7 @@ class MySQLCharm(CharmBase):
             return int(match.group("unit"))
         return None
 
-    def _get_unit_number_from_unit_name(self, unit_name: str):
+    def _get_unit_number_from_unit_name(self, unit_name: str) -> int:
         UNIT_RE = re.compile(".+(?P<unit>[0-9]+)")
         match = UNIT_RE.match(unit_name)
 
