@@ -83,6 +83,15 @@ class MySQLCharm(CharmBase):
 
         config = self.model.config
         self.unit.status = WaitingStatus("Assembling pod spec")
+
+        env_config = {
+            "MYSQL_ROOT_PASSWORD": config["MYSQL_ROOT_PASSWORD"],
+        }
+
+        if 'MYSQL_USER' in config and 'MYSQL_PASSWORD' in config:
+            env_config['MYSQL_USER'] = config['MYSQL_USER']
+            env_config['MYSQL_PASSWORD'] = config['MYSQL_PASSWORD']
+
         pod_spec = {
             "version": 3,
             "containers": [
@@ -90,9 +99,7 @@ class MySQLCharm(CharmBase):
                     "name": self.app.name,
                     "imageDetails": image_info,
                     "ports": [{"containerPort": config["port"], "protocol": "TCP"}],
-                    "envConfig": {
-                        "MYSQL_ROOT_PASSWORD": config["root-password"],
-                    },
+                    "envConfig": env_config
                 }
             ],
         }
@@ -121,7 +128,7 @@ class MySQLCharm(CharmBase):
     def _get_sql_connection_for_host(self):
         config = {
             "user": "root",
-            "password": self.model.config["root-password"],
+            "password": self.model.config["MYSQL_ROOT_PASSWORD"],
             "host": self.hostname,
             "port": self.model.config["port"],
         }
