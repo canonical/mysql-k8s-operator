@@ -19,3 +19,6 @@ options:
   MYSQL_PASSWORD:
     type: string
     description: Set the password for the MYSQL_USER user.
+  MYSQL_DATABASE:
+    type: string
+    description: Set the name of the default database.

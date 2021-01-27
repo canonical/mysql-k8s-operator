@@ -33,7 +33,6 @@ class MySQLCharm(CharmBase):
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
-
     @property
     def hostname(self) -> str:
         """Return the Kubernetes hostname."""
@@ -88,24 +87,24 @@ class MySQLCharm(CharmBase):
             "MYSQL_ROOT_PASSWORD": config["MYSQL_ROOT_PASSWORD"],
         }
 
-        if 'MYSQL_USER' in config and 'MYSQL_PASSWORD' in config:
-            env_config['MYSQL_USER'] = config['MYSQL_USER']
-            env_config['MYSQL_PASSWORD'] = config['MYSQL_PASSWORD']
+        if "MYSQL_USER" in config and "MYSQL_PASSWORD" in config:
+            env_config["MYSQL_USER"] = config["MYSQL_USER"]
+            env_config["MYSQL_PASSWORD"] = config["MYSQL_PASSWORD"]
+
+        if "MYSQL_DATABASE" in config:
+            env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
 
         pod_spec = {
             "version": 3,
-            "containers": [
-                {
-                    "name": self.app.name,
-                    "imageDetails": image_info,
-                    "ports": [{"containerPort": config["port"], "protocol": "TCP"}],
-                    "envConfig": env_config
-                }
-            ],
+            "containers": [{
+                "name": self.app.name,
+                "imageDetails": image_info,
+                "ports": [{"containerPort": config["port"], "protocol": "TCP"}],
+                "envConfig": env_config,
+            }],
         }
 
         return pod_spec
-
 
     def _mysql_is_ready(self):
         """Check that every unit has mysql running.
