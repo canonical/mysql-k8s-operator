@@ -30,7 +30,9 @@ class MySQLCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._stored.set_default(mysql_setup={})
-        password = "".join(random.choice(ascii_letters + digits) for x in range(20))
+        password = "".join(
+            random.choice(ascii_letters + digits) for x in range(20)
+        )
         self._stored.set_default(MYSQL_ROOT_PASSWORD=password)
         self.image = OCIImageResource(self, "mysql-image")
         self.framework.observe(self.on.start, self._on_start)
@@ -51,7 +53,9 @@ class MySQLCharm(CharmBase):
         if config.get("MYSQL_ROOT_PASSWORD"):
             env_config["MYSQL_ROOT_PASSWORD"] = config["MYSQL_ROOT_PASSWORD"]
         else:
-            env_config["MYSQL_ROOT_PASSWORD"] = self._stored.MYSQL_ROOT_PASSWORD
+            env_config[
+                "MYSQL_ROOT_PASSWORD"
+            ] = self._stored.MYSQL_ROOT_PASSWORD
             logger.warning(
                 "The randomly generated MYSQL_ROOT_PASSWORD is: %s",
                 self._stored.MYSQL_ROOT_PASSWORD,
@@ -99,8 +103,12 @@ class MySQLCharm(CharmBase):
             self.unit.status = WaitingStatus("Fetching image information")
             image_info = self.image.fetch()
         except OCIImageResourceError:
-            logging.exception("An error occurred while fetching the image info")
-            self.unit.status = BlockedStatus("Error fetching image information")
+            logging.exception(
+                "An error occurred while fetching the image info"
+            )
+            self.unit.status = BlockedStatus(
+                "Error fetching image information"
+            )
             return {}
 
         config = self.model.config
@@ -112,7 +120,9 @@ class MySQLCharm(CharmBase):
                 {
                     "name": self.app.name,
                     "imageDetails": image_info,
-                    "ports": [{"containerPort": config["port"], "protocol": "TCP"}],
+                    "ports": [
+                        {"containerPort": config["port"], "protocol": "TCP"}
+                    ],
                     "envConfig": self.env_config,
                 }
             ],
