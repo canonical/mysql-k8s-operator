@@ -114,10 +114,10 @@ class MySQLCharm(CharmBase):
         """
         try:
             cnx = self._get_sql_connection_for_host()
-            logger.info("MySQL service is ready for {}.".format(self.hostname))
+            logger.info("MySQL service is ready in %s.", self.hostname)
         except mysql.connector.Error:
             # TODO: Improve exceptions handling
-            logger.info("MySQL service is not ready for {}.".format(self.hostname))
+            logger.info("MySQL service is not ready in %s", self.hostname)
             return False
         else:
             cnx.close()
