@@ -20,4 +20,4 @@ resources:
     type: oci-image
     description: upstream docker image for MySQL
     auto-fetch: true
-    upstream-source: 'mysql:8.0.22'
+    upstream-source: "ubuntu/mysql:latest"
