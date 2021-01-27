@@ -4,6 +4,7 @@
 
 import logging
 import mysql.connector
+import random
 import re
 
 from oci_image import OCIImageResource, OCIImageResourceError
@@ -15,7 +16,7 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.framework import StoredState
-
+from string import ascii_letters, digits
 
 logger = logging.getLogger(__name__)
 PEER = "mysql"
@@ -29,6 +30,8 @@ class MySQLCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._stored.set_default(mysql_setup={})
+        password = "".join(random.choice(ascii_letters + digits) for x in range(20))
+        self._stored.set_default(MYSQL_ROOT_PASSWORD=password)
         self.image = OCIImageResource(self, "mysql-image")
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -78,15 +81,23 @@ class MySQLCharm(CharmBase):
         config = self.model.config
         self.unit.status = WaitingStatus("Assembling pod spec")
 
-        env_config = {
-            "MYSQL_ROOT_PASSWORD": config["MYSQL_ROOT_PASSWORD"],
-        }
+        env_config = {}
 
-        if "MYSQL_USER" in config and "MYSQL_PASSWORD" in config:
+        if config.get("MYSQL_ROOT_PASSWORD"):
+            env_config["MYSQL_ROOT_PASSWORD"] = config["MYSQL_ROOT_PASSWORD"]
+        else:
+            env_config["MYSQL_ROOT_PASSWORD"] = self._stored.MYSQL_ROOT_PASSWORD
+            logger.warning(
+                "The randomly generated MYSQL_ROOT_PASSWORD is: %s",
+                self._stored.MYSQL_ROOT_PASSWORD,
+            )
+            logger.warning("Please change it as soon as possible!")
+
+        if config.get("MYSQL_USER") and config.get("MYSQL_PASSWORD"):
             env_config["MYSQL_USER"] = config["MYSQL_USER"]
             env_config["MYSQL_PASSWORD"] = config["MYSQL_PASSWORD"]
 
-        if "MYSQL_DATABASE" in config:
+        if config.get("MYSQL_DATABASE"):
             env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
 
         pod_spec = {
