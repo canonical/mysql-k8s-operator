@@ -42,6 +42,31 @@ class MySQLCharm(CharmBase):
         unit_number = self._get_unit_number_from_unit_name(self.unit.name)
         return self._get_unit_hostname(unit_number)
 
+    @property
+    def env_config(self) -> dict:
+        """Return the env_config for the Kubernetes pod_spec"""
+        config = self.model.config
+        env_config = {}
+
+        if config.get("MYSQL_ROOT_PASSWORD"):
+            env_config["MYSQL_ROOT_PASSWORD"] = config["MYSQL_ROOT_PASSWORD"]
+        else:
+            env_config["MYSQL_ROOT_PASSWORD"] = self._stored.MYSQL_ROOT_PASSWORD
+            logger.warning(
+                "The randomly generated MYSQL_ROOT_PASSWORD is: %s",
+                self._stored.MYSQL_ROOT_PASSWORD,
+            )
+            logger.warning("Please change it as soon as possible!")
+
+        if config.get("MYSQL_USER") and config.get("MYSQL_PASSWORD"):
+            env_config["MYSQL_USER"] = config["MYSQL_USER"]
+            env_config["MYSQL_PASSWORD"] = config["MYSQL_PASSWORD"]
+
+        if config.get("MYSQL_DATABASE"):
+            env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
+
+        return env_config
+
     def _on_start(self, event):
         """Initialize MySQL"""
 
@@ -81,25 +106,6 @@ class MySQLCharm(CharmBase):
         config = self.model.config
         self.unit.status = WaitingStatus("Assembling pod spec")
 
-        env_config = {}
-
-        if config.get("MYSQL_ROOT_PASSWORD"):
-            env_config["MYSQL_ROOT_PASSWORD"] = config["MYSQL_ROOT_PASSWORD"]
-        else:
-            env_config["MYSQL_ROOT_PASSWORD"] = self._stored.MYSQL_ROOT_PASSWORD
-            logger.warning(
-                "The randomly generated MYSQL_ROOT_PASSWORD is: %s",
-                self._stored.MYSQL_ROOT_PASSWORD,
-            )
-            logger.warning("Please change it as soon as possible!")
-
-        if config.get("MYSQL_USER") and config.get("MYSQL_PASSWORD"):
-            env_config["MYSQL_USER"] = config["MYSQL_USER"]
-            env_config["MYSQL_PASSWORD"] = config["MYSQL_PASSWORD"]
-
-        if config.get("MYSQL_DATABASE"):
-            env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
-
         pod_spec = {
             "version": 3,
             "containers": [
@@ -107,7 +113,7 @@ class MySQLCharm(CharmBase):
                     "name": self.app.name,
                     "imageDetails": image_info,
                     "ports": [{"containerPort": config["port"], "protocol": "TCP"}],
-                    "envConfig": env_config,
+                    "envConfig": self.env_config,
                 }
             ],
         }
