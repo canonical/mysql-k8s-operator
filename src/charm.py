@@ -40,12 +40,7 @@ class MySQLCharm(CharmBase):
         return self._get_unit_hostname(unit_number)
 
     def _on_start(self, event):
-        """Initialize MySQL InnoDB cluster.
-
-        This event handler is deferred if initialization of MySQL
-        fails. By doing so it is guaranteed that another
-        attempt at initialization will be made.
-        """
+        """Initialize MySQL"""
 
         if not self._mysql_is_ready():
             message = "Waiting for MySQL Service"
@@ -96,12 +91,14 @@ class MySQLCharm(CharmBase):
 
         pod_spec = {
             "version": 3,
-            "containers": [{
-                "name": self.app.name,
-                "imageDetails": image_info,
-                "ports": [{"containerPort": config["port"], "protocol": "TCP"}],
-                "envConfig": env_config,
-            }],
+            "containers": [
+                {
+                    "name": self.app.name,
+                    "imageDetails": image_info,
+                    "ports": [{"containerPort": config["port"], "protocol": "TCP"}],
+                    "envConfig": env_config,
+                }
+            ],
         }
 
         return pod_spec
