@@ -98,7 +98,7 @@ class MySQLCharm(CharmBase):
         self.model.pod.set_spec(spec)
         self.unit.status = ActiveStatus()
 
-    def _build_pod_spec(self):
+    def _build_pod_spec(self) -> dict:
         try:
             self.unit.status = WaitingStatus("Fetching image information")
             image_info = self.image.fetch()
@@ -130,7 +130,7 @@ class MySQLCharm(CharmBase):
 
         return pod_spec
 
-    def _mysql_is_ready(self):
+    def _mysql_is_ready(self) -> bool:
         """Check that every unit has mysql running.
 
         Until we have a good event-driven way of using the Kubernetes
