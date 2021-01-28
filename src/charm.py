@@ -81,7 +81,7 @@ class MySQLCharm(CharmBase):
             event.defer()
             return
 
-        self.unit.status = ActiveStatus("MySQL is up and running!")
+        self.unit.status = ActiveStatus()
 
     def _on_config_changed(self, _):
         self._configure_pod()
