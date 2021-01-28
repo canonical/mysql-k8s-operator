@@ -151,7 +151,7 @@ class MySQLCharm(CharmBase):
     def _get_sql_connection_for_host(self):
         config = {
             "user": "root",
-            "password": self.model.config["MYSQL_ROOT_PASSWORD"],
+            "password": self._stored.MYSQL_ROOT_PASSWORD,
             "host": self.hostname,
             "port": self.model.config["port"],
         }
