@@ -68,10 +68,6 @@ class TestCharm(unittest.TestCase):
         )
         self.assertEqual(unit_number2, None)
 
-    def test_hostname(self):
-        hostname1 = self.harness.charm._get_unit_hostname(10)
-        self.assertEqual(hostname1, "mysql-10.mysql-endpoints")
-
     def test_status(self):
         config_1 = {
             "MYSQL_ROOT_PASSWORD": "D10S",
