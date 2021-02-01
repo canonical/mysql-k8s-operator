@@ -161,14 +161,6 @@ class MySQLCharm(CharmBase):
         """Construct a DNS name for a MySQL unit."""
         return "{0}-{1}.{0}-endpoints".format(self.model.app.name, _id)
 
-    def _get_unit_number_from_hostname(self, hostname: str) -> int:
-        UNIT_RE = re.compile(".+-(?P<unit>[0-9]+).+")
-        match = UNIT_RE.match(hostname)
-
-        if match is not None:
-            return int(match.group("unit"))
-        return None
-
     def _get_unit_number_from_unit_name(self, unit_name: str) -> int:
         UNIT_RE = re.compile(".+(?P<unit>[0-9]+)")
         match = UNIT_RE.match(unit_name)
