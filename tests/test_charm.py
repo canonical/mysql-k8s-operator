@@ -4,6 +4,9 @@
 import unittest
 
 from ops.testing import Harness
+from ops.model import (
+    ActiveStatus,
+)
 from charm import MySQLCharm
 
 
@@ -52,6 +55,7 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(
             pod_spec["containers"][0]["envConfig"]["MYSQL_ROOT_PASSWORD"], "D10S"
         )
+        self.assertEqual(pod_spec["version"], 3)
 
     def test_get_unit_number_from_unit_name(self):
         unit_number = self.harness.charm._get_unit_number_from_unit_name(
@@ -68,3 +72,10 @@ class TestCharm(unittest.TestCase):
         hostname1 = self.harness.charm._get_unit_hostname(10)
         self.assertEqual(hostname1, "mysql-10.mysql-endpoints")
 
+    def test_status(self):
+        config_1 = {
+            "MYSQL_ROOT_PASSWORD": "D10S",
+        }
+        self.harness.set_leader(True)
+        self.harness.update_config(config_1)
+        self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
