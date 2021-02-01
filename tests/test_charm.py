@@ -68,13 +68,3 @@ class TestCharm(unittest.TestCase):
         hostname1 = self.harness.charm._get_unit_hostname(10)
         self.assertEqual(hostname1, "mysql-10.mysql-endpoints")
 
-        unit1 = self.harness.charm._get_unit_number_from_hostname(hostname1)
-        self.assertEqual(unit1, 10)
-
-        hostname2 = "mysql-8.mysql-endpoints"
-        unit2 = self.harness.charm._get_unit_number_from_hostname(hostname2)
-        self.assertEqual(unit2, 8)
-
-        hostname3 = "mysql-x.mysql-endpoints"
-        unit3 = self.harness.charm._get_unit_number_from_hostname(hostname3)
-        self.assertEqual(unit3, None)
