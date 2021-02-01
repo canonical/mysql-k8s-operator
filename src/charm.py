@@ -84,6 +84,7 @@ class MySQLCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _on_config_changed(self, _):
+        """This method handles the .on.config_changed() event"""
         self._configure_pod()
 
     def _configure_pod(self):
@@ -99,6 +100,7 @@ class MySQLCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _build_pod_spec(self) -> dict:
+        """This method builds the pod_spec"""
         try:
             self.unit.status = WaitingStatus("Fetching image information")
             image_info = self.image.fetch()
@@ -149,6 +151,7 @@ class MySQLCharm(CharmBase):
         return True
 
     def _get_sql_connection_for_host(self):
+        """Helper for the _mysql_is_ready() method"""
         config = {
             "user": "root",
             "password": self._stored.MYSQL_ROOT_PASSWORD,
@@ -162,6 +165,7 @@ class MySQLCharm(CharmBase):
         return "{0}-{1}.{0}-endpoints".format(self.model.app.name, _id)
 
     def _get_unit_number_from_unit_name(self, unit_name: str) -> int:
+        """Returns the unit number based in the unit name."""
         UNIT_RE = re.compile(".+(?P<unit>[0-9]+)")
         match = UNIT_RE.match(unit_name)
 
