@@ -42,7 +42,7 @@ class MySQLCharm(CharmBase):
     def hostname(self) -> str:
         """Return the Kubernetes hostname."""
         unit_number = self._get_unit_number_from_unit_name(self.unit.name)
-        return self._get_unit_hostname(unit_number)
+        return self._get_hostname_from_unit(unit_number)
 
     @property
     def env_config(self) -> dict:
@@ -157,7 +157,7 @@ class MySQLCharm(CharmBase):
         }
         return mysql.connector.connect(**config)
 
-    def _get_unit_hostname(self, _id: int) -> str:
+    def _get_hostname_from_unit(self, _id: int) -> str:
         """Construct a DNS name for a MySQL unit."""
         return "{0}-{1}.{0}-endpoints".format(self.model.app.name, _id)
 
