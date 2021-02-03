@@ -5,7 +5,6 @@
 import logging
 import mysql.connector
 import random
-import re
 
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
@@ -30,19 +29,29 @@ class MySQLCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._stored.set_default(mysql_setup={})
-        password = "".join(
-            random.choice(ascii_letters + digits) for x in range(20)
-        )
-        self._stored.set_default(MYSQL_ROOT_PASSWORD=password)
         self.image = OCIImageResource(self, "mysql-image")
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
     @property
-    def hostname(self) -> str:
-        """Return the Kubernetes hostname."""
-        unit_number = self._get_unit_number_from_unit_name(self.unit.name)
-        return self._get_hostname_from_unit(unit_number)
+    def bind_address(self) -> str:
+        """The internal address of the MySQL server"""
+        return str(self.model.get_binding(PEER).network.bind_address)
+
+    @property
+    def mysql_root_password(self) -> str:
+        if "MYSQL_ROOT_PASSWORD" not in self._stored.mysql_setup:
+            password = "".join(
+                random.choice(ascii_letters + digits) for x in range(20)
+            )
+            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = password
+            logger.warning(
+                """The randomly generated MYSQL_ROOT_PASSWORD is: %s""",
+                self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
+            )
+            logger.warning("Please change it as soon as possible!")
+
+        return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 
     @property
     def env_config(self) -> dict:
@@ -53,14 +62,7 @@ class MySQLCharm(CharmBase):
         if config.get("MYSQL_ROOT_PASSWORD"):
             env_config["MYSQL_ROOT_PASSWORD"] = config["MYSQL_ROOT_PASSWORD"]
         else:
-            env_config[
-                "MYSQL_ROOT_PASSWORD"
-            ] = self._stored.MYSQL_ROOT_PASSWORD
-            logger.warning(
-                "The randomly generated MYSQL_ROOT_PASSWORD is: %s",
-                self._stored.MYSQL_ROOT_PASSWORD,
-            )
-            logger.warning("Please change it as soon as possible!")
+            env_config["MYSQL_ROOT_PASSWORD"] = self.mysql_root_password
 
         if config.get("MYSQL_USER") and config.get("MYSQL_PASSWORD"):
             env_config["MYSQL_USER"] = config["MYSQL_USER"]
@@ -140,10 +142,10 @@ class MySQLCharm(CharmBase):
         """
         try:
             cnx = self._get_sql_connection_for_host()
-            logger.info("MySQL service is ready in %s.", self.hostname)
-        except mysql.connector.Error:
+            logger.info("MySQL service is ready in %s.", self.bind_address)
+        except mysql.connector.Error as err:
             # TODO: Improve exceptions handling
-            logger.info("MySQL service is not ready in %s", self.hostname)
+            logger.warning(err.msg)
             return False
         else:
             cnx.close()
@@ -154,24 +156,11 @@ class MySQLCharm(CharmBase):
         """Helper for the _mysql_is_ready() method"""
         config = {
             "user": "root",
-            "password": self._stored.MYSQL_ROOT_PASSWORD,
-            "host": self.hostname,
+            "password": self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
+            "host": self.bind_address,
             "port": self.model.config["port"],
         }
         return mysql.connector.connect(**config)
-
-    def _get_hostname_from_unit(self, _id: int) -> str:
-        """Construct a DNS name for a MySQL unit."""
-        return "{0}-{1}.{0}-endpoints".format(self.model.app.name, _id)
-
-    def _get_unit_number_from_unit_name(self, unit_name: str) -> int:
-        """Returns the unit number based in the unit name."""
-        UNIT_RE = re.compile(".+(?P<unit>[0-9]+)")
-        match = UNIT_RE.match(unit_name)
-
-        if match is not None:
-            return int(match.group("unit"))
-        return None
 
 
 if __name__ == "__main__":
