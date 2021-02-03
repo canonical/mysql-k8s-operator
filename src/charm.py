@@ -139,7 +139,7 @@ class MySQLCharm(CharmBase):
                                     "-p{}".format(self.mysql_root_password),
                                 ]
                             },
-                            "initialDelaySeconds": 10,
+                            "initialDelaySeconds": 20,
                             "periodSeconds": 5,
                         },
                         "livenessProbe": {
@@ -152,7 +152,7 @@ class MySQLCharm(CharmBase):
                                     "-p{}".format(self.mysql_root_password),
                                 ]
                             },
-                            "initialDelaySeconds": 20,
+                            "initialDelaySeconds": 30,
                             "periodSeconds": 10,
                         },
                     },
