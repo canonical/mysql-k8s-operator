@@ -187,7 +187,7 @@ class MySQLCharm(CharmBase):
         """Helper for the _mysql_is_ready() method"""
         config = {
             "user": "root",
-            "password": self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
+            "password": self.mysql_root_password,
             "host": self.bind_address,
             "port": self.model.config["port"],
         }
