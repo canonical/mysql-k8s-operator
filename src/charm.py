@@ -178,6 +178,9 @@ class MySQLCharm(CharmBase):
             # TODO: Improve exceptions handling
             logger.warning(err.msg)
             return False
+        except TypeError:
+            logger.warning("bind_address it's not ready yet")
+            return False
         else:
             cnx.close()
 
