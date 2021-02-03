@@ -17,11 +17,6 @@ class TestCharm(unittest.TestCase):
         self.harness.begin()
         self.harness.add_oci_resource("mysql-image")
 
-    def test_hostname_for_leader_unit(self):
-        self.harness.set_leader(True)
-        expected_host = "mysql-0.mysql-endpoints"
-        self.assertEqual(self.harness.charm.hostname, expected_host)
-
     def test_env_config(self):
         config_1 = {
             "MYSQL_ROOT_PASSWORD": "D10S",
@@ -56,17 +51,6 @@ class TestCharm(unittest.TestCase):
             pod_spec["containers"][0]["envConfig"]["MYSQL_ROOT_PASSWORD"], "D10S"
         )
         self.assertEqual(pod_spec["version"], 3)
-
-    def test_get_unit_number_from_unit_name(self):
-        unit_number = self.harness.charm._get_unit_number_from_unit_name(
-            "mysql-3.mysql.endpoints"
-        )
-        self.assertEqual(unit_number, 3)
-
-        unit_number2 = self.harness.charm._get_unit_number_from_unit_name(
-            "mysql-x.mysql.endpoints"
-        )
-        self.assertEqual(unit_number2, None)
 
     def test_status(self):
         config_1 = {
