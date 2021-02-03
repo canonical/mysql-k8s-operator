@@ -128,6 +128,21 @@ class MySQLCharm(CharmBase):
                         {"containerPort": config["port"], "protocol": "TCP"}
                     ],
                     "envConfig": self.env_config,
+                    'kubernetes': {
+                        "readinessProbe": {
+                            "exec": {
+                                "command": [
+                                    "mysqladmin",
+                                    "ping",
+                                    "-u",
+                                    "root",
+                                    "-p{}".format(self.mysql_root_password),
+                                ]
+                            },
+                            "initialDelaySeconds": 20,
+                            "periodSeconds": 5,
+                        },
+                    },
                 }
             ],
         }
