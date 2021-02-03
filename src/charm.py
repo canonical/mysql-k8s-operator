@@ -142,6 +142,19 @@ class MySQLCharm(CharmBase):
                             "initialDelaySeconds": 10,
                             "periodSeconds": 5,
                         },
+                        "livenessProbe": {
+                            "exec": {
+                                "command": [
+                                    "mysqladmin",
+                                    "ping",
+                                    "-u",
+                                    "root",
+                                    "-p{}".format(self.mysql_root_password),
+                                ]
+                            },
+                            "initialDelaySeconds": 20,
+                            "periodSeconds": 10,
+                        },
                     },
                 }
             ],
