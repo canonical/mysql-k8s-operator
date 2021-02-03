@@ -60,6 +60,9 @@ class MySQLCharm(CharmBase):
         env_config = {}
 
         if config.get("MYSQL_ROOT_PASSWORD"):
+            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = config[
+                "MYSQL_ROOT_PASSWORD"
+            ]
             env_config["MYSQL_ROOT_PASSWORD"] = config["MYSQL_ROOT_PASSWORD"]
         else:
             env_config["MYSQL_ROOT_PASSWORD"] = self.mysql_root_password
@@ -128,7 +131,7 @@ class MySQLCharm(CharmBase):
                         {"containerPort": config["port"], "protocol": "TCP"}
                     ],
                     "envConfig": self.env_config,
-                    'kubernetes': {
+                    "kubernetes": {
                         "readinessProbe": {
                             "exec": {
                                 "command": [
