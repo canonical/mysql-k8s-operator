@@ -139,7 +139,7 @@ class MySQLCharm(CharmBase):
                                     "-p{}".format(self.mysql_root_password),
                                 ]
                             },
-                            "initialDelaySeconds": 20,
+                            "initialDelaySeconds": 10,
                             "periodSeconds": 5,
                         },
                     },
