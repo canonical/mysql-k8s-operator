@@ -16,15 +16,8 @@ class TestCharm(unittest.TestCase):
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
         self.harness.add_oci_resource("mysql-image")
-        # Operator Framework does not support leadership data,
-        # so we need to fake it. See https://github.com/canonical/operator/issues/215
-        self.harness.charm.leader_data = {}
-        # Reference to the original object, letting tests know if something is broken
-        # and the datastore accidently replaced.
-        self.leader_data = self.harness.charm.leader_data
 
     def test_env_config(self):
-        self.harness.set_leader(True)
         config_1 = {
             "MYSQL_ROOT_PASSWORD": "D10S",
             "MYSQL_USER": "DiegoArmando",
@@ -46,7 +39,6 @@ class TestCharm(unittest.TestCase):
         )
 
     def test_generate_random_root_password(self):
-        self.harness.set_leader(True)
         config_2 = {
             "MYSQL_ROOT_PASSWORD": "",
         }
@@ -56,7 +48,6 @@ class TestCharm(unittest.TestCase):
         )
 
     def test_pod_spec(self):
-        self.harness.set_leader(True)
         config_1 = {
             "MYSQL_ROOT_PASSWORD": "D10S",
         }
@@ -76,7 +67,6 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(pod_spec["version"], 3)
 
     def test_status(self):
-        self.harness.set_leader(True)
         config_1 = {
             "MYSQL_ROOT_PASSWORD": "D10S",
         }
