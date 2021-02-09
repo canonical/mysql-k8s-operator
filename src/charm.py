@@ -16,6 +16,7 @@ from ops.model import (
 )
 from ops.framework import StoredState
 from string import ascii_letters, digits
+from leadership import RichLeaderData
 
 logger = logging.getLogger(__name__)
 PEER = "mysql"
@@ -28,6 +29,7 @@ class MySQLCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
+        self.leader_data = RichLeaderData(self, "leader_data")
         self._stored.set_default(mysql_setup={})
         self.image = OCIImageResource(self, "mysql-image")
         self.framework.observe(self.on.start, self._on_start)
@@ -40,18 +42,18 @@ class MySQLCharm(CharmBase):
 
     @property
     def mysql_root_password(self) -> str:
-        if "MYSQL_ROOT_PASSWORD" not in self._stored.mysql_setup:
+        if "MYSQL_ROOT_PASSWORD" not in self.leader_data:
             password = "".join(
                 random.choice(ascii_letters + digits) for x in range(20)
             )
-            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = password
+            self.leader_data["MYSQL_ROOT_PASSWORD"] = password
             logger.warning(
                 """The randomly generated MYSQL_ROOT_PASSWORD is: %s""",
-                self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
+                password,
             )
             logger.warning("Please change it as soon as possible!")
 
-        return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
+        return self.leader_data["MYSQL_ROOT_PASSWORD"]
 
     @property
     def env_config(self) -> dict:
@@ -60,7 +62,7 @@ class MySQLCharm(CharmBase):
         env_config = {}
 
         if config.get("MYSQL_ROOT_PASSWORD"):
-            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = config[
+            self.leader_data["MYSQL_ROOT_PASSWORD"] = config[
                 "MYSQL_ROOT_PASSWORD"
             ]
             env_config["MYSQL_ROOT_PASSWORD"] = config["MYSQL_ROOT_PASSWORD"]
@@ -88,7 +90,7 @@ class MySQLCharm(CharmBase):
 
         self.unit.status = ActiveStatus()
 
-    def _on_config_changed(self, _):
+    def _on_config_changed(self, event):
         """This method handles the .on.config_changed() event"""
         self._configure_pod()
 
