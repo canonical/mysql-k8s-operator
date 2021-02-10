@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 import logging
-import mysql.connector
 import random
 
 from oci_image import OCIImageResource, OCIImageResourceError
@@ -30,13 +29,7 @@ class MySQLCharm(CharmBase):
         super().__init__(*args)
         self._stored.set_default(mysql_setup={})
         self.image = OCIImageResource(self, "mysql-image")
-        self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-
-    @property
-    def bind_address(self) -> str:
-        """The internal address of the MySQL server"""
-        return str(self.model.get_binding(PEER).network.bind_address)
 
     @property
     def mysql_root_password(self) -> str:
@@ -76,18 +69,6 @@ class MySQLCharm(CharmBase):
 
         return env_config
 
-    def _on_start(self, event):
-        """Initialize MySQL"""
-
-        if not self._mysql_is_ready():
-            message = "Waiting for MySQL Service"
-            self.unit.status = WaitingStatus(message)
-            logger.info(message)
-            event.defer()
-            return
-
-        self.unit.status = ActiveStatus()
-
     def _on_config_changed(self, _):
         """This method handles the .on.config_changed() event"""
         self._configure_pod()
@@ -106,6 +87,9 @@ class MySQLCharm(CharmBase):
 
     def _build_pod_spec(self) -> dict:
         """This method builds the pod_spec"""
+        if not self.unit.is_leader():
+            return
+
         try:
             self.unit.status = WaitingStatus("Fetching image information")
             image_info = self.image.fetch()
@@ -139,7 +123,7 @@ class MySQLCharm(CharmBase):
                                     "ping",
                                     "-u",
                                     "root",
-                                    "-p{}".format(self.mysql_root_password),
+                                    "-p$(echo $MYSQL_ROOT_PASSWORD)",
                                 ]
                             },
                             "initialDelaySeconds": 20,
@@ -152,7 +136,7 @@ class MySQLCharm(CharmBase):
                                     "ping",
                                     "-u",
                                     "root",
-                                    "-p{}".format(self.mysql_root_password),
+                                    "-p$(echo $MYSQL_ROOT_PASSWORD)",
                                 ]
                             },
                             "initialDelaySeconds": 30,
@@ -164,37 +148,6 @@ class MySQLCharm(CharmBase):
         }
 
         return pod_spec
-
-    def _mysql_is_ready(self) -> bool:
-        """Check that every unit has mysql running.
-
-        Until we have a good event-driven way of using the Kubernetes
-        readiness probe, we will attempt
-        """
-        try:
-            cnx = self._get_sql_connection_for_host()
-            logger.info("MySQL service is ready in %s.", self.bind_address)
-        except mysql.connector.Error as err:
-            # TODO: Improve exceptions handling
-            logger.warning(err.msg)
-            return False
-        except TypeError:
-            logger.warning("bind_address it's not ready yet")
-            return False
-        else:
-            cnx.close()
-
-        return True
-
-    def _get_sql_connection_for_host(self):
-        """Helper for the _mysql_is_ready() method"""
-        config = {
-            "user": "root",
-            "password": self.mysql_root_password,
-            "host": self.bind_address,
-            "port": self.model.config["port"],
-        }
-        return mysql.connector.connect(**config)
 
 
 if __name__ == "__main__":
