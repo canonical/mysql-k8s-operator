@@ -43,10 +43,10 @@ $ juju add-model mysql
 Deploy a single unit of MySQL using its default configuration
 
 ```bash
-$ juju deploy ./mysql.charm --resource mysql-image=ubuntu/mysql:lates
+$ juju deploy ./mysql.charm --resource mysql-image=ubuntu/mysql:latest
 ```
 
-As in this example we did not especify the password for the root user, the charm will generate one, and you can get it watching the juju debug-log:
+As in this example we did not specify the password for the root user, the charm will generate one, and you can get it watching the juju debug-log:
 
 
 ```bash
@@ -58,7 +58,7 @@ application-mysql: 13:45:16 WARNING unit.mysql/0.juju-log The randomly generated
 application-mysql: 13:45:16 WARNING unit.mysql/0.juju-log Please change it as soon as possible!
 ```
 
-If required, yo can remove the deployed completely:
+If required, you can remove the deployment completely:
 
 ```bash
 $ juju destroy-model -y mysql --no-wait --force --destroy-storage
@@ -67,9 +67,9 @@ $ juju destroy-model -y mysql --no-wait --force --destroy-storage
 Note the `--destroy-storage` will delete any data stored by MySQL in its persistent store.
 
 
-### Parameters
+### Config
 
-This charm implements the following parameters:
+This charm implements the following configs:
 
 - `MYSQL_USER`: Create a new user with superuser privileges. This is used in conjunction with `MYSQL_PASSWORD`.
 - `MYSQL_PASSWORD`: Set the password for the `MYSQL_USER` user.

@@ -33,6 +33,9 @@ class MySQLCharm(CharmBase):
 
     @property
     def mysql_root_password(self) -> str:
+        if not self.unit.is_leader():
+            return
+
         if "MYSQL_ROOT_PASSWORD" not in self._stored.mysql_setup:
             password = "".join(
                 random.choice(ascii_letters + digits) for x in range(20)
