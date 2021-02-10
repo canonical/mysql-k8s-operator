@@ -48,6 +48,7 @@ class TestCharm(unittest.TestCase):
         )
 
     def test_pod_spec(self):
+        self.harness.set_leader(True)
         config_1 = {
             "MYSQL_ROOT_PASSWORD": "D10S",
         }
