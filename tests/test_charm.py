@@ -39,6 +39,7 @@ class TestCharm(unittest.TestCase):
         )
 
     def test_generate_random_root_password(self):
+        self.harness.set_leader(True)
         config_2 = {
             "MYSQL_ROOT_PASSWORD": "",
         }
