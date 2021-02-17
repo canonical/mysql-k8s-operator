@@ -81,3 +81,14 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(config["port"], 3306)
         self.assertTrue("MYSQL_ROOT_PASSWORD" in config)
         self.assertEqual(config["MYSQL_ROOT_PASSWORD"], "")
+
+    def test_ony_leader_can_configure_root_password(self):
+        self.harness.set_leader(False)
+        config = {
+            "MYSQL_ROOT_PASSWORD": "Diego!",
+        }
+        self.harness.update_config(config)
+        self.assertNotIn(
+            "MYSQL_ROOT_PASSWORD", self.harness.charm._stored.mysql_setup
+        )
+
