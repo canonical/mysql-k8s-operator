@@ -91,4 +91,3 @@ class TestCharm(unittest.TestCase):
         self.assertNotIn(
             "MYSQL_ROOT_PASSWORD", self.harness.charm._stored.mysql_setup
         )
-
