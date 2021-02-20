@@ -30,9 +30,36 @@ class MySQLCharm(CharmBase):
         self._stored.set_default(mysql_setup={})
         self.image = OCIImageResource(self, "mysql-image")
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(
+            self.on[PEER].relation_joined, self._on_peer_relation_joined
+        )
+        self.framework.observe(
+            self.on[PEER].relation_changed, self._on_peer_relation_changed
+        )
+
+    def _on_peer_relation_joined(self, event):
+        if not self.unit.is_leader():
+            return
+
+        event.relation.data[event.app][
+            "MYSQL_ROOT_PASSWORD"
+        ] = self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
+        logger.info("Storing MYSQL_ROOT_PASSWORD in relation data")
+
+    def _on_peer_relation_changed(self, event):
+        if event.relation.data[event.app].get("MYSQL_ROOT_PASSWORD"):
+            self._stored.mysql_setup[
+                "MYSQL_ROOT_PASSWORD"
+            ] = event.relation.data[event.app]["MYSQL_ROOT_PASSWORD"]
+            logger.info("Storing MYSQL_ROOT_PASSWORD in StoredState")
 
     @property
     def mysql_root_password(self) -> str:
+        """
+        This property return MYSQL_ROOT_PASSWORD from StoredState.
+        If the password isn't in StoredState, generates one.
+        """
+
         if not self.unit.is_leader():
             return
 
