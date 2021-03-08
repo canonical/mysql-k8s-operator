@@ -46,17 +46,16 @@ Deploy a single unit of MySQL using its default configuration
 $ juju deploy ./mysql.charm --resource mysql-image=ubuntu/mysql:latest
 ```
 
-As in this example we did not specify the password for the root user, the charm will generate one, and you can get it watching the juju debug-log:
+As in this example we did not specify the password for the root user, the charm will generate one, and you can get it executing:
 
 
 ```bash
-$ juju debug-log -l
+$ juju show-unit mysql/0
 
-...
-
-application-mysql: 13:45:16 WARNING unit.mysql/0.juju-log The randomly generated MYSQL_ROOT_PASSWORD is: T4NgXUeXYlJBBD37icuM
-application-mysql: 13:45:16 WARNING unit.mysql/0.juju-log Please change it as soon as possible!
 ```
+
+The password will be the value for the key `MYSQL_ROOT_PASSWORD`
+
 
 If required, you can remove the deployment completely:
 

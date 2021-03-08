@@ -68,11 +68,6 @@ class MySQLCharm(CharmBase):
                 random.choice(ascii_letters + digits) for x in range(20)
             )
             self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = password
-            logger.warning(
-                """The randomly generated MYSQL_ROOT_PASSWORD is: %s""",
-                self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
-            )
-            logger.warning("Please change it as soon as possible!")
 
         return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 
