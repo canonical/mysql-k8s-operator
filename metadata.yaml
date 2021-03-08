@@ -17,6 +17,9 @@ provides:
 peers:
   mysql:
     interface: mysql
+provides:
+  database:
+    interface: mysql
 resources:
   mysql-image:
     type: oci-image
