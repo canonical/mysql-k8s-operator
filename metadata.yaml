@@ -9,6 +9,10 @@ series:
   - kubernetes
   - mysql
   - db
+storage:
+  db:
+    type: filesystem
+    location: /var/lib/mysql
 deployment:
   type: stateful
 provides:
