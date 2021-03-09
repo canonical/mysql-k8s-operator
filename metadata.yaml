@@ -7,8 +7,6 @@ summary: |
   Kubernetes charm for MySQL
 series:
   - kubernetes
-  - mysql
-  - db
 storage:
   db:
     type: filesystem
