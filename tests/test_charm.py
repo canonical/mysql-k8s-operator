@@ -3,11 +3,14 @@
 
 import unittest
 
+# import ipdb
+
 from ops.testing import Harness
 from ops.model import (
     ActiveStatus,
 )
 from charm import MySQLCharm
+from unittest.mock import patch, Mock
 
 
 class TestCharm(unittest.TestCase):
@@ -105,3 +108,48 @@ class TestCharm(unittest.TestCase):
             config["MYSQL_ROOT_PASSWORD"],
             self.harness.charm._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
         )
+
+    def test_provides(self):
+        with patch("charm.MySQLCharm.mysql") as mock_version:
+            VERSION = "mysql 8.0.22"
+            mock_version.return_value = VERSION
+            MySQLCharm.mysql.version = mock_version
+
+            info = {
+                "app_name": "mysql",
+                "host": "mysql-0.mysql-endpoints",
+                "port": 3306,
+                "user_name": "root",
+                "mysql_root_password": "D10S!",
+            }
+            db_info = Mock(return_value=info)
+            MySQLCharm.db_info = db_info
+
+            self.assertTrue(isinstance(self.harness.charm.provides, dict))
+            self.assertTrue("provides" in self.harness.charm.provides)
+            self.assertTrue(
+                isinstance(self.harness.charm.provides["provides"], dict)
+            )
+            self.assertEqual(
+                self.harness.charm.provides["provides"]["mysql"], VERSION
+            )
+            self.assertTrue(
+                isinstance(self.harness.charm.provides["config"], dict)
+            )
+            self.assertEqual(
+                self.harness.charm.provides["config"]["app_name"], "mysql"
+            )
+            self.assertEqual(
+                self.harness.charm.provides["config"]["host"],
+                "mysql-0.mysql-endpoints",
+            )
+            self.assertEqual(
+                self.harness.charm.provides["config"]["port"], 3306
+            )
+            self.assertEqual(
+                self.harness.charm.provides["config"]["user_name"], "root"
+            )
+            self.assertEqual(
+                self.harness.charm.provides["config"]["mysql_root_password"],
+                "D10S!",
+            )
