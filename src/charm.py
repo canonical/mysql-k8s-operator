@@ -5,6 +5,8 @@
 import logging
 import random
 
+from mysqlprovider import MySQLProvider
+from mysqlserver import MySQL
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
@@ -28,7 +30,9 @@ class MySQLCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._stored.set_default(mysql_setup={})
+        self._stored.set_default(mysql_initialized=False)
         self.image = OCIImageResource(self, "mysql-image")
+        self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(
             self.on[PEER].relation_joined, self._on_peer_relation_joined
@@ -36,6 +40,14 @@ class MySQLCharm(CharmBase):
         self.framework.observe(
             self.on[PEER].relation_changed, self._on_peer_relation_changed
         )
+        self.framework.observe(self.on.update_status, self._on_update_status)
+
+        if self._stored.mysql_initialized:
+            self.mysql_provider = MySQLProvider(
+                self, "database", self.provides
+            )
+            self.mysql_provider.ready()
+            logger.info("MySQL Provider is available")
 
     def _on_peer_relation_joined(self, event):
         if not self.unit.is_leader():
@@ -52,6 +64,98 @@ class MySQLCharm(CharmBase):
                 "MYSQL_ROOT_PASSWORD"
             ] = event.relation.data[event.app]["MYSQL_ROOT_PASSWORD"]
             logger.info("Storing MYSQL_ROOT_PASSWORD in StoredState")
+
+    def _on_config_changed(self, _):
+        """This method handles the .on.config_changed() event"""
+        self._configure_pod()
+
+    # Handles start event
+    def _on_start(self, event):
+        """Initialize MySQL
+
+        This event handler is deferred if initialization of MySQL
+        fails. By doing so it is gauranteed that another
+        attempt at initialization will be made.
+        """
+
+        if not self.unit.is_leader():
+            return
+
+        if not self.mysql.is_ready():
+            msg = "Waiting for MySQL Service"
+            self.unit.status = WaitingStatus(msg)
+            logger.debug(msg)
+            event.defer()
+            return
+
+        self._on_update_status(event)
+        self._stored.mysql_initialized = True
+        self.unit.status = ActiveStatus()
+
+    # Handles update-status event
+    def _on_update_status(self, event):
+        """Set status for all units
+        # FIXME
+        Status may be
+        - MySQL is not ready,
+        - MySQL is not Initialized
+        - Unit is active
+        """
+        if not self.unit.is_leader():
+            self.unit.status = ActiveStatus()
+            return
+
+        if not self.mysql.is_ready():
+            status_message = "MySQL not ready yet"
+            self.unit.status = WaitingStatus(status_message)
+            return
+
+        if not self._stored.mysql_initialized:
+            status_message = "MySQL not initialized"
+            self.unit.status = WaitingStatus(status_message)
+            return
+
+        self.unit.status = ActiveStatus()
+
+    @property
+    def mysql(self) -> MySQL:
+        """Returns MySQL object"""
+        mysql_config = {
+            "app_name": self.model.app.name,
+            "host": self.hostname,
+            "port": self.model.config["port"],
+            "user_name": "root",
+            "mysql_root_password": self._stored.mysql_setup[
+                "MYSQL_ROOT_PASSWORD"
+            ],
+        }
+        return MySQL(mysql_config)
+
+    @property
+    def hostname(self) -> str:
+        """Unit hostname"""
+        unit_id = self.unit.name.split("/")[1]
+        return "{0}-{1}.{0}-endpoints".format(self.model.app.name, unit_id)
+
+    @property
+    def provides(self) -> dict:
+        """Provides dictionary"""
+        provides = {
+            "provides": {"mysql": self.mysql.version()},
+            "config": self.db_info(),
+        }
+        return provides
+
+    # @property
+    def db_info(self) -> dict:
+        info = {
+            "app_name": self.model.app.name,
+            "host": self.hostname,
+            "port": self.model.config["port"],
+            "user_name": "root",
+            "mysql_root_password": self.mysql_root_password,
+        }
+        return info
 
     @property
     def mysql_root_password(self) -> str:
@@ -93,10 +197,6 @@ class MySQLCharm(CharmBase):
             env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
 
         return env_config
-
-    def _on_config_changed(self, _):
-        """This method handles the .on.config_changed() event"""
-        self._configure_pod()
 
     def _configure_pod(self):
         """Configure the K8s pod spec for MySQL."""
