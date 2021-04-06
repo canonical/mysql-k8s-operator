@@ -20,6 +20,45 @@ class TestMySQLServer(unittest.TestCase):
         }
         self.mysql = MySQL(mysql_config)
 
+    @patch("mysqlserver.connect")
+    def test__get_client_ok(self, mock_connect):
+        mock_connect.return_value = SimpleNamespace(close=lambda: True)
+        self.assertTrue(self.mysql._get_client())
+
+    def test__get_client_fail(self):
+        with self.assertRaises(Error):
+            self.mysql._get_client()
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test__databases_names(self, mock__execute_query):
+        returned_value = (
+            ("information_schema",),
+            ("mysql",),
+            ("performance_schema",),
+            ("sys",),
+        )
+        mock__execute_query.return_value = returned_value
+        expected_value = (
+            "information_schema",
+            "mysql",
+            "performance_schema",
+            "sys",
+        )
+        self.assertEqual(self.mysql._databases_names(), expected_value)
+
+        mock__execute_query.side_effect = Error
+        self.assertEqual(self.mysql._databases_names(), ())
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_version(self, mock__execute_query):
+        returned_value = [("8.0.23-3build1",)]
+        mock__execute_query.return_value = returned_value
+        expected_value = "8.0.23-3build1"
+        self.assertEqual(self.mysql.version(), expected_value)
+
+        mock__execute_query.side_effect = Error
+        self.assertEqual(self.mysql.version(), None)
+
     @patch("mysqlserver.MySQL._get_client")
     def test_is_ready(self, mock_get_client):
         mock_get_client.return_value = SimpleNamespace(close=lambda: True)

@@ -8,6 +8,7 @@ import unittest
 from ops.testing import Harness
 from ops.model import (
     ActiveStatus,
+    WaitingStatus,
 )
 from charm import MySQLCharm
 from unittest.mock import patch, Mock
@@ -153,3 +154,62 @@ class TestCharm(unittest.TestCase):
                 self.harness.charm.provides["config"]["mysql_root_password"],
                 "D10S!",
             )
+
+    def test__on_start(self):
+        self.harness.set_leader(False)
+        self.assertEqual(self.harness.charm.on.start.emit(), None)
+
+        with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
+            mock_is_ready.return_value = False
+            self.harness.set_leader(True)
+            config = {
+                "MYSQL_ROOT_PASSWORD": "D10S!",
+            }
+            self.harness.update_config(config)
+            self.assertEqual(self.harness.charm.on.start.emit(), None)
+
+        with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
+            self.harness.set_leader(True)
+            mock_is_ready.return_value = True
+            config = {
+                "MYSQL_ROOT_PASSWORD": "D10S!",
+            }
+            self.harness.update_config(config)
+            self.harness.charm.on.start.emit()
+            self.assertEqual(
+                type(self.harness.charm.unit.status), ActiveStatus
+            )
+
+    def test__update_status(self):
+        self.harness.set_leader(False)
+        self.assertEqual(self.harness.charm.on.update_status.emit(), None)
+        self.assertEqual(type(self.harness.charm.unit.status), ActiveStatus)
+        self.assertEqual(self.harness.charm.unit.status.message, "")
+
+        with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
+            mock_is_ready.return_value = False
+            self.harness.set_leader(True)
+            config = {
+                "MYSQL_ROOT_PASSWORD": "D10S!",
+            }
+            self.harness.update_config(config)
+            self.assertEqual(self.harness.charm.on.update_status.emit(), None)
+            self.assertEqual(
+                type(self.harness.charm.unit.status), WaitingStatus
+            )
+            self.assertEqual(
+                self.harness.charm.unit.status.message, "MySQL not ready yet"
+            )
+
+            mock_is_ready.return_value = True
+            self.harness.charm.on.update_status.emit()
+            self.assertEqual(
+                type(self.harness.charm.unit.status), WaitingStatus
+            )
+            self.assertEqual(
+                self.harness.charm.unit.status.message, "MySQL not initialized"
+            )
+
+    def test__configure_pod(self):
+        self.assertEqual(self.harness.charm.on.config_changed.emit(), None)
+        self.assertEqual(type(self.harness.charm.unit.status), ActiveStatus)
