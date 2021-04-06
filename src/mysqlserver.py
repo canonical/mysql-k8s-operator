@@ -47,15 +47,19 @@ class MySQL:
 
         return ready
 
+    def _execute_query(self, query) -> tuple:
+        """Execute SQL query"""
+        client = self._get_client()
+        cursor = client.cursor()
+        cursor.execute(query)
+        return cursor.fetchall()
+
     def _databases_names(self) -> tuple:
         """Get databases names"""
         databases = ()
         try:
-            client = self._get_client()
-            cursor = client.cursor()
             query = "SHOW DATABASES;"
-            cursor.execute(query)
-            databases = tuple(x[0] for x in cursor.fetchall())
+            databases = tuple(x[0] for x in self._execute_query(query))
             return databases
         except Error as e:
             logger.warning(e)
@@ -73,18 +77,15 @@ class MySQL:
             "performance_schema",
             "sys",
         )
-        databases = self._databases_names()
-        databases = [db for db in databases if db not in defaultdbs]
+        dbs = self._databases_names()
+        databases = [db for db in dbs if db not in defaultdbs]
         return databases
 
     def version(self) -> str:
         """Get MySQLDB version"""
         try:
-            client = self._get_client()
-            cursor = client.cursor()
             query = "SELECT VERSION() as version;"
-            cursor.execute(query)
-            version, *_ = cursor.fetchone()
+            version = self._execute_query(query)[0][0]
             return version
         except Error:
             logger.warning("VERSION NOT READY YET")
