@@ -1,5 +1,8 @@
 # MySQL Operator
 
+![tests](https://github.com/canonical/mysql-operator/actions/workflows/run-tests.yaml/badge.svg)
+
+
 ## Description
 
 The [MySQL](https://www.mysql.com/) operator provides an open-source relational database management system (RDBMS). This repository contains a Juju Charm for deploying MySQL on Kubernetes clusters.
