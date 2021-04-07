@@ -110,7 +110,7 @@ class TestCharm(unittest.TestCase):
             self.harness.charm._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
         )
 
-    def test_provides(self):
+    def test_charm_provides_property(self):
         with patch("charm.MySQLCharm.mysql") as mock_version:
             VERSION = "mysql 8.0.22"
             mock_version.return_value = VERSION
@@ -137,28 +137,25 @@ class TestCharm(unittest.TestCase):
             self.assertTrue(
                 isinstance(self.harness.charm.provides["config"], dict)
             )
-            self.assertEqual(
-                self.harness.charm.provides["config"]["app_name"], "mysql"
-            )
-            self.assertEqual(
-                self.harness.charm.provides["config"]["host"],
-                "mysql-0.mysql-endpoints",
-            )
-            self.assertEqual(
-                self.harness.charm.provides["config"]["port"], 3306
-            )
-            self.assertEqual(
-                self.harness.charm.provides["config"]["user_name"], "root"
-            )
-            self.assertEqual(
-                self.harness.charm.provides["config"]["mysql_root_password"],
-                "D10S!",
+
+            expected_dict = {
+                "app_name": "mysql",
+                "host": "mysql-0.mysql-endpoints",
+                "port": 3306,
+                "user_name": "root",
+                "mysql_root_password": "D10S!",
+            }
+            self.assertDictEqual(
+                self.harness.charm.provides["config"], expected_dict
             )
 
     def test__on_start(self):
+        # Checking the _on_start method when the unit is not leader
         self.harness.set_leader(False)
         self.assertEqual(self.harness.charm.on.start.emit(), None)
 
+        # Checking the _on_start method when the unit is leader
+        # but MySQL isn't ready
         with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
             mock_is_ready.return_value = False
             self.harness.set_leader(True)
@@ -168,6 +165,8 @@ class TestCharm(unittest.TestCase):
             self.harness.update_config(config)
             self.assertEqual(self.harness.charm.on.start.emit(), None)
 
+        # Checking the _on_start method when the unit is leader
+        # and MySQL is ready
         with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
             self.harness.set_leader(True)
             mock_is_ready.return_value = True
@@ -180,12 +179,14 @@ class TestCharm(unittest.TestCase):
                 type(self.harness.charm.unit.status), ActiveStatus
             )
 
-    def test__update_status(self):
+    def test__update_status_unit_is_not_leader(self):
         self.harness.set_leader(False)
         self.assertEqual(self.harness.charm.on.update_status.emit(), None)
         self.assertEqual(type(self.harness.charm.unit.status), ActiveStatus)
         self.assertEqual(self.harness.charm.unit.status.message, "")
 
+
+    def test__update_status_unit_is_leader_mysql_is_ready(self):
         with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
             mock_is_ready.return_value = False
             self.harness.set_leader(True)
@@ -201,7 +202,14 @@ class TestCharm(unittest.TestCase):
                 self.harness.charm.unit.status.message, "MySQL not ready yet"
             )
 
+    def test__update_status_unit_is_leader_mysql_not_initialized(self):
+        with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
+            self.harness.set_leader(True)
             mock_is_ready.return_value = True
+            config = {
+                "MYSQL_ROOT_PASSWORD": "D10S!",
+            }
+            self.harness.update_config(config)
             self.harness.charm.on.update_status.emit()
             self.assertEqual(
                 type(self.harness.charm.unit.status), WaitingStatus

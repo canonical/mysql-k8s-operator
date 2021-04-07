@@ -38,10 +38,10 @@ class MySQL:
 
         try:
             client = self._get_client()
-            ready = True
             if client is not None:
                 logger.warning("MySQL service is ready.")
                 client.close()
+                ready = True
         except Error as e:
             logger.warning("MySQL is not ready yet. - %s", e)
 
