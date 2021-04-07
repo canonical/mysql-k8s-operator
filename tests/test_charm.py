@@ -185,7 +185,6 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(type(self.harness.charm.unit.status), ActiveStatus)
         self.assertEqual(self.harness.charm.unit.status.message, "")
 
-
     def test__update_status_unit_is_leader_mysql_is_ready(self):
         with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
             mock_is_ready.return_value = False
