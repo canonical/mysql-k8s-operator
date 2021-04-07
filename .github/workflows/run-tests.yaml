@@ -26,3 +26,6 @@ jobs:
     - name: Test
       run: |
         ./run_tests
+    - name: Test coverage
+      run: |
+        coverage report src/*.py | python tests/check_coverage.py
