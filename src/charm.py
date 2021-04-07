@@ -95,7 +95,6 @@ class MySQLCharm(CharmBase):
     # Handles update-status event
     def _on_update_status(self, event):
         """Set status for all units
-        # FIXME
         Status may be
         - MySQL is not ready,
         - MySQL is not Initialized
