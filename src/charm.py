@@ -167,7 +167,7 @@ class MySQLCharm(CharmBase):
         if "MYSQL_ROOT_PASSWORD" not in self._stored.mysql_setup:
             self._stored.mysql_setup[
                 "MYSQL_ROOT_PASSWORD"
-            ] = MySQL.new_password()
+            ] = MySQL.new_password(20)
 
         return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 

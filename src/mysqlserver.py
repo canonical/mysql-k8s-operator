@@ -94,7 +94,8 @@ class MySQL:
             return None
 
     @staticmethod
-    def new_password() -> str:
+    def new_password(length: int = 16) -> str:
+        """Generates a password"""
         choices = string.ascii_letters + string.digits
-        pwd = "".join([secrets.choice(choices) for i in range(16)])
+        pwd = "".join([secrets.choice(choices) for i in range(length)])
         return pwd
