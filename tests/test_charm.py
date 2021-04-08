@@ -49,7 +49,7 @@ class TestCharm(unittest.TestCase):
         }
         self.harness.update_config(config_2)
         self.assertEqual(
-            len(self.harness.charm.env_config["MYSQL_ROOT_PASSWORD"]), 20
+            len(self.harness.charm.env_config["MYSQL_ROOT_PASSWORD"]), 16
         )
 
     def test_pod_spec(self):
