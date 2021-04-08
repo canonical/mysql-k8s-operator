@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 import logging
-import random
 
 from mysqlprovider import MySQLProvider
 from mysqlserver import MySQL
@@ -16,7 +15,6 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.framework import StoredState
-from string import ascii_letters, digits
 
 logger = logging.getLogger(__name__)
 PEER = "mysql"
@@ -167,10 +165,9 @@ class MySQLCharm(CharmBase):
             return
 
         if "MYSQL_ROOT_PASSWORD" not in self._stored.mysql_setup:
-            password = "".join(
-                random.choice(ascii_letters + digits) for x in range(20)
-            )
-            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = password
+            self._stored.mysql_setup[
+                "MYSQL_ROOT_PASSWORD"
+            ] = MySQL.new_password()
 
         return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 

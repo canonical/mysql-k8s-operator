@@ -3,6 +3,8 @@
 # See LICENSE file for licensing details.
 
 import logging
+import secrets
+import string
 
 from mysql.connector import connect, Error
 
@@ -90,3 +92,9 @@ class MySQL:
         except Error:
             logger.warning("VERSION NOT READY YET")
             return None
+
+    @staticmethod
+    def new_password() -> str:
+        choices = string.ascii_letters + string.digits
+        pwd = "".join([secrets.choice(choices) for i in range(16)])
+        return pwd
