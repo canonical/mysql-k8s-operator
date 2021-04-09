@@ -83,6 +83,77 @@ class MySQL:
         databases = [db for db in dbs if db not in defaultdbs]
         return databases
 
+    def remove_user(self, username: str) -> bool:
+        try:
+            query = self._build_remove_user_query(username)
+            self._execute_query(query)
+            return True
+        except Error as e:
+            logger.error(e)
+            return False
+            # Should we set BlockedStatus ?
+
+    def _build_remove_user_query(self, username: str) -> str:
+        return f"DROP USER '{username}'@'%';"
+
+    def drop_databases(self, databases: list) -> bool:
+        try:
+            queries = self._build_drop_databases_query(databases)
+            self._execute_query(queries)
+            return True
+        except Error as e:
+            logger.error(e)
+            return False
+            # Should we set BlockedStatus ?
+
+    def _build_drop_databases_query(self, databases: list) -> str:
+        queries = []
+        for database in databases:
+            queries.append(f"DROP DATABASE {database};")
+
+        return "\n".join(queries)
+
+    def new_dbs_and_user(self, credentials: dict, databases: list) -> bool:
+        try:
+            queries = self._build_queries(credentials, databases)
+            self._execute_query(queries)
+            return True
+        except Error as e:
+            logger.error(e)
+            return False
+            # Should we set BlockedStatus ?
+
+    def _build_queries(self, credentials: dict, databases: list) -> list:
+        queries = []
+        queries.append(self._create_user(credentials))
+
+        for database in databases:
+            queries.append(self._create_database(database))
+            queries.append(self._grant_privileges(credentials, database))
+
+        queries.append(self._flush_privileges())
+        return "\n".join(queries)
+
+    def _create_user(self, credentials: dict) -> str:
+        """Creates the query string for creating user in MySQL"""
+        return "CREATE USER '{}'@'%' IDENTIFIED BY '{}';".format(
+            credentials["username"], credentials["password"]
+        )
+
+    def _create_database(self, database: str) -> str:
+        """Creates the query string for creating database in MySQL"""
+        return "CREATE DATABASE {};".format(database)
+
+    def _grant_privileges(self, credentials: dict, database: str) -> str:
+        """Creates the query string for granting privileges in MySQL"""
+        return "GRANT ALL PRIVILEGES ON {}.* TO '{}'@'%';".format(
+            database, credentials["username"]
+        )
+
+    def _flush_privileges(self) -> str:
+        """Creates the query string for flushing privileges in MySQL"""
+        return "FLUSH PRIVILEGES;"
+
     def version(self) -> str:
         """Get MySQLDB version"""
         try:
