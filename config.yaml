@@ -22,3 +22,7 @@ options:
   MYSQL_DATABASE:
     type: string
     description: Set the name of the default database.
+  autodelete:
+    type: boolean
+    description: Delete database if relations are removed
+    default: true
