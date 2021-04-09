@@ -100,3 +100,160 @@ class TestMySQLServer(unittest.TestCase):
                 "diego",
             )
             self.assertListEqual(self.mysql.databases(), [])
+
+    def test_new_passwod(self):
+        self.assertEqual(len(self.mysql.new_password()), 16)
+        self.assertEqual(len(self.mysql.new_password(50)), 50)
+        self.assertEqual(len(self.mysql.new_password(0)), 0)
+
+    def test__create_user(self):
+        credentials1 = {
+            "username": "DiegoArmando",
+            "password": "LaPelotaNoSeMancha10!",
+        }
+        expected_query1 = "CREATE USER 'DiegoArmando'@'%' IDENTIFIED BY 'LaPelotaNoSeMancha10!';"
+        query1 = self.mysql._create_user(credentials1)
+        self.assertEqual(expected_query1, query1)
+
+        credentials2 = {
+            "username": "diego_armando",
+            "password": "LaPelotaNoSeMancha20!",
+        }
+        expected_query2 = "CREATE USER 'DiegoArmando'@'%' IDENTIFIED BY 'LaPelotaNoSeMancha20!';"
+        query2 = self.mysql._create_user(credentials2)
+        self.assertNotEqual(expected_query2, query2)
+
+    def test__create_database(self):
+        database1 = "monumental"
+        expected_query1 = "CREATE DATABASE monumental;"
+        query1 = self.mysql._create_database(database1)
+        self.assertEqual(expected_query1, query1)
+
+        database2 = "Monumental"
+        expected_query2 = "CREATE DATABASE monumental;"
+        query2 = self.mysql._create_database(database2)
+        self.assertNotEqual(expected_query2, query2)
+
+    def test__grant_privileges(self):
+        credentials1 = {
+            "username": "DiegoArmando",
+            "password": "LaPelotaNoSeMancha10!",
+        }
+        database1 = "Heaven"
+        expected_query1 = (
+            "GRANT ALL PRIVILEGES ON Heaven.* TO 'DiegoArmando'@'%';"
+        )
+        query1 = self.mysql._grant_privileges(credentials1, database1)
+        self.assertEqual(expected_query1, query1)
+
+        credentials2 = {
+            "username": "diego_armando",
+            "password": "LaPelotaNoSeMancha20!",
+        }
+        database2 = "Heaven"
+        expected_query2 = (
+            "GRANT ALL PRIVILEGES ON Heaven.* TO 'DiegoArmando'@'%';"
+        )
+        query2 = self.mysql._grant_privileges(credentials2, database2)
+        self.assertNotEqual(expected_query2, query2)
+
+        credentials3 = {
+            "username": "DiegoArmando",
+            "password": "LaPelotaNoSeMancha30!",
+        }
+        database3 = "Hell"
+        expected_query3 = (
+            "GRANT ALL PRIVILEGES ON Heaven.* TO 'DiegoArmando'@'%';"
+        )
+        query3 = self.mysql._grant_privileges(credentials3, database3)
+        self.assertNotEqual(expected_query3, query3)
+
+    def test__flush_privileges(self):
+        expected_query1 = "FLUSH PRIVILEGES;"
+        query1 = self.mysql._flush_privileges()
+        self.assertEqual(expected_query1, query1)
+
+    def test__build_queries(self):
+        credentials = {
+            "username": "DiegoArmando",
+            "password": "LaPelotaNoSeMancha10!",
+        }
+        databases = ["Heaven", "Hell"]
+        expected_queries = [
+            "CREATE USER 'DiegoArmando'@'%' IDENTIFIED BY 'LaPelotaNoSeMancha10!';",
+            "CREATE DATABASE Heaven;",
+            "GRANT ALL PRIVILEGES ON Heaven.* TO 'DiegoArmando'@'%';",
+            "CREATE DATABASE Hell;",
+            "GRANT ALL PRIVILEGES ON Hell.* TO 'DiegoArmando'@'%';",
+            "FLUSH PRIVILEGES;",
+        ]
+        self.assertEqual(
+            "\n".join(expected_queries),
+            self.mysql._build_queries(credentials, databases),
+        )
+
+    def test__build_remove_user_query(self):
+        username = "DiegoArmando"
+        expected_query = f"DROP USER '{username}'@'%';"
+        self.assertEqual(
+            expected_query, self.mysql._build_remove_user_query(username)
+        )
+
+    def test__build_drop_databases_query(self):
+        databases = ["Segurola", "Habana"]
+        expected_query = "DROP DATABASE Segurola;\nDROP DATABASE Habana;"
+        self.assertEqual(
+            expected_query, self.mysql._build_drop_databases_query(databases)
+        )
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_remove_user(self, mock__execute_query):
+        returned_value = []
+        mock__execute_query.return_value = returned_value
+        username = "DiegoArmando"
+        self.assertTrue(
+            self.mysql.remove_user(username),
+        )
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_remove_user_exception(self, mock__execute_query):
+        mock__execute_query.side_effect = Error
+        username = "DiegoArmando"
+        self.assertFalse(self.mysql.remove_user(username))
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_drop_databases(self, mock__execute_query):
+        returned_value = []
+        mock__execute_query.return_value = returned_value
+        databases = ["Segurola", "Habana"]
+        self.assertTrue(self.mysql.drop_databases(databases))
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_drop_databases_exception(self, mock__execute_query):
+        mock__execute_query.side_effect = Error
+        databases = ["Segurola", "Habana"]
+        self.assertFalse(self.mysql.drop_databases(databases))
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_new_dbs_and_user(self, mock__execute_query):
+        returned_value = []
+        mock__execute_query.return_value = returned_value
+
+        credentials1 = {
+            "username": "DiegoArmando",
+            "password": "LaPelotaNoSeMancha10!",
+        }
+        database1 = ["Heaven", "Hell"]
+        self.assertTrue(
+            self.mysql.new_dbs_and_user(credentials1, database1),
+        )
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_new_dbs_and_user_exception(self, mock__execute_query):
+        mock__execute_query.side_effect = Error
+        credentials1 = {
+            "username": "DiegoArmando",
+            "password": "LaPelotaNoSeMancha10!",
+        }
+        database1 = ["Heaven", "Hell"]
+        self.assertFalse(self.mysql.new_dbs_and_user(credentials1, database1))
