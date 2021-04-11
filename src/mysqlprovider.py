@@ -2,8 +2,11 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+"""MySQLProvider module"""
+
 import json
 import logging
+
 from mysqlserver import MySQL
 from ops.framework import StoredState
 from ops.relation import Provider
@@ -68,7 +71,7 @@ class MySQLProvider(Provider):
 
         if missing:
             dbs_available.extend(missing)
-            logger.debug("SERVER REQUEST RESPONSE {}".format(dbs_available))
+            logger.debug("SERVER REQUEST RESPONSE %s", dbs_available)
             rel_id = event.relation.id
             creds = self.credentials(rel_id)
             self.charm.mysql.new_dbs_and_user(creds, dbs_available)
@@ -97,6 +100,7 @@ class MySQLProvider(Provider):
             return True
 
     def credentials(self, rel_id) -> dict:
+        """Return MySQL credentials"""
         if self.is_new_relation(rel_id):
             creds = {
                 "username": self.new_username(rel_id),
@@ -106,3 +110,7 @@ class MySQLProvider(Provider):
         else:
             creds = self._stored.consumers[rel_id]
         return creds
+
+    def new_username(self, rel_id) -> str:
+        """Return username based in relation id"""
+        return f"user-{rel_id}"
