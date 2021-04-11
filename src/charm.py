@@ -139,20 +139,8 @@ class MySQLCharm(CharmBase):
         """Provides dictionary"""
         provides = {
             "provides": {"mysql": self.mysql.version()},
-            "config": self.db_info(),
         }
         return provides
-
-    # @property
-    def db_info(self) -> dict:
-        info = {
-            "app_name": self.model.app.name,
-            "host": self.hostname,
-            "port": self.model.config["port"],
-            "user_name": "root",
-            "mysql_root_password": self.mysql_root_password,
-        }
-        return info
 
     @property
     def mysql_root_password(self) -> str:
