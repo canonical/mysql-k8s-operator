@@ -257,3 +257,25 @@ class TestMySQLServer(unittest.TestCase):
         }
         database1 = ["Heaven", "Hell"]
         self.assertFalse(self.mysql.new_dbs_and_user(credentials1, database1))
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_new_user(self, mock__execute_query):
+        returned_value = []
+        mock__execute_query.return_value = returned_value
+
+        credentials1 = {
+            "username": "DiegoArmando",
+            "password": "LaPelotaNoSeMancha10!",
+        }
+        self.assertTrue(
+            self.mysql.new_user(credentials1),
+        )
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_new_user_exception(self, mock__execute_query):
+        mock__execute_query.side_effect = Error
+        credentials1 = {
+            "username": "DiegoArmando",
+            "password": "LaPelotaNoSeMancha10!",
+        }
+        self.assertFalse(self.mysql.new_user(credentials1))
