@@ -11,7 +11,7 @@ from ops.model import (
     WaitingStatus,
 )
 from charm import MySQLCharm
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 
 class TestCharm(unittest.TestCase):
@@ -115,17 +115,6 @@ class TestCharm(unittest.TestCase):
             VERSION = "mysql 8.0.22"
             mock_version.return_value = VERSION
             MySQLCharm.mysql.version = mock_version
-
-            info = {
-                "app_name": "mysql",
-                "host": "mysql-0.mysql-endpoints",
-                "port": 3306,
-                "user_name": "root",
-                "mysql_root_password": "D10S!",
-            }
-            db_info = Mock(return_value=info)
-            MySQLCharm.db_info = db_info
-
             self.assertTrue(isinstance(self.harness.charm.provides, dict))
             self.assertTrue("provides" in self.harness.charm.provides)
             self.assertTrue(
@@ -133,20 +122,6 @@ class TestCharm(unittest.TestCase):
             )
             self.assertEqual(
                 self.harness.charm.provides["provides"]["mysql"], VERSION
-            )
-            self.assertTrue(
-                isinstance(self.harness.charm.provides["config"], dict)
-            )
-
-            expected_dict = {
-                "app_name": "mysql",
-                "host": "mysql-0.mysql-endpoints",
-                "port": 3306,
-                "user_name": "root",
-                "mysql_root_password": "D10S!",
-            }
-            self.assertDictEqual(
-                self.harness.charm.provides["config"], expected_dict
             )
 
     def test__on_start(self):
