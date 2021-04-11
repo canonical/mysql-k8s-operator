@@ -83,6 +83,16 @@ class MySQL:
         databases = [db for db in dbs if db not in defaultdbs]
         return databases
 
+    def new_user(self, credentials: dict):
+        try:
+            query = self._create_user(credentials)
+            self._execute_query(query)
+            return True
+        except Error as e:
+            logger.error(e)
+            return False
+            # Should we set BlockedStatus ?
+
     def remove_user(self, username: str) -> bool:
         try:
             query = self._build_remove_user_query(username)
