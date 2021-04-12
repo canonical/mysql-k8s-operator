@@ -40,13 +40,7 @@ class MySQLCharm(CharmBase):
             self.on[PEER].relation_changed, self._on_peer_relation_changed
         )
         self.framework.observe(self.on.update_status, self._on_update_status)
-
-        if self._stored.mysql_initialized:
-            self.mysql_provider = MySQLProvider(
-                self, "database", self.provides
-            )
-            self.mysql_provider.ready()
-            logger.info("MySQL Provider is available")
+        self._provide_mysql()
 
     def _on_peer_relation_joined(self, event):
         if not self.unit.is_leader():
@@ -114,6 +108,14 @@ class MySQLCharm(CharmBase):
             return
 
         self.unit.status = ActiveStatus()
+
+    def _provide_mysql(self) -> None:
+        if self._stored.mysql_initialized:
+            self.mysql_provider = MySQLProvider(
+                self, "database", self.provides
+            )
+            self.mysql_provider.ready()
+            logger.info("MySQL Provider is available")
 
     @property
     def mysql(self) -> MySQL:
