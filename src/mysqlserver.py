@@ -7,6 +7,7 @@ import secrets
 import string
 
 from mysql.connector import connect, Error
+from typing import Union
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +59,13 @@ class MySQL:
 
     def _databases_names(self) -> tuple:
         """Get databases names"""
-        databases = ()
         try:
             query = "SHOW DATABASES;"
             databases = tuple(x[0] for x in self._execute_query(query))
             return databases
         except Error as e:
             logger.warning(e)
-            return databases
+            return ()
 
     def databases(self) -> list:
         """List all databases currently available"""
@@ -133,7 +133,7 @@ class MySQL:
             return False
             # Should we set BlockedStatus ?
 
-    def _build_queries(self, credentials: dict, databases: list) -> list:
+    def _build_queries(self, credentials: dict, databases: list) -> str:
         queries = []
         queries.append(self._create_user(credentials))
 
@@ -164,7 +164,7 @@ class MySQL:
         """Creates the query string for flushing privileges in MySQL"""
         return "FLUSH PRIVILEGES;"
 
-    def version(self) -> str:
+    def version(self) -> Union[str, None]:
         """Get MySQLDB version"""
         try:
             query = "SELECT VERSION() as version;"

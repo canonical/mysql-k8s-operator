@@ -21,7 +21,7 @@ class MySQLProvider(Provider):
 
     _stored = StoredState()
 
-    def __init__(self, charm, name, provides):
+    def __init__(self, charm, name: str, provides: dict):
         super().__init__(charm, name, provides)
         self.charm = charm
         self._stored.set_default(consumers={})
