@@ -15,6 +15,7 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.framework import StoredState
+from typing import Union
 
 logger = logging.getLogger(__name__)
 PEER = "mysql"
@@ -143,14 +144,14 @@ class MySQLCharm(CharmBase):
         return provides
 
     @property
-    def mysql_root_password(self) -> str:
+    def mysql_root_password(self) -> Union[str, None]:
         """
         This property return MYSQL_ROOT_PASSWORD from StoredState.
         If the password isn't in StoredState, generates one.
         """
 
         if not self.unit.is_leader():
-            return
+            return None
 
         if "MYSQL_ROOT_PASSWORD" not in self._stored.mysql_setup:
             self._stored.mysql_setup[
@@ -197,7 +198,7 @@ class MySQLCharm(CharmBase):
     def _build_pod_spec(self) -> dict:
         """This method builds the pod_spec"""
         if not self.unit.is_leader():
-            return
+            return {}
 
         try:
             self.unit.status = WaitingStatus("Fetching image information")
