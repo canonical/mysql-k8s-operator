@@ -9,7 +9,7 @@ from fakes import MySQLCharm, METADATA, PROVIDER_META, CONFIG, CONFIG_YAML
 
 
 class TestMySQLProvider(unittest.TestCase):
-    def setup_harness(self, config, meta):
+    def setup_harness(self, config: dict, meta: dict) -> None:
         config_yaml = CONFIG_YAML.format(**config)
         meta_yaml = PROVIDER_META.format(**meta)
         self.harness = Harness(MySQLCharm, meta=meta_yaml, config=config_yaml)
