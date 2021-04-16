@@ -32,7 +32,7 @@ class MySQLConsumer(Consumer):
         Returns:
             list: list of database names
         """
-        rel_id = super().stored.relation_id
+        rel_id = super()._stored.relation_id
         if rel_id:
             rel = self.framework.model.get_relation(self.relation_name, rel_id)
         else:
@@ -51,7 +51,7 @@ class MySQLConsumer(Consumer):
         if not self.charm.unit.is_leader():
             return
 
-        rel_id = super().stored.relation_id
+        rel_id = super()._stored.relation_id
         if rel_id:
             rel = self.framework.model.get_relation(self.relation_name, rel_id)
         else:
