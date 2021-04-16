@@ -146,13 +146,13 @@ class MySQL:
 
     def _create_user(self, credentials: dict) -> str:
         """Creates the query string for creating user in MySQL"""
-        return "CREATE USER '{}'@'%' IDENTIFIED BY '{}';".format(
+        return "CREATE USER IF NOT EXISTS '{}'@'%' IDENTIFIED BY '{}';".format(
             credentials["username"], credentials["password"]
         )
 
     def _create_database(self, database: str) -> str:
         """Creates the query string for creating database in MySQL"""
-        return "CREATE DATABASE {};".format(database)
+        return f"CREATE DATABASE {database};"
 
     def _grant_privileges(self, credentials: dict, database: str) -> str:
         """Creates the query string for granting privileges in MySQL"""
