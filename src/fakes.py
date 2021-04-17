@@ -59,7 +59,6 @@ class MySQL:
     def __init__(self, charm):
         self.charm = charm
 
-    @property
     def databases(self):
         """Fake method"""
         dbs = self.charm.model.config["available_dbs"]
