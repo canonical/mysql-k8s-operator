@@ -198,7 +198,7 @@ class TestMySQLServer(unittest.TestCase):
 
     def test__build_remove_user_query(self):
         username = "DiegoArmando"
-        expected_query = f"DROP USER '{username}'@'%';"
+        expected_query = f"DROP USER IF EXISTS `{username}`;"
         self.assertEqual(
             expected_query, self.mysql._build_remove_user_query(username)
         )
