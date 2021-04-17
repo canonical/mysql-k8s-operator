@@ -119,7 +119,7 @@ class MySQL:
     def _build_drop_databases_query(self, databases: list) -> str:
         queries = []
         for database in databases:
-            queries.append(f"DROP DATABASE {database};")
+            queries.append(f"DROP DATABASE `{database}`;")
 
         return "\n".join(queries)
 
