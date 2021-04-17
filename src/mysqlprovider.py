@@ -82,18 +82,10 @@ class MySQLProvider(Provider):
             )
 
     def _on_database_relation_broken(self, event):
-        rel_id = event.relation.id
-        databases = json.loads(
-            event.relation.data[self.charm.app]["databases"]
-        )
-
-        if rel_id in self._stored.consumers:
-            creds = self.credentials(rel_id)
-            self.charm.mysql.remove_user(creds["username"])
-            _ = self._stored.consumers.pop(rel_id)
-
         if self.charm.model.config["autodelete"]:
-            self.charm.mysql.drop_databases(databases)
+            data = json.loads(event.relation.data[self.charm.app].get("data"))
+            self.charm.mysql.drop_databases(data["databases"])
+            self.charm.mysql.drop_user(data["credentials"]["username"])
 
     def is_new_relation(self, rel_id) -> bool:
         if rel_id in self._stored.consumers:
