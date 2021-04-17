@@ -111,7 +111,10 @@ class TestMySQLServer(unittest.TestCase):
             "username": "DiegoArmando",
             "password": "LaPelotaNoSeMancha10!",
         }
-        expected_query1 = "CREATE USER 'DiegoArmando'@'%' IDENTIFIED BY 'LaPelotaNoSeMancha10!';"
+        expected_query1 = (
+            "CREATE USER IF NOT EXISTS 'DiegoArmando'@'%'"
+            " IDENTIFIED BY 'LaPelotaNoSeMancha10!';"
+        )
         query1 = self.mysql._create_user(credentials1)
         self.assertEqual(expected_query1, query1)
 
@@ -180,7 +183,8 @@ class TestMySQLServer(unittest.TestCase):
         }
         databases = ["Heaven", "Hell"]
         expected_queries = [
-            "CREATE USER 'DiegoArmando'@'%' IDENTIFIED BY 'LaPelotaNoSeMancha10!';",
+            "CREATE USER IF NOT EXISTS 'DiegoArmando'@'%'"
+            " IDENTIFIED BY 'LaPelotaNoSeMancha10!';",
             "CREATE DATABASE Heaven;",
             "GRANT ALL PRIVILEGES ON Heaven.* TO 'DiegoArmando'@'%';",
             "CREATE DATABASE Hell;",
@@ -201,7 +205,7 @@ class TestMySQLServer(unittest.TestCase):
 
     def test__build_drop_databases_query(self):
         databases = ["Segurola", "Habana"]
-        expected_query = "DROP DATABASE Segurola;\nDROP DATABASE Habana;"
+        expected_query = "DROP DATABASE `Segurola`;\nDROP DATABASE `Habana`;"
         self.assertEqual(
             expected_query, self.mysql._build_drop_databases_query(databases)
         )

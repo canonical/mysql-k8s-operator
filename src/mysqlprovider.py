@@ -43,11 +43,13 @@ class MySQLProvider(Provider):
     def _on_database_relation_joined(self, event):
         rel_id = event.relation.id
         creds = self.credentials(rel_id)
-        self.charm.mysql.new_user(creds)
-        hostname = self.charm.hostname
-        event.relation.data[self.charm.app]["username"] = creds["username"]
-        event.relation.data[self.charm.app]["password"] = creds["password"]
-        event.relation.data[self.charm.app]["hostname"] = hostname
+        creds["hostname"] = self.charm.hostname
+        self.charm.mysql.new_dbs_and_user(creds, ["db_de_prueba"])  # FIXME
+        data = {
+            "credentials": creds,
+            "databases": self.charm.mysql.databases,
+        }
+        event.relation.data[self.charm.app]["data"] = json.dumps(data)
 
     def _on_database_relation_changed(self, event):
         """Ensure total number of databases requested are available"""
@@ -113,4 +115,4 @@ class MySQLProvider(Provider):
 
     def new_username(self, rel_id) -> str:
         """Return username based in relation id"""
-        return f"user-{rel_id}"
+        return f"user_{rel_id}"
