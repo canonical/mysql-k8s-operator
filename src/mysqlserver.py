@@ -119,9 +119,25 @@ class MySQL:
     def _build_drop_databases_query(self, databases: list) -> str:
         queries = []
         for database in databases:
-            queries.append(f"DROP DATABASE `{database}`;")
+            queries.append(f"DROP DATABASE IF EXISTS `{database}`;")
+            logger.debug("Generating query to drop database: %s", database)
 
         return "\n".join(queries)
+
+    def drop_user(self, username: str) -> bool:
+        try:
+            queries = self._build_drop_user_query(username)
+            self._execute_query(queries)
+            return True
+        except Error as e:
+            logger.error(e)
+            return False
+            # Should we set BlockedStatus ?
+
+    def _build_drop_user_query(self, username: str) -> str:
+        query = f"DROP USER IF EXISTS `{username}`;"
+        logger.debug("Generating query to drop user: %s", username)
+        return query
 
     def new_dbs_and_user(self, credentials: dict, databases: list) -> bool:
         try:
