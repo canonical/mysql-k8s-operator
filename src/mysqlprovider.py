@@ -47,7 +47,7 @@ class MySQLProvider(Provider):
         self.charm.mysql.new_dbs_and_user(creds, ["db_de_prueba"])  # FIXME
         data = {
             "credentials": creds,
-            "databases": self.charm.mysql.databases,
+            "databases": self.charm.mysql.databases(),
         }
         event.relation.data[self.charm.app]["data"] = json.dumps(data)
 
@@ -61,7 +61,7 @@ class MySQLProvider(Provider):
         dbs = data.get("databases")
         dbs_requested = json.loads(dbs) if dbs else []
         logger.debug("SERVER REQUEST DB %s", dbs_requested)
-        dbs_available = self.charm.mysql.databases
+        dbs_available = self.charm.mysql.databases()
         logger.debug("SERVER AVAILABLE DB %s", dbs_available)
         missing = None
 
