@@ -85,7 +85,7 @@ class MySQLProvider(Provider):
         if self.charm.model.config["autodelete"]:
             data = json.loads(event.relation.data[self.charm.app].get("data"))
             self.charm.mysql.drop_databases(data["databases"])
-            self.charm.mysql.drop_user(data["credentials"]["username"])
+            self.charm.mysql.remove_user(data["credentials"]["username"])
 
     def is_new_relation(self, rel_id) -> bool:
         if rel_id in self._stored.consumers:
