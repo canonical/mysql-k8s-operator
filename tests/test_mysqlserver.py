@@ -205,7 +205,7 @@ class TestMySQLServer(unittest.TestCase):
 
     def test__build_drop_databases_query(self):
         databases = ["Segurola", "Habana"]
-        expected_query = "DROP DATABASE `Segurola`;\nDROP DATABASE `Habana`;"
+        expected_query = "DROP DATABASE IF EXISTS `Segurola`;\nDROP DATABASE IF EXISTS `Habana`;"
         self.assertEqual(
             expected_query, self.mysql._build_drop_databases_query(databases)
         )
