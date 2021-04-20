@@ -95,7 +95,7 @@ class MySQL:
 
     def drop_user(self, username: str) -> bool:
         try:
-            query = self._build_remove_user_query(username)
+            query = self._build_drop_user_query(username)
             self._execute_query(query)
             return True
         except Error as e:
@@ -103,7 +103,7 @@ class MySQL:
             return False
             # Should we set BlockedStatus ?
 
-    def _build_remove_user_query(self, username: str) -> str:
+    def _build_drop_user_query(self, username: str) -> str:
         query = f"DROP USER IF EXISTS `{username}`;"
         logger.debug("Generating query to drop user: %s", username)
         return query
