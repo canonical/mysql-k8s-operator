@@ -93,7 +93,7 @@ class MySQL:
             return False
             # Should we set BlockedStatus ?
 
-    def remove_user(self, username: str) -> bool:
+    def drop_user(self, username: str) -> bool:
         try:
             query = self._build_remove_user_query(username)
             self._execute_query(query)
