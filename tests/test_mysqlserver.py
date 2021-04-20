@@ -196,11 +196,11 @@ class TestMySQLServer(unittest.TestCase):
             self.mysql._build_queries(credentials, databases),
         )
 
-    def test__build_remove_user_query(self):
+    def test__build_drop_user_query(self):
         username = "DiegoArmando"
         expected_query = f"DROP USER IF EXISTS `{username}`;"
         self.assertEqual(
-            expected_query, self.mysql._build_remove_user_query(username)
+            expected_query, self.mysql._build_drop_user_query(username)
         )
 
     def test__build_drop_databases_query(self):
@@ -211,19 +211,19 @@ class TestMySQLServer(unittest.TestCase):
         )
 
     @patch("mysqlserver.MySQL._execute_query")
-    def test_remove_user(self, mock__execute_query):
+    def test_drop_user(self, mock__execute_query):
         returned_value = []
         mock__execute_query.return_value = returned_value
         username = "DiegoArmando"
         self.assertTrue(
-            self.mysql.remove_user(username),
+            self.mysql.drop_user(username),
         )
 
     @patch("mysqlserver.MySQL._execute_query")
-    def test_remove_user_exception(self, mock__execute_query):
+    def test_drop_user_exception(self, mock__execute_query):
         mock__execute_query.side_effect = Error
         username = "DiegoArmando"
-        self.assertFalse(self.mysql.remove_user(username))
+        self.assertFalse(self.mysql.drop_user(username))
 
     @patch("mysqlserver.MySQL._execute_query")
     def test_drop_databases(self, mock__execute_query):
