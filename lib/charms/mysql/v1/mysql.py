@@ -57,8 +57,8 @@ class MySQLConsumer(Consumer):
         else:
             rel = self.framework.model.get_relation(self.relation_name)
 
-        rid = uuid.uuid4()
-        db_name = "db-{}-{}".format(rel.rid, rid)
+        rid = str(uuid.uuid4()).split("-")[-1]
+        db_name = "db_{}_{}".format(rel.id, rid)
         logger.debug("CLIENT REQUEST %s", db_name)
         rel_data = rel.data[self.charm.app]
         dbs = rel_data.get('databases')

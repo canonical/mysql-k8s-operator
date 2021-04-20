@@ -41,14 +41,14 @@ class MySQLProvider(Provider):
     #               RELATIONS                    #
     ##############################################
     def _on_database_relation_joined(self, event):
+        if not self.charm.unit.is_leader():
+            return
+
         rel_id = event.relation.id
         creds = self.credentials(rel_id)
         creds["hostname"] = self.charm.hostname
-        self.charm.mysql.new_dbs_and_user(creds, ["db_de_prueba"])  # FIXME
-        data = {
-            "credentials": creds,
-            "databases": self.charm.mysql.databases(),
-        }
+        self.charm.mysql.new_user(creds)
+        data = {"credentials": creds}
         event.relation.data[self.charm.app]["data"] = json.dumps(data)
 
     def _on_database_relation_changed(self, event):
@@ -82,10 +82,19 @@ class MySQLProvider(Provider):
             )
 
     def _on_database_relation_broken(self, event):
-        if self.charm.model.config["autodelete"]:
-            data = json.loads(event.relation.data[self.charm.app].get("data"))
-            self.charm.mysql.drop_databases(data["databases"])
-            self.charm.mysql.remove_user(data["credentials"]["username"])
+        if not self.charm.unit.is_leader():
+            return
+
+        rel_id = event.relation.id
+        databases = json.loads(event.relation.data[self.charm.app].get("databases"))
+
+        if rel_id in self._stored.consumers:
+            creds = self.credentials(rel_id)
+            self.charm.mysql.drop_user(creds["username"])
+            _ = self._stored.consumers.pop(rel_id)
+
+        if self.charm.model.config['autodelete']:
+            self.charm.mysql.drop_databases(databases)
 
     def is_new_relation(self, rel_id) -> bool:
         if rel_id in self._stored.consumers:
