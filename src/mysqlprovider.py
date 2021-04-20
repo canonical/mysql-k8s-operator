@@ -86,14 +86,16 @@ class MySQLProvider(Provider):
             return
 
         rel_id = event.relation.id
-        databases = json.loads(event.relation.data[self.charm.app].get("databases"))
+        databases = json.loads(
+            event.relation.data[self.charm.app].get("databases")
+        )
 
         if rel_id in self._stored.consumers:
             creds = self.credentials(rel_id)
             self.charm.mysql.drop_user(creds["username"])
             _ = self._stored.consumers.pop(rel_id)
 
-        if self.charm.model.config['autodelete']:
+        if self.charm.model.config["autodelete"]:
             self.charm.mysql.drop_databases(databases)
 
     def is_new_relation(self, rel_id) -> bool:
