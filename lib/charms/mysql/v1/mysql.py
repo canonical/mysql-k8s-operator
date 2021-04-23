@@ -21,6 +21,7 @@ class MySQLConsumer(Consumer):
     """
     MySQLConsumer lib class
     """
+
     def __init__(self, charm, name, consumes, multi=False):
         super().__init__(charm, name, consumes, multi)
         self.charm = charm
@@ -32,14 +33,11 @@ class MySQLConsumer(Consumer):
         Returns:
             list: list of database names
         """
-        rel_id = super()._stored.relation_id
-        if rel_id:
-            rel = self.framework.model.get_relation(self.relation_name, rel_id)
-        else:
-            rel = self.framework.model.get_relation(self.relation_name)
-
+        rel = self.framework.model.get_relation(
+            self.relation_name, super()._stored.relation_id
+        )
         relation_data = rel.data[rel.app]
-        dbs = relation_data.get('databases')
+        dbs = relation_data.get("databases")
         databases = json.loads(dbs) if dbs else []
 
         return databases
@@ -61,7 +59,7 @@ class MySQLConsumer(Consumer):
         db_name = "db_{}_{}".format(rel.id, rid)
         logger.debug("CLIENT REQUEST %s", db_name)
         rel_data = rel.data[self.charm.app]
-        dbs = rel_data.get('databases')
+        dbs = rel_data.get("databases")
         dbs = json.loads(dbs) if dbs else []
         dbs.append(db_name)
-        rel.data[self.charm.app]['databases'] = json.dumps(dbs)
+        rel.data[self.charm.app]["databases"] = json.dumps(dbs)
