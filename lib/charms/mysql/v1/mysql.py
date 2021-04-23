@@ -27,33 +27,28 @@ class MySQLConsumer(Consumer):
         self.charm = charm
         self.relation_name = name
 
-    def databases(self) -> list:
+    def databases(self, rel_id=None) -> list:
         """
         List of currently available databases
         Returns:
             list: list of database names
         """
-        rel = self.framework.model.get_relation(
-            self.relation_name, super()._stored.relation_id
-        )
+
+        rel = self.framework.model.get_relation(self.relation_name, rel_id)
         relation_data = rel.data[rel.app]
         dbs = relation_data.get("databases")
         databases = json.loads(dbs) if dbs else []
 
         return databases
 
-    def new_database(self):
+    def new_database(self, rel_id=None):
         """
         Request creation of an additional database
         """
         if not self.charm.unit.is_leader():
             return
 
-        rel_id = super()._stored.relation_id
-        if rel_id:
-            rel = self.framework.model.get_relation(self.relation_name, rel_id)
-        else:
-            rel = self.framework.model.get_relation(self.relation_name)
+        rel = self.framework.model.get_relation(self.relation_name, rel_id)
 
         rid = str(uuid.uuid4()).split("-")[-1]
         db_name = "db_{}_{}".format(rel.id, rid)
