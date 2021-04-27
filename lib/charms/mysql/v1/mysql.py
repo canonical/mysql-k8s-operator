@@ -9,7 +9,7 @@ MySQLConsumer lib
 import json
 import uuid
 import logging
-from ops.relation import Consumer
+from ops.relation import ConsumerBase
 
 LIBID = "abcdef1234"  # Will change when uploding the charm to charmhub
 LIBAPI = 1
@@ -17,7 +17,7 @@ LIBPATCH = 0
 logger = logging.getLogger(__name__)
 
 
-class MySQLConsumer(Consumer):
+class MySQLConsumer(ConsumerBase):
     """
     MySQLConsumer lib class
     """

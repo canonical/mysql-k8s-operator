@@ -112,7 +112,7 @@ class MySQLCharm(CharmBase):
     def _provide_mysql(self) -> None:
         if self._stored.mysql_initialized:
             self.mysql_provider = MySQLProvider(
-                self, "database", self.provides
+                self, "database", "mysql", self.mysql.version()
             )
             self.mysql_provider.ready()
             logger.info("MySQL Provider is available")
@@ -136,14 +136,6 @@ class MySQLCharm(CharmBase):
         """Unit hostname"""
         unit_id = self.unit.name.split("/")[1]
         return "{0}-{1}.{0}-endpoints".format(self.model.app.name, unit_id)
-
-    @property
-    def provides(self) -> dict:
-        """Provides dictionary"""
-        provides = {
-            "provides": {"mysql": self.mysql.version()},
-        }
-        return provides
 
     @property
     def mysql_root_password(self) -> Union[str, None]:
