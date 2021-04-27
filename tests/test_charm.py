@@ -110,20 +110,6 @@ class TestCharm(unittest.TestCase):
             self.harness.charm._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
         )
 
-    def test_charm_provides_property(self):
-        with patch("charm.MySQLCharm.mysql") as mock_version:
-            VERSION = "mysql 8.0.22"
-            mock_version.return_value = VERSION
-            MySQLCharm.mysql.version = mock_version
-            self.assertTrue(isinstance(self.harness.charm.provides, dict))
-            self.assertTrue("provides" in self.harness.charm.provides)
-            self.assertTrue(
-                isinstance(self.harness.charm.provides["provides"], dict)
-            )
-            self.assertEqual(
-                self.harness.charm.provides["provides"]["mysql"], VERSION
-            )
-
     def test__on_start(self):
         # Checking the _on_start method when the unit is not leader
         self.harness.set_leader(False)

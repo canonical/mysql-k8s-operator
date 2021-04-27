@@ -9,20 +9,20 @@ import logging
 
 from mysqlserver import MySQL
 from ops.framework import StoredState
-from ops.relation import Provider
+from ops.relation import ProviderBase
 
 logger = logging.getLogger(__name__)
 
 
-class MySQLProvider(Provider):
+class MySQLProvider(ProviderBase):
     """
     MySQLProvider class
     """
 
     _stored = StoredState()
 
-    def __init__(self, charm, name: str, provides: dict):
-        super().__init__(charm, name, provides)
+    def __init__(self, charm, name: str, service: str, version: str):
+        super().__init__(charm, name, service, version)
         self.charm = charm
         self._stored.set_default(consumers={})
         events = self.charm.on[name]

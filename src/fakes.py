@@ -84,7 +84,10 @@ class MySQLCharm(CharmBase):
         super().__init__(*args)
         self.mysql = MySQL(self)
         self.provider = MySQLProvider(
-            self, self.model.config["relation_name"], self.provides
+            self,
+            self.model.config["relation_name"],
+            "mysql",
+            self.model.config["db_version"],
         )
 
     @property
