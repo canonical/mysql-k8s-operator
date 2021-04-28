@@ -5,23 +5,26 @@ description: |
   MySQL is a widely used, open-source relational database management system (RDBMS).
 summary: |
   Kubernetes charm for MySQL
-series:
-  - kubernetes
-storage:
-  db:
-    type: filesystem
-    location: /var/lib/mysql
-deployment:
-  type: stateful
-provides:
-  database:
-    interface: mysql
+bases:
+    - name: ubuntu
+      channel: 20.04/stable
+containers:
+  mysql:
+    resource: mysql-image
+    mounts:
+      - storage: database
+        location: /var/lib/mysql
 peers:
   mysql:
     interface: mysql
 provides:
   database:
     interface: mysql
+
+storage:
+  database:
+    type: filesystem
+
 resources:
   mysql-image:
     type: oci-image
