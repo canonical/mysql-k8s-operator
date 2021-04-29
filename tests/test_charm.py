@@ -52,26 +52,6 @@ class TestCharm(unittest.TestCase):
             len(self.harness.charm.env_config["MYSQL_ROOT_PASSWORD"]), 20
         )
 
-    def test_pod_spec(self):
-        self.harness.set_leader(True)
-        config_1 = {
-            "MYSQL_ROOT_PASSWORD": "D10S",
-        }
-        self.harness.update_config(config_1)
-        pod_spec = self.harness.charm._build_pod_spec()
-        self.assertEqual(pod_spec["containers"][0]["name"], "mysql")
-        self.assertEqual(
-            pod_spec["containers"][0]["ports"][0]["containerPort"], 3306
-        )
-        self.assertEqual(
-            pod_spec["containers"][0]["ports"][0]["protocol"], "TCP"
-        )
-        self.assertEqual(
-            pod_spec["containers"][0]["envConfig"]["MYSQL_ROOT_PASSWORD"],
-            "D10S",
-        )
-        self.assertEqual(pod_spec["version"], 3)
-
     def test_status(self):
         config_1 = {
             "MYSQL_ROOT_PASSWORD": "D10S",
@@ -177,7 +157,3 @@ class TestCharm(unittest.TestCase):
             self.assertEqual(
                 self.harness.charm.unit.status.message, "MySQL not initialized"
             )
-
-    def test__configure_pod(self):
-        self.assertEqual(self.harness.charm.on.config_changed.emit(), None)
-        self.assertEqual(type(self.harness.charm.unit.status), ActiveStatus)
