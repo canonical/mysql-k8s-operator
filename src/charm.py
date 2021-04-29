@@ -75,9 +75,9 @@ class MySQLCharm(CharmBase):
                 "mysql": {
                     "override": "replace",
                     "summary": "mysql daemon",
-                    "command": "mysqld",
+                    "command": "/usr/sbin/mysqld",
                     "startup": "enabled",
-                }
+                },
             },
         }
 
