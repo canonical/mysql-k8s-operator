@@ -6,12 +6,11 @@ import logging
 
 from mysqlprovider import MySQLProvider
 from mysqlserver import MySQL
-from oci_image import OCIImageResource, OCIImageResourceError
+from oci_image import OCIImageResource
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import (
     ActiveStatus,
-    BlockedStatus,
     MaintenanceStatus,
     ModelError,
     WaitingStatus,
@@ -231,82 +230,6 @@ class MySQLCharm(CharmBase):
             env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
 
         return env_config
-
-    def _configure_pod(self):
-        """Configure the K8s pod spec for MySQL."""
-        if not self.unit.is_leader():
-            self.unit.status = ActiveStatus()
-            return
-
-        spec = self._build_pod_spec()
-        if not spec:
-            return
-        self.model.pod.set_spec(spec)
-        self.unit.status = ActiveStatus()
-
-    def _build_pod_spec(self) -> dict:
-        """This method builds the pod_spec"""
-        if not self.unit.is_leader():
-            return {}
-
-        try:
-            self.unit.status = WaitingStatus("Fetching image information")
-            image_info = self.image.fetch()
-        except OCIImageResourceError:
-            logging.exception(
-                "An error occurred while fetching the image info"
-            )
-            self.unit.status = BlockedStatus(
-                "Error fetching image information"
-            )
-            return {}
-
-        config = self.model.config
-        self.unit.status = WaitingStatus("Assembling pod spec")
-
-        pod_spec = {
-            "version": 3,
-            "containers": [
-                {
-                    "name": self.app.name,
-                    "imageDetails": image_info,
-                    "ports": [
-                        {"containerPort": config["port"], "protocol": "TCP"}
-                    ],
-                    "envConfig": self.env_config,
-                    "kubernetes": {
-                        "readinessProbe": {
-                            "exec": {
-                                "command": [
-                                    "mysqladmin",
-                                    "ping",
-                                    "-u",
-                                    "root",
-                                    "-p$(echo $MYSQL_ROOT_PASSWORD)",
-                                ]
-                            },
-                            "initialDelaySeconds": 20,
-                            "periodSeconds": 5,
-                        },
-                        "livenessProbe": {
-                            "exec": {
-                                "command": [
-                                    "mysqladmin",
-                                    "ping",
-                                    "-u",
-                                    "root",
-                                    "-p$(echo $MYSQL_ROOT_PASSWORD)",
-                                ]
-                            },
-                            "initialDelaySeconds": 30,
-                            "periodSeconds": 10,
-                        },
-                    },
-                }
-            ],
-        }
-
-        return pod_spec
 
 
 if __name__ == "__main__":
