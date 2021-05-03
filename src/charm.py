@@ -74,8 +74,11 @@ class MySQLCharm(CharmBase):
                 "mysql": {
                     "override": "replace",
                     "summary": "mysql daemon",
-                    "command": "/usr/sbin/mysqld",
+                    "command": "docker-entrypoint.sh mysqld",
                     "startup": "enabled",
+                    "environment": {
+                        "MYSQL_ROOT_PASSWORD": self.mysql_root_password,
+                    },
                 },
             },
         }
