@@ -181,5 +181,4 @@ class MySQL:
     def new_password(length: int = 16) -> str:
         """Generates a password"""
         choices = string.ascii_letters + string.digits
-        pwd = "".join([secrets.choice(choices) for i in range(length)])
-        return pwd
+        return "".join([secrets.choice(choices) for i in range(length)])
