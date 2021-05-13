@@ -11,7 +11,6 @@ from ops.charm import CharmBase
 from ops.main import main
 from ops.model import (
     ActiveStatus,
-    MaintenanceStatus,
     ModelError,
     WaitingStatus,
 )
@@ -56,13 +55,9 @@ class MySQLCharm(CharmBase):
             self.unit.status = ActiveStatus()
             return
 
-        self.unit.status = MaintenanceStatus("Setting up containers.")
+        self.unit.status = WaitingStatus("Setting up containers.")
         container = event.workload
-        layer = self._mysql_layer()
-        container.add_layer("mysql", layer, combine=True)
-        container.autostart()
-        self.app.status = ActiveStatus()
-        self.unit.status = ActiveStatus()
+        container.add_layer("mysql", self._mysql_layer(), combine=True)
 
     def _mysql_layer(self):
         """Construct the pebble layer"""
@@ -73,12 +68,10 @@ class MySQLCharm(CharmBase):
             "services": {
                 "mysql": {
                     "override": "replace",
-                    "summary": "mysql daemon",
+                    "summary": "mysql service",
                     "command": "docker-entrypoint.sh mysqld",
                     "startup": "enabled",
-                    "environment": {
-                        "MYSQL_ROOT_PASSWORD": self.mysql_root_password,
-                    },
+                    "environment": self.env_config,
                 },
             },
         }
@@ -101,7 +94,7 @@ class MySQLCharm(CharmBase):
             ] = event.relation.data[event.app]["MYSQL_ROOT_PASSWORD"]
             logger.info("Storing MYSQL_ROOT_PASSWORD in StoredState")
 
-    def _on_config_changed(self, event):
+    def _on_config_changed(self, _):
         """Set a new Juju pod specification"""
         logger.info("Handling config changed")
         container = self.unit.get_container("mysql")
@@ -143,6 +136,7 @@ class MySQLCharm(CharmBase):
         self._on_update_status(event)
         self._stored.mysql_initialized = True
         self.unit.status = ActiveStatus()
+        self.app.status = ActiveStatus()
 
     # Handles update-status event
     def _on_update_status(self, event):
@@ -152,6 +146,7 @@ class MySQLCharm(CharmBase):
         - MySQL is not Initialized
         - Unit is active
         """
+
         if not self.unit.is_leader():
             self.unit.status = ActiveStatus()
             return
@@ -181,7 +176,7 @@ class MySQLCharm(CharmBase):
         """Returns MySQL object"""
         mysql_config = {
             "app_name": self.model.app.name,
-            "host": self.hostname,
+            "host": self.unit_ip,
             "port": self.model.config["port"],
             "user_name": "root",
             "mysql_root_password": self.mysql_root_password,
@@ -189,10 +184,9 @@ class MySQLCharm(CharmBase):
         return MySQL(mysql_config)
 
     @property
-    def hostname(self) -> str:
-        """Unit hostname"""
-        unit_id = self.unit.name.split("/")[1]
-        return "{0}-{1}.{0}-endpoints".format(self.model.app.name, unit_id)
+    def unit_ip(self) -> str:
+        """Returns unit's IP"""
+        return str(self.model.get_binding(PEER).network.bind_address)
 
     @property
     def mysql_root_password(self) -> Union[str, None]:
