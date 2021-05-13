@@ -8,6 +8,7 @@ import unittest
 from ops.testing import Harness
 from ops.model import (
     ActiveStatus,
+    MaintenanceStatus,
     WaitingStatus,
 )
 from charm import MySQLCharm
@@ -58,7 +59,10 @@ class TestCharm(unittest.TestCase):
         }
         self.harness.set_leader(True)
         self.harness.update_config(config_1)
-        self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
+        self.assertEqual(
+            self.harness.charm.unit.status,
+            MaintenanceStatus(""),
+        )
 
     def test_default_configs(self):
         config = self.harness.model.config
@@ -90,7 +94,9 @@ class TestCharm(unittest.TestCase):
             self.harness.charm._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
         )
 
-    def test__on_start(self):
+    @patch("charm.MySQLCharm.unit_ip")
+    def test__on_start(self, mock_unit_ip):
+        mock_unit_ip.return_value = "10.0.0.1"
         # Checking the _on_start method when the unit is not leader
         self.harness.set_leader(False)
         self.assertEqual(self.harness.charm.on.start.emit(), None)
@@ -126,7 +132,10 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(type(self.harness.charm.unit.status), ActiveStatus)
         self.assertEqual(self.harness.charm.unit.status.message, "")
 
-    def test__update_status_unit_is_leader_mysql_is_ready(self):
+    @patch("charm.MySQLCharm.unit_ip")
+    def test__update_status_unit_is_leader_mysql_is_ready(self, mock_unit_ip):
+        mock_unit_ip.return_value = "10.0.0.1"
+
         with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
             mock_is_ready.return_value = False
             self.harness.set_leader(True)
@@ -142,7 +151,12 @@ class TestCharm(unittest.TestCase):
                 self.harness.charm.unit.status.message, "MySQL not ready yet"
             )
 
-    def test__update_status_unit_is_leader_mysql_not_initialized(self):
+    @patch("charm.MySQLCharm.unit_ip")
+    def test__update_status_unit_is_leader_mysql_not_initialized(
+        self, mock_unit_ip
+    ):
+        mock_unit_ip.return_value = "10.0.0.1"
+
         with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
             self.harness.set_leader(True)
             mock_is_ready.return_value = True
