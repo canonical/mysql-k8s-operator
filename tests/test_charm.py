@@ -8,7 +8,6 @@ import unittest
 from ops.testing import Harness
 from ops.model import (
     ActiveStatus,
-    MaintenanceStatus,
     WaitingStatus,
 )
 from charm import MySQLCharm
@@ -61,7 +60,7 @@ class TestCharm(unittest.TestCase):
         self.harness.update_config(config_1)
         self.assertEqual(
             self.harness.charm.unit.status,
-            MaintenanceStatus(""),
+            WaitingStatus("Setting up containers."),
         )
 
     def test_default_configs(self):
@@ -70,13 +69,13 @@ class TestCharm(unittest.TestCase):
         self.assertTrue("MYSQL_ROOT_PASSWORD" in config)
         self.assertEqual(config["MYSQL_ROOT_PASSWORD"], "")
 
-    def test_ony_leader_can_configure_root_password(self):
+    def test_root_password_sent_via_config(self):
         self.harness.set_leader(False)
         config = {
             "MYSQL_ROOT_PASSWORD": "Diego!",
         }
         self.harness.update_config(config)
-        self.assertNotIn(
+        self.assertIn(
             "MYSQL_ROOT_PASSWORD", self.harness.charm._stored.mysql_setup
         )
 
