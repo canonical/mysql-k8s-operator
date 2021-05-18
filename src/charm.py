@@ -218,7 +218,7 @@ class MySQLCharm(CharmBase):
 
     @property
     def env_config(self) -> dict:
-        """Return the env_config for the Kubernetes pod_spec"""
+        """Return the env_config for pebble layer"""
         config = self.model.config
         env_config = {}
         env_config["MYSQL_ROOT_PASSWORD"] = self.mysql_root_password
