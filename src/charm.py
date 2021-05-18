@@ -71,7 +71,6 @@ class MySQLCharm(CharmBase):
             "MYSQL_ROOT_PASSWORD"
         ] = self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
         logger.info("Storing MYSQL_ROOT_PASSWORD in relation data")
-        # logger.warning(event.relation.data[event.app]["MYSQL_ROOT_PASSWORD"])
 
     def _on_peer_relation_changed(self, event):
         if event.relation.data[event.app].get("MYSQL_ROOT_PASSWORD"):
@@ -79,7 +78,6 @@ class MySQLCharm(CharmBase):
                 "MYSQL_ROOT_PASSWORD"
             ] = event.relation.data[event.app]["MYSQL_ROOT_PASSWORD"]
             logger.info("Storing MYSQL_ROOT_PASSWORD in StoredState")
-            # logger.warning(self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"])
 
     def _on_config_changed(self, event):
         """Set a new Juju pod specification"""
