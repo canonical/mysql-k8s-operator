@@ -30,12 +30,9 @@ class MySQLCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self._stored.set_default(mysql_setup={})
+        self._stored.set_default(mysql_setup={"MYSQL_ROOT_PASSWORD": False})
         self._stored.set_default(mysql_initialized=False)
         self.image = OCIImageResource(self, "mysql-image")
-        self.framework.observe(
-            self.on.mysql_pebble_ready, self._setup_pebble_layers
-        )
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(
@@ -46,18 +43,6 @@ class MySQLCharm(CharmBase):
         )
         self.framework.observe(self.on.update_status, self._on_update_status)
         self._provide_mysql()
-
-    def _setup_pebble_layers(self, event):
-        """Setup a new Prometheus pod specification"""
-        logger.debug("Configuring Pod...")
-
-        if not self.unit.is_leader():
-            self.unit.status = ActiveStatus()
-            return
-
-        self.unit.status = WaitingStatus("Setting up containers.")
-        container = event.workload
-        container.add_layer("mysql", self._mysql_layer(), combine=True)
 
     def _mysql_layer(self):
         """Construct the pebble layer"""
@@ -82,10 +67,11 @@ class MySQLCharm(CharmBase):
         if not self.unit.is_leader():
             return
 
-        event.relation.data[event.app][
+        event.relation.data[self.app][
             "MYSQL_ROOT_PASSWORD"
         ] = self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
         logger.info("Storing MYSQL_ROOT_PASSWORD in relation data")
+        # logger.warning(event.relation.data[event.app]["MYSQL_ROOT_PASSWORD"])
 
     def _on_peer_relation_changed(self, event):
         if event.relation.data[event.app].get("MYSQL_ROOT_PASSWORD"):
@@ -93,9 +79,20 @@ class MySQLCharm(CharmBase):
                 "MYSQL_ROOT_PASSWORD"
             ] = event.relation.data[event.app]["MYSQL_ROOT_PASSWORD"]
             logger.info("Storing MYSQL_ROOT_PASSWORD in StoredState")
+            # logger.warning(self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"])
 
-    def _on_config_changed(self, _):
+    def _on_config_changed(self, event):
         """Set a new Juju pod specification"""
+        self.unit.status = WaitingStatus("Setting up containers.")
+        container = self.unit.get_container("mysql")
+
+        try:
+            container.add_layer("mysql", self._mysql_layer(), combine=True)
+        except Exception as e:
+            # FIXME: Use a custom Exception
+            logger.debug(e)
+            event.defer()
+
         logger.info("Handling config changed")
         container = self.unit.get_container("mysql")
 
@@ -191,33 +188,42 @@ class MySQLCharm(CharmBase):
     @property
     def mysql_root_password(self) -> Union[str, None]:
         """
-        This property return MYSQL_ROOT_PASSWORD from StoredState.
+        This property returns MYSQL_ROOT_PASSWORD from the config an
         If the password isn't in StoredState, generates one.
         """
 
-        if not self.unit.is_leader():
-            return None
-
-        if "MYSQL_ROOT_PASSWORD" not in self._stored.mysql_setup:
-            self._stored.mysql_setup[
+        config = self.model.config
+        if config.get("MYSQL_ROOT_PASSWORD"):
+            logger.debug("Getting the root password from config")
+            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = config[
                 "MYSQL_ROOT_PASSWORD"
-            ] = MySQL.new_password(20)
+            ]
+            return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 
-        return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
+        if self.unit.is_leader():
+            if not self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]:
+                self._stored.mysql_setup[
+                    "MYSQL_ROOT_PASSWORD"
+                ] = MySQL.new_password(20)
+                logger.debug("Password generated.")
+
+            return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
+
+        if not self.unit.is_leader():
+            if not self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]:
+                # FIXME: Create a custom Exception
+                raise Exception(
+                    "MySQL root password should be received through relation data"
+                )
+
+            return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 
     @property
     def env_config(self) -> dict:
         """Return the env_config for the Kubernetes pod_spec"""
         config = self.model.config
         env_config = {}
-
-        if config.get("MYSQL_ROOT_PASSWORD"):
-            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = config[
-                "MYSQL_ROOT_PASSWORD"
-            ]
-            env_config["MYSQL_ROOT_PASSWORD"] = config["MYSQL_ROOT_PASSWORD"]
-        else:
-            env_config["MYSQL_ROOT_PASSWORD"] = self.mysql_root_password
+        env_config["MYSQL_ROOT_PASSWORD"] = self.mysql_root_password
 
         if config.get("MYSQL_USER") and config.get("MYSQL_PASSWORD"):
             env_config["MYSQL_USER"] = config["MYSQL_USER"]
