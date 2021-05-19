@@ -5,9 +5,7 @@ description: |
   MySQL is a widely used, open-source relational database management system (RDBMS).
 summary: |
   Kubernetes charm for MySQL
-bases:
-    - name: ubuntu
-      channel: 20.04/stable
+
 containers:
   mysql:
     resource: mysql-image
