@@ -60,7 +60,7 @@ class TestCharm(unittest.TestCase):
         self.harness.update_config(config_1)
         self.assertEqual(
             self.harness.charm.unit.status,
-            WaitingStatus("Setting up containers."),
+            ActiveStatus(),
         )
 
     def test_default_configs(self):
@@ -71,6 +71,16 @@ class TestCharm(unittest.TestCase):
 
     def test_root_password_sent_via_config(self):
         self.harness.set_leader(False)
+        config = {
+            "MYSQL_ROOT_PASSWORD": "Diego!",
+        }
+        self.harness.update_config(config)
+        self.assertIn(
+            "MYSQL_ROOT_PASSWORD", self.harness.charm._stored.mysql_setup
+        )
+
+    def test__on_config_changed(self):
+        self.harness.set_leader(True)
         config = {
             "MYSQL_ROOT_PASSWORD": "Diego!",
         }
