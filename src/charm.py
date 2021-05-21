@@ -11,6 +11,7 @@ from ops.charm import CharmBase
 from ops.main import main
 from ops.model import (
     ActiveStatus,
+    MaintenanceStatus,
     ModelError,
     WaitingStatus,
 )
@@ -47,7 +48,7 @@ class MySQLCharm(CharmBase):
     def _mysql_layer(self):
         """Construct the pebble layer"""
         logger.debug("Building pebble layer")
-        layer = {
+        return {
             "summary": "MySQL layer",
             "description": "Pebble layer configuration for MySQL",
             "services": {
@@ -60,7 +61,6 @@ class MySQLCharm(CharmBase):
                 },
             },
         }
-        return layer
 
     def _on_peer_relation_joined(self, event):
         if not self.unit.is_leader():
@@ -80,10 +80,10 @@ class MySQLCharm(CharmBase):
 
     def _on_config_changed(self, event):
         """Set a new Juju pod specification"""
-        self.unit.status = WaitingStatus("Setting up containers.")
+        self.unit.status = MaintenanceStatus("Setting up containers.")
         needs_restart = False
         container = self.unit.get_container(PEER)
-        plan = container.get_plan().to_dict()
+        services = container.get_plan().to_dict().get("services", {})
 
         try:
             layer = self._mysql_layer()
@@ -93,8 +93,8 @@ class MySQLCharm(CharmBase):
             return
 
         if (
-            len(plan) == 0
-            or plan["services"][PEER]["environment"]
+            not services
+            or services[PEER]["environment"]
             != layer["services"][PEER]["environment"]
         ):
             container.add_layer(PEER, layer, combine=True)
@@ -117,7 +117,6 @@ class MySQLCharm(CharmBase):
             logger.info("Restarted MySQL service")
             self.unit.status = ActiveStatus()
 
-    # Handles start event
     def _on_start(self, event):
         """Initialize MySQL
 
@@ -210,7 +209,7 @@ class MySQLCharm(CharmBase):
                 self._stored.mysql_setup[
                     "MYSQL_ROOT_PASSWORD"
                 ] = MySQL.new_password(20)
-                logger.debug("Password generated.")
+                logger.info("Password generated.")
 
             return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 
