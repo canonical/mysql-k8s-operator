@@ -3,7 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
-
+from custom_exceptions import MySQLRootPasswordError
 from mysqlprovider import MySQLProvider
 from mysqlserver import MySQL
 from oci_image import OCIImageResource
@@ -14,7 +14,7 @@ from ops.model import (
     ModelError,
     WaitingStatus,
 )
-from ops.pebble import ConnectionError
+
 from ops.framework import StoredState
 from typing import Union
 
@@ -60,7 +60,6 @@ class MySQLCharm(CharmBase):
                 },
             },
         }
-
         return layer
 
     def _on_peer_relation_joined(self, event):
@@ -82,32 +81,41 @@ class MySQLCharm(CharmBase):
     def _on_config_changed(self, event):
         """Set a new Juju pod specification"""
         self.unit.status = WaitingStatus("Setting up containers.")
-        container = self.unit.get_container("mysql")
+        needs_restart = False
+        container = self.unit.get_container(PEER)
+        plan = container.get_plan().to_dict()
 
         try:
-            container.add_layer("mysql", self._mysql_layer(), combine=True)
-        except Exception as e:
-            # FIXME: Use a custom Exception
+            layer = self._mysql_layer()
+        except MySQLRootPasswordError as e:
             logger.debug(e)
             event.defer()
-
-        logger.info("Handling config changed")
-        container = self.unit.get_container("mysql")
-
-        try:
-            service = container.get_service("mysql")
-        except ConnectionError:
-            logger.info("Pebble API is not yet ready")
-            return
-        except ModelError:
-            logger.info("MySQL service is not yet ready")
             return
 
-        if service.is_running():
-            container.stop("mysql")
+        if (
+            len(plan) == 0
+            or plan["services"][PEER]["environment"]
+            != layer["services"][PEER]["environment"]
+        ):
+            container.add_layer(PEER, layer, combine=True)
+            needs_restart = True
 
-        container.start("mysql")
-        logger.info("Restarted MySQL service")
+        if needs_restart:
+            try:
+                service = container.get_service("mysql")
+            except ConnectionError:
+                logger.info("Pebble API is not yet ready")
+                return
+            except ModelError:
+                logger.info("MySQL service is not yet ready")
+                return
+
+            if service.is_running():
+                container.stop("mysql")
+
+            container.start("mysql")
+            logger.info("Restarted MySQL service")
+            self.unit.status = ActiveStatus()
 
     # Handles start event
     def _on_start(self, event):
@@ -131,7 +139,6 @@ class MySQLCharm(CharmBase):
         self._on_update_status(event)
         self._stored.mysql_initialized = True
         self.unit.status = ActiveStatus()
-        self.app.status = ActiveStatus()
 
     # Handles update-status event
     def _on_update_status(self, event):
@@ -209,8 +216,7 @@ class MySQLCharm(CharmBase):
 
         if not self.unit.is_leader():
             if not self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]:
-                # FIXME: Create a custom Exception
-                raise Exception(
+                raise MySQLRootPasswordError(
                     "MySQL root password should be received through relation data"
                 )
 

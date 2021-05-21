@@ -180,5 +180,7 @@ class MySQL:
     @staticmethod
     def new_password(length: int = 16) -> str:
         """Generates a password"""
+        # This is a generic function.
+        # It should be placed in ops. See issue: 536
         choices = string.ascii_letters + string.digits
         return "".join([secrets.choice(choices) for i in range(length)])
