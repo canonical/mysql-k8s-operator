@@ -193,8 +193,8 @@ class MySQLCharm(CharmBase):
     @property
     def mysql_root_password(self) -> Union[str, None]:
         """
-        This property returns MYSQL_ROOT_PASSWORD from the config an
-        If the password isn't in StoredState, generates one.
+        This property returns MYSQL_ROOT_PASSWORD from the config,
+        if the password isn't in StoredState, generates one.
         """
 
         config = self.model.config
