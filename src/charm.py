@@ -83,41 +83,12 @@ class MySQLCharm(CharmBase):
     def _on_config_changed(self, event):
         """Set a new Juju pod specification"""
         self.unit.status = MaintenanceStatus("Setting up containers.")
-        needs_restart = False
-        container = self.unit.get_container(PEER)
-        services = container.get_plan().to_dict().get("services", {})
+        self.container = self.unit.get_container(PEER)
+        self.services = self.container.get_plan().to_dict().get("services", {})
+        self._update_layer(event)
 
-        try:
-            layer = self._mysql_layer()
-        except MySQLRootPasswordError as e:
-            logger.debug(e)
-            event.defer()
-            return
-
-        if (
-            not services
-            or services[PEER]["environment"]
-            != layer["services"][PEER]["environment"]
-        ):
-            container.add_layer(PEER, layer, combine=True)
-            needs_restart = True
-
-        if needs_restart:
-            try:
-                service = container.get_service("mysql")
-            except ConnectionError:
-                logger.info("Pebble API is not yet ready")
-                return
-            except ModelError:
-                logger.info("MySQL service is not yet ready")
-                return
-
-            if service.is_running():
-                container.stop("mysql")
-
-            container.start("mysql")
-            logger.info("Restarted MySQL service")
-            self.unit.status = ActiveStatus()
+        if self.needs_restart:
+            self._restart_service()
 
     def _on_start(self, event):
         """Initialize MySQL
@@ -173,6 +144,45 @@ class MySQLCharm(CharmBase):
             )
             self.mysql_provider.ready()
             logger.info("MySQL Provider is available")
+
+    def _update_layer(self, event) -> bool:
+        """Updates layer"""
+        self.needs_restart = False
+
+        try:
+            layer = self._mysql_layer()
+        except MySQLRootPasswordError as e:
+            logger.debug(e)
+            event.defer()
+            return self.needs_restart
+
+        if (
+            not self.services
+            or self.services[PEER]["environment"]
+            != layer["services"][PEER]["environment"]
+        ):
+            self.container.add_layer(PEER, layer, combine=True)
+            self.needs_restart = True
+
+        return self.needs_restart
+
+    def _restart_service(self):
+        """Restarts MySQL Service"""
+        try:
+            service = self.container.get_service(PEER)
+        except ConnectionError:
+            logger.info("Pebble API is not yet ready")
+            return
+        except ModelError:
+            logger.info("MySQL service is not yet ready")
+            return
+
+        if service.is_running():
+            self.container.stop(PEER)
+
+        self.container.start(PEER)
+        logger.info("Restarted MySQL service")
+        self.unit.status = ActiveStatus()
 
     @property
     def mysql(self) -> MySQL:
