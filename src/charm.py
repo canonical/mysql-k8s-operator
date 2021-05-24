@@ -31,8 +31,10 @@ class MySQLCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self._stored.set_default(mysql_setup={"MYSQL_ROOT_PASSWORD": False})
-        self._stored.set_default(mysql_initialized=False)
+        self._stored.set_default(
+            mysql_setup={"MYSQL_ROOT_PASSWORD": False},
+            mysql_initialized=False,
+        )
         self.image = OCIImageResource(self, "mysql-image")
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -196,12 +198,10 @@ class MySQLCharm(CharmBase):
         if the password isn't in StoredState, generates one.
         """
 
-        config = self.model.config
-        if config.get("MYSQL_ROOT_PASSWORD"):
-            logger.debug("Getting the root password from config")
-            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = config[
-                "MYSQL_ROOT_PASSWORD"
-            ]
+        password_from_config = self.config["MYSQL_ROOT_PASSWORD"]
+        if password_from_config:
+            logger.debug("Adding root password from config to stored state")
+            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = password_from_config
             return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 
         if self.unit.is_leader():
@@ -210,16 +210,13 @@ class MySQLCharm(CharmBase):
                     "MYSQL_ROOT_PASSWORD"
                 ] = MySQL.new_password(20)
                 logger.info("Password generated.")
-
-            return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
-
-        if not self.unit.is_leader():
+        else:
             if not self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]:
                 raise MySQLRootPasswordError(
                     "MySQL root password should be received through relation data"
                 )
 
-            return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
+        return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 
     @property
     def env_config(self) -> dict:
