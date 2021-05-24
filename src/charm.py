@@ -201,7 +201,9 @@ class MySQLCharm(CharmBase):
         password_from_config = self.config["MYSQL_ROOT_PASSWORD"]
         if password_from_config:
             logger.debug("Adding root password from config to stored state")
-            self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"] = password_from_config
+            self._stored.mysql_setup[
+                "MYSQL_ROOT_PASSWORD"
+            ] = password_from_config
             return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
 
         if self.unit.is_leader():
