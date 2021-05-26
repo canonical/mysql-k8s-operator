@@ -1,4 +1,4 @@
-# MySQL Operator
+# MySQL Operator for K8s
 
 ![tests](https://github.com/canonical/mysql-operator/actions/workflows/run-tests.yaml/badge.svg)
 
