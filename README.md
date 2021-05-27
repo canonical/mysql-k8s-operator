@@ -11,23 +11,23 @@ The [MySQL](https://www.mysql.com/) operator provides an open-source relational 
 ## Deployment instructions
 
 
-Create a Juju model for your operators, say "mysql"
+Create a Juju model for your operators, say "mysql-k8s"
 
 ```bash
-$ juju add-model mysql
+$ juju add-model mysql-k8s
 ```
 
 Deploy a single unit of MySQL using its default configuration
 
 ```bash
-$ juju deploy ./mysql.charm --resource mysql-image=ubuntu/mysql:latest
+$ juju deploy ./mysql-k8s.charm --resource mysql-image=ubuntu/mysql:latest
 ```
 
 As in this example we did not specify the password for the root user, the charm will generate one, and you can get it executing:
 
 
 ```bash
-$ juju show-unit mysql/0
+$ juju show-unit mysql-k8s/0
 
 ```
 
@@ -37,7 +37,7 @@ The password will be the value for the key `MYSQL_ROOT_PASSWORD`
 If required, you can remove the deployment completely:
 
 ```bash
-$ juju destroy-model -y mysql --no-wait --force --destroy-storage
+$ juju destroy-model -y mysql-k8s --no-wait --force --destroy-storage
 ```
 
 Note the `--destroy-storage` will delete any data stored by MySQL in its persistent store.
@@ -54,7 +54,7 @@ This charm implements the following configs:
 And you can use it, like this:
 
 ```bash
-$  juju deploy ./mysql.charm --config MYSQL_ROOT_PASSWORD=SuperSecretPassword --config MYSQL_USER=JohnDoe --config MYSQL_PASSWORD=SuperSecretUserPassword --config MYSQL_DATABASE=default_database --resource mysql-image=ubuntu/mysql:lates
+$  juju deploy ./mysql-k8s.charm --config MYSQL_ROOT_PASSWORD=SuperSecretPassword --config MYSQL_USER=JohnDoe --config MYSQL_PASSWORD=SuperSecretUserPassword --config MYSQL_DATABASE=default_database --resource mysql-image=ubuntu/mysql:lates
 ```
 
 ### Relations
@@ -66,10 +66,11 @@ This charm provides a `database` relation so you can integrate this charm with o
 
 Create and activate a virtualenv with the development requirements:
 
-    virtualenv -p python3 venv
-    source venv/bin/activate
-    pip install -r requirements-dev.txt
-
+```bash
+$ virtualenv -p python3 venv
+$ source venv/bin/activate
+$ pip install -r requirements-dev.txt
+    ```
 
 ### Setup
 

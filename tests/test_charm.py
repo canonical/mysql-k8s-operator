@@ -97,7 +97,7 @@ class TestCharm(unittest.TestCase):
         self.harness.update_config(config)
         relation_id = self.harness.add_relation("mysql", "mysql")
         self.harness.add_relation_unit(relation_id, "mysql/1")
-        self.harness.update_relation_data(relation_id, "mysql", config)
+        self.harness.update_relation_data(relation_id, "mysql-k8s", config)
         self.assertEqual(
             config["MYSQL_ROOT_PASSWORD"],
             self.harness.charm._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
