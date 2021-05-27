@@ -1,6 +1,6 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: mysql
+name: mysql-k8s
 description: |
   MySQL is a widely used, open-source relational database management system (RDBMS).
 summary: |
