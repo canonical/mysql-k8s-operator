@@ -32,7 +32,7 @@ class MySQLCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._stored.set_default(
-            mysql_setup={"MYSQL_ROOT_PASSWORD": False},
+            mysql_setup={"mysql_root_password": False},
             mysql_initialized=False,
         )
         self.image = OCIImageResource(self, "mysql-image")
@@ -69,16 +69,16 @@ class MySQLCharm(CharmBase):
             return
 
         event.relation.data[self.app][
-            "MYSQL_ROOT_PASSWORD"
-        ] = self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
-        logger.info("Storing MYSQL_ROOT_PASSWORD in relation data")
+            "mysql_root_password"
+        ] = self._stored.mysql_setup["mysql_root_password"]
+        logger.info("Storing mysql_root_password in relation data")
 
     def _on_peer_relation_changed(self, event):
-        if event.relation.data[event.app].get("MYSQL_ROOT_PASSWORD"):
+        if event.relation.data[event.app].get("mysql_root_password"):
             self._stored.mysql_setup[
-                "MYSQL_ROOT_PASSWORD"
-            ] = event.relation.data[event.app]["MYSQL_ROOT_PASSWORD"]
-            logger.info("Storing MYSQL_ROOT_PASSWORD in StoredState")
+                "mysql_root_password"
+            ] = event.relation.data[event.app]["mysql_root_password"]
+            logger.info("Storing mysql_root_password in StoredState")
 
     def _on_config_changed(self, event):
         """Set a new Juju pod specification"""
@@ -212,23 +212,23 @@ class MySQLCharm(CharmBase):
         if password_from_config:
             logger.debug("Adding root password from config to stored state")
             self._stored.mysql_setup[
-                "MYSQL_ROOT_PASSWORD"
+                "mysql_root_password"
             ] = password_from_config
-            return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
+            return self._stored.mysql_setup["mysql_root_password"]
 
         if self.unit.is_leader():
-            if not self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]:
+            if not self._stored.mysql_setup["mysql_root_password"]:
                 self._stored.mysql_setup[
-                    "MYSQL_ROOT_PASSWORD"
+                    "mysql_root_password"
                 ] = MySQL.new_password(20)
                 logger.info("Password generated.")
         else:
-            if not self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]:
+            if not self._stored.mysql_setup["mysql_root_password"]:
                 raise MySQLRootPasswordError(
                     "MySQL root password should be received through relation data"
                 )
 
-        return self._stored.mysql_setup["MYSQL_ROOT_PASSWORD"]
+        return self._stored.mysql_setup["mysql_root_password"]
 
     @property
     def env_config(self) -> dict:

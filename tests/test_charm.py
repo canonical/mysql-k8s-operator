@@ -76,7 +76,7 @@ class TestCharm(unittest.TestCase):
         }
         self.harness.update_config(config)
         self.assertIn(
-            "MYSQL_ROOT_PASSWORD", self.harness.charm._stored.mysql_setup
+            "mysql_root_password", self.harness.charm._stored.mysql_setup
         )
 
     def test__on_config_changed(self):
@@ -86,7 +86,7 @@ class TestCharm(unittest.TestCase):
         }
         self.harness.update_config(config)
         self.assertIn(
-            "MYSQL_ROOT_PASSWORD", self.harness.charm._stored.mysql_setup
+            "mysql_root_password", self.harness.charm._stored.mysql_setup
         )
 
     def test_new_unit_has_password(self):
@@ -100,7 +100,7 @@ class TestCharm(unittest.TestCase):
         self.harness.update_relation_data(relation_id, "mysql", config)
         self.assertEqual(
             config["MYSQL_ROOT_PASSWORD"],
-            self.harness.charm._stored.mysql_setup["MYSQL_ROOT_PASSWORD"],
+            self.harness.charm._stored.mysql_setup["mysql_root_password"],
         )
 
     @patch("charm.MySQLCharm.unit_ip")
