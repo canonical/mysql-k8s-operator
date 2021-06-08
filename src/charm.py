@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 import logging
-from custom_exceptions import MySQLRootPasswordError
 from mysqlprovider import MySQLProvider
 from mysqlserver import MySQL
 from oci_image import OCIImageResource
@@ -153,6 +152,7 @@ class MySQLCharm(CharmBase):
             return False
 
         layer = self._build_pebble_layer()
+
         if not layer["services"]["mysql"]["environment"].get(
             "MYSQL_ROOT_PASSWORD", False
         ):
@@ -189,13 +189,7 @@ class MySQLCharm(CharmBase):
     def _update_layer(self, event) -> bool:
         """Updates layer"""
         self.needs_restart = False
-
-        try:
-            layer = self._build_pebble_layer()
-        except MySQLRootPasswordError as e:
-            logger.debug(e)
-            event.defer()
-            return self.needs_restart
+        layer = self._build_pebble_layer()
 
         if (
             not self.services
