@@ -80,9 +80,10 @@ class TestCharm(unittest.TestCase):
         relation_id = self.harness.add_relation("mysql", "mysql")
         self.harness.add_relation_unit(relation_id, "mysql/1")
         self.harness.update_config(config)
-        self.assertIn(
-            "MYSQL_ROOT_PASSWORD", self.harness.charm._stored.mysql_setup
-        )
+        peers_data = self.harness.charm.model.get_relation("mysql").data[
+            self.harness.charm.app
+        ]
+        self.assertIn("mysql_root_password", peers_data)
 
     @patch("charm.MySQLCharm.unit_ip")
     def test__update_status_unit_is_leader_mysql_is_ready(self, mock_unit_ip):
