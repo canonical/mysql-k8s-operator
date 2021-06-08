@@ -36,7 +36,9 @@ class MySQLCharm(CharmBase):
             pebble_ready=False,
         )
         self.image = OCIImageResource(self, "mysql-image")
-        self.framework.observe(self.on.mysql_pebble_ready, self._on_pebble_ready)
+        self.framework.observe(
+            self.on.mysql_pebble_ready, self._on_pebble_ready
+        )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.update_status, self._on_update_status)
         self._provide_mysql()
@@ -75,7 +77,7 @@ class MySQLCharm(CharmBase):
             self.unit.status = WaitingStatus(status_message)
             return
 
-        if not self._stored.mysql_initialized:
+        if not self._is_mysql_initialized():
             status_message = "MySQL not initialized"
             self.unit.status = WaitingStatus(status_message)
             return
@@ -146,12 +148,18 @@ class MySQLCharm(CharmBase):
     def _configure_pod(self):
         """Configure the Pebble layer for MySQL."""
         if not self._stored.pebble_ready:
-            self.unit.status = MaintenanceStatus("Waiting for Pod startup to complete")
+            self.unit.status = MaintenanceStatus(
+                "Waiting for Pod startup to complete"
+            )
             return False
 
         layer = self._build_pebble_layer()
-        if not layer["services"]["mysql"]["environment"].get("MYSQL_ROOT_PASSWORD", False):
-            self.unit.status = MaintenanceStatus("Awaiting leader node to set MYSQL_ROOT_PASSWORD")
+        if not layer["services"]["mysql"]["environment"].get(
+            "MYSQL_ROOT_PASSWORD", False
+        ):
+            self.unit.status = MaintenanceStatus(
+                "Awaiting leader node to set MYSQL_ROOT_PASSWORD"
+            )
             return False
 
     def _build_pebble_layer(self):
@@ -172,7 +180,7 @@ class MySQLCharm(CharmBase):
         }
 
     def _provide_mysql(self) -> None:
-        if self._stored.mysql_initialized:
+        if self._is_mysql_initialized():
             self.mysql_provider = MySQLProvider(
                 self, "database", "mysql", self.mysql.version()
             )
@@ -218,6 +226,9 @@ class MySQLCharm(CharmBase):
         logger.info("Restarted MySQL service")
         self.unit.status = ActiveStatus()
         self._stored.mysql_initialized = True
+
+    def _is_mysql_initialized(self) -> bool:
+        return self._stored.mysql_initialized
 
 
 if __name__ == "__main__":
