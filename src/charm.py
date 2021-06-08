@@ -31,7 +31,6 @@ class MySQLCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._stored.set_default(
-            mysql_setup={"MYSQL_ROOT_PASSWORD": False},
             mysql_initialized=False,
             pebble_ready=False,
         )
