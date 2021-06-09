@@ -29,7 +29,7 @@ class TestCharm(unittest.TestCase):
         layer = self.harness.charm._build_pebble_layer()
         self.assertIsInstance(layer["services"]["mysql"], dict)
 
-    def test_pebble_layer_has_ramdom_root_password(self):
+    def test_pebble_layer_has_random_root_password(self):
         self.harness.set_leader(True)
         config = {}
         relation_id = self.harness.add_relation("mysql", "mysql")
