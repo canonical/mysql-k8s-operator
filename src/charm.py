@@ -118,16 +118,9 @@ class MySQLCharm(CharmBase):
     ##############################################
     def _mysql_root_password(self) -> str:
         """
-        Returns MYSQL_ROOT_PASSWORD from the config,
-        if the password isn't in StoredState, generates one.
+        Returns MYSQL_ROOT_PASSWORD from the config or generates one.
         """
-        password_from_config = self.config["MYSQL_ROOT_PASSWORD"]
-        if password_from_config:
-            logger.debug("Retriving MYSQL_ROOT_PASSWORD from config")
-            return password_from_config
-        else:
-            logger.debug("MYSQL_ROOT_PASSWORD generated")
-            return MySQL.new_password(20)
+        return self.config["MYSQL_ROOT_PASSWORD"] or MySQL.new_password(20)
 
     def _update_peers(self):
         if self.unit.is_leader():
