@@ -96,23 +96,6 @@ class MySQLCharm(CharmBase):
         """Returns unit's IP"""
         return str(self.model.get_binding(PEER).network.bind_address)
 
-    @property
-    def env_config(self) -> dict:
-        """Return the env_config for pebble layer"""
-        config = self.model.config
-        peers_data = self.model.get_relation("mysql").data[self.app]
-        env_config = {}
-        env_config["MYSQL_ROOT_PASSWORD"] = peers_data["mysql_root_password"]
-
-        if config.get("MYSQL_USER") and config.get("MYSQL_PASSWORD"):
-            env_config["MYSQL_USER"] = config["MYSQL_USER"]
-            env_config["MYSQL_PASSWORD"] = config["MYSQL_PASSWORD"]
-
-        if config.get("MYSQL_DATABASE"):
-            env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
-
-        return env_config
-
     ##############################################
     #             UTILITY METHODS                #
     ##############################################
@@ -162,7 +145,28 @@ class MySQLCharm(CharmBase):
     def _build_pebble_layer(self):
         """Construct the pebble layer"""
         logger.debug("Building pebble layer")
-        return {
+
+        def env_config() -> dict:
+            """Return the env_config for pebble layer"""
+            config = self.model.config
+            peers_data = self.model.get_relation("mysql").data[self.app]
+            env_config = {}
+            env_config["MYSQL_ROOT_PASSWORD"] = peers_data[
+                "mysql_root_password"
+            ]
+
+            if (user := config.get("MYSQL_USER")) and (
+                password := config.get("MYSQL_PASSWORD")
+            ):
+                env_config["MYSQL_USER"] = user
+                env_config["MYSQL_PASSWORD"] = password
+
+            if config.get("MYSQL_DATABASE"):
+                env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
+
+            return env_config
+
+        layer = {
             "summary": "MySQL layer",
             "description": "Pebble layer configuration for MySQL",
             "services": {
@@ -171,10 +175,12 @@ class MySQLCharm(CharmBase):
                     "summary": "mysql service",
                     "command": "docker-entrypoint.sh mysqld",
                     "startup": "enabled",
-                    "environment": self.env_config,
-                },
+                    "environment": env_config(),
+                }
             },
         }
+
+        return layer
 
     def _provide_mysql(self) -> None:
         if self._is_mysql_initialized():

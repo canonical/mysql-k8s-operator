@@ -20,9 +20,29 @@ class TestCharm(unittest.TestCase):
         self.harness.begin()
         self.harness.add_oci_resource("mysql-image")
 
-    def test_env_config(self):
+    def test_pebble_layer_is_dict(self):
         self.harness.set_leader(True)
-        config_1 = {
+        config = {}
+        relation_id = self.harness.add_relation("mysql", "mysql")
+        self.harness.add_relation_unit(relation_id, "mysql/1")
+        self.harness.update_config(config)
+        layer = self.harness.charm._build_pebble_layer()
+        self.assertIsInstance(layer["services"]["mysql"], dict)
+
+    def test_pebble_layer_has_ramdom_root_password(self):
+        self.harness.set_leader(True)
+        config = {}
+        relation_id = self.harness.add_relation("mysql", "mysql")
+        self.harness.add_relation_unit(relation_id, "mysql/1")
+        self.harness.update_config(config)
+        env = self.harness.charm._build_pebble_layer()["services"]["mysql"][
+            "environment"
+        ]
+        self.assertEqual(len(env["MYSQL_ROOT_PASSWORD"]), 20)
+
+    def test_pebble_layer_with_custom_config(self):
+        self.harness.set_leader(True)
+        config = {
             "MYSQL_ROOT_PASSWORD": "D10S",
             "MYSQL_USER": "DiegoArmando",
             "MYSQL_PASSWORD": "SegurolaYHabana",
@@ -30,47 +50,20 @@ class TestCharm(unittest.TestCase):
         }
         relation_id = self.harness.add_relation("mysql", "mysql")
         self.harness.add_relation_unit(relation_id, "mysql/1")
-        self.harness.update_config(config_1)
-        self.assertEqual(
-            self.harness.charm.env_config["MYSQL_ROOT_PASSWORD"], "D10S"
-        )
-        self.assertEqual(
-            self.harness.charm.env_config["MYSQL_USER"], "DiegoArmando"
-        )
-        self.assertEqual(
-            self.harness.charm.env_config["MYSQL_PASSWORD"], "SegurolaYHabana"
-        )
-        self.assertEqual(
-            self.harness.charm.env_config["MYSQL_DATABASE"], "db_10"
-        )
-
-    def test_generate_random_root_password(self):
-        self.harness.set_leader(True)
-        config_2 = {
-            "MYSQL_ROOT_PASSWORD": "",
-        }
-        relation_id = self.harness.add_relation("mysql", "mysql")
-        self.harness.add_relation_unit(relation_id, "mysql/1")
-        self.harness.update_config(config_2)
-        self.assertEqual(
-            len(self.harness.charm.env_config["MYSQL_ROOT_PASSWORD"]), 20
-        )
+        self.harness.update_config(config)
+        env = self.harness.charm._build_pebble_layer()["services"]["mysql"][
+            "environment"
+        ]
+        self.assertEqual(env["MYSQL_ROOT_PASSWORD"], "D10S")
+        self.assertEqual(env["MYSQL_USER"], "DiegoArmando")
+        self.assertEqual(env["MYSQL_PASSWORD"], "SegurolaYHabana")
+        self.assertEqual(env["MYSQL_DATABASE"], "db_10")
 
     def test_default_configs(self):
         config = self.harness.model.config
         self.assertEqual(config["port"], 3306)
         self.assertTrue("MYSQL_ROOT_PASSWORD" in config)
         self.assertEqual(config["MYSQL_ROOT_PASSWORD"], "")
-
-    def test_root_password_sent_via_config(self):
-        self.harness.set_leader(True)
-        config = {
-            "MYSQL_ROOT_PASSWORD": "Diego!",
-        }
-        relation_id = self.harness.add_relation("mysql", "mysql")
-        self.harness.add_relation_unit(relation_id, "mysql/1")
-        self.harness.update_config(config)
-        self.assertIn("MYSQL_ROOT_PASSWORD", self.harness.charm.env_config)
 
     def test__on_config_changed(self):
         self.harness.set_leader(True)
