@@ -55,13 +55,6 @@ class MySQLCharm(CharmBase):
         self._update_peers()
         self._configure_pod()
 
-        self.unit.status = MaintenanceStatus("Setting up containers.")
-        self.services = self.container.get_plan().to_dict().get("services", {})
-        self._update_layer(event)
-
-        if self.needs_restart:
-            self._restart_service()
-
     def _on_update_status(self, event):
         """Set status for all units
         Status may be
@@ -146,9 +139,9 @@ class MySQLCharm(CharmBase):
     def _configure_pod(self):
         """Configure the Pebble layer for MySQL."""
         if not self._stored.pebble_ready:
-            self.unit.status = MaintenanceStatus(
-                "Waiting for Pod startup to complete"
-            )
+            msg = "Waiting for Pod startup to complete"
+            logger.debug(msg)
+            self.unit.status = MaintenanceStatus(msg)
             return False
 
         layer = self._build_pebble_layer()
@@ -156,10 +149,22 @@ class MySQLCharm(CharmBase):
         if not layer["services"]["mysql"]["environment"].get(
             "MYSQL_ROOT_PASSWORD", False
         ):
-            self.unit.status = MaintenanceStatus(
-                "Awaiting leader node to set MYSQL_ROOT_PASSWORD"
-            )
+            msg = "Awaiting leader node to set MYSQL_ROOT_PASSWORD"
+            logger.debug(msg)
+            self.unit.status = MaintenanceStatus(msg)
             return False
+
+        services = self.container.get_plan().to_dict().get("services", {})
+
+        if (
+            not services
+            or services[PEER]["environment"]
+            != layer["services"][PEER]["environment"]
+        ):
+            self.container.add_layer(PEER, layer, combine=True)
+            self._restart_service()
+            self.unit.status = ActiveStatus()
+            return True
 
     def _build_pebble_layer(self):
         """Construct the pebble layer"""
@@ -185,21 +190,6 @@ class MySQLCharm(CharmBase):
             )
             self.mysql_provider.ready()
             logger.info("MySQL Provider is available")
-
-    def _update_layer(self, event) -> bool:
-        """Updates layer"""
-        self.needs_restart = False
-        layer = self._build_pebble_layer()
-
-        if (
-            not self.services
-            or self.services[PEER]["environment"]
-            != layer["services"][PEER]["environment"]
-        ):
-            self.container.add_layer(PEER, layer, combine=True)
-            self.needs_restart = True
-
-        return self.needs_restart
 
     def _restart_service(self):
         """Restarts MySQL Service"""
