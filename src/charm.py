@@ -81,7 +81,7 @@ class MySQLCharm(CharmBase):
     @property
     def mysql(self) -> MySQL:
         """Returns MySQL object"""
-        peers_data = self.model.get_relation("mysql").data[self.app]
+        peers_data = self.model.get_relation(PEER).data[self.app]
         mysql_config = {
             "app_name": self.model.app.name,
             "host": self.unit_ip,
@@ -107,7 +107,7 @@ class MySQLCharm(CharmBase):
 
     def _update_peers(self):
         if self.unit.is_leader():
-            peers_data = self.model.get_relation("mysql").data[self.app]
+            peers_data = self.model.get_relation(PEER).data[self.app]
 
             if not peers_data.get("mysql_root_password"):
                 peers_data["mysql_root_password"] = self._mysql_root_password()
@@ -122,7 +122,7 @@ class MySQLCharm(CharmBase):
 
         layer = self._build_pebble_layer()
 
-        if not layer["services"]["mysql"]["environment"].get(
+        if not layer["services"][PEER]["environment"].get(
             "MYSQL_ROOT_PASSWORD", False
         ):
             msg = "Awaiting leader node to set MYSQL_ROOT_PASSWORD"
@@ -149,7 +149,7 @@ class MySQLCharm(CharmBase):
         def env_config() -> dict:
             """Return the env_config for pebble layer"""
             config = self.model.config
-            peers_data = self.model.get_relation("mysql").data[self.app]
+            peers_data = self.model.get_relation(PEER).data[self.app]
             env_config = {}
             env_config["MYSQL_ROOT_PASSWORD"] = peers_data[
                 "mysql_root_password"
@@ -170,7 +170,7 @@ class MySQLCharm(CharmBase):
             "summary": "MySQL layer",
             "description": "Pebble layer configuration for MySQL",
             "services": {
-                "mysql": {
+                PEER: {
                     "override": "replace",
                     "summary": "mysql service",
                     "command": "docker-entrypoint.sh mysqld",
@@ -185,7 +185,7 @@ class MySQLCharm(CharmBase):
     def _provide_mysql(self) -> None:
         if self._is_mysql_initialized():
             self.mysql_provider = MySQLProvider(
-                self, "database", "mysql", self.mysql.version()
+                self, "database", PEER, self.mysql.version()
             )
             self.mysql_provider.ready()
             logger.info("MySQL Provider is available")
