@@ -54,10 +54,7 @@ class TestCharm(unittest.TestCase):
         env = self.harness.charm._build_pebble_layer()["services"]["mysql"][
             "environment"
         ]
-        self.assertEqual(env["MYSQL_ROOT_PASSWORD"], "D10S")
-        self.assertEqual(env["MYSQL_USER"], "DiegoArmando")
-        self.assertEqual(env["MYSQL_PASSWORD"], "SegurolaYHabana")
-        self.assertEqual(env["MYSQL_DATABASE"], "db_10")
+        self.assertDictEqual(env, config)
 
     def test_default_configs(self):
         config = self.harness.model.config
