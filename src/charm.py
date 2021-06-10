@@ -3,10 +3,12 @@
 # See LICENSE file for licensing details.
 
 import logging
+
 from mysqlprovider import MySQLProvider
 from mysqlserver import MySQL
 from oci_image import OCIImageResource
 from ops.charm import CharmBase
+from ops.framework import StoredState
 from ops.main import main
 from ops.model import (
     ActiveStatus,
@@ -14,7 +16,6 @@ from ops.model import (
     ModelError,
     WaitingStatus,
 )
-from ops.framework import StoredState
 from typing import Optional
 
 logger = logging.getLogger(__name__)
