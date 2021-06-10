@@ -16,7 +16,6 @@ from ops.model import (
     ModelError,
     WaitingStatus,
 )
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 PEER = "mysql"
@@ -93,11 +92,11 @@ class MySQLCharm(CharmBase):
         return MySQL(mysql_config)
 
     @property
-    def unit_ip(self) -> Optional[str]:
+    def unit_ip(self) -> str:
         """Returns unit's IP"""
         if bind_address := self.model.get_binding(PEER).network.bind_address:
-            bind_address = str(bind_address)
-        return bind_address
+            return str(bind_address)
+        return ""
 
     ##############################################
     #             UTILITY METHODS                #
