@@ -14,9 +14,8 @@ from ops.model import (
     ModelError,
     WaitingStatus,
 )
-
 from ops.framework import StoredState
-
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 PEER = "mysql"
@@ -26,6 +25,7 @@ class MySQLCharm(CharmBase):
     """Charm to run MySQL on Kubernetes."""
 
     _stored = StoredState()
+    mysql_provider: MySQLProvider = None
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -92,9 +92,11 @@ class MySQLCharm(CharmBase):
         return MySQL(mysql_config)
 
     @property
-    def unit_ip(self) -> str:
+    def unit_ip(self) -> Optional[str]:
         """Returns unit's IP"""
-        return str(self.model.get_binding(PEER).network.bind_address)
+        if bind_address := self.model.get_binding(PEER).network.bind_address:
+            bind_address = str(bind_address)
+        return bind_address
 
     ##############################################
     #             UTILITY METHODS                #
