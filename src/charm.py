@@ -103,9 +103,9 @@ class MySQLCharm(CharmBase):
     ##############################################
     def _mysql_root_password(self) -> str:
         """
-        Returns MYSQL_ROOT_PASSWORD from the config or generates one.
+        Returns mysql_root_password from the config or generates one.
         """
-        return self.config["MYSQL_ROOT_PASSWORD"] or MySQL.new_password(20)
+        return self.config["mysql_root_password"] or MySQL.new_password(20)
 
     def _update_peers(self):
         if self.unit.is_leader():
@@ -127,7 +127,7 @@ class MySQLCharm(CharmBase):
         if not layer["services"][PEER]["environment"].get(
             "MYSQL_ROOT_PASSWORD", False
         ):
-            msg = "Awaiting leader node to set MYSQL_ROOT_PASSWORD"
+            msg = "Awaiting leader node to set mysql_root_password"
             logger.debug(msg)
             self.unit.status = MaintenanceStatus(msg)
             return False
@@ -157,14 +157,14 @@ class MySQLCharm(CharmBase):
                 "mysql_root_password"
             ]
 
-            if (user := config.get("MYSQL_USER")) and (
-                password := config.get("MYSQL_PASSWORD")
+            if (user := config.get("mysql_user")) and (
+                password := config.get("mysql_password")
             ):
                 env_config["MYSQL_USER"] = user
                 env_config["MYSQL_PASSWORD"] = password
 
-            if config.get("MYSQL_DATABASE"):
-                env_config["MYSQL_DATABASE"] = config["MYSQL_DATABASE"]
+            if database := config.get("mysql_database"):
+                env_config["MYSQL_DATABASE"] = database
 
             return env_config
 
