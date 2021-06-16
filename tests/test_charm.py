@@ -43,10 +43,10 @@ class TestCharm(unittest.TestCase):
     def test_pebble_layer_with_custom_config(self):
         self.harness.set_leader(True)
         config = {
-            "MYSQL_ROOT_PASSWORD": "D10S",
-            "MYSQL_USER": "DiegoArmando",
-            "MYSQL_PASSWORD": "SegurolaYHabana",
-            "MYSQL_DATABASE": "db_10",
+            "mysql_root_password": "D10S",
+            "mysql_user": "DiegoArmando",
+            "mysql_password": "SegurolaYHabana",
+            "mysql_database": "db_10",
         }
         relation_id = self.harness.add_relation("mysql", "mysql")
         self.harness.add_relation_unit(relation_id, "mysql/1")
@@ -54,18 +54,23 @@ class TestCharm(unittest.TestCase):
         env = self.harness.charm._build_pebble_layer()["services"]["mysql"][
             "environment"
         ]
-        self.assertDictEqual(env, config)
+        self.assertEqual(
+            env["MYSQL_ROOT_PASSWORD"], config["mysql_root_password"]
+        )
+        self.assertEqual(env["MYSQL_USER"], config["mysql_user"])
+        self.assertEqual(env["MYSQL_PASSWORD"], config["mysql_password"])
+        self.assertEqual(env["MYSQL_DATABASE"], config["mysql_database"])
 
     def test_default_configs(self):
         config = self.harness.model.config
         self.assertEqual(config["port"], 3306)
-        self.assertTrue("MYSQL_ROOT_PASSWORD" in config)
-        self.assertEqual(config["MYSQL_ROOT_PASSWORD"], "")
+        self.assertTrue("mysql_root_password" in config)
+        self.assertEqual(config["mysql_root_password"], "")
 
     def test__on_config_changed(self):
         self.harness.set_leader(True)
         config = {
-            "MYSQL_ROOT_PASSWORD": "Diego!",
+            "mysql_root_password": "Diego!",
         }
         relation_id = self.harness.add_relation("mysql", "mysql")
         self.harness.add_relation_unit(relation_id, "mysql/1")
@@ -83,7 +88,7 @@ class TestCharm(unittest.TestCase):
             mock_is_ready.return_value = False
             self.harness.set_leader(True)
             config = {
-                "MYSQL_ROOT_PASSWORD": "D10S!",
+                "mysql_root_password": "D10S!",
             }
             relation_id = self.harness.add_relation("mysql", "mysql")
             self.harness.add_relation_unit(relation_id, "mysql/1")
@@ -108,7 +113,7 @@ class TestCharm(unittest.TestCase):
 
         self.harness.set_leader(True)
         config = {
-            "MYSQL_ROOT_PASSWORD": "D10S!",
+            "mysql_root_password": "D10S!",
         }
         relation_id = self.harness.add_relation("mysql", "mysql")
         self.harness.add_relation_unit(relation_id, "mysql/1")
