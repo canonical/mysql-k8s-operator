@@ -14,10 +14,11 @@ containers:
         location: /var/lib/mysql
 peers:
   mysql:
-    interface: mysql
+    interface: mysql_datastore
+
 provides:
   database:
-    interface: mysql
+    interface: mysql_datastore
 
 storage:
   database:
