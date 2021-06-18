@@ -14,7 +14,7 @@ A typical setup using [snaps](https://snapcraft.io/), for deployments to a [micr
 
 ```bash
 $ sudo snap install microk8s --classic
-$ microk8s.enable dns storage registry dashboard
+$ microk8s.enable dns storage
 $ sudo snap install juju --classic
 $ juju bootstrap microk8s microk8s
 $ juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
@@ -36,7 +36,8 @@ $ charmcraft build
 
 ## Testing
 
-The Python operator framework includes a very nice harness for testing operator behaviour without full deployment. Just `run_tests`:
+Unit tests are implemented using the Operator Framework test [harness](https://ops.readthedocs.io/en/latest/#module-ops.testing). These tests may executed by doing:
+
 
 ```bash
 $ ./run_tests
