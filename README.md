@@ -8,8 +8,7 @@
 The [MySQL](https://www.mysql.com/) operator provides an open-source relational database management system (RDBMS). This repository contains a Juju Charm for deploying MySQL on Kubernetes clusters.
 
 
-## Deployment instructions
-
+## Usage
 
 Create a Juju model for your operators, say "mysql-k8s"
 
@@ -17,22 +16,11 @@ Create a Juju model for your operators, say "mysql-k8s"
 $ juju add-model mysql-k8s
 ```
 
-Deploy a single unit of MySQL using its default configuration
+The MySQL Operator may be deployed using the Juju command line
 
 ```bash
-$ juju deploy ./mysql-k8s.charm --resource mysql-image=ubuntu/mysql:latest
+$ juju deploy mysql-k8s
 ```
-
-As in this example we did not specify the password for the root user, the charm will generate one, and you can get it executing:
-
-
-```bash
-$ juju show-unit mysql-k8s/0
-
-```
-
-The password will be the value for the key `mysql_root_password`
-
 
 If required, you can remove the deployment completely:
 
@@ -45,8 +33,9 @@ Note the `--destroy-storage` will delete any data stored by MySQL in its persist
 
 ### Config
 
-This charm implements the following configs:
+This charm implements the following optional configs:
 
+- `mysql_root_password`: If it is not specified, the charm will generate one.
 - `mysql_user`: Create a new user with superuser privileges. This is used in conjunction with `mysql_password`.
 - `mysql_password`: Set the password for the `mysql_user` user.
 - `mysql_database`: Set the name of the default database.
@@ -54,8 +43,19 @@ This charm implements the following configs:
 And you can use it, like this:
 
 ```bash
-$  juju deploy ./mysql-k8s.charm --config mysql_root_password=SuperSecretPassword --config mysql_user=JohnDoe --config mysql_password=SuperSecretUserPassword --config mysql_database=default_database --resource mysql-image=ubuntu/mysql:latest
+$  juju deploy mysql-k8s --config mysql_user=JohnDoe --config mysql_password=SuperSecretUserPassword --config mysql_database=default_database
 ```
+
+
+As in this example we did not specify the `mysql_root_password`, the charm will generate one, and you can get it executing:
+
+
+```bash
+$ juju show-unit mysql-k8s/0
+```
+
+The password will be the value for the key `mysql_root_password`
+
 
 ## Relations
 
