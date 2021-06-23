@@ -45,17 +45,17 @@ class MySQLCharm(CharmBase):
     ##############################################
     #           CHARM HOOKS HANDLERS             #
     ##############################################
-    def _on_pebble_ready(self, event):
+    def _on_pebble_ready(self, _):
         self._stored.pebble_ready = True
         self._update_peers()
         self._configure_pod()
 
-    def _on_config_changed(self, event):
+    def _on_config_changed(self, _):
         """Set a new Juju pod specification"""
         self._update_peers()
         self._configure_pod()
 
-    def _on_update_status(self, event):
+    def _on_update_status(self, _):
         """Set status for all units
         Status may be
         - MySQL is not ready,
