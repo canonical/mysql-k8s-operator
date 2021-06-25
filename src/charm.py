@@ -114,7 +114,7 @@ class MySQLCharm(CharmBase):
         try:
             self.mysql.set_user_password(creds)
             event.set_results({"username": creds["username"]})
-            event.log(f"Pasword fo username: {creds['username']} changed")
+            event.log(f"Pasword for username: {creds['username']} changed")
         except Exception as e:
             logger.error(e)
             event.fail(message=str(e))
