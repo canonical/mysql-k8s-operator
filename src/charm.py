@@ -39,6 +39,18 @@ class MySQLCharm(CharmBase):
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.update_status, self._on_update_status)
+        self.framework.observe(
+            self.on.create_user_action, self._on_create_user_action
+        )
+        self.framework.observe(
+            self.on.delete_user_action, self._on_delete_user_action
+        )
+        self.framework.observe(
+            self.on.create_database_action, self._on_create_database_action
+        )
+        self.framework.observe(
+            self.on.set_user_password_action, self._on_set_user_password_action
+        )
         self._provide_mysql()
         self.container = self.unit.get_container(PEER)
 
@@ -74,6 +86,60 @@ class MySQLCharm(CharmBase):
             return
 
         self.unit.status = ActiveStatus()
+
+    def _on_create_user_action(self, event):
+        """Handle the create_user action."""
+        creds = {
+            "username": event.params["username"],
+            "password": event.params["password"],
+            "hostname": "%",
+        }
+
+        try:
+            self.mysql.new_super_user(creds)
+            event.set_results({"username": creds["username"]})
+            event.log(f"Username {creds['username']} created")
+        except Exception as e:
+            logger.error(e)
+            event.fail(message=str(e))
+
+    def _on_set_user_password_action(self, event):
+        """Handle the set_user_password action."""
+        creds = {
+            "username": event.params["username"],
+            "password": event.params["password"],
+            "hostname": "%",
+        }
+
+        try:
+            self.mysql.set_user_password(creds)
+            event.set_results({"username": creds["username"]})
+            event.log(f"Pasword fo username: {creds['username']} changed")
+        except Exception as e:
+            logger.error(e)
+            event.fail(message=str(e))
+
+    def _on_delete_user_action(self, event):
+        """Handle the create_user action."""
+
+        try:
+            self.mysql.drop_user(event.params["username"])
+            event.set_results({"username": event.params["username"]})
+            event.log(f"Username {event.params['username']} deleted")
+        except Exception as e:
+            logger.error(e)
+            event.fail(message=str(e))
+
+    def _on_create_database_action(self, event):
+        """Handle the create_user action."""
+
+        try:
+            self.mysql.new_database(event.params["database"])
+            event.set_results({"database": event.params["database"]})
+            event.log(f"Database {event.params['database']} created")
+        except Exception as e:
+            logger.error(e)
+            event.fail(message=str(e))
 
     ##############################################
     #               PROPERTIES                   #
@@ -198,10 +264,10 @@ class MySQLCharm(CharmBase):
             service = self.container.get_service(PEER)
         except ConnectionError:
             logger.info("Pebble API is not yet ready")
-            return
+            return False
         except ModelError:
             logger.info("MySQL service is not yet ready")
-            return
+            return False
 
         if service.is_running():
             self.container.stop(PEER)
