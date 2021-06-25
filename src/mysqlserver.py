@@ -217,7 +217,7 @@ class MySQL:
         """Get MySQLDB version"""
         try:
             query = "SELECT VERSION() as version;"
-            version = self._execute_query(query)[0][0]
+            version = self._execute_query(query)[0][0].split("-")[0]
             return version
         except Error:
             logger.debug("VERSION NOT READY YET")
