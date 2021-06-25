@@ -163,9 +163,9 @@ class TestCharm(unittest.TestCase):
     def test__restart_service_model_error(self):
         self.harness.set_leader(True)
 
-        with self.assertLogs(level="INFO") as logger:
+        with self.assertLogs(level="DEBUG") as logger:
             self.harness.charm._restart_service()
             self.assertEqual(
                 sorted(logger.output),
-                ["INFO:charm:MySQL service is not yet ready"],
+                ["DEBUG:charm:MySQL service is not yet ready"],
             )
