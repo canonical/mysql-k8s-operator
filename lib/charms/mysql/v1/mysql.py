@@ -28,7 +28,7 @@ The `address`, `port`, `databases`, and `credentials` methods can all be called
 to get the relevant information from the relation data.
 """
 
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
