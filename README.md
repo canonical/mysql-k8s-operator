@@ -54,6 +54,46 @@ $ juju show-unit mysql-k8s/0
 
 The password will be the value for the key `mysql_root_password`
 
+
+### Actions
+
+This charm implements the following actions:
+
+- `create-user`
+- `delete-user`
+- `set-user-password`
+- `create-database`
+
+
+These actions are defined in the actions.yaml file in which you can find the parameters each action supports.
+
+For example if you want to create a new user in MySQL you can run:
+
+```bash
+$ juju run-action --wait mysql-k8s/0 create-user username=myuser password=SuperSecretPassword
+unit-mysql-k8s-0:
+  UnitId: mysql-k8s/0
+  id: "16"
+  log:
+  - 2021-06-24 22:07:47 -0300 -03 Username myuser created
+  results:
+    username: myuser
+  status: completed
+  timing:
+    completed: 2021-06-25 01:07:47 +0000 UTC
+    enqueued: 2021-06-25 01:07:43 +0000 UTC
+    started: 2021-06-25 01:07:46 +0000 UTC
+```
+
+For more information about actions, please refer to [Juju documentation](https://juju.is/docs/olm/working-with-actions).
+
+
 ## Relations
 
-This charm provides a `database` relation so you can integrate this charm with others charms that requires a MySQL database.
+This charm provides a `mysql_datastore` relation so you can integrate this charm with others charms that requires a MySQL database.
+
+
+## OCI Images
+
+This charm by default uses the latest version of the [ubuntu/mysql](https://hub.docker.com/r/ubuntu/prometheus) image.
+

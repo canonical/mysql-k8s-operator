@@ -42,7 +42,7 @@ class MySQL:
         try:
             client = self._get_client()
             if client is not None:
-                logger.warning("MySQL service is ready.")
+                logger.info("MySQL service is ready.")
                 client.close()
                 ready = True
         except Error as e:
@@ -93,15 +93,55 @@ class MySQL:
             return False
             # Should we set BlockedStatus ?
 
+    def new_super_user(self, credentials: dict):
+        if self._user_exists(credentials["username"]):
+            raise Exception(f"User already exists: {credentials['username']}")
+
+        create_user = self._create_user(credentials)
+        self._execute_query(create_user)
+        grant = self._grant_privileges(credentials, "*")
+        self._execute_query(grant)
+        return True
+
     def drop_user(self, username: str) -> bool:
-        try:
-            query = self._build_drop_user_query(username)
-            self._execute_query(query)
+        if not self._user_exists(username):
+            raise Exception(f"User does not exists: {username}")
+
+        query = self._build_drop_user_query(username)
+        self._execute_query(query)
+        return True
+
+    def set_user_password(self, credentials: dict):
+        if not self._user_exists(credentials["username"]):
+            raise Exception(f"User does not exists: {credentials['username']}")
+
+        create_user = self._change_user_password(credentials)
+        self._execute_query(create_user)
+        return True
+
+    def new_database(self, database: str):
+        if self._database_exists(database):
+            raise Exception(f"Database already exists: {database}")
+
+        create_database = self._create_database(database)
+        self._execute_query(create_database)
+        return True
+
+    def _user_exists(self, username):
+        query = f"SELECT count(1) FROM mysql.user WHERE user = '{username}';"
+        result = self._execute_query(query)
+
+        if int(result[0][0]) == 1:
             return True
-        except Error as e:
-            logger.error(e)
-            return False
-            # Should we set BlockedStatus ?
+        return False
+
+    def _database_exists(self, database):
+        query = f"SELECT count(1) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{database}';"
+        result = self._execute_query(query)
+
+        if int(result[0][0]) == 1:
+            return True
+        return False
 
     def _build_drop_user_query(self, username: str) -> str:
         query = f"DROP USER IF EXISTS `{username}`;"
@@ -150,6 +190,12 @@ class MySQL:
     def _create_user(self, credentials: dict) -> str:
         """Creates the query string for creating user in MySQL"""
         return "CREATE USER IF NOT EXISTS '{}'@'%' IDENTIFIED BY '{}';".format(
+            credentials["username"], credentials["password"]
+        )
+
+    def _change_user_password(self, credentials: dict) -> str:
+        """Creates the query string for creating user in MySQL"""
+        return "ALTER USER '{}'@'%' IDENTIFIED BY '{}';".format(
             credentials["username"], credentials["password"]
         )
 

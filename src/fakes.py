@@ -106,6 +106,6 @@ class MySQLCharm(CharmBase):
         return provided
 
     @property
-    def hostname(self) -> str:
+    def unit_ip(self) -> str:
         """Fake property"""
-        return "localhost"
+        return "10.1.51.10"
