@@ -59,7 +59,7 @@ The password will be the value for the key `mysql_root_password`
 
 ### Actions
 
-This charm implements 4 actions:
+This charm implements the following actions:
 
 - `create-user`
 - `delete-user`
