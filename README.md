@@ -59,4 +59,4 @@ The password will be the value for the key `mysql_root_password`
 
 ## Relations
 
-This charm provides a `database` relation so you can integrate this charm with others charms that requires a MySQL database.
+This charm provides a `mysql_datastore` relation so you can integrate this charm with others charms that requires a MySQL database.
