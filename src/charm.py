@@ -6,7 +6,6 @@ import logging
 
 from mysqlprovider import MySQLProvider
 from mysqlserver import MySQL
-from oci_image import OCIImageResource
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
@@ -33,7 +32,6 @@ class MySQLCharm(CharmBase):
             mysql_initialized=False,
             pebble_ready=False,
         )
-        self.image = OCIImageResource(self, "mysql-image")
         self.framework.observe(
             self.on.mysql_pebble_ready, self._on_pebble_ready
         )
