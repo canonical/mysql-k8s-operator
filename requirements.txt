@@ -1,5 +1,4 @@
 git+https://github.com/canonical/operator/@master#egg=ops
-oci-image
 kubernetes
 mysql-connector-python
 semantic_version
