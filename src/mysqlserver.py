@@ -42,11 +42,11 @@ class MySQL:
         try:
             client = self._get_client()
             if client is not None:
-                logger.info("MySQL service is ready.")
+                logger.debug("MySQL service is ready.")
                 client.close()
                 ready = True
         except Error as e:
-            logger.warning("MySQL is not ready yet. - %s", e)
+            logger.debug("MySQL is not ready yet. - %s", e)
 
         return ready
 
@@ -220,7 +220,7 @@ class MySQL:
             version = self._execute_query(query)[0][0]
             return version
         except Error:
-            logger.warning("VERSION NOT READY YET")
+            logger.debug("VERSION NOT READY YET")
             return None
 
     @staticmethod

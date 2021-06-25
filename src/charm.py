@@ -254,24 +254,24 @@ class MySQLCharm(CharmBase):
                 self, "database", PEER, self.mysql.version()
             )
             self.mysql_provider.ready()
-            logger.info("MySQL Provider is available")
+            logger.debug("MySQL Provider is available")
 
     def _restart_service(self):
         """Restarts MySQL Service"""
         try:
             service = self.container.get_service(PEER)
         except ConnectionError:
-            logger.info("Pebble API is not yet ready")
+            logger.debug("Pebble API is not yet ready")
             return False
         except ModelError:
-            logger.info("MySQL service is not yet ready")
+            logger.debug("MySQL service is not yet ready")
             return False
 
         if service.is_running():
             self.container.stop(PEER)
 
         self.container.start(PEER)
-        logger.info("Restarted MySQL service")
+        logger.debug("Restarted MySQL service")
         self.unit.status = ActiveStatus()
         self._stored.mysql_initialized = True
 
