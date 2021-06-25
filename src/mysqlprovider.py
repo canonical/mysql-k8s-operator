@@ -46,7 +46,7 @@ class MySQLProvider(ProviderBase):
 
         rel_id = event.relation.id
         creds = self.credentials(rel_id)
-        creds["hostname"] = self.charm.hostname
+        creds["address"] = self.charm.unit_ip
         self.charm.mysql.new_user(creds)
         data = {"credentials": creds}
         event.relation.data[self.charm.app]["data"] = json.dumps(data)
