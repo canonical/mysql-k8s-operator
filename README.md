@@ -91,9 +91,10 @@ For more information about actions, please refer to [Juju documentation](https:/
 
 ## Relations
 
-This charm provides a `database` relation so you can integrate this charm with others charms that requires a MySQL database.
+This charm provides a `mysql_datastore` relation so you can integrate this charm with others charms that requires a MySQL database.
 
 
 ## OCI Images
 
 This charm by default uses the latest version of the [ubuntu/mysql](https://hub.docker.com/r/ubuntu/prometheus) image.
+
