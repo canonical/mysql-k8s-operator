@@ -7,6 +7,7 @@ import unittest
 
 from ops.testing import Harness
 from ops.model import (
+    ActiveStatus,
     WaitingStatus,
 )
 from charm import MySQLCharm
@@ -67,7 +68,7 @@ class TestCharm(unittest.TestCase):
         self.assertTrue("mysql_root_password" in config)
         self.assertEqual(config["mysql_root_password"], "")
 
-    def test__on_config_changed(self):
+    def test__on_config_changed_is_leader(self):
         self.harness.set_leader(True)
         config = {
             "mysql_root_password": "Diego!",
@@ -80,8 +81,23 @@ class TestCharm(unittest.TestCase):
         ]
         self.assertIn("mysql_root_password", peers_data)
 
+    def test__on_config_changed_is_not_leader(self):
+        self.harness.set_leader(False)
+        config = {
+            "mysql_root_password": "Diego!",
+        }
+        relation_id = self.harness.add_relation("mysql", "mysql")
+        self.harness.add_relation_unit(relation_id, "mysql/1")
+        self.harness.update_config(config)
+        peers_data = self.harness.charm.model.get_relation("mysql").data[
+            self.harness.charm.app
+        ]
+        self.assertNotIn("mysql_root_password", peers_data)
+
     @patch("charm.MySQLCharm.unit_ip")
-    def test__update_status_unit_is_leader_mysql_is_ready(self, mock_unit_ip):
+    def test__update_status_unit_is_leader_mysql_is_not_ready(
+        self, mock_unit_ip
+    ):
         mock_unit_ip.return_value = "10.0.0.1"
 
         with patch("mysqlserver.MySQL.is_ready") as mock_is_ready:
@@ -123,3 +139,33 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(
             self.harness.charm.unit.status.message, "MySQL not initialized"
         )
+
+    @patch("charm.MySQLCharm._is_mysql_initialized")
+    @patch("mysqlserver.MySQL.is_ready")
+    @patch("charm.MySQLCharm.unit_ip")
+    def test__update_status_unit_is_leader_mysql_initialized(
+        self, mock_unit_ip, mock_is_ready, mock_is_mysql_initialized
+    ):
+        mock_unit_ip.return_value = "10.0.0.1"
+        mock_is_ready.return_value = True
+        mock_is_mysql_initialized.return_value = True
+
+        self.harness.set_leader(True)
+        config = {
+            "mysql_root_password": "D10S!",
+        }
+        relation_id = self.harness.add_relation("mysql", "mysql")
+        self.harness.add_relation_unit(relation_id, "mysql/1")
+        self.harness.update_config(config)
+        self.harness.charm.on.update_status.emit()
+        self.assertEqual(type(self.harness.charm.unit.status), ActiveStatus)
+
+    def test__restart_service_model_error(self):
+        self.harness.set_leader(True)
+
+        with self.assertLogs(level="INFO") as logger:
+            self.harness.charm._restart_service()
+            self.assertEqual(
+                sorted(logger.output),
+                ["INFO:charm:MySQL service is not yet ready"],
+            )

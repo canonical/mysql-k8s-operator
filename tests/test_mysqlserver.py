@@ -210,20 +210,97 @@ class TestMySQLServer(unittest.TestCase):
             expected_query, self.mysql._build_drop_databases_query(databases)
         )
 
+    @patch("mysqlserver.MySQL._user_exists")
     @patch("mysqlserver.MySQL._execute_query")
-    def test_drop_user(self, mock__execute_query):
-        returned_value = []
-        mock__execute_query.return_value = returned_value
+    def test_drop_user_user_exists(
+        self, mock__execute_query, mock__user_exists
+    ):
+        mock__execute_query.return_value = []
+        mock__user_exists.return_value = True
         username = "DiegoArmando"
         self.assertTrue(
             self.mysql.drop_user(username),
         )
 
+    @patch("mysqlserver.MySQL._user_exists")
     @patch("mysqlserver.MySQL._execute_query")
-    def test_drop_user_exception(self, mock__execute_query):
-        mock__execute_query.side_effect = Error
+    def test_drop_user_user_not_exists(
+        self, mock__execute_query, mock__user_exists
+    ):
+        mock__execute_query.return_value = []
+        mock__user_exists.return_value = False
         username = "DiegoArmando"
-        self.assertFalse(self.mysql.drop_user(username))
+        with self.assertRaises(Exception):
+            self.mysql.drop_user(username)
+
+    @patch("mysqlserver.MySQL._user_exists")
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_new_super_user_user_not_exists(
+        self, mock__execute_query, mock__user_exists
+    ):
+        mock__execute_query.return_value = []
+        mock__user_exists.return_value = False
+        credentials = {
+            "username": "DiegoArmando",
+            "password": "SegurolaYHabana",
+        }
+        self.assertTrue(
+            self.mysql.new_super_user(credentials),
+        )
+
+    @patch("mysqlserver.MySQL._user_exists")
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_new_super_user_user_exists(
+        self, mock__execute_query, mock__user_exists
+    ):
+        mock__execute_query.return_value = []
+        mock__user_exists.return_value = True
+        credentials = {
+            "username": "DiegoArmando",
+            "password": "SegurolaYHabana",
+        }
+        with self.assertRaises(Exception):
+            self.mysql.new_super_user(credentials)
+
+    @patch("mysqlserver.MySQL._user_exists")
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_set_user_password_user_not_exists(
+        self, mock__execute_query, mock__user_exists
+    ):
+        mock__execute_query.return_value = []
+        mock__user_exists.return_value = False
+        credentials = {"username": "diego"}
+        with self.assertRaises(Exception):
+            self.mysql.set_user_password(credentials)
+
+    @patch("mysqlserver.MySQL._user_exists")
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_set_user_password_user_exists(
+        self, mock__execute_query, mock__user_exists
+    ):
+        mock__execute_query.return_value = []
+        mock__user_exists.return_value = True
+        credentials = {"username": "diego", "password": "D10S!"}
+        self.assertTrue(self.mysql.set_user_password(credentials))
+
+    @patch("mysqlserver.MySQL._database_exists")
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_new_database_database_exists(
+        self, mock__execute_query, mock__database_exists
+    ):
+        mock__execute_query.return_value = []
+        mock__database_exists.return_value = True
+        with self.assertRaises(Exception):
+            self.mysql.new_database("monumental")
+
+    @patch("mysqlserver.MySQL._database_exists")
+    @patch("mysqlserver.MySQL._execute_query")
+    def test_new_database_database_not_exists(
+        self, mock__execute_query, mock__database_exists
+    ):
+        mock__execute_query.return_value = []
+        mock__database_exists.return_value = False
+        self.assertTrue(self.mysql.new_database("monumental"))
 
     @patch("mysqlserver.MySQL._execute_query")
     def test_drop_databases(self, mock__execute_query):
@@ -283,3 +360,19 @@ class TestMySQLServer(unittest.TestCase):
             "password": "LaPelotaNoSeMancha10!",
         }
         self.assertFalse(self.mysql.new_user(credentials1))
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test__user_exists(self, mock__execute_query):
+        mock__execute_query.return_value = [(0,)]
+        self.assertFalse(self.mysql._user_exists("Diego"))
+
+        mock__execute_query.return_value = [(1,)]
+        self.assertTrue(self.mysql._user_exists("Diego"))
+
+    @patch("mysqlserver.MySQL._execute_query")
+    def test__database_exists(self, mock__execute_query):
+        mock__execute_query.return_value = [(0,)]
+        self.assertFalse(self.mysql._database_exists("db_10"))
+
+        mock__execute_query.return_value = [(1,)]
+        self.assertTrue(self.mysql._database_exists("db_10"))
