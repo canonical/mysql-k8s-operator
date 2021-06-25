@@ -53,7 +53,7 @@ class TestMySQLServer(unittest.TestCase):
     def test_version(self, mock__execute_query):
         returned_value = [("8.0.23-3build1",)]
         mock__execute_query.return_value = returned_value
-        expected_value = "8.0.23-3build1"
+        expected_value = "8.0.23"
         self.assertEqual(self.mysql.version(), expected_value)
 
         mock__execute_query.side_effect = Error
