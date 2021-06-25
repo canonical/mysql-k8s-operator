@@ -28,5 +28,3 @@ resources:
   mysql-image:
     type: oci-image
     description: upstream docker image for MySQL
-    auto-fetch: true
-    upstream-source: "ubuntu/mysql:latest"
