@@ -64,7 +64,6 @@ class TestCharm(unittest.TestCase):
 
     def test_default_configs(self):
         config = self.harness.model.config
-        self.assertEqual(config["port"], 3306)
         self.assertTrue("mysql_root_password" in config)
         self.assertEqual(config["mysql_root_password"], "")
 
