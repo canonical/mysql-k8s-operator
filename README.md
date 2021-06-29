@@ -95,5 +95,5 @@ This charm provides a `mysql_datastore` relation so you can integrate this charm
 
 ## OCI Images
 
-This charm by default uses the latest version of the [ubuntu/mysql](https://hub.docker.com/r/ubuntu/prometheus) image.
+This charm by default uses the latest version of the [ubuntu/mysql](https://hub.docker.com/r/ubuntu/mysql) image.
 
