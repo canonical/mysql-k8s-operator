@@ -18,6 +18,7 @@ from ops.model import (
 
 logger = logging.getLogger(__name__)
 PEER = "mysql"
+MYSQL_PORT = 3306
 
 
 class MySQLCharm(CharmBase):
@@ -149,7 +150,7 @@ class MySQLCharm(CharmBase):
         mysql_config = {
             "app_name": self.model.app.name,
             "host": self.unit_ip,
-            "port": self.model.config["port"],
+            "port": MYSQL_PORT,
             "user_name": "root",
             "mysql_root_password": peers_data["mysql_root_password"],
         }
