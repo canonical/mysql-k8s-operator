@@ -10,6 +10,7 @@ from mysql.connector import connect, Error
 from typing import Union
 
 logger = logging.getLogger(__name__)
+MYSQL_VERSION = "8.0.26"
 
 
 class MySQL:
@@ -213,15 +214,10 @@ class MySQL:
         """Creates the query string for flushing privileges in MySQL"""
         return "FLUSH PRIVILEGES;"
 
-    def version(self) -> Union[str, None]:
-        """Get MySQLDB version"""
-        try:
-            query = "SELECT VERSION() as version;"
-            version = self._execute_query(query)[0][0].split("-")[0]
-            return version
-        except Error:
-            logger.debug("VERSION NOT READY YET")
-            return None
+    @property
+    def version(self) -> str:
+        """Get MySQL version"""
+        return MYSQL_VERSION
 
     @staticmethod
     def new_password(length: int = 16) -> str:
