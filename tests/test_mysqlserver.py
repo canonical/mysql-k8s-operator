@@ -51,13 +51,8 @@ class TestMySQLServer(unittest.TestCase):
 
     @patch("mysqlserver.MySQL._execute_query")
     def test_version(self, mock__execute_query):
-        returned_value = [("8.0.23-3build1",)]
-        mock__execute_query.return_value = returned_value
-        expected_value = "8.0.23"
-        self.assertEqual(self.mysql.version(), expected_value)
-
-        mock__execute_query.side_effect = Error
-        self.assertEqual(self.mysql.version(), None)
+        expected_value = "8.0.26"
+        self.assertEqual(self.mysql.version, expected_value)
 
     @patch("mysqlserver.MySQL._get_client")
     def test_is_ready(self, mock_get_client):

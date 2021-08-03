@@ -7,7 +7,6 @@ import secrets
 import string
 
 from mysql.connector import connect, Error
-from typing import Union
 
 logger = logging.getLogger(__name__)
 MYSQL_VERSION = "8.0.26"
