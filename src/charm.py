@@ -252,7 +252,7 @@ class MySQLCharm(CharmBase):
     def _provide_mysql(self) -> None:
         if self._is_mysql_initialized():
             self.mysql_provider = MySQLProvider(
-                self, "database", PEER, self.mysql.version()
+                self, "database", PEER, self.mysql.version
             )
             self.mysql_provider.ready()
             logger.debug("MySQL Provider is available")
