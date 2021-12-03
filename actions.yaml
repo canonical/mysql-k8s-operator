@@ -1,47 +1,16 @@
-create-user:
-  description: >
-    Creates a new superuser user within the instance
-  params:
-    username:
-      type: string
-      description: The username of the user to create
-    password:
-      type: string
-      description: The password of the user to create
-  required:
-    - username
-    - password
+# Copyright 2021 Canonical Ltd.
+# See LICENSE file for licensing details.
+#
+# TEMPLATE-TODO: change this example to suit your needs.
+# If you don't need actions, you can remove the file entirely.
+# It ties in to the example _on_fortune_action handler in src/charm.py
+#
+# Learn more about actions at: https://juju.is/docs/sdk/actions
 
-set-user-password:
-  description: >
-    Reset a user's password
+fortune:
+  description: Returns a pithy phrase.
   params:
-    username:
+    fail:
+      description: "Fail with this message"
       type: string
-      description: The username of the user to change password
-    password:
-      type: string
-      description: The new password to set for the user
-  required:
-    - username
-    - password
-
-delete-user:
-  description: >
-    Deletes an existing user within the instance
-  params:
-    username:
-      type: string
-      description: The username of the user to delete
-  required:
-    - username
-
-create-database:
-  description: >
-    Creates an empty database within the instance
-  params:
-    database:
-      type: string
-      description: The name of the database to create
-  required:
-    - database
+      default: ""

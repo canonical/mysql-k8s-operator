@@ -1,30 +1,25 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: mysql-k8s
+
+# For a complete list of supported options, see:
+# https://discourse.charmhub.io/t/charm-metadata-v2/3674/15
+name: operator-template
+display-name: |
+  TEMPLATE-TODO: fill out a display name for the Charmcraft store
 description: |
-  MySQL is a widely used, open-source relational database management system (RDBMS).
+  TEMPLATE-TODO: fill out the charm's description
 summary: |
-  Kubernetes charm for MySQL
+  TEMPLATE-TODO: fill out the charm's summary
 
+# TEMPLATE-TODO: replace with containers for your workload (delete for non-k8s)
 containers:
-  mysql:
-    resource: mysql-image
-    mounts:
-      - storage: database
-        location: /var/lib/mysql
-peers:
-  mysql:
-    interface: mysql_datastore
+  httpbin:
+    resource: httpbin-image
 
-provides:
-  database:
-    interface: mysql_datastore
-
-storage:
-  database:
-    type: filesystem
-
+# TEMPLATE-TODO: each container defined above must specify an oci-image resource
 resources:
-  mysql-image:
+  httpbin-image:
     type: oci-image
-    description: upstream docker image for MySQL
+    description: OCI image for httpbin (kennethreitz/httpbin)
+    # Included for simplicity in integration tests
+    upstream-source: kennethreitz/httpbin
