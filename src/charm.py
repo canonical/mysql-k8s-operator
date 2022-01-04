@@ -1,104 +1,129 @@
 #!/usr/bin/env python3
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
-#
-# Learn more at: https://juju.is/docs/sdk
 
-"""Charm the service.
-
-Refer to the following post for a quick-start guide that will help you
-develop a new k8s charm using the Operator Framework:
-
-    https://discourse.charmhub.io/t/4208
-"""
+"""A Juju charm for MySQL InnoDB Cluster."""
 
 import logging
+import secrets
+import string
 
-from ops.charm import CharmBase
-from ops.framework import StoredState
+from ops.charm import CharmBase, WorkloadEvent
 from ops.main import main
-from ops.model import ActiveStatus
+from ops.model import ActiveStatus, WaitingStatus
+from ops.pebble import Layer
 
 logger = logging.getLogger(__name__)
 
 
-class OperatorTemplateCharm(CharmBase):
-    """Charm the service."""
-
-    _stored = StoredState()
+class MysqlOperatorCharm(CharmBase):
+    """A Juju Charm for MySQL InnoDB Cluster."""
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.framework.observe(self.on.httpbin_pebble_ready, self._on_httpbin_pebble_ready)
+
+        self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.fortune_action, self._on_fortune_action)
-        self._stored.set_default(things=[])
+        change_events = [
+            self.on.mysql_server_pebble_ready,
+            self.on.mysql_router_pebble_ready,
+        ]
+        for event in change_events:
+            self.framework.observe(event, self._on_pebble_ready)
 
-    def _on_httpbin_pebble_ready(self, event):
-        """Define and start a workload using the Pebble API.
+    # ---- Event handlers
+    def _on_start(self, _):
+        """Placeholder for StartEvent."""
+        pass
 
-        TEMPLATE-TODO: change this example to suit your needs.
-        You'll need to specify the right entrypoint and environment
-        configuration for your specific workload. Tip: you can see the
-        standard entrypoint of an existing container using docker inspect
+    def _on_config_changed(self, _):
+        """Placeholder for ConfigChangedEvent."""
+        pass
 
-        Learn more about Pebble layers at https://github.com/canonical/pebble
-        """
-        # Get a reference the container attribute on the PebbleReadyEvent
+    def _on_pebble_ready(self, event: WorkloadEvent) -> None:
+        """Updates the Pebble configuration layer when changed."""
         container = event.workload
-        # Define an initial Pebble layer configuration
-        pebble_layer = {
-            "summary": "httpbin layer",
-            "description": "pebble config layer for httpbin",
+        if not container.can_connect():
+            self.unit.status = WaitingStatus("Waiting for pod startup to complete")
+            event.defer()
+            return
+
+        # Get current config
+        current_layer = container.get_plan()
+        # Create a new config layer
+        service_name = container.name
+        new_layer = self._mysql_layer(service_name=service_name)
+
+        if current_layer.services != new_layer.services:
+            container.add_layer(service_name, new_layer, combine=True)
+            logging.info("Pebble plan updated with new configuration")
+            container.restart(service_name)
+
+        self.unit.status = ActiveStatus()
+
+    # ---- Helper functions
+    def _generate_password(self) -> str:
+        """Returns a random 12 alphanumeric string that can be used as password."""
+        alphanums = string.ascii_letters + string.digits
+        return "".join(secrets.choice(alphanums) for _ in range(12))
+
+    def _mysql_layer(self, service_name: str) -> Layer:
+        """Defines a Pebble configuration Layer for mysql services.
+
+        Args:
+            service_name: Name of the service the Layer will be configured to.
+
+        Returns:
+            A pre-configured Pebble Layer.
+        """
+        # FIXME: mysqlrouter cannot be started correctly as it
+        # is missing important information about the cluster.
+        layer_config = {
+            "summary": "MySQL Router layer",
+            "description": "Pebble layer configuration for MySQL Router",
             "services": {
-                "httpbin": {
+                service_name: {
                     "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
+                    "summary": "mysqlsh router",
+                    "command": "/run.sh mysqlrouter",
                     "startup": "enabled",
-                    "environment": {"thing": self.model.config["thing"]},
                 }
             },
         }
-        # Add intial Pebble config layer using the Pebble API
-        container.add_layer("httpbin", pebble_layer, combine=True)
-        # Autostart any services that were defined with startup: enabled
-        container.autostart()
-        # Learn more about statuses in the SDK docs:
-        # https://juju.is/docs/sdk/constructs#heading--statuses
-        self.unit.status = ActiveStatus()
 
-    def _on_config_changed(self, _):
-        """Just an example to show how to deal with changed configuration.
+        if service_name == "mysql-server":
+            env_config = {
+                "MYSQL_USER": self._config["mysql_user"],
+                "MYSQL_PASSWORD": self._config["mysql_password"],
+                "MYSQL_ROOT_PASSWORD": self._config["mysql_root_password"],
+            }
 
-        TEMPLATE-TODO: change this example to suit your needs.
-        If you don't need to handle config, you can remove this method,
-        the hook created in __init__.py for it, the corresponding test,
-        and the config.py file.
+            layer_config = {
+                "summary": "MySQL Server layer",
+                "description": "Pebble layer configuration for MySQL Server",
+                "services": {
+                    service_name: {
+                        "override": "replace",
+                        "summary": "mysql server instance",
+                        "command": "docker-entrypoint.sh mysqld",
+                        "startup": "enabled",
+                        "environment": env_config,
+                    }
+                },
+            }
+        return Layer(layer_config)
 
-        Learn more about config at https://juju.is/docs/sdk/config
-        """
-        current = self.config["thing"]
-        if current not in self._stored.things:
-            logger.debug("found a new thing: %r", current)
-            self._stored.things.append(current)
-
-    def _on_fortune_action(self, event):
-        """Just an example to show how to receive actions.
-
-        TEMPLATE-TODO: change this example to suit your needs.
-        If you don't need to handle actions, you can remove this method,
-        the hook created in __init__.py for it, the corresponding test,
-        and the actions.py file.
-
-        Learn more about actions at https://juju.is/docs/sdk/actions
-        """
-        fail = event.params["fail"]
-        if fail:
-            event.fail(fail)
-        else:
-            event.set_results({"fortune": "A bug in the code is worth two in the documentation."})
+    # ---- Properties
+    @property
+    def _config(self):
+        """Configuration data for MySQL authentication."""
+        config = {
+            "mysql_user": "mysql_user",
+            "mysql_password": self._generate_password(),
+            "mysql_root_password": self._generate_password(),
+        }
+        return config
 
 
 if __name__ == "__main__":
-    main(OperatorTemplateCharm)
+    main(MysqlOperatorCharm)
