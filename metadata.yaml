@@ -19,8 +19,8 @@ containers:
 resources:
   mysql-server-image:
     type: oci-image
-    description: OCI image for MySQL Server (ubuntu/mysql)
-    upstream-source: ubuntu/mysql:8.0-21.04_beta
+    description: OCI image for MySQL Server (dnplas/mysql-instance)
+    upstream-source: dnplas/mysql-instance:8.0-21.04
 
   mysql-router-image:
     type: oci-image
