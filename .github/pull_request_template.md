@@ -1,9 +1,9 @@
-# Problem
-<!-- What problem is this PR trying to solve? -->
+# Issue
+<!-- What issue is this PR trying to solve? -->
 
 
 # Solution
-<!-- A summary of the solution addressing the above problem -->
+<!-- A summary of the solution addressing the above issue -->
 
 
 # Context
