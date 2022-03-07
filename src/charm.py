@@ -24,12 +24,8 @@ class MysqlOperatorCharm(CharmBase):
 
         self.framework.observe(self.on.start, self._on_start)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        change_events = [
-            self.on.mysql_server_pebble_ready,
-            self.on.mysql_router_pebble_ready,
-        ]
-        for event in change_events:
-            self.framework.observe(event, self._on_pebble_ready)
+        self.framework.observe(self.on.mysql_server_pebble_ready, self._on_pebble_ready)
+        self.framework.observe(self.on.mysql_router_pebble_ready, self._on_pebble_ready)
 
     # ---- Event handlers
     def _on_start(self, _):
