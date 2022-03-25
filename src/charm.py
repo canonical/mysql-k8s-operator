@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class MySQLOperatorCharm(CharmBase):
-    """Charm the service."""
+    """Operator framework charm for MySQL."""
 
     def __init__(self, *args):
         super().__init__(*args)

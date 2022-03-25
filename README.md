@@ -2,7 +2,7 @@
 
 ## Description
 
-The [mysql](https://www.mysql.com/) operator provides an open-source relational database management system (RDBMS). This repository contains a Juju Charm for deploying MySQL on Kubernetes clusters.
+The [MySQL](https://www.mysql.com/) operator provides an open-source relational database management system (RDBMS). This repository contains a Juju Charm for deploying MySQL on Kubernetes clusters.
 
 This charm is currently in development, with High Availability via Group Replication as a short-term goal.
 
@@ -40,8 +40,6 @@ There are no relations implemented yet.
 This charm by default uses the latest version of the [ubuntu/mysql](https://hub.docker.com/r/ubuntu/mysql) image.
 
 ## Contributing
-
-<!-- TEMPLATE-TODO: Change this URL to be the full Github path to CONTRIBUTING.md-->
 
 Please see the [Juju SDK docs](https://juju.is/docs/sdk) for guidelines on enhancements to this
 charm following best practice guidelines, and
