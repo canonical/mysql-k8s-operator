@@ -25,5 +25,6 @@ class MySQLOperatorCharm(CharmBase):
         """Define and start a workload using the Pebble API."""
         self.unit.status = ActiveStatus()
 
+
 if __name__ == "__main__":
     main(MySQLOperatorCharm)
