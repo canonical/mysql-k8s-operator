@@ -1,30 +1,26 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
+
 name: mysql-k8s
+display-name: MySQL
 description: |
-  MySQL is a widely used, open-source relational database management system (RDBMS).
+  MySQL charm for Kubernetes deployments
 summary: |
-  Kubernetes charm for MySQL
+  MySQL is a widely used, open-source relational database management system
+  (RDBMS). MySQL InnoDB cluster povide a complete high availability solution
+  for MySQL via Group Replication.
+
+  This charm supports MySQL 8 in Kubernetes environments.
+maintainers:
+  - Paulo Machado <paulo.machado@canonical.com>
+  - Shayan Patel <shayan.patel@canonical.com>
 
 containers:
   mysql:
     resource: mysql-image
-    mounts:
-      - storage: database
-        location: /var/lib/mysql
-peers:
-  mysql:
-    interface: mysql_datastore
-
-provides:
-  database:
-    interface: mysql_datastore
-
-storage:
-  database:
-    type: filesystem
 
 resources:
   mysql-image:
     type: oci-image
-    description: upstream docker image for MySQL
+    description: Ubuntu LTS Docker image for MySQL
+    upstream-source: ubuntu/mysql
