@@ -55,7 +55,7 @@ juju add-model dev
 juju model-config logging-config="<root>=INFO;unit=DEBUG"
 # Deploy the charm
 juju deploy ./mysql-k8s_ubuntu-20.04-amd64.charm \
-    --resource mysql-image=ubuntu/mysql --trust \
+    --resource mysql-image=ubuntu/mysql
 ```
 
 ## Canonical Contributor Agreement

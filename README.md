@@ -1,4 +1,4 @@
-# operator-template
+# MySQL k8s Charmed Operator
 
 ## Description
 
