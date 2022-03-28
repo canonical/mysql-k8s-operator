@@ -1,71 +1,63 @@
+# Contributing
+
+## Overview
+
+This documents explains the processes and practices recommended for contributing enhancements to
+this operator.
+
+- Generally, before developing enhancements to this charm, you should consider [opening an issue
+  ](https://github.com/canonical/mysql-k8s-operator/issues) explaining your use case.
+- If you would like to chat with us about your use-cases or proposed implementation, you can reach
+  us at [Canonical Mattermost public channel](https://chat.charmhub.io/charmhub/channels/charm-dev)
+  or [Discourse](https://discourse.charmhub.io/).
+- Familiarising yourself with the [Charmed Operator Framework](https://juju.is/docs/sdk) library
+  will help you a lot when working on new features or bug fixes.
+- All enhancements require review before being merged. Code review typically examines
+  - code quality
+  - test coverage
+  - user experience for Juju administrators of this charm.
+- Please help us out in ensuring easy to review branches by rebasing your pull request branch onto
+  the `main` branch. This also avoids merge commits and creates a linear Git commit history.
+
 ## Developing
 
-Create and activate a virtualenv with the development requirements:
+You can use the environments created by `tox` for development:
 
-```bash
-$ virtualenv -p python3 venv
-$ source venv/bin/activate
-$ pip install -r requirements-dev.txt
+```shell
+tox --notest -e unit
+source .tox/unit/bin/activate
 ```
 
-### Setup
+### Testing
 
-A typical setup using [snaps](https://snapcraft.io/), for deployments to a [microk8s](https://microk8s.io/) cluster can be done using the following commands
-
-```bash
-$ sudo snap install microk8s --classic
-$ microk8s.enable dns storage
-$ sudo snap install juju --classic
-$ juju bootstrap microk8s microk8s
-$ juju create-storage-pool operator-storage kubernetes storage-class=microk8s-hostpath
+```shell
+tox -e fmt           # update your code according to linting rules
+tox -e lint          # code style
+tox -e unit          # unit tests
+tox -e integration   # integration tests
+tox                  # runs 'lint' and 'unit' environments
 ```
 
-### Build
+## Build charm
 
-Install the charmcraft tool
+Build the charm in this git repository using:
 
-```bash
-$ sudo snap install charmcraft
+```shell
+charmcraft pack
 ```
 
-Build the charm in this git repository
+### Deploy
 
 ```bash
-$ charmcraft build
+# Create a model
+juju add-model dev
+# Enable DEBUG logging
+juju model-config logging-config="<root>=INFO;unit=DEBUG"
+# Deploy the charm
+juju deploy ./mysql-k8s_ubuntu-20.04-amd64.charm \
+    --resource mysql-image=ubuntu/mysql
 ```
 
-## Testing
+## Canonical Contributor Agreement
 
-Unit tests are implemented using the Operator Framework test [harness](https://ops.readthedocs.io/en/latest/#module-ops.testing). These tests may executed by doing:
-
-
-```bash
-$ ./run_tests
-```
-
-
-## Code Overview
-
-The core implementation of this charm is represented by the [`MySQLCharm`](src/charm.py) class.
-`MySQLCharm` responds to
-
-- configuation changes,
-
-In response to any change in its configuration, `MySQLCharm` regenerates its config file, and restarts itself.
-
-The `MySQLCharm` object interacts with its consumers using a [charm library](lib/charms/prometheus_k8s/v1/prometheus.py). Using this library requires that MySQL informs its "Consumers" of the actual MySQL version that was deployed. In order to determine this version at runtime `MySQLCharm` uses the [`MySQL`](src/prometheus_server.py) object.
-The `MySQL` object provides an interface to a running MySQL instance. This interface is limited to only those aspects of MySQL required by this charm.
-
-
-## Design Choices
-
-This MySQL charm does not support (yet) any kind of clustering. As a result of this decision scaling MySQL units only results in standalone units with the same configuration.
-
-
-## Road Map
-
-Roughly by order of priority
-
-- Support primary-secondary replication
-- Improve MySQL charm actions (backup, restore, etc)
-- Support tuning the MySQL config
+Canonical welcomes contributions to the MySQL Operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.
