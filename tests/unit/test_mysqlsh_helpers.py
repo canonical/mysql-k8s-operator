@@ -57,17 +57,6 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLConfigureMySQLUsersError):
             _m.configure_mysql_users()
 
-    @patch("ops.model.Container")
-    def test_mysqlsh_bin(self, _container):
-        """Test the mysqlsh_bin property."""
-        _container.exists.return_value = False
-        _m = MySQL("test", "test", "test", "10.0.1.1")
-
-        self.assertEqual(_m.mysqlsh_bin(_container), "/usr/bin/mysqlsh")
-
-        _container.exists.return_value = True
-        self.assertEqual(_m.mysqlsh_bin(_container), "/snap/bin/mysqlsh")
-
     @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
     @patch("mysqlsh_helpers.MySQL._wait_until_mysql_connection")
     def test_configure_instance(self, _wait_until_mysql_connection, _run_mysqlsh_script):

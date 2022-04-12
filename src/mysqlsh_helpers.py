@@ -52,25 +52,6 @@ class MySQL:
         self.cluster_admin_password = cluster_admin_password
         self.instance_address = instance_address
 
-    def mysqlsh_bin(self, container: Container) -> str:
-        """Determine binary path for MySQL Shell.
-
-        Args:
-            container: Container to run the script in
-
-        Returns:
-            Path to binary mysqlsh
-        """
-        # Allow for various versions of the mysql-shell snap
-        # When we get the alias use /snap/bin/mysqlsh
-        _paths = ("/snap/bin/mysqlsh", "/snap/bin/mysql-shell.mysqlsh")
-
-        for path in _paths:
-            if container.exists(path):
-                return path
-        # Default to the upstream repo mysql-shell
-        return "/usr/bin/mysqlsh"
-
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
 
@@ -149,7 +130,7 @@ class MySQL:
 
         # Specify python as this is not the default in the deb version
         # of the mysql-shell snap
-        cmd = [self.mysqlsh_bin, "--no-wizard", "--python", "-f", "/tmp/script.sql"]
+        cmd = ["/usr/bin/mysqlsh", "--no-wizard", "--python", "-f", "/tmp/script.sql"]
         process = container.exec(cmd)
         process.wait()
 
