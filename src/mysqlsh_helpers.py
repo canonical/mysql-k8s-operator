@@ -131,7 +131,7 @@ class MySQL:
             if e.stderr:
                 for line in e.stderr.splitlines():
                     logger.error("  %s", line)
-            raise MySQLConfigureMySQLUsersError(e.stdout)
+            raise MySQLConfigureMySQLUsersError(e.stderr if e.stderr else "")
 
     def configure_instance(self) -> None:
         """Configure the instance to be used in an InnoDB cluster.
