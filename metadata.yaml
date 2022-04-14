@@ -14,13 +14,21 @@ summary: |
 maintainers:
   - Paulo Machado <paulo.machado@canonical.com>
   - Shayan Patel <shayan.patel@canonical.com>
-
 containers:
   mysql:
     resource: mysql-image
-
+    mounts:
+      - storage: database
+        location: /var/lib/mysql
 resources:
   mysql-image:
     type: oci-image
     description: Ubuntu LTS Docker image for MySQL
     upstream-source: ubuntu/mysql
+peers:
+  mysql-replicas:
+    interface: mysql-replicas
+storage:
+  database:
+    type: filesystem
+    description: Persistent storage for MySQL data
