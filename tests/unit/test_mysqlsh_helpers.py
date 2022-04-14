@@ -64,7 +64,7 @@ class TestMySQL(unittest.TestCase):
     def test_configure_mysql_users_fail(self, _run_mysqlcli_script):
         """Test failed to configuring the MySQL users."""
         _run_mysqlcli_script.side_effect = ExecError(
-            command=["mysql"], exit_code=1, stdout=b"", stderr=b""
+            command=["mysql"], exit_code=1, stdout=b"", stderr=b"Error"
         )
 
         with self.assertRaises(MySQLConfigureMySQLUsersError):
@@ -96,7 +96,7 @@ class TestMySQL(unittest.TestCase):
         """Test exceptions raise while running configure_instance."""
         # Test an issue with _run_mysqlsh_script
         _run_mysqlsh_script.side_effect = ExecError(
-            command=["mysqlsh"], exit_code=1, stdout=b"", stderr=b""
+            command=["mysqlsh"], exit_code=1, stdout=b"", stderr=b"Error"
         )
 
         self.mysql.container = _container
@@ -134,7 +134,7 @@ class TestMySQL(unittest.TestCase):
     def test_create_cluster_exceptions(self, _run_mysqlsh_script):
         """Test exceptions raised while running create_cluster."""
         _run_mysqlsh_script.side_effect = ExecError(
-            command=["mysqlsh"], exit_code=1, stdout=b"", stderr=b""
+            command=["mysqlsh"], exit_code=1, stdout=b"", stderr=b"Error"
         )
 
         with self.assertRaises(MySQLCreateClusterError):
@@ -157,7 +157,7 @@ class TestMySQL(unittest.TestCase):
     def test_add_instance_to_cluster_exception(self, _run_mysqlsh_script):
         """Test exceptions raised while running add_instance_to_cluster."""
         _run_mysqlsh_script.side_effect = ExecError(
-            command=["mysqlsh"], exit_code=1, stdout=b"", stderr=b""
+            command=["mysqlsh"], exit_code=1, stdout=b"", stderr=b"Error"
         )
 
         with self.assertRaises(MySQLAddInstanceToClusterError):

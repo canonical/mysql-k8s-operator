@@ -163,7 +163,7 @@ class MySQL:
             if e.stderr:
                 for line in e.stderr.splitlines():
                     logger.error("  %s", line)
-            raise MySQLConfigureInstanceError(e.stderr)
+            raise MySQLConfigureInstanceError(e.stderr if e.stderr else "")
 
     def create_cluster(self) -> None:
         """Create an InnoDB cluster with Group Replication enabled.
@@ -180,11 +180,11 @@ class MySQL:
             logger.debug("Creating a MySQL InnoDB cluster")
             self._run_mysqlsh_script("\n".join(replication_commands))
         except ExecError as e:
-            logger.exception(
-                f"Failed to create cluster on instance: {self.instance_address} with error {e.stderr}",
-                exc_info=e,
-            )
-            raise MySQLCreateClusterError(e.stderr)
+            logger.error("Exited with code %d.", e.exit_code)
+            if e.stderr:
+                for line in e.stderr.splitlines():
+                    logger.error("  %s", line)
+            raise MySQLCreateClusterError(e.stderr if e.stderr else "")
 
     def add_instance_to_cluster(self, instance_address) -> None:
         """Add an instance to the InnoDB cluster.
@@ -226,7 +226,7 @@ class MySQL:
                         f"Failed to add instance {instance_address} to cluster {self.cluster_name} on {self.instance_address}",
                         exc_info=e,
                     )
-                    raise MySQLAddInstanceToClusterError(e.stderr)
+                    raise MySQLAddInstanceToClusterError(e.stderr if e.stderr else "")
 
                 logger.debug(
                     f"Failed to add instance {instance_address} to cluster {self.cluster_name} with recovery method 'auto'. Trying method 'clone'"
@@ -264,7 +264,7 @@ class MySQL:
             MYSQLSH_SCRIPT_FILE,
         ]
         process = self.container.exec(cmd)
-        process.wait()
+        process.wait_output()
 
     def _run_mysqlcli_script(self, script: str, password=None) -> None:
         """Execute a MySQL CLI script.
@@ -289,4 +289,4 @@ class MySQL:
             # passoword is needed after user
             command.append(f"--password={password}")
         process = self.container.exec(command)
-        process.wait()
+        process.wait_output()
