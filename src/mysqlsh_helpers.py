@@ -153,7 +153,7 @@ class MySQL:
         try:
             logger.debug("Configuring instance for InnoDB")
             self._run_mysqlsh_script("\n".join(configure_instance_command))
-            # restart the container to restart the mysqld
+            # restart the pebble layer service
             self.container.restart("mysqld")
 
             logger.debug("Waiting until MySQL to restart")
