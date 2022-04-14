@@ -32,8 +32,6 @@ class TestMySQL(unittest.TestCase):
     @patch("mysqlsh_helpers.MySQL._run_mysqlcli_script")
     def test_configure_mysql_users(self, _run_mysqlcli_script):
         """Test failed to configuring the MySQL users."""
-        _run_mysqlcli_script.return_value = b""
-
         _expected_configure_user_commands = " ".join(
             (
                 "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='%';",
