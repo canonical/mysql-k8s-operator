@@ -7,7 +7,7 @@ description: |
   MySQL charm for Kubernetes deployments
 summary: |
   MySQL is a widely used, open-source relational database management system
-  (RDBMS). MySQL InnoDB cluster povide a complete high availability solution
+  (RDBMS). MySQL InnoDB cluster provide a complete high availability solution
   for MySQL via Group Replication.
 
   This charm supports MySQL 8 in Kubernetes environments.
