@@ -13,6 +13,7 @@ from mysqlsh_helpers import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLServiceNotRunningError,
 )
 
 
@@ -110,9 +111,7 @@ class TestMySQL(unittest.TestCase):
         _wait_until_mysql_connection.reset_mock()
 
         # Test an issue with _wait_until_mysql_connection
-        _wait_until_mysql_connection.side_effect = ExecError(
-            command=["mysqlsh"], exit_code=1, stdout=b"", stderr=b""
-        )
+        _wait_until_mysql_connection.side_effect = MySQLServiceNotRunningError()
 
         with self.assertRaises(MySQLConfigureInstanceError):
             self.mysql.configure_instance()
