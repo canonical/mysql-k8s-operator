@@ -109,8 +109,7 @@ class MySQL:
             "CONNECTION_ADMIN",
         )
 
-        # commands to be run from mysql client with root user and password set above
-        # it's not needed to grand privileges to the root user, as it's already
+        # it's not needed to grant privileges to the root user, as it's already
         # granted by the entrypoint script provided by the container
         configure_users_commands = (
             "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='%';",
@@ -207,7 +206,7 @@ class MySQL:
         )
 
         for recovery_method in ["auto", "clone"]:
-            # Preffer "auto" recovery method, but if it fails, try "clone"
+            # Prefer "auto" recovery method, but if it fails, try "clone"
             try:
                 options["recoveryMethod"] = recovery_method
                 add_instance_command = (
