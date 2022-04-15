@@ -1,0 +1,7 @@
+# Copyright 2022 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+options:
+  cluster_name:
+    description: "Optional - Name of the MySQL InnoDB cluster"
+    type: "string"
