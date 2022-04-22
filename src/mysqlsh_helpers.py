@@ -322,7 +322,35 @@ class MySQL:
             MYSQLSH_SCRIPT_FILE,
         ]
         process = self.container.exec(cmd)
-        process.wait_output()
+        stdout, _ = process.wait_output()
+        return stdout
+
+    def is_instance_configured_for_innodb(self, instance_address: str) -> bool:
+        """Confirm if instance is configured for use in an InnoDB cluster.
+
+        Args:
+            instance_address: The instance address for which to confirm InnoDB configuration
+
+        Returns:
+            Boolean indicating whether the instance is configured for use in an InnoDB cluster
+        """
+        commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{instance_address}')",
+            "instance_configured = dba.check_instance_configuration()['status'] == 'ok'",
+            'print("INSTANCE_CONFIGURED" if instance_configured else "INSTANCE_NOT_CONFIGURED")',
+        )
+
+        try:
+            logger.debug(f"Confirming instance {instance_address} configuration for InnoDB")
+
+            output = self._run_mysqlsh_script("\n".join(commands))
+            return "INSTANCE_CONFIGURED" in output
+        except ExecError as e:
+            # confirmation can fail if the clusteradmin user does not yet exist on the instance
+            logger.warning(
+                f"Failed to confirm instance configuration for {instance_address} with error {e.stderr}",
+                exc_info=e,
+            )
 
     def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> None:
         """Execute a MySQL CLI script.
