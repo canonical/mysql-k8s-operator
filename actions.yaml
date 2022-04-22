@@ -1,2 +1,5 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
+
+get-generated-passwords:
+  description: Get the cluster admin user password
