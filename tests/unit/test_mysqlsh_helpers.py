@@ -3,17 +3,21 @@
 
 
 import unittest
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 from ops.pebble import ExecError
 
 from mysqlsh_helpers import (
+    MYSQLD_SOCK_FILE,
     MySQL,
     MySQLAddInstanceToClusterError,
+    MySQLBootstrapInstanceError,
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLPatchDNSSearchesError,
     MySQLServiceNotRunningError,
+    MYSQLSH_SCRIPT_FILE,
 )
 
 
@@ -35,8 +39,8 @@ class TestMySQL(unittest.TestCase):
         """Test failed to configuring the MySQL users."""
         _expected_configure_user_commands = " ".join(
             (
-                "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='%';",
-                "ALTER USER 'root'@'%' IDENTIFIED BY 'password';",
+                "CREATE USER 'root'@'%' IDENTIFIED BY 'password';",
+                "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION;",
                 "CREATE USER 'serverconfig'@'%' IDENTIFIED BY 'serverconfigpassword';",
                 "GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION;",
                 "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';",
@@ -162,3 +166,119 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLAddInstanceToClusterError):
             self.mysql.add_instance_to_cluster("127.0.0.2")
+
+    @patch("ops.pebble.ExecProcess")
+    @patch("ops.model.Container")
+    def test_bootstrap_instance(self, _container, _process):
+        """Test a successful execution of bootstrap_instance."""
+        _container.exec.return_value = _process
+        self.mysql.container = _container
+
+        self.mysql.bootstrap_instance()
+
+        _container.exec.assert_called_once_with(
+            command=["mysqld", "--initialize-insecure", "-u", "mysql"]
+        )
+
+        _process.wait_output.assert_called_once()
+
+    @patch("ops.model.Container")
+    def test_bootstrap_instance_exception(self, _container):
+        """Test a failing execution of bootstrap_instance."""
+        _container.exec.side_effect = ExecError(
+            command=["mysqld"], exit_code=1, stdout=b"", stderr=b"Error"
+        )
+        self.mysql.container = _container
+
+        with self.assertRaises(MySQLBootstrapInstanceError):
+            self.mysql.bootstrap_instance()
+
+    @patch("ops.pebble.ExecProcess")
+    @patch("ops.model.Container")
+    def test_patch_dns_searches(self, _container, _process):
+        """Test a successful execution of patch_dns_searches."""
+        mock_file = MagicMock()
+        mock_file.read.return_value = "\n".join(
+            (
+                "search dev.svc.cluster.local svc.cluster.local cluster.local",
+                "nameserver 10.152.183.10",
+                "options ndots:5",
+            )
+        )
+        _container.pull.return_value = mock_file
+        _container.exec.return_value = _process
+
+        self.mysql.container = _container
+
+        self.mysql.patch_dns_searches("app-name")
+
+        _container.push.assert_called_once_with(
+            "/etc/resolv.conf-new",
+            source="\n".join(
+                (
+                    "search app-name-endpoints.dev.svc.cluster.local dev.svc.cluster.local svc.cluster.local cluster.local",
+                    "nameserver 10.152.183.10",
+                    "options ndots:5",
+                    "",
+                )
+            ),
+        )
+
+    @patch("ops.model.Container")
+    def test_patch_dns_searches_exception(self, _container):
+        """Test a failing execution of patch_dns_searches."""
+        _container.pull.side_effect = Exception()
+        self.mysql.container = _container
+
+        with self.assertRaises(MySQLPatchDNSSearchesError):
+            self.mysql.patch_dns_searches("app-name")
+
+    @patch("ops.model.Container")
+    def test_run_mysqlsh_script(self, _container):
+        """Test a successful execution of run_mysqlsh_script."""
+        _container.exec.return_value = MagicMock()
+        _container.exec.return_value.wait_output.return_value = (
+            b"stdout",
+            b"stderr",
+        )
+        self.mysql.container = _container
+
+        self.mysql._run_mysqlsh_script("script")
+
+        _container.exec.assert_called_once_with(
+            [
+                "/usr/bin/mysqlsh",
+                "--no-wizard",
+                "--python",
+                "--verbose=1",
+                "-f",
+                MYSQLSH_SCRIPT_FILE,
+                ";",
+                "rm",
+                MYSQLSH_SCRIPT_FILE,
+            ]
+        )
+
+    @patch("ops.model.Container")
+    def test_run_mysqlcli_script(self, _container):
+        """Test a execution of run_mysqlcli_script."""
+        _container.exec.return_value = MagicMock()
+        _container.exec.return_value.wait_output.return_value = (
+            b"stdout",
+            b"stderr",
+        )
+        self.mysql.container = _container
+
+        self.mysql._run_mysqlcli_script("script")
+
+        _container.exec.assert_called_once_with(
+            [
+                "/usr/bin/mysql",
+                "-u",
+                "root",
+                "--protocol=SOCKET",
+                f"--socket={MYSQLD_SOCK_FILE}",
+                "-e",
+                "script",
+            ]
+        )

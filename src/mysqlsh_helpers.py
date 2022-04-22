@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
+MYSQLD_CONFIG_PATH = "/etc/mysql/conf.d/z-custom-mysqld.cnf"
+
+GROUP_REPLICATION_PORT = 33061
 
 
 class MySQLConfigureInstanceError(Exception):
@@ -43,6 +46,18 @@ class MySQLCreateClusterError(Exception):
 
 class MySQLAddInstanceToClusterError(Exception):
     """Exception raised when there is an issue add an instance to the MySQL InnoDB cluster."""
+
+    pass
+
+
+class MySQLBootstrapInstanceError(Exception):
+    """Exception raised when there is an issue bootstrapping an instance."""
+
+    pass
+
+
+class MySQLPatchDNSSearchesError(Exception):
+    """Exception raised when there is an issue patching the DNS searches."""
 
     pass
 
@@ -86,6 +101,52 @@ class MySQL:
         self.cluster_admin_password = cluster_admin_password
         self.container = container
 
+    def bootstrap_instance(self) -> None:
+        """Execute instance first run.
+
+        Initialise mysql data directory and create blank password root@localhost user.
+        Raises MySQLBootstrapInstanceError if the instance bootstrap fails.
+        """
+        bootstrap_command = ["mysqld", "--initialize-insecure", "-u", "mysql"]
+
+        try:
+            process = self.container.exec(command=bootstrap_command)
+            process.wait_output()
+        except ExecError as e:
+            logger.error("Exited with code %d. Stderr:", e.exit_code)
+            if e.stderr:
+                for line in e.stderr.splitlines():
+                    logger.error("  %s", line)
+            raise MySQLBootstrapInstanceError(e.stderr if e.stderr else "")
+
+    def patch_dns_searches(self, app_name: str) -> None:
+        """Patch the DNS searches to allow the instance to be discovered.
+
+        Raises MySQLPatchDNSSearchesError if the patching fails.
+        FIXME: Fix this to use the proper k8s name resolution.
+                MySQL instance are not using `group_replication_local_address`
+                to report own address to the cluster, hence this hack.
+
+        Args:
+            app_name: name of the application
+        """
+        try:
+            resolv_file = self.container.pull("/etc/resolv.conf")
+            content = resolv_file.read()
+            output_string = ""
+            for line in content.splitlines():
+                line_content = line.split()
+                if line_content[0] == "search":
+                    line_content[1:1] = [f"{app_name}-endpoints.{line_content[1]}"]
+                    output_string += " ".join(line_content) + "\n"
+                else:
+                    output_string += line + "\n"
+            self.container.push("/etc/resolv.conf-new", source=output_string)
+            process = self.container.exec(["cp", "/etc/resolv.conf-new", "/etc/resolv.conf"])
+            process.wait()
+        except Exception:
+            raise MySQLPatchDNSSearchesError()
+
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
 
@@ -109,11 +170,10 @@ class MySQL:
             "CONNECTION_ADMIN",
         )
 
-        # it's not needed to grant privileges to the root user, as it's already
-        # granted by the entrypoint script provided by the container
+        # Configure root@%, root@localhost and serverconfig@% users
         configure_users_commands = (
-            "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='%';",
-            f"ALTER USER 'root'@'%' IDENTIFIED BY '{self.root_password}';",
+            f"CREATE USER 'root'@'%' IDENTIFIED BY '{self.root_password}';",
+            "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION;",
             f"CREATE USER '{self.server_config_user}'@'%' IDENTIFIED BY '{self.server_config_password}';",
             f"GRANT ALL ON *.* TO '{self.server_config_user}'@'%' WITH GRANT OPTION;",
             "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';",
@@ -124,7 +184,7 @@ class MySQL:
         )
 
         try:
-            logger.debug("Configuring MySQL users")
+            logger.debug("Configuring users")
             self._run_mysqlcli_script(" ".join(configure_users_commands))
         except ExecError as e:
             logger.error("Exited with code %d. Stderr:", e.exit_code)
@@ -150,14 +210,12 @@ class MySQL:
         )
 
         try:
-            logger.debug("Configuring instance for InnoDB")
+            logger.debug("Configuring instance for group replication")
             self._run_mysqlsh_script("\n".join(configure_instance_command))
             # restart the pebble layer service
             self.container.restart("mysqld")
-
             logger.debug("Waiting until MySQL to restart")
             self._wait_until_mysql_connection()
-            logger.debug("Waiting until MySQL restarted")
         except ExecError as e:
             logger.error("Exited with code %d.", e.exit_code)
             if e.stderr:
@@ -266,7 +324,7 @@ class MySQL:
         process = self.container.exec(cmd)
         process.wait_output()
 
-    def _run_mysqlcli_script(self, script: str, password=None) -> None:
+    def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> None:
         """Execute a MySQL CLI script.
 
         Execute SQL script as instance root user.
@@ -275,18 +333,19 @@ class MySQL:
         Args:
             script: raw SQL script string
             password: root password to use for the script when needed
+            user: user to run the script
         """
         command = [
             "/usr/bin/mysql",
             "-u",
-            "root",
+            user,
             "--protocol=SOCKET",
             f"--socket={MYSQLD_SOCK_FILE}",
             "-e",
             script,
         ]
         if password:
-            # passoword is needed after user
+            # password is needed after user
             command.append(f"--password={password}")
         process = self.container.exec(command)
         process.wait_output()
