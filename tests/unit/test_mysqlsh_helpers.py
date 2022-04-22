@@ -9,6 +9,7 @@ from ops.pebble import ExecError
 
 from mysqlsh_helpers import (
     MYSQLD_SOCK_FILE,
+    MYSQLSH_SCRIPT_FILE,
     MySQL,
     MySQLAddInstanceToClusterError,
     MySQLBootstrapInstanceError,
@@ -17,7 +18,6 @@ from mysqlsh_helpers import (
     MySQLCreateClusterError,
     MySQLPatchDNSSearchesError,
     MySQLServiceNotRunningError,
-    MYSQLSH_SCRIPT_FILE,
 )
 
 
@@ -150,10 +150,10 @@ class TestMySQL(unittest.TestCase):
         add_instance_to_cluster_commands = (
             "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
             "cluster = dba.get_cluster('test_cluster')",
-            'cluster.add_instance(\'clusteradmin@127.0.0.2\', {"password": "clusteradminpassword", "recoveryMethod": "auto"})',
+            'cluster.add_instance(\'clusteradmin@mysql-k8s-43.mysql-k8s-endpoints\', {"password": "clusteradminpassword", "recoveryMethod": "auto"})',
         )
 
-        self.mysql.add_instance_to_cluster("127.0.0.2")
+        self.mysql.add_instance_to_cluster("mysql-k8s-43.mysql-k8s-endpoints")
 
         _run_mysqlsh_script.assert_called_once_with("\n".join(add_instance_to_cluster_commands))
 
@@ -165,7 +165,7 @@ class TestMySQL(unittest.TestCase):
         )
 
         with self.assertRaises(MySQLAddInstanceToClusterError):
-            self.mysql.add_instance_to_cluster("127.0.0.2")
+            self.mysql.add_instance_to_cluster("mysql-k8s-43.mysql-k8s-endpoints")
 
     @patch("ops.pebble.ExecProcess")
     @patch("ops.model.Container")
@@ -282,3 +282,37 @@ class TestMySQL(unittest.TestCase):
                 "script",
             ]
         )
+
+    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script", return_value="INSTANCE_CONFIGURED")
+    def test_is_instance_configured_for_innodb(self, _run_mysqlsh_script):
+        """Test with no exceptions while calling the is_instance_configured_for_innodb method."""
+        # test successfully configured instance
+        check_instance_configuration_commands = (
+            "shell.connect('clusteradmin:clusteradminpassword@mysql-k8s-43.mysql-k8s-endpoints')",
+            "instance_configured = dba.check_instance_configuration()['status'] == 'ok'",
+            'print("INSTANCE_CONFIGURED" if instance_configured else "INSTANCE_NOT_CONFIGURED")',
+        )
+
+        is_instance_configured = self.mysql.is_instance_configured_for_innodb(
+            "mysql-k8s-43.mysql-k8s-endpoints"
+        )
+
+        _run_mysqlsh_script.assert_called_once_with(
+            "\n".join(check_instance_configuration_commands)
+        )
+        self.assertTrue(is_instance_configured)
+
+        # reset mocks
+        _run_mysqlsh_script.reset_mock()
+
+        # test instance not configured for innodb
+        _run_mysqlsh_script.return_value = "INSTANCE_NOT_CONFIGURED"
+
+        is_instance_configured = self.mysql.is_instance_configured_for_innodb(
+            "mysql-k8s-43.mysql-k8s-endpoints"
+        )
+
+        _run_mysqlsh_script.assert_called_once_with(
+            "\n".join(check_instance_configuration_commands)
+        )
+        self.assertFalse(is_instance_configured)
