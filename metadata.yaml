@@ -26,8 +26,8 @@ resources:
     description: Ubuntu LTS Docker image for MySQL
     upstream-source: ubuntu/mysql
 peers:
-  mysql-replicas:
-    interface: mysql-replicas
+  database-peers:
+    interface: mysql-peers
 storage:
   database:
     type: filesystem
