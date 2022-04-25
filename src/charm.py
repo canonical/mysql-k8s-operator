@@ -147,7 +147,9 @@ class MySQLOperatorCharm(CharmBase):
         peer_data = self._peers.data[self.app]
 
         required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
+        from pdb import set_trace
 
+        set_trace()
         for required_password in required_passwords:
             if not peer_data.get(required_password):
                 logger.debug(f"Setting {required_password}")
@@ -178,51 +180,54 @@ class MySQLOperatorCharm(CharmBase):
             # First run setup
             self.unit.status = MaintenanceStatus("Bootstrapping instance")
             try:
+                # Allow mysql instances to reach each other
                 self._mysql.patch_dns_searches(self.app.name)
-            except MySQLPatchDNSSearchesError:
-                self.unit.status = BlockedStatus("Unable to patch DNS")
-                logger.debug("Unable to patch DNS")
-                return
 
-            try:
+                # Run mysqld for the first time to
+                # bootstrap the data directory and users
                 logger.debug("Bootstrapping instance")
                 self._mysql.bootstrap_instance()
-            except MySQLBootstrapInstanceError as e:
-                self.unit.status = BlockedStatus("Unable to bootstrap instance")
-                logger.debug("Unable to bootstrap instance: {}".format(e))
-                return
 
-            logger.debug("Add pebble layer")
-            container.add_layer(self._mysqld_service, self._pebble_layer, combine=False)
-            container.restart(self._mysqld_service)
-            logger.debug("Waiting for instance to be ready")
-            self._mysql._wait_until_mysql_connection()
+                # Add the pebble layer
+                container.add_layer(self._mysqld_service, self._pebble_layer, combine=False)
+                container.restart(self._mysqld_service)
+                logger.debug("Waiting for instance to be ready")
+                self._mysql._wait_until_mysql_connection()
 
-            try:
                 logger.info("Configuring instance")
+                # Configure all base users and revoke
+                # privileges from the root users
                 self._mysql.configure_mysql_users()
+                # Configure instance as a cluster node
                 self._mysql.configure_instance()
-            except MySQLConfigureMySQLUsersError as e:
-                self.unit.status = BlockedStatus("Unable to configure users")
-                logger.debug("Unable to configure users: {}".format(e))
-                return
-            except MySQLConfigureInstanceError as e:
+
+            except (
+                MySQLConfigureInstanceError,
+                MySQLConfigureMySQLUsersError,
+                MySQLBootstrapInstanceError,
+                MySQLPatchDNSSearchesError,
+            ) as e:
                 self.unit.status = BlockedStatus("Unable to configure instance")
                 logger.debug("Unable to configure instance: {}".format(e))
                 return
 
             if self.unit.is_leader():
                 try:
+                    # Create the cluster when
                     self._mysql.create_cluster()
                 except MySQLCreateClusterError as e:
                     self.unit.status = BlockedStatus("Unable to create cluster")
                     logger.debug("Unable to create cluster: {}".format(e))
             else:
+                # When unit is not the leader, it should wait
+                # for the leader to configure it a cluster node
                 self.unit.status = WaitingStatus("Waiting for peer relation join")
 
+            # Create control file in data directory
             container.push(CONFIGURED_FILE, source="configured")
 
         else:
+            # Configure the layer when changed
             current_layer = container.get_plan()
             new_layer = self._pebble_layer
 
