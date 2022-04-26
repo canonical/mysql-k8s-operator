@@ -64,10 +64,6 @@ class MySQLOperatorCharm(CharmBase):
         )
 
     @property
-    def _pod_ip(self) -> str:
-        return self.model.get_binding(PEER).network.bind_address
-
-    @property
     def _peers(self):
         """Retrieve the peer relation (`ops.model.Relation`)."""
         return self.model.get_relation(PEER)
@@ -147,9 +143,7 @@ class MySQLOperatorCharm(CharmBase):
         peer_data = self._peers.data[self.app]
 
         required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
-        from pdb import set_trace
 
-        set_trace()
         for required_password in required_passwords:
             if not peer_data.get(required_password):
                 logger.debug(f"Setting {required_password}")
@@ -224,7 +218,7 @@ class MySQLOperatorCharm(CharmBase):
                 self.unit.status = WaitingStatus("Waiting for peer relation join")
 
             # Create control file in data directory
-            container.push(CONFIGURED_FILE, source="configured")
+            container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
 
         else:
             # Configure the layer when changed
