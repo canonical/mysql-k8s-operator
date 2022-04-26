@@ -131,6 +131,7 @@ class TestCharm(unittest.TestCase):
 
     def test_get_generated_passwords(self):
         # Test get generated passwords function
+        # used as action
         self.harness.set_leader()
         event = MagicMock()
         self.charm._get_generated_passwords(event)
@@ -145,4 +146,21 @@ class TestCharm(unittest.TestCase):
                     "server-config-password"
                 ],
             }
+        )
+
+    @patch("charm.MySQLOperatorCharm._mysql")
+    def test_on_peer_relation_joined(self, _mysql_mock):
+        # Test basic peer relation joined calls
+        self.harness.set_leader()
+        event = MagicMock()
+        event.unit.name.return_value = "mysql/2"
+        self.charm._mysql = _mysql_mock
+
+        _mysql_mock.is_instance_configured_for_innodb.return_value = True
+
+        self.charm._on_peer_relation_joined(event)
+
+        _mysql_mock.add_instance_to_cluster.called_once_with("mysql-k8s-endpoints.mysql-2")
+        _mysql_mock.is_instance_configured_for_innodb.called_once_with(
+            "mysql-k8s-endpoints.mysql-2"
         )
