@@ -351,6 +351,7 @@ class MySQL:
                 f"Failed to confirm instance configuration for {instance_address} with error {e.stderr}",
                 exc_info=e,
             )
+            return False
 
     def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> None:
         """Execute a MySQL CLI script.
