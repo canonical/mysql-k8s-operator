@@ -14,6 +14,8 @@ summary: |
 maintainers:
   - Paulo Machado <paulo.machado@canonical.com>
   - Shayan Patel <shayan.patel@canonical.com>
+source: https://github.com/canonical/mysql-k8s-operator
+issues: https://github.com/canonical/mysql-k8s-operator/issues
 containers:
   mysql:
     resource: mysql-image
