@@ -218,6 +218,7 @@ class MySQLOperatorCharm(CharmBase):
                 except MySQLCreateClusterError as e:
                     self.unit.status = BlockedStatus("Unable to create cluster")
                     logger.debug("Unable to create cluster: {}".format(e))
+                    return
             else:
                 # When unit is not the leader, it should wait
                 # for the leader to configure it a cluster node
