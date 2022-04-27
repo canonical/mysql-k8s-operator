@@ -50,7 +50,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
 async def test_scale_to_ha(ops_test: OpsTest):
     """Scale the charm to HA."""
     await ops_test.model.applications[APP_NAME].scale(3)
-    await ops_test.model.wait_for_idle(apps=[APP_NAME], status="active", timeout=1000)
+    await ops_test.model.block_until(lambda: len(ops_test.model.applications[APP_NAME].units) == 3)
 
     assert len(ops_test.model.applications[APP_NAME].units) == 3
 
