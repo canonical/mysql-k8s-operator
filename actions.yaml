@@ -2,4 +2,4 @@
 # See LICENSE file for licensing details.
 
 get-generated-passwords:
-  description: Get the cluster admin user password
+  description: Get the generated users passwords
