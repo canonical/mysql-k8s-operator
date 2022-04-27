@@ -108,7 +108,7 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader()
         self.charm.on.config_changed.emit()
         self.assertNotEqual(
-            self.charm._peers.data[self.charm.app].get("cluster-name"), "not_valid_cluster_name"
+            self.charm._peers.data[self.charm.app]["cluster-name"], "not_valid_cluster_name"
         )
 
     def test_mysql_property(self):
