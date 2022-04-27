@@ -2,6 +2,6 @@
 # See LICENSE file for licensing details.
 
 options:
-  cluster_name:
+  cluster-name:
     description: "Optional - Name of the MySQL InnoDB cluster"
     type: "string"

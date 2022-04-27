@@ -299,13 +299,15 @@ class MySQL:
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
 
-    def _run_mysqlsh_script(self, script: str) -> None:
+    def _run_mysqlsh_script(self, script: str) -> str:
         """Execute a MySQL shell script.
 
         Raises ExecError if the script gets a non-zero return code.
 
         Args:
             script: mysql-shell python script string
+        Returns:
+            stdout of the script
         """
         self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
 
