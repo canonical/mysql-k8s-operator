@@ -23,13 +23,17 @@ GROUP_REPLICATION_PORT = 33061
 class MySQLConfigureInstanceError(Exception):
     """Exception raised when there is an issue configuring a MySQL instance."""
 
-    pass
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return "MySQLConfigureInstanceError"
 
 
 class MySQLConfigureMySQLUsersError(Exception):
     """Exception raised when creating a user fails."""
 
-    pass
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return "MySQLConfigureMySQLUsersError"
 
 
 class MySQLServiceNotRunningError(Exception):
@@ -50,16 +54,20 @@ class MySQLAddInstanceToClusterError(Exception):
     pass
 
 
-class MySQLBootstrapInstanceError(Exception):
+class MySQLInitialiseMySQLDError(Exception):
     """Exception raised when there is an issue bootstrapping an instance."""
 
-    pass
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return "MySQLBootstrapInstanceError"
 
 
 class MySQLPatchDNSSearchesError(Exception):
     """Exception raised when there is an issue patching the DNS searches."""
 
-    pass
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return "MySQLPatchDNSSearchesError"
 
 
 class MySQL:
@@ -101,11 +109,11 @@ class MySQL:
         self.cluster_admin_password = cluster_admin_password
         self.container = container
 
-    def bootstrap_instance(self) -> None:
+    def initialise_mysqld(self) -> None:
         """Execute instance first run.
 
         Initialise mysql data directory and create blank password root@localhost user.
-        Raises MySQLBootstrapInstanceError if the instance bootstrap fails.
+        Raises MySQLInitialiseMySQLDError if the instance bootstrap fails.
         """
         bootstrap_command = ["mysqld", "--initialize-insecure", "-u", "mysql"]
 
@@ -117,7 +125,7 @@ class MySQL:
             if e.stderr:
                 for line in e.stderr.splitlines():
                     logger.error("  %s", line)
-            raise MySQLBootstrapInstanceError(e.stderr if e.stderr else "")
+            raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
 
     def patch_dns_searches(self, app_name: str) -> None:
         """Patch the DNS searches to allow the instance to be discovered.
@@ -141,8 +149,15 @@ class MySQL:
                     output_string += " ".join(line_content) + "\n"
                 else:
                     output_string += line + "\n"
-            self.container.push("/etc/resolv.conf-new", source=output_string)
-            process = self.container.exec(["cp", "/etc/resolv.conf-new", "/etc/resolv.conf"])
+            self.container.push("/tmp/resolv.conf-new", source=output_string)
+            # TODO: Remove the pushed file
+            process = self.container.exec(
+                [
+                    "cp",
+                    "/tmp/resolv.conf-new",
+                    "/etc/resolv.conf",
+                ]
+            )
             process.wait()
         except Exception:
             raise MySQLPatchDNSSearchesError()
@@ -299,13 +314,14 @@ class MySQL:
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
 
-    def _run_mysqlsh_script(self, script: str) -> str:
+    def _run_mysqlsh_script(self, script: str, verbose: int = 1) -> str:
         """Execute a MySQL shell script.
 
         Raises ExecError if the script gets a non-zero return code.
 
         Args:
             script: mysql-shell python script string
+            verbose: mysqlsh verbosity level
         Returns:
             stdout of the script
         """
@@ -316,7 +332,7 @@ class MySQL:
             "/usr/bin/mysqlsh",
             "--no-wizard",
             "--python",
-            "--verbose=1",
+            f"--verbose={verbose}",
             "-f",
             MYSQLSH_SCRIPT_FILE,
             ";",
@@ -345,14 +361,36 @@ class MySQL:
         try:
             logger.debug(f"Confirming instance {instance_address} configuration for InnoDB")
 
-            output = self._run_mysqlsh_script("\n".join(commands))
+            output = self._run_mysqlsh_script("\n".join(commands), verbose=0)
             return "INSTANCE_CONFIGURED" in output
-        except ExecError as e:
+        except ExecError:
             # confirmation can fail if the clusteradmin user does not yet exist on the instance
-            logger.warning(
-                f"Failed to confirm instance configuration for {instance_address} with error {e.stderr}",
-                exc_info=e,
-            )
+            logger.debug(f"Failed to confirm instance configuration for {instance_address}.")
+            return False
+
+    def is_instance_in_cluster(self, instance_address: str) -> bool:
+        """Confirm if instance is in the cluster.
+
+        Args:
+            instance_address: The instance address for which to confirm InnoDB configuration
+
+        Returns:
+            Boolean indicating whether the instance is in the cluster
+        """
+        commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            f"print(cluster.status()['defaultReplicaSet']['topology']['{instance_address}:3306']['status'])",
+        )
+
+        try:
+            logger.debug(f"Confirming instance {instance_address} in cluster")
+
+            output = self._run_mysqlsh_script("\n".join(commands), verbose=0)
+            return "ONLINE" in output
+        except ExecError:
+            # confirmation can fail if the clusteradmin user does not yet exist on the instance
+            logger.debug(f"Failed to confirm instance {instance_address} in cluster")
             return False
 
     def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> None:

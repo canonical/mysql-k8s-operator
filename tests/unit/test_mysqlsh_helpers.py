@@ -12,10 +12,10 @@ from mysqlsh_helpers import (
     MYSQLSH_SCRIPT_FILE,
     MySQL,
     MySQLAddInstanceToClusterError,
-    MySQLBootstrapInstanceError,
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLInitialiseMySQLDError,
     MySQLPatchDNSSearchesError,
     MySQLServiceNotRunningError,
 )
@@ -174,7 +174,7 @@ class TestMySQL(unittest.TestCase):
         _container.exec.return_value = _process
         self.mysql.container = _container
 
-        self.mysql.bootstrap_instance()
+        self.mysql.initialise_mysqld()
 
         _container.exec.assert_called_once_with(
             command=["mysqld", "--initialize-insecure", "-u", "mysql"]
@@ -190,8 +190,8 @@ class TestMySQL(unittest.TestCase):
         )
         self.mysql.container = _container
 
-        with self.assertRaises(MySQLBootstrapInstanceError):
-            self.mysql.bootstrap_instance()
+        with self.assertRaises(MySQLInitialiseMySQLDError):
+            self.mysql.initialise_mysqld()
 
     @patch("ops.pebble.ExecProcess")
     @patch("ops.model.Container")
@@ -213,7 +213,7 @@ class TestMySQL(unittest.TestCase):
         self.mysql.patch_dns_searches("app-name")
 
         _container.push.assert_called_once_with(
-            "/etc/resolv.conf-new",
+            "/tmp/resolv.conf-new",
             source="\n".join(
                 (
                     "search app-name-endpoints.dev.svc.cluster.local dev.svc.cluster.local svc.cluster.local cluster.local",
@@ -298,7 +298,7 @@ class TestMySQL(unittest.TestCase):
         )
 
         _run_mysqlsh_script.assert_called_once_with(
-            "\n".join(check_instance_configuration_commands)
+            "\n".join(check_instance_configuration_commands), verbose=0
         )
         self.assertTrue(is_instance_configured)
 
@@ -313,6 +313,6 @@ class TestMySQL(unittest.TestCase):
         )
 
         _run_mysqlsh_script.assert_called_once_with(
-            "\n".join(check_instance_configuration_commands)
+            "\n".join(check_instance_configuration_commands), verbose=0
         )
         self.assertFalse(is_instance_configured)

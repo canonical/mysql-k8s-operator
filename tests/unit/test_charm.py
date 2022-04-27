@@ -10,7 +10,7 @@ from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import PASSWORD_LENGTH, MySQLOperatorCharm
-from mysqlsh_helpers import MySQL, MySQLBootstrapInstanceError
+from mysqlsh_helpers import MySQL, MySQLInitialiseMySQLDError
 
 APP_NAME = "mysql-k8s"
 
@@ -47,6 +47,7 @@ class TestCharm(unittest.TestCase):
         # Test leader election setting of
         # peer relation data
         self.harness.set_leader()
+        self.charm.on.config_changed.emit()
         peer_data = self.harness.get_relation_data(self.peer_relation_id, self.charm.app)
 
         # Cluster name is `cluster-<hash>`
@@ -96,7 +97,7 @@ class TestCharm(unittest.TestCase):
         # Test exception raised in bootstrapping
         self.harness.set_leader()
         self.charm._mysql = _mysql_mock
-        _mysql_mock.bootstrap_instance.side_effect = MySQLBootstrapInstanceError
+        _mysql_mock.initialise_mysqld.side_effect = MySQLInitialiseMySQLDError
         # Trigger pebble ready after leader election
         self.harness.container_pebble_ready("mysql")
 
@@ -115,6 +116,7 @@ class TestCharm(unittest.TestCase):
         # Test mysql property instance of mysqlsh_helpers.MySQL
         # set leader and populate peer relation data
         self.harness.set_leader()
+        self.charm.on.config_changed.emit()
         self.harness.update_relation_data(
             self.peer_relation_id,
             "mysql/1",

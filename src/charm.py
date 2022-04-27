@@ -16,10 +16,10 @@ from ops.pebble import Layer
 
 from mysqlsh_helpers import (
     MySQL,
-    MySQLBootstrapInstanceError,
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLInitialiseMySQLDError,
     MySQLPatchDNSSearchesError,
 )
 
@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 PASSWORD_LENGTH = 24
 PEER = "database-peers"
 CONFIGURED_FILE = "/var/lib/mysql/charmed"
+MYSQLD_SERVICE = "mysqld"
 
 
 def generate_random_password(length: int) -> str:
@@ -46,7 +47,7 @@ def generate_random_hash() -> str:
     """Generate a hash based on a random string.
 
     Returns:
-        A length 10 hash based on a random string.
+        A hash based on a random string.
     """
     random_characters = generate_random_password(10)
     return hashlib.md5(random_characters.encode("utf-8")).hexdigest()
@@ -57,13 +58,13 @@ class MySQLOperatorCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self._mysqld_service = "mysqld"
 
         # Lifecycle events
         self.framework.observe(self.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
+        self.framework.observe(self.on.update_status, self._on_update_status)
         # Actions events
         self.framework.observe(
             self.on.get_generated_passwords_action, self._get_generated_passwords
@@ -98,7 +99,7 @@ class MySQLOperatorCharm(CharmBase):
                 "summary": "mysqld layer",
                 "description": "pebble config layer for mysqld",
                 "services": {
-                    self._mysqld_service: {
+                    MYSQLD_SERVICE: {
                         "override": "replace",
                         "summary": "mysqld",
                         "command": "mysqld",
@@ -138,7 +139,7 @@ class MySQLOperatorCharm(CharmBase):
 
         if not peer_data.get("cluster-name"):
             peer_data["cluster-name"] = (
-                self.config.get("cluster-name") or f"cluster-{generate_random_hash()}"
+                self.config.get("cluster-name") or f"cluster_{generate_random_hash()}"
             )
 
     def _on_leader_elected(self, _):
@@ -155,11 +156,6 @@ class MySQLOperatorCharm(CharmBase):
                 logger.debug(f"Setting {required_password}")
                 password = generate_random_password(PASSWORD_LENGTH)
                 peer_data[required_password] = password
-
-        if not peer_data.get("cluster-name"):
-            peer_data["cluster-name"] = (
-                self.config.get("cluster-name") or f"cluster-{generate_random_hash()}"
-            )
 
         peer_data["configured"] = "True"
 
@@ -186,11 +182,11 @@ class MySQLOperatorCharm(CharmBase):
                 # Run mysqld for the first time to
                 # bootstrap the data directory and users
                 logger.debug("Bootstrapping instance")
-                self._mysql.bootstrap_instance()
+                self._mysql.initialise_mysqld()
 
                 # Add the pebble layer
-                container.add_layer(self._mysqld_service, self._pebble_layer, combine=False)
-                container.restart(self._mysqld_service)
+                container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
+                container.restart(MYSQLD_SERVICE)
                 logger.debug("Waiting for instance to be ready")
                 self._mysql._wait_until_mysql_connection()
 
@@ -204,7 +200,7 @@ class MySQLOperatorCharm(CharmBase):
             except (
                 MySQLConfigureInstanceError,
                 MySQLConfigureMySQLUsersError,
-                MySQLBootstrapInstanceError,
+                MySQLInitialiseMySQLDError,
                 MySQLPatchDNSSearchesError,
             ) as e:
                 self.unit.status = BlockedStatus("Unable to configure instance")
@@ -213,7 +209,7 @@ class MySQLOperatorCharm(CharmBase):
 
             if self.unit.is_leader():
                 try:
-                    # Create the cluster when
+                    # Create the cluster when is the leader unit
                     self._mysql.create_cluster()
                 except MySQLCreateClusterError as e:
                     self.unit.status = BlockedStatus("Unable to create cluster")
@@ -222,7 +218,8 @@ class MySQLOperatorCharm(CharmBase):
             else:
                 # When unit is not the leader, it should wait
                 # for the leader to configure it a cluster node
-                self.unit.status = WaitingStatus("Waiting for peer relation join")
+                self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
+                return
 
             # Create control file in data directory
             container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
@@ -234,8 +231,8 @@ class MySQLOperatorCharm(CharmBase):
 
             if new_layer.services != current_layer:
                 logger.info("Add pebble layer")
-                container.add_layer(self._mysqld_service, new_layer, combine=True)
-                container.restart(self._mysqld_service)
+                container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
+                container.restart(MYSQLD_SERVICE)
                 self._mysql._wait_until_mysql_connection()
 
         self.unit.status = ActiveStatus()
@@ -255,6 +252,19 @@ class MySQLOperatorCharm(CharmBase):
         # Add new instance to the cluster
         self._mysql.add_instance_to_cluster(new_instance)
         logger.debug(f"Added instance {new_instance} to cluster")
+
+    def _on_update_status(self, _):
+        """Handle the update status event."""
+        if self.unit.is_leader():
+            return
+
+        instance_cluster_address = self.unit.name.replace("/", "-")
+        # Test if non-leader unit is ready
+        if isinstance(self.unit.status, WaitingStatus) and self._mysql.is_instance_in_cluster(
+            instance_cluster_address
+        ):
+            self.unit.status = ActiveStatus()
+            logger.debug("Instance is cluster member")
 
     # =========================================================================
     # Charm action handlers

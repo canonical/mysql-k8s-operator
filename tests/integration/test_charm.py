@@ -33,7 +33,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.deploy(charm, resources=resources, application_name=APP_NAME, num_units=1)
 
     # issuing dummy update_status just to trigger an event
-    await ops_test.model.set_config({"update-status-hook-interval": "60s"})
+    await ops_test.model.set_config({"update-status-hook-interval": "10s"})
 
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME],
@@ -49,10 +49,33 @@ async def test_build_and_deploy(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_scale_to_ha(ops_test: OpsTest):
     """Scale the charm to HA."""
-    await ops_test.model.applications[APP_NAME].scale(3)
-    await ops_test.model.block_until(lambda: len(ops_test.model.applications[APP_NAME].units) == 3)
+    await ops_test.model.applications[APP_NAME].scale(len(UNIT_IDS))
 
-    assert len(ops_test.model.applications[APP_NAME].units) == 3
+    # Blocks until all units are in active state
+    logger.info("Wait for app active status")
+    sleep(10)
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="active",
+        raise_on_blocked=True,
+        timeout=1000,
+    )
+
+    assert len(ops_test.model.applications[APP_NAME].units) == len(UNIT_IDS)
+
+    root_password = await get_password(ops_test, "root-password")
+    # Primary will be ID 0, since the unit is deployed first
+    host_ip = await get_pod_ip(ops_test, f"{APP_NAME}/0")
+    # connect to the MySQL server
+    cnx = db_connect(host_ip, root_password)
+    cursor = cnx.cursor()
+    query = "SELECT count(*) FROM performance_schema.replication_group_members where MEMBER_STATE='ONLINE';"
+    cursor.execute(query)
+
+    result = cursor.fetchone()
+    assert result[0] == len(UNIT_IDS)
+    cursor.close()
+    cnx.close()
 
 
 async def test_replicated_write_n_read(ops_test: OpsTest):
@@ -64,37 +87,34 @@ async def test_replicated_write_n_read(ops_test: OpsTest):
     # connect to the MySQL server
     cnx = db_connect(host_ip, root_password)
     cursor = cnx.cursor()
-    # ensure cleanup (when running with --no-deploy)
-    cursor.execute("DROP TABLE IF EXISTS mysql.charmtest;")
-    # create a table
-    cursor.execute("CREATE TABLE mysql.charmtest (test_field VARCHAR(255) PRIMARY KEY);")
-    # insert a row
-    cursor.execute("INSERT INTO mysql.charmtest VALUES ('hello');")
-    # commit the changes
+    # ensure table cleanup (when running with --no-deploy)
+    # create a table and insert a row
+    queries = [
+        "DROP TABLE IF EXISTS mysql.charmtest;",
+        "CREATE TABLE mysql.charmtest (test_field VARCHAR(255) PRIMARY KEY);",
+        "INSERT INTO mysql.charmtest VALUES ('hello');",
+    ]
+    for query in queries:
+        cursor.execute(query)
     cnx.commit()
     cursor.close()
     cnx.close()
     # replication take a little time
     sleep(1)
-    # get secondary address
-    secondary_host_ip = await get_pod_ip(ops_test, f"{APP_NAME}/1")
-    cnx = db_connect(secondary_host_ip, root_password)
-    cursor = cnx.cursor()
-    # Query the table
-    cursor.execute("SELECT * FROM mysql.charmtest;")
-    # fetch the result
-    result = cursor.fetchall()
-    assert result[0][0] == "hello"
+    # test on all secondaries
+    for unit_id in UNIT_IDS[1:]:
+        secondary_host_ip = await get_pod_ip(ops_test, f"{APP_NAME}/{unit_id}")
+        cnx = db_connect(secondary_host_ip, root_password)
+        cursor = cnx.cursor()
+        # Query the table
+        cursor.execute("SELECT * FROM mysql.charmtest;")
+        # fetch the result
+        result = cursor.fetchall()
+        assert result[0][0] == "hello"
 
 
 async def get_password(ops_test: OpsTest, password_key: str) -> str:
-    """Get password using the action.
-
-    Args:
-        password_key: one of ["cluster-admin-password", "root-password", "server-admin-password"]
-    Returns:
-        str: user password
-    """
+    """Get password using the action."""
     unit = ops_test.model.units.get(f"{APP_NAME}/0")
     action = await unit.run_action("get-generated-passwords")
     result = await action.wait()
