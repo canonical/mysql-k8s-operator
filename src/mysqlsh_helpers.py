@@ -55,11 +55,11 @@ class MySQLAddInstanceToClusterError(Exception):
 
 
 class MySQLInitialiseMySQLDError(Exception):
-    """Exception raised when there is an issue bootstrapping an instance."""
+    """Exception raised when there is an issue initialising an instance."""
 
     def __str__(self) -> str:
         """Return a string representation of the exception."""
-        return "MySQLBootstrapInstanceError"
+        return "MySQLInitialiseMySQLDError"
 
 
 class MySQLPatchDNSSearchesError(Exception):
