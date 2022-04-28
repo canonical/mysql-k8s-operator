@@ -92,6 +92,17 @@ class MySQLOperatorCharm(CharmBase):
         )
 
     @property
+    def _is_peer_data_set(self):
+        peer_data = self._peers.data[self.app]
+
+        return (
+            peer_data.get("cluster-name")
+            and peer_data.get("root-password")
+            and peer_data.get("server-config-password")
+            and peer_data.get("cluster-admin-password")
+        )
+
+    @property
     def _pebble_layer(self) -> Layer:
         """Return a layer for the pebble service."""
         return Layer(
@@ -157,14 +168,12 @@ class MySQLOperatorCharm(CharmBase):
                 password = generate_random_password(PASSWORD_LENGTH)
                 peer_data[required_password] = password
 
-        peer_data["configured"] = "True"
-
     def _on_mysql_pebble_ready(self, event):
         """Pebble ready handler.
 
         Define and start a pebble service and bootstrap instance.
         """
-        if not self._peers or self._peers.data[self.app].get("configured", "False") != "True":
+        if not self._is_peer_data_set:
             self.unit.status = WaitingStatus("Waiting for leader election.")
             logger.debug("Leader not ready yet, waiting...")
             event.defer()
@@ -174,14 +183,14 @@ class MySQLOperatorCharm(CharmBase):
 
         if not container.exists(CONFIGURED_FILE):
             # First run setup
-            self.unit.status = MaintenanceStatus("Bootstrapping instance")
+            self.unit.status = MaintenanceStatus("Initialising mysqld")
             try:
                 # Allow mysql instances to reach each other
                 self._mysql.patch_dns_searches(self.app.name)
 
                 # Run mysqld for the first time to
                 # bootstrap the data directory and users
-                logger.debug("Bootstrapping instance")
+                logger.debug("Initialising instance")
                 self._mysql.initialise_mysqld()
 
                 # Add the pebble layer
