@@ -47,19 +47,13 @@ class TestCharm(unittest.TestCase):
         # Test leader election setting of
         # peer relation data
         self.harness.set_leader()
-        self.charm.on.config_changed.emit()
         peer_data = self.harness.get_relation_data(self.peer_relation_id, self.charm.app)
-
-        # Cluster name is `cluster-<hash>`
-        self.assertTrue(peer_data["cluster-name"].isascii())
         # Test passwords in content and length
         required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
         for password in required_passwords:
             self.assertTrue(
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
-
-        self.assertEqual(peer_data["configured"], "True")
 
     @patch("charm.MySQLOperatorCharm._mysql", new_callable=PropertyMock)
     def test_mysql_pebble_ready(self, _mysql_mock):
@@ -73,6 +67,7 @@ class TestCharm(unittest.TestCase):
         self.assertTrue(isinstance(self.charm.unit.status, WaitingStatus))
 
         self.harness.set_leader()
+        self.charm.on.config_changed.emit()
         self.charm._mysql = _mysql_mock
         # Trigger pebble ready after leader election
         self.harness.container_pebble_ready("mysql")
@@ -96,6 +91,7 @@ class TestCharm(unittest.TestCase):
     def test_mysql_pebble_ready_exception(self, _mysql_mock):
         # Test exception raised in bootstrapping
         self.harness.set_leader()
+        self.charm.on.config_changed.emit()
         self.charm._mysql = _mysql_mock
         _mysql_mock.initialise_mysqld.side_effect = MySQLInitialiseMySQLDError
         # Trigger pebble ready after leader election
@@ -108,6 +104,7 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(self.charm._peers.data[self.charm.app].get("cluster-name"), None)
         self.harness.set_leader()
         self.charm.on.config_changed.emit()
+        # Cluster name is `cluster-<hash>`
         self.assertNotEqual(
             self.charm._peers.data[self.charm.app]["cluster-name"], "not_valid_cluster_name"
         )
