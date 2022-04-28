@@ -5,13 +5,6 @@ on:
       - main
   pull_request:
 jobs:
-  # TODO: Remove job after debug
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup upterm session
-      uses: lhotari/action-upterm@v1
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -79,8 +72,7 @@ jobs:
       - name: Load Image into microk8s
         run: |
           /usr/bin/sg microk8s -c "microk8s ctr image import /tmp/image.tar"
-      - name: Allow XCOM and GCS in SELinux
-        run: |
-          setsebool -P mysql_connect_any 1
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
       - name: Run integration tests
         run: tox -e integration
