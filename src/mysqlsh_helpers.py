@@ -15,9 +15,6 @@ logger = logging.getLogger(__name__)
 
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
-MYSQLD_CONFIG_PATH = "/etc/mysql/conf.d/z-custom-mysqld.cnf"
-
-GROUP_REPLICATION_PORT = 33061
 
 
 class MySQLConfigureInstanceError(Exception):
