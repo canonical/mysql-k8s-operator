@@ -415,3 +415,28 @@ class MySQL:
             command.append(f"--password={password}")
         process = self.container.exec(command)
         process.wait_output()
+
+    def _get_cluster_status(self) -> dict:
+        """Get the cluster status.
+
+        Executes script to retrieve cluster status.
+        Wont raise errors.
+
+        Returns:
+            Cluster status as a dictionary
+        """
+        status_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            "print(cluster.status())",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(status_commands), verbose=0)
+            output_dict = json.loads(output.lower())
+            # pop topology from status due it being potentially too long
+            # and containing keys with `:` in it
+            output_dict["defaultreplicaset"].pop("topology")
+            return output_dict
+        except ExecError as e:
+            logger.exception(f"Failed to get cluster status for {self.cluster_name}", exc_info=e)

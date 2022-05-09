@@ -16,6 +16,7 @@ from ops.pebble import Layer
 
 from mysqlsh_helpers import (
     MySQL,
+    MySQLAddInstanceToClusterError,
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
@@ -69,6 +70,7 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(
             self.on.get_generated_passwords_action, self._get_generated_passwords
         )
+        self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
 
     @property
     def _peers(self):
@@ -180,13 +182,13 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = event.workload
+        # Allow mysql instances to reach each other
+        self._mysql.patch_dns_searches(self.app.name)
 
         if not container.exists(CONFIGURED_FILE):
             # First run setup
             self.unit.status = MaintenanceStatus("Initialising mysqld")
             try:
-                # Allow mysql instances to reach each other
-                self._mysql.patch_dns_searches(self.app.name)
 
                 # Run mysqld for the first time to
                 # bootstrap the data directory and users
@@ -220,6 +222,8 @@ class MySQLOperatorCharm(CharmBase):
                 try:
                     # Create the cluster when is the leader unit
                     self._mysql.create_cluster()
+                    # Create control file in data directory
+                    container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
                 except MySQLCreateClusterError as e:
                     self.unit.status = BlockedStatus("Unable to create cluster")
                     logger.debug("Unable to create cluster: {}".format(e))
@@ -228,10 +232,9 @@ class MySQLOperatorCharm(CharmBase):
                 # When unit is not the leader, it should wait
                 # for the leader to configure it a cluster node
                 self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
+                # Create control file in data directory
+                container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
                 return
-
-            # Create control file in data directory
-            container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
 
         else:
             # Configure the layer when changed
@@ -252,6 +255,11 @@ class MySQLOperatorCharm(CharmBase):
         if not self.unit.is_leader():
             return
 
+        # Defer run when leader is not active
+        if not isinstance(self.unit.status, ActiveStatus):
+            event.defer()
+            return
+
         new_instance = self._get_hostname_by_unit(event.unit.name)
 
         if not self._mysql.is_instance_configured_for_innodb(new_instance):
@@ -259,12 +267,23 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         # Add new instance to the cluster
-        self._mysql.add_instance_to_cluster(new_instance)
-        logger.debug(f"Added instance {new_instance} to cluster")
+        try:
+            self._mysql.add_instance_to_cluster(new_instance)
+            logger.debug(f"Added instance {new_instance} to cluster")
+
+        except MySQLAddInstanceToClusterError as e:
+            logger.debug(f"Unable to add instance {new_instance} to cluster.")
+            event.defer()
 
     def _on_update_status(self, _):
         """Handle the update status event."""
+        # This handler is only taking care of setting
+        # active status for secondary units
         if self.unit.is_leader():
+            return
+
+        if not self._is_peer_data_set:
+            # Avoid running too early
             return
 
         instance_cluster_address = self.unit.name.replace("/", "-")
@@ -286,6 +305,10 @@ class MySQLOperatorCharm(CharmBase):
                 "server-config-password": self._peers.data[self.app]["server-config-password"],
             }
         )
+
+    def _get_cluster_status(self, event: ActionEvent) -> None:
+        """Get the cluster status without topology."""
+        event.set_results(self._mysql._get_cluster_status())
 
 
 if __name__ == "__main__":

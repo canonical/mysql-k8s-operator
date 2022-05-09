@@ -3,3 +3,5 @@
 
 get-generated-passwords:
   description: Get the generated users passwords
+get-cluster-status:
+  description: Get cluster status information without topology
