@@ -22,6 +22,7 @@ from mysqlsh_helpers import (
     MySQLCreateClusterError,
     MySQLInitialiseMySQLDError,
     MySQLPatchDNSSearchesError,
+    MySQLUpdateAllowListError,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,7 +84,7 @@ class MySQLOperatorCharm(CharmBase):
         peer_data = self._peers.data[self.app]
 
         return MySQL(
-            self._get_hostname_by_unit(self.unit.name),
+            self._get_unit_fqdn(self.unit.name),
             peer_data["cluster-name"],
             peer_data["root-password"],
             "serverconfig",
@@ -102,6 +103,7 @@ class MySQLOperatorCharm(CharmBase):
             and peer_data.get("root-password")
             and peer_data.get("server-config-password")
             and peer_data.get("cluster-admin-password")
+            and peer_data.get("allowlist")
         )
 
     @property
@@ -124,18 +126,29 @@ class MySQLOperatorCharm(CharmBase):
             }
         )
 
-    def _get_hostname_by_unit(self, unit_name: str) -> str:
-        """Create a DNS name for a unit.
+    def _get_unit_hostname(self, unit_name: str) -> str:
+        """Get the hostname for a unit.
 
-        Translate juju unit name to resolvable hostname.
+        Translate juju unit name to hostname.
 
         Args:
             unit_name: unit name
         Returns:
             A string representing the hostname of the unit.
         """
-        unit_id = unit_name.split("/")[1]
-        return f"{self.app.name}-{unit_id}.{self.app.name}-endpoints"
+        return unit_name.replace("/", "-")
+
+    def _get_unit_fqdn(self, unit_name: str) -> str:
+        """Create a fqdn for a unit.
+
+        Translate juju unit name to resolvable hostname.
+
+        Args:
+            unit_name: unit name
+        Returns:
+            A string representing the fqdn of the unit.
+        """
+        return f"{self._get_unit_hostname(unit_name)}.{self.app.name}-endpoints.{self.model.name}.svc.cluster.local"
 
     # =========================================================================
     # Charm event handlers
@@ -154,6 +167,10 @@ class MySQLOperatorCharm(CharmBase):
             peer_data["cluster-name"] = (
                 self.config.get("cluster-name") or f"cluster_{generate_random_hash()}"
             )
+
+        # initialise allowlist with leader hostname
+        if not peer_data.get("allowlist"):
+            peer_data["allowlist"] = f"{self._get_unit_fqdn(self.unit.name)}"
 
     def _on_leader_elected(self, _):
         """Handle the leader elected event.
@@ -260,18 +277,35 @@ class MySQLOperatorCharm(CharmBase):
             event.defer()
             return
 
-        new_instance = self._get_hostname_by_unit(event.unit.name)
+        new_instance = self._get_unit_fqdn(event.unit.name)
 
+        # Check if new instance is ready to be added to the cluster
         if not self._mysql.is_instance_configured_for_innodb(new_instance):
             event.defer()
             return
+
+        # Check if instance was already added to the cluster
+        if self._mysql.is_instance_in_cluster(self._get_unit_hostname(event.unit.name)):
+            logger.debug(f"Instance {new_instance} already in cluster")
+            return
+
+        # Add new instance to ipAllowlist global variable
+        peer_data = self._peers.data[self.app]
+        if new_instance not in peer_data.get("allowlist").split(","):
+            peer_data["allowlist"] = f"{peer_data['allowlist']},{new_instance}"
+            try:
+                self._mysql.update_allowlist(peer_data["allowlist"])
+            except MySQLUpdateAllowListError:
+                logger.debug("Unable to update allowlist")
+                event.defer()
+                return
 
         # Add new instance to the cluster
         try:
             self._mysql.add_instance_to_cluster(new_instance)
             logger.debug(f"Added instance {new_instance} to cluster")
 
-        except MySQLAddInstanceToClusterError as e:
+        except MySQLAddInstanceToClusterError:
             logger.debug(f"Unable to add instance {new_instance} to cluster.")
             event.defer()
 
@@ -286,7 +320,7 @@ class MySQLOperatorCharm(CharmBase):
             # Avoid running too early
             return
 
-        instance_cluster_address = self.unit.name.replace("/", "-")
+        instance_cluster_address = self._get_unit_hostname(self.unit.name)
         # Test if non-leader unit is ready
         if isinstance(self.unit.status, WaitingStatus) and self._mysql.is_instance_in_cluster(
             instance_cluster_address

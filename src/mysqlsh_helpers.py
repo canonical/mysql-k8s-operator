@@ -67,6 +67,12 @@ class MySQLPatchDNSSearchesError(Exception):
         return "MySQLPatchDNSSearchesError"
 
 
+class MySQLUpdateAllowListError(Exception):
+    """Exception raised when there is an issue updating the allowlist."""
+
+    pass
+
+
 class MySQL:
     """Class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -228,6 +234,8 @@ class MySQL:
             self.container.restart("mysqld")
             logger.debug("Waiting until MySQL to restart")
             self._wait_until_mysql_connection()
+            # set global variables to enable group replication in k8s
+            self._set_group_replication_initial_variables()
         except ExecError as e:
             logger.error("Exited with code %d.", e.exit_code)
             if e.stderr:
@@ -381,13 +389,13 @@ class MySQL:
         )
 
         try:
-            logger.debug(f"Confirming instance {instance_address} in cluster")
+            logger.debug(f"Checking if instance {instance_address} is in the cluster")
 
             output = self._run_mysqlsh_script("\n".join(commands), verbose=0)
             return "ONLINE" in output
         except ExecError:
             # confirmation can fail if the clusteradmin user does not yet exist on the instance
-            logger.debug(f"Failed to confirm instance {instance_address} in cluster")
+            logger.debug(f"Instance {instance_address} is not yet in the cluster")
             return False
 
     def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> None:
@@ -420,7 +428,7 @@ class MySQL:
         """Get the cluster status.
 
         Executes script to retrieve cluster status.
-        Wont raise errors.
+        Won't raise errors.
 
         Returns:
             Cluster status as a dictionary
@@ -440,3 +448,38 @@ class MySQL:
             return output_dict
         except ExecError as e:
             logger.exception(f"Failed to get cluster status for {self.cluster_name}", exc_info=e)
+
+    def _set_group_replication_initial_variables(self) -> None:
+        """Set group replication initial variables.
+
+        Necessary for k8s deployments.
+        Raises ExecError if the script gets a non-zero return code.
+        """
+        commands = (
+            "INSTALL PLUGIN group_replication SONAME 'group_replication.so';",
+            f"SET PERSIST group_replication_local_address='{self.instance_address}:33061';",
+            "SET PERSIST group_replication_ip_allowlist='0.0.0.0/0';",
+        )
+
+        self._run_mysqlcli_script(
+            " ".join(commands), self.cluster_admin_password, self.cluster_admin_user
+        )
+
+    def update_allowlist(self, allowlist: str) -> None:
+        """Update the allowlist for the cluster.
+
+        Updates the ipAllowlist global variable in the cluster for GR access.
+        https://dev.mysql.com/doc/refman/8.0/en/group-replication-ip-address-permissions.html
+
+        Args:
+            allowlist: comma separated hosts
+        """
+        allowlist_commands = f"SET PERSIST group_replication_ip_allowlist='{allowlist}';"
+
+        try:
+            self._run_mysqlcli_script(
+                allowlist_commands, self.cluster_admin_password, self.cluster_admin_user
+            )
+        except ExecError:
+            logger.debug("Failed to update cluster ipAllowlist")
+            raise MySQLUpdateAllowListError()
