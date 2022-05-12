@@ -130,41 +130,6 @@ class MySQL:
                     logger.error("  %s", line)
             raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
 
-    def patch_dns_searches(self, app_name: str) -> None:
-        """Patch the DNS searches to allow the instance to be discovered.
-
-        Raises MySQLPatchDNSSearchesError if the patching fails.
-        FIXME: Fix this to use the proper k8s name resolution.
-                MySQL instance are not using `group_replication_local_address`
-                to report own address to the cluster, hence this hack.
-
-        Args:
-            app_name: name of the application
-        """
-        try:
-            resolv_file = self.container.pull("/etc/resolv.conf")
-            content = resolv_file.read()
-            output_string = ""
-            for line in content.splitlines():
-                line_content = line.split()
-                if line_content[0] == "search":
-                    line_content[1:1] = [f"{app_name}-endpoints.{line_content[1]}"]
-                    output_string += " ".join(line_content) + "\n"
-                else:
-                    output_string += line + "\n"
-            self.container.push("/tmp/resolv.conf-new", source=output_string)
-            # TODO: Remove the pushed file
-            process = self.container.exec(
-                [
-                    "cp",
-                    "/tmp/resolv.conf-new",
-                    "/etc/resolv.conf",
-                ]
-            )
-            process.wait()
-        except Exception:
-            raise MySQLPatchDNSSearchesError()
-
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
 
