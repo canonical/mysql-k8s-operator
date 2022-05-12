@@ -16,7 +16,6 @@ from mysqlsh_helpers import (
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
     MySQLInitialiseMySQLDError,
-    MySQLPatchDNSSearchesError,
     MySQLServiceNotRunningError,
 )
 
@@ -192,46 +191,6 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLInitialiseMySQLDError):
             self.mysql.initialise_mysqld()
-
-    @patch("ops.pebble.ExecProcess")
-    @patch("ops.model.Container")
-    def test_patch_dns_searches(self, _container, _process):
-        """Test a successful execution of patch_dns_searches."""
-        mock_file = MagicMock()
-        mock_file.read.return_value = "\n".join(
-            (
-                "search dev.svc.cluster.local svc.cluster.local cluster.local",
-                "nameserver 10.152.183.10",
-                "options ndots:5",
-            )
-        )
-        _container.pull.return_value = mock_file
-        _container.exec.return_value = _process
-
-        self.mysql.container = _container
-
-        self.mysql.patch_dns_searches("app-name")
-
-        _container.push.assert_called_once_with(
-            "/tmp/resolv.conf-new",
-            source="\n".join(
-                (
-                    "search app-name-endpoints.dev.svc.cluster.local dev.svc.cluster.local svc.cluster.local cluster.local",
-                    "nameserver 10.152.183.10",
-                    "options ndots:5",
-                    "",
-                )
-            ),
-        )
-
-    @patch("ops.model.Container")
-    def test_patch_dns_searches_exception(self, _container):
-        """Test a failing execution of patch_dns_searches."""
-        _container.pull.side_effect = Exception()
-        self.mysql.container = _container
-
-        with self.assertRaises(MySQLPatchDNSSearchesError):
-            self.mysql.patch_dns_searches("app-name")
 
     @patch("ops.model.Container")
     def test_run_mysqlsh_script(self, _container):
