@@ -116,7 +116,7 @@ async def test_replicated_write_n_read(ops_test: OpsTest):
 async def get_password(ops_test: OpsTest, password_key: str) -> str:
     """Get password using the action."""
     unit = ops_test.model.units.get(f"{APP_NAME}/0")
-    action = await unit.run_action("get-generated-passwords")
+    action = await unit.run_action("get-root-credentials")
     result = await action.wait()
     return result.results[password_key]
 

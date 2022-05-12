@@ -9,7 +9,12 @@ from unittest.mock import MagicMock, PropertyMock, patch
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import PASSWORD_LENGTH, MySQLOperatorCharm
+from charm import (
+    CLUSTER_ADMIN_USERNAME,
+    PASSWORD_LENGTH,
+    SERVER_CONFIG_USERNAME,
+    MySQLOperatorCharm,
+)
 from mysqlsh_helpers import MySQL, MySQLInitialiseMySQLDError
 
 APP_NAME = "mysql-k8s"
@@ -128,19 +133,32 @@ class TestCharm(unittest.TestCase):
         mysql = self.charm._mysql
         self.assertTrue(isinstance(mysql, MySQL))
 
-    def test_get_generated_passwords(self):
+    def test_on_get_cluster_admin_credentials(self):
         # Test get generated passwords function
         # used as action
         self.harness.set_leader()
         event = MagicMock()
-        self.charm._get_generated_passwords(event)
+        self.charm._on_get_cluster_admin_credentials(event)
 
         event.set_results.assert_called_with(
             {
+                "cluster-admin-username": CLUSTER_ADMIN_USERNAME,
                 "cluster-admin-password": self.charm._peers.data[self.charm.app][
                     "cluster-admin-password"
                 ],
-                "root-password": self.charm._peers.data[self.charm.app]["root-password"],
+            }
+        )
+
+    def test_on_get_server_config_credentials(self):
+        # Test get generated passwords function
+        # used as action
+        self.harness.set_leader()
+        event = MagicMock()
+        self.charm._on_get_server_config_credentials(event)
+
+        event.set_results.assert_called_with(
+            {
+                "server-config-username": SERVER_CONFIG_USERNAME,
                 "server-config-password": self.charm._peers.data[self.charm.app][
                     "server-config-password"
                 ],

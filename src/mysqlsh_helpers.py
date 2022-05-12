@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
+MYSQLD_CONFIG_FILE = "/etc/mysql/conf.d/z-custom.cnf"
 
 
 class MySQLConfigureInstanceError(Exception):
@@ -59,12 +60,12 @@ class MySQLInitialiseMySQLDError(Exception):
         return "MySQLInitialiseMySQLDError"
 
 
-class MySQLPatchDNSSearchesError(Exception):
-    """Exception raised when there is an issue patching the DNS searches."""
+class MySQLCreateCustomConfigFileError(Exception):
+    """Exception raised when there is an issue creating custom config file."""
 
     def __str__(self) -> str:
         """Return a string representation of the exception."""
-        return "MySQLPatchDNSSearchesError"
+        return "MySQLCreateCustomConfigFile"
 
 
 class MySQLUpdateAllowListError(Exception):
@@ -429,6 +430,19 @@ class MySQL:
         self._run_mysqlcli_script(
             " ".join(commands), self.cluster_admin_password, self.cluster_admin_user
         )
+
+    def create_custom_config_file(self, report_host: str) -> None:
+        """Create custom configuration file.
+
+        Necessary for k8s deployments.
+        Raises ExecError if the script gets a non-zero return code.
+        """
+        content = ("[mysqld]", f"report_host = {report_host}", "")
+
+        try:
+            self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
+        except Exception:
+            raise MySQLCreateCustomConfigFileError()
 
     def update_allowlist(self, allowlist: str) -> None:
         """Update the allowlist for the cluster.

@@ -9,7 +9,7 @@ import logging
 import secrets
 import string
 
-from ops.charm import ActionEvent, CharmBase, RelationJoinedEvent
+from ops.charm import ActionEvent, CharmBase, RelationChangedEvent, RelationJoinedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.pebble import Layer
@@ -20,8 +20,8 @@ from mysqlsh_helpers import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLCreateCustomConfigFileError,
     MySQLInitialiseMySQLDError,
-    MySQLPatchDNSSearchesError,
     MySQLUpdateAllowListError,
 )
 
@@ -31,6 +31,8 @@ PASSWORD_LENGTH = 24
 PEER = "database-peers"
 CONFIGURED_FILE = "/var/lib/mysql/charmed"
 MYSQLD_SERVICE = "mysqld"
+CLUSTER_ADMIN_USERNAME = "clusteradmin"
+SERVER_CONFIG_USERNAME = "serverconfig"
 
 
 def generate_random_password(length: int) -> str:
@@ -66,11 +68,15 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
-        self.framework.observe(self.on.update_status, self._on_update_status)
+        self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
         # Actions events
         self.framework.observe(
-            self.on.get_generated_passwords_action, self._get_generated_passwords
+            self.on.get_cluster_admin_credentials_action, self._on_get_cluster_admin_credentials
         )
+        self.framework.observe(
+            self.on.get_server_config_credentials_action, self._on_get_server_config_credentials
+        )
+        self.framework.observe(self.on.get_root_credentials_action, self._on_get_root_credentials)
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
 
     @property
@@ -87,9 +93,9 @@ class MySQLOperatorCharm(CharmBase):
             self._get_unit_fqdn(self.unit.name),
             peer_data["cluster-name"],
             peer_data["root-password"],
-            "serverconfig",
+            SERVER_CONFIG_USERNAME,
             peer_data["server-config-password"],
-            "clusteradmin",
+            CLUSTER_ADMIN_USERNAME,
             peer_data["cluster-admin-password"],
             self.unit.get_container("mysql"),
         )
@@ -127,16 +133,17 @@ class MySQLOperatorCharm(CharmBase):
         )
 
     def _get_unit_hostname(self, unit_name: str) -> str:
-        """Get the hostname for a unit.
+        """Get the hostname.localdomain for a unit.
 
-        Translate juju unit name to hostname.
+        Translate juju unit name to hostname.localdomain, necessary
+        for correct name resolution under k8s.
 
         Args:
             unit_name: unit name
         Returns:
-            A string representing the hostname of the unit.
+            A string representing the hostname.localdomain of the unit.
         """
-        return unit_name.replace("/", "-")
+        return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
 
     def _get_unit_fqdn(self, unit_name: str) -> str:
         """Create a fqdn for a unit.
@@ -148,7 +155,7 @@ class MySQLOperatorCharm(CharmBase):
         Returns:
             A string representing the fqdn of the unit.
         """
-        return f"{self._get_unit_hostname(unit_name)}.{self.app.name}-endpoints.{self.model.name}.svc.cluster.local"
+        return f"{self._get_unit_hostname(unit_name)}.{self.model.name}.svc.cluster.local"
 
     # =========================================================================
     # Charm event handlers
@@ -199,8 +206,6 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = event.workload
-        # Allow mysql instances to reach each other
-        self._mysql.patch_dns_searches(self.app.name)
 
         if not container.exists(CONFIGURED_FILE):
             # First run setup
@@ -211,6 +216,11 @@ class MySQLOperatorCharm(CharmBase):
                 # bootstrap the data directory and users
                 logger.debug("Initialising instance")
                 self._mysql.initialise_mysqld()
+
+                # Create custom server config file
+                self._mysql.create_custom_config_file(
+                    report_host=self._get_unit_hostname(self.unit.name)
+                )
 
                 # Add the pebble layer
                 container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
@@ -229,7 +239,7 @@ class MySQLOperatorCharm(CharmBase):
                 MySQLConfigureInstanceError,
                 MySQLConfigureMySQLUsersError,
                 MySQLInitialiseMySQLDError,
-                MySQLPatchDNSSearchesError,
+                MySQLCreateCustomConfigFileError,
             ) as e:
                 self.unit.status = BlockedStatus("Unable to configure instance")
                 logger.debug("Unable to configure instance: {}".format(e))
@@ -241,6 +251,8 @@ class MySQLOperatorCharm(CharmBase):
                     self._mysql.create_cluster()
                     # Create control file in data directory
                     container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
+
+                    self._peers.data[self.app]["units-added-to-cluster"] = "1"
                 except MySQLCreateClusterError as e:
                     self.unit.status = BlockedStatus("Unable to create cluster")
                     logger.debug("Unable to create cluster: {}".format(e))
@@ -305,19 +317,23 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.add_instance_to_cluster(new_instance)
             logger.debug(f"Added instance {new_instance} to cluster")
 
+            # Update 'units-added-to-cluster' counter in the peer relation databag
+            # in order to trigger a relation_changed event which will move the added unit
+            # into ActiveStatus
+            units_started = int(self._peers.data[self.app]["units-added-to-cluster"])
+            self._peers.data[self.app]["units-added-to-cluster"] = str(units_started + 1)
+
         except MySQLAddInstanceToClusterError:
             logger.debug(f"Unable to add instance {new_instance} to cluster.")
             event.defer()
 
-    def _on_update_status(self, _):
-        """Handle the update status event."""
+    def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
+        """Handle the relation changed event."""
         # This handler is only taking care of setting
         # active status for secondary units
-        if self.unit.is_leader():
-            return
-
         if not self._is_peer_data_set:
             # Avoid running too early
+            event.defer()
             return
 
         instance_cluster_address = self._get_unit_hostname(self.unit.name)
@@ -326,17 +342,41 @@ class MySQLOperatorCharm(CharmBase):
             instance_cluster_address
         ):
             self.unit.status = ActiveStatus()
-            logger.debug("Instance is cluster member")
+            logger.debug(f"Instance {instance_cluster_address} is cluster member")
 
     # =========================================================================
     # Charm action handlers
     # =========================================================================
-    def _get_generated_passwords(self, event: ActionEvent) -> None:
+    def _on_get_cluster_admin_credentials(self, event: ActionEvent) -> None:
+        """Action used to retrieve the cluster admin credentials."""
         event.set_results(
             {
-                "cluster-admin-password": self._peers.data[self.app]["cluster-admin-password"],
-                "root-password": self._peers.data[self.app]["root-password"],
-                "server-config-password": self._peers.data[self.app]["server-config-password"],
+                "cluster-admin-username": CLUSTER_ADMIN_USERNAME,
+                "cluster-admin-password": self._peers.data[self.app].get(
+                    "cluster-admin-password", "<to_be_generated>"
+                ),
+            }
+        )
+
+    def _on_get_server_config_credentials(self, event: ActionEvent) -> None:
+        """Action used to retrieve the server config credentials."""
+        event.set_results(
+            {
+                "server-config-username": SERVER_CONFIG_USERNAME,
+                "server-config-password": self._peers.data[self.app].get(
+                    "server-config-password", "<to_be_generated>"
+                ),
+            }
+        )
+
+    def _on_get_root_credentials(self, event: ActionEvent) -> None:
+        """Action used to retrieve the root credentials."""
+        event.set_results(
+            {
+                "root-username": "root",
+                "root-password": self._peers.data[self.app].get(
+                    "root-password", "<to_be_generated>"
+                ),
             }
         )
 
