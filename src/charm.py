@@ -69,6 +69,9 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
+        self.framework.observe(
+            self.on.database_storage_detaching, self._on_database_storage_detaching
+        )
         # Actions events
         self.framework.observe(
             self.on.get_cluster_admin_credentials_action, self._on_get_cluster_admin_credentials
@@ -249,6 +252,7 @@ class MySQLOperatorCharm(CharmBase):
                 try:
                     # Create the cluster when is the leader unit
                     self._mysql.create_cluster()
+                    self._mysql.initialize_juju_units_operations_table()
                     # Create control file in data directory
                     container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
 
@@ -329,6 +333,7 @@ class MySQLOperatorCharm(CharmBase):
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
+
         # This handler is only taking care of setting
         # active status for secondary units
         if not self._is_peer_data_set:
@@ -343,6 +348,13 @@ class MySQLOperatorCharm(CharmBase):
         ):
             self.unit.status = ActiveStatus()
             logger.debug(f"Instance {instance_cluster_address} is cluster member")
+
+    def _on_database_storage_detaching(self, _) -> None:
+        """Handle the database storage detaching event."""
+        # The following operation uses locks to ensure that only one instance is removed
+        # from the cluster at a time (to avoid split-brain or lack of majority issues)
+        unit_label = self.unit.name.replace("/", "-")
+        self._mysql.remove_instance(unit_label)
 
     # =========================================================================
     # Charm action handlers
