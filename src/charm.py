@@ -210,6 +210,9 @@ class MySQLOperatorCharm(CharmBase):
 
         container = event.workload
 
+        # Create custom server config file
+        self._mysql.create_custom_config_file(report_host=self._get_unit_hostname(self.unit.name))
+
         if not container.exists(CONFIGURED_FILE):
             # First run setup
             self.unit.status = MaintenanceStatus("Initialising mysqld")
@@ -219,11 +222,6 @@ class MySQLOperatorCharm(CharmBase):
                 # bootstrap the data directory and users
                 logger.debug("Initialising instance")
                 self._mysql.initialise_mysqld()
-
-                # Create custom server config file
-                self._mysql.create_custom_config_file(
-                    report_host=self._get_unit_hostname(self.unit.name)
-                )
 
                 # Add the pebble layer
                 container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
