@@ -405,7 +405,7 @@ class MySQLOperatorCharm(CharmBase):
         """Handle the database storage detaching event."""
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)
-        unit_label = self.unit.name.replace("/", "-")
+        unit_label = self._get_unit_hostname(self.unit.name)
         self._mysql.remove_instance(unit_label)
 
     # =========================================================================
