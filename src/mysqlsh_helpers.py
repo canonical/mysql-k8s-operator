@@ -587,7 +587,8 @@ class MySQL:
                 f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
                 f"cluster = dba.get_cluster('{self.cluster_name}')",
                 "number_cluster_members = len(cluster.status()['defaultReplicaSet']['topology'])",
-                f"cluster.remove_instance('{self.cluster_admin_user}@{self.instance_address}', {json.dumps(remove_instance_options)}) if number_cluster_members > 1 else cluster.dissolve({json.dumps(dissolve_cluster_options)})",
+                f"cluster.remove_instance('{self.cluster_admin_user}@{self.instance_address}', {json.dumps(remove_instance_options)})"
+                + " if number_cluster_members > 1 else cluster.dissolve({json.dumps(dissolve_cluster_options)})",
             )
             self._run_mysqlsh_script("\n".join(remove_instance_commands))
         except ExecError as e:
