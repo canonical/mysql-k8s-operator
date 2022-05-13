@@ -473,6 +473,10 @@ class MySQL:
         content = ("[mysqld]", f"report_host = {report_host}", "")
 
         try:
+            self.container.remove_path(MYSQLD_CONFIG_FILE)
+        except:
+            pass
+        try:
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
         except Exception:
             raise MySQLCreateCustomConfigFileError()
@@ -589,10 +593,10 @@ class MySQL:
         except ExecError as e:
             # In case of an error, raise an error and retry
             logger.warning(
-                f"Failed to acquire lock and remove instance {self.instance_address} with error {e.stderr}",
+                f"Failed to acquire lock and remove instance {self.instance_address}.",
                 exc_info=e,
             )
-            raise MySQLRemoveInstanceRetryError(e.stderr)
+            raise MySQLRemoveInstanceRetryError()
 
         # There is no need to release the lock if cluster was dissolved
         if not remaining_cluster_member_addresses:
@@ -614,10 +618,8 @@ class MySQL:
             self._release_lock(primary_address, unit_label, UNIT_TEARDOWN_LOCKNAME)
         except ExecError as e:
             # Raise an error that does not lead to a retry of this method
-            logger.exception(
-                f"Failed to release lock on {unit_label} with error {e.stderr}", exc_info=e
-            )
-            raise MySQLRemoveInstanceError(e.stderr)
+            logger.exception(f"Failed to release lock on {unit_label}.", exc_info=e)
+            raise MySQLRemoveInstanceError()
 
     def _acquire_lock(self, primary_address: str, unit_label: str, lock_name: str) -> bool:
         """Attempts to acquire a lock by using the mysql.juju_units_operations table.
