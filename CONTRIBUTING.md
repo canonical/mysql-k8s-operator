@@ -83,19 +83,43 @@ flowchart TD
     id207 -- yes --> id209[create cluster]
     id209 --> id208
 
-    id301([peer_relation_joined]) --> id302{if not `configured`}
+    id301([peer_relation_joined]) --> id302{if not `Active`}
     id302 --> id303>defer]
     id302 -- else --> id304{is leader?}
-    id304 -- no --> id311
-    id304 -- yes --> id305{container\ncannot connect\nor pebble layer\nnot running}
-    id305 --> id303
-    id305 -- no --> id306[check instance configuration]
-    id306 --> id307{instance configured?}
+    id304 -- no --> id399
+    id304 -- yes --> id306[check instance\nconfiguration]
+    id306 --> id307{instance\nconfigured?}
     id307 -- no --> id303
-    id307 -- yes --> id308{any units in state transfer?}
-    id308 -- yes --> id303
-    id308 -- no --> id309[store instance address to databag]
-    id309 --> id310[add instance to cluster]
-    id310 --> id311((return))
+    id307 -- yes --> id308{instance\nin cluster?}
+    id308 -- yes --> id399
+    id308 -- no --> id309[store instance\naddress to databag]
+    id309 --> id310[update cluster allowlist]
+    id310 --> id311[add instance to cluster]
+    id311 --> id312[trigger peer\nrelation changed]
+    id312 --> id399((return))
+```
+
+```mermaid
+flowchart TD
+    id401([storage_detaching]) --> id402[remove instance]
+    id402 --> id403[get primary]
+    id403 --> id404[acquire teardown\nlock on primary]
+    id404 --> id405[list other\ncluster members]
+    id405 --> id406{last\nmember?}
+    id406 -- yes --> id407[dissolve cluster]
+    id407 --> id499((return))
+    id406 -- no --> id408[remove instance]
+    id408 --> id409[get primary]
+    id409 --> id410[release teardown\nlock on primary]
+    id410 --> id499
+
+    id501([peer_relation_changed]) --> id502{`configured`?}
+    id502 -- no --> id503>defer]
+    id502 -- yes --> id504{status == Waiting}
+    id504 -- yes --> id505{instance in cluster?}
+    id505 -- yes --> id506[change to active status]
+    id506 --> id599((return))
+    id504 -- no --> id599((return))
+    id505 -- no --> id599((return))
 ```
 
