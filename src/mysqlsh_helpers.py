@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
-MYSQLD_CONFIG_FILE = "/etc/mysql/conf.d/z-custom.cnf"
+MYSQLD_CONFIG_FILE = "/etc/mysql/conf.d/z-report-host-custom.cnf"
 
 
 class MySQLConfigureInstanceError(Exception):
