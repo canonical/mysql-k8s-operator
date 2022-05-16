@@ -168,7 +168,7 @@ class TestMySQL(unittest.TestCase):
 
     @patch("ops.pebble.ExecProcess")
     @patch("ops.model.Container")
-    def test_bootstrap_instance(self, _container, _process):
+    def test_initialise_mysqld(self, _container, _process):
         """Test a successful execution of bootstrap_instance."""
         _container.exec.return_value = _process
         self.mysql.container = _container
@@ -182,7 +182,7 @@ class TestMySQL(unittest.TestCase):
         _process.wait_output.assert_called_once()
 
     @patch("ops.model.Container")
-    def test_bootstrap_instance_exception(self, _container):
+    def test_initialise_mysqld_exception(self, _container):
         """Test a failing execution of bootstrap_instance."""
         _container.exec.side_effect = ExecError(
             command=["mysqld"], exit_code=1, stdout=b"", stderr=b"Error"
