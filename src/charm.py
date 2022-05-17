@@ -213,61 +213,8 @@ class MySQLOperatorCharm(CharmBase):
         # Create custom server config file
         self._mysql.create_custom_config_file(report_host=self._get_unit_hostname(self.unit.name))
 
-        if not container.exists(CONFIGURED_FILE):
-            # First run setup
-            self.unit.status = MaintenanceStatus("Initialising mysqld")
-            try:
-
-                # Run mysqld for the first time to
-                # bootstrap the data directory and users
-                logger.debug("Initialising instance")
-                self._mysql.initialise_mysqld()
-
-                # Add the pebble layer
-                container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
-                container.restart(MYSQLD_SERVICE)
-                logger.debug("Waiting for instance to be ready")
-                self._mysql._wait_until_mysql_connection()
-
-                logger.info("Configuring instance")
-                # Configure all base users and revoke
-                # privileges from the root users
-                self._mysql.configure_mysql_users()
-                # Configure instance as a cluster node
-                self._mysql.configure_instance()
-
-            except (
-                MySQLConfigureInstanceError,
-                MySQLConfigureMySQLUsersError,
-                MySQLInitialiseMySQLDError,
-                MySQLCreateCustomConfigFileError,
-            ) as e:
-                self.unit.status = BlockedStatus("Unable to configure instance")
-                logger.debug("Unable to configure instance: {}".format(e))
-                return
-
-            if self.unit.is_leader():
-                try:
-                    # Create the cluster when is the leader unit
-                    self._mysql.create_cluster()
-                    self._mysql.initialize_juju_units_operations_table()
-                    # Create control file in data directory
-                    container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
-
-                    self._peers.data[self.app]["units-added-to-cluster"] = "1"
-                except MySQLCreateClusterError as e:
-                    self.unit.status = BlockedStatus("Unable to create cluster")
-                    logger.debug("Unable to create cluster: {}".format(e))
-                    return
-            else:
-                # When unit is not the leader, it should wait
-                # for the leader to configure it a cluster node
-                self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
-                # Create control file in data directory
-                container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
-                return
-
-        else:
+        if container.exists(CONFIGURED_FILE):
+            # When reusing a volume
             # Configure the layer when changed
             current_layer = container.get_plan()
             new_layer = self._pebble_layer
@@ -283,16 +230,10 @@ class MySQLOperatorCharm(CharmBase):
         # First run setup
         self.unit.status = MaintenanceStatus("Initialising mysqld")
         try:
-
             # Run mysqld for the first time to
             # bootstrap the data directory and users
             logger.debug("Initialising instance")
             self._mysql.initialise_mysqld()
-
-            # Create custom server config file
-            self._mysql.create_custom_config_file(
-                report_host=self._get_unit_hostname(self.unit.name)
-            )
 
             # Add the pebble layer
             container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
