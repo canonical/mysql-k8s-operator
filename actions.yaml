@@ -1,2 +1,11 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
+
+get-cluster-admin-credentials:
+  description: Get the credentials for the cluster admin user
+get-server-config-credentials:
+  description: Get the credentials for the server config user
+get-root-credentials:
+  description: Get the credentials for the root user
+get-cluster-status:
+  description: Get cluster status information without topology

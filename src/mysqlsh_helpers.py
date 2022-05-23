@@ -15,18 +15,23 @@ logger = logging.getLogger(__name__)
 
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
+MYSQLD_CONFIG_FILE = "/etc/mysql/conf.d/z-report-host-custom.cnf"
 
 
 class MySQLConfigureInstanceError(Exception):
     """Exception raised when there is an issue configuring a MySQL instance."""
 
-    pass
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return "MySQLConfigureInstanceError"
 
 
 class MySQLConfigureMySQLUsersError(Exception):
     """Exception raised when creating a user fails."""
 
-    pass
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return "MySQLConfigureMySQLUsersError"
 
 
 class MySQLServiceNotRunningError(Exception):
@@ -43,6 +48,28 @@ class MySQLCreateClusterError(Exception):
 
 class MySQLAddInstanceToClusterError(Exception):
     """Exception raised when there is an issue add an instance to the MySQL InnoDB cluster."""
+
+    pass
+
+
+class MySQLInitialiseMySQLDError(Exception):
+    """Exception raised when there is an issue initialising an instance."""
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return "MySQLInitialiseMySQLDError"
+
+
+class MySQLCreateCustomConfigFileError(Exception):
+    """Exception raised when there is an issue creating custom config file."""
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return "MySQLCreateCustomConfigFile"
+
+
+class MySQLUpdateAllowListError(Exception):
+    """Exception raised when there is an issue updating the allowlist."""
 
     pass
 
@@ -86,6 +113,24 @@ class MySQL:
         self.cluster_admin_password = cluster_admin_password
         self.container = container
 
+    def initialise_mysqld(self) -> None:
+        """Execute instance first run.
+
+        Initialise mysql data directory and create blank password root@localhost user.
+        Raises MySQLInitialiseMySQLDError if the instance bootstrap fails.
+        """
+        bootstrap_command = ["mysqld", "--initialize-insecure", "-u", "mysql"]
+
+        try:
+            process = self.container.exec(command=bootstrap_command)
+            process.wait_output()
+        except ExecError as e:
+            logger.error("Exited with code %d. Stderr:", e.exit_code)
+            if e.stderr:
+                for line in e.stderr.splitlines():
+                    logger.error("  %s", line)
+            raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
+
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
 
@@ -109,11 +154,10 @@ class MySQL:
             "CONNECTION_ADMIN",
         )
 
-        # it's not needed to grant privileges to the root user, as it's already
-        # granted by the entrypoint script provided by the container
+        # Configure root@%, root@localhost and serverconfig@% users
         configure_users_commands = (
-            "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='%';",
-            f"ALTER USER 'root'@'%' IDENTIFIED BY '{self.root_password}';",
+            f"CREATE USER 'root'@'%' IDENTIFIED BY '{self.root_password}';",
+            "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION;",
             f"CREATE USER '{self.server_config_user}'@'%' IDENTIFIED BY '{self.server_config_password}';",
             f"GRANT ALL ON *.* TO '{self.server_config_user}'@'%' WITH GRANT OPTION;",
             "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';",
@@ -124,7 +168,7 @@ class MySQL:
         )
 
         try:
-            logger.debug("Configuring MySQL users")
+            logger.debug("Configuring users")
             self._run_mysqlcli_script(" ".join(configure_users_commands))
         except ExecError as e:
             logger.error("Exited with code %d. Stderr:", e.exit_code)
@@ -150,14 +194,14 @@ class MySQL:
         )
 
         try:
-            logger.debug("Configuring instance for InnoDB")
+            logger.debug("Configuring instance for group replication")
             self._run_mysqlsh_script("\n".join(configure_instance_command))
             # restart the pebble layer service
             self.container.restart("mysqld")
-
             logger.debug("Waiting until MySQL to restart")
             self._wait_until_mysql_connection()
-            logger.debug("Waiting until MySQL restarted")
+            # set global variables to enable group replication in k8s
+            self._set_group_replication_initial_variables()
         except ExecError as e:
             logger.error("Exited with code %d.", e.exit_code)
             if e.stderr:
@@ -241,13 +285,16 @@ class MySQL:
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
 
-    def _run_mysqlsh_script(self, script: str) -> None:
+    def _run_mysqlsh_script(self, script: str, verbose: int = 1) -> str:
         """Execute a MySQL shell script.
 
         Raises ExecError if the script gets a non-zero return code.
 
         Args:
             script: mysql-shell python script string
+            verbose: mysqlsh verbosity level
+        Returns:
+            stdout of the script
         """
         self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
 
@@ -256,7 +303,7 @@ class MySQL:
             "/usr/bin/mysqlsh",
             "--no-wizard",
             "--python",
-            "--verbose=1",
+            f"--verbose={verbose}",
             "-f",
             MYSQLSH_SCRIPT_FILE,
             ";",
@@ -264,9 +311,60 @@ class MySQL:
             MYSQLSH_SCRIPT_FILE,
         ]
         process = self.container.exec(cmd)
-        process.wait_output()
+        stdout, _ = process.wait_output()
+        return stdout
 
-    def _run_mysqlcli_script(self, script: str, password=None) -> None:
+    def is_instance_configured_for_innodb(self, instance_address: str) -> bool:
+        """Confirm if instance is configured for use in an InnoDB cluster.
+
+        Args:
+            instance_address: The instance address for which to confirm InnoDB configuration
+
+        Returns:
+            Boolean indicating whether the instance is configured for use in an InnoDB cluster
+        """
+        commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{instance_address}')",
+            "instance_configured = dba.check_instance_configuration()['status'] == 'ok'",
+            'print("INSTANCE_CONFIGURED" if instance_configured else "INSTANCE_NOT_CONFIGURED")',
+        )
+
+        try:
+            logger.debug(f"Confirming instance {instance_address} configuration for InnoDB")
+
+            output = self._run_mysqlsh_script("\n".join(commands), verbose=0)
+            return "INSTANCE_CONFIGURED" in output
+        except ExecError:
+            # confirmation can fail if the clusteradmin user does not yet exist on the instance
+            logger.debug(f"Failed to confirm instance configuration for {instance_address}.")
+            return False
+
+    def is_instance_in_cluster(self, instance_address: str) -> bool:
+        """Confirm if instance is in the cluster.
+
+        Args:
+            instance_address: The instance address for which to confirm InnoDB configuration
+
+        Returns:
+            Boolean indicating whether the instance is in the cluster
+        """
+        commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            f"print(cluster.status()['defaultReplicaSet']['topology']['{instance_address}:3306']['status'])",
+        )
+
+        try:
+            logger.debug(f"Checking if instance {instance_address} is in the cluster")
+
+            output = self._run_mysqlsh_script("\n".join(commands), verbose=0)
+            return "ONLINE" in output
+        except ExecError:
+            # confirmation can fail if the clusteradmin user does not yet exist on the instance
+            logger.debug(f"Instance {instance_address} is not yet in the cluster")
+            return False
+
+    def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> None:
         """Execute a MySQL CLI script.
 
         Execute SQL script as instance root user.
@@ -275,18 +373,92 @@ class MySQL:
         Args:
             script: raw SQL script string
             password: root password to use for the script when needed
+            user: user to run the script
         """
         command = [
             "/usr/bin/mysql",
             "-u",
-            "root",
+            user,
             "--protocol=SOCKET",
             f"--socket={MYSQLD_SOCK_FILE}",
             "-e",
             script,
         ]
         if password:
-            # passoword is needed after user
+            # password is needed after user
             command.append(f"--password={password}")
         process = self.container.exec(command)
         process.wait_output()
+
+    def _get_cluster_status(self) -> dict:
+        """Get the cluster status.
+
+        Executes script to retrieve cluster status.
+        Won't raise errors.
+
+        Returns:
+            Cluster status as a dictionary
+        """
+        status_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            "print(cluster.status())",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(status_commands), verbose=0)
+            output_dict = json.loads(output.lower())
+            # pop topology from status due it being potentially too long
+            # and containing keys with `:` in it
+            output_dict["defaultreplicaset"].pop("topology")
+            return output_dict
+        except ExecError as e:
+            logger.exception(f"Failed to get cluster status for {self.cluster_name}", exc_info=e)
+
+    def _set_group_replication_initial_variables(self) -> None:
+        """Set group replication initial variables.
+
+        Necessary for k8s deployments.
+        Raises ExecError if the script gets a non-zero return code.
+        """
+        commands = (
+            "INSTALL PLUGIN group_replication SONAME 'group_replication.so';",
+            f"SET PERSIST group_replication_local_address='{self.instance_address}:33061';",
+            "SET PERSIST group_replication_ip_allowlist='0.0.0.0/0';",
+        )
+
+        self._run_mysqlcli_script(
+            " ".join(commands), self.cluster_admin_password, self.cluster_admin_user
+        )
+
+    def create_custom_config_file(self, report_host: str) -> None:
+        """Create custom configuration file.
+
+        Necessary for k8s deployments.
+        Raises MySQLCreateCustomConfigFileError if the script gets a non-zero return code.
+        """
+        content = ("[mysqld]", f"report_host = {report_host}", "")
+
+        try:
+            self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
+        except Exception:
+            raise MySQLCreateCustomConfigFileError()
+
+    def update_allowlist(self, allowlist: str) -> None:
+        """Update the allowlist for the cluster.
+
+        Updates the ipAllowlist global variable in the cluster for GR access.
+        https://dev.mysql.com/doc/refman/8.0/en/group-replication-ip-address-permissions.html
+
+        Args:
+            allowlist: comma separated hosts
+        """
+        allowlist_commands = f"SET PERSIST group_replication_ip_allowlist='{allowlist}';"
+
+        try:
+            self._run_mysqlcli_script(
+                allowlist_commands, self.cluster_admin_password, self.cluster_admin_user
+            )
+        except ExecError:
+            logger.debug("Failed to update cluster ipAllowlist")
+            raise MySQLUpdateAllowListError()

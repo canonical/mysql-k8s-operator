@@ -14,13 +14,23 @@ summary: |
 maintainers:
   - Paulo Machado <paulo.machado@canonical.com>
   - Shayan Patel <shayan.patel@canonical.com>
-
+source: https://github.com/canonical/mysql-k8s-operator
+issues: https://github.com/canonical/mysql-k8s-operator/issues
 containers:
   mysql:
     resource: mysql-image
-
+    mounts:
+      - storage: database
+        location: /var/lib/mysql
 resources:
   mysql-image:
     type: oci-image
     description: Ubuntu LTS Docker image for MySQL
-    upstream-source: ubuntu/mysql
+    upstream-source: mysql-dp:8.0
+peers:
+  database-peers:
+    interface: mysql-peers
+storage:
+  database:
+    type: filesystem
+    description: Persistent storage for MySQL data

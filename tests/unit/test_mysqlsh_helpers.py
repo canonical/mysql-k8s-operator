@@ -3,16 +3,19 @@
 
 
 import unittest
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 from ops.pebble import ExecError
 
 from mysqlsh_helpers import (
+    MYSQLD_SOCK_FILE,
+    MYSQLSH_SCRIPT_FILE,
     MySQL,
     MySQLAddInstanceToClusterError,
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLInitialiseMySQLDError,
     MySQLServiceNotRunningError,
 )
 
@@ -35,8 +38,8 @@ class TestMySQL(unittest.TestCase):
         """Test failed to configuring the MySQL users."""
         _expected_configure_user_commands = " ".join(
             (
-                "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='%';",
-                "ALTER USER 'root'@'%' IDENTIFIED BY 'password';",
+                "CREATE USER 'root'@'%' IDENTIFIED BY 'password';",
+                "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION;",
                 "CREATE USER 'serverconfig'@'%' IDENTIFIED BY 'serverconfigpassword';",
                 "GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION;",
                 "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';",
@@ -146,10 +149,10 @@ class TestMySQL(unittest.TestCase):
         add_instance_to_cluster_commands = (
             "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
             "cluster = dba.get_cluster('test_cluster')",
-            'cluster.add_instance(\'clusteradmin@127.0.0.2\', {"password": "clusteradminpassword", "recoveryMethod": "auto"})',
+            'cluster.add_instance(\'clusteradmin@mysql-k8s-43.mysql-k8s-endpoints\', {"password": "clusteradminpassword", "recoveryMethod": "auto"})',
         )
 
-        self.mysql.add_instance_to_cluster("127.0.0.2")
+        self.mysql.add_instance_to_cluster("mysql-k8s-43.mysql-k8s-endpoints")
 
         _run_mysqlsh_script.assert_called_once_with("\n".join(add_instance_to_cluster_commands))
 
@@ -161,4 +164,114 @@ class TestMySQL(unittest.TestCase):
         )
 
         with self.assertRaises(MySQLAddInstanceToClusterError):
-            self.mysql.add_instance_to_cluster("127.0.0.2")
+            self.mysql.add_instance_to_cluster("mysql-k8s-43.mysql-k8s-endpoints")
+
+    @patch("ops.pebble.ExecProcess")
+    @patch("ops.model.Container")
+    def test_initialise_mysqld(self, _container, _process):
+        """Test a successful execution of bootstrap_instance."""
+        _container.exec.return_value = _process
+        self.mysql.container = _container
+
+        self.mysql.initialise_mysqld()
+
+        _container.exec.assert_called_once_with(
+            command=["mysqld", "--initialize-insecure", "-u", "mysql"]
+        )
+
+        _process.wait_output.assert_called_once()
+
+    @patch("ops.model.Container")
+    def test_initialise_mysqld_exception(self, _container):
+        """Test a failing execution of bootstrap_instance."""
+        _container.exec.side_effect = ExecError(
+            command=["mysqld"], exit_code=1, stdout=b"", stderr=b"Error"
+        )
+        self.mysql.container = _container
+
+        with self.assertRaises(MySQLInitialiseMySQLDError):
+            self.mysql.initialise_mysqld()
+
+    @patch("ops.model.Container")
+    def test_run_mysqlsh_script(self, _container):
+        """Test a successful execution of run_mysqlsh_script."""
+        _container.exec.return_value = MagicMock()
+        _container.exec.return_value.wait_output.return_value = (
+            b"stdout",
+            b"stderr",
+        )
+        self.mysql.container = _container
+
+        self.mysql._run_mysqlsh_script("script")
+
+        _container.exec.assert_called_once_with(
+            [
+                "/usr/bin/mysqlsh",
+                "--no-wizard",
+                "--python",
+                "--verbose=1",
+                "-f",
+                MYSQLSH_SCRIPT_FILE,
+                ";",
+                "rm",
+                MYSQLSH_SCRIPT_FILE,
+            ]
+        )
+
+    @patch("ops.model.Container")
+    def test_run_mysqlcli_script(self, _container):
+        """Test a execution of run_mysqlcli_script."""
+        _container.exec.return_value = MagicMock()
+        _container.exec.return_value.wait_output.return_value = (
+            b"stdout",
+            b"stderr",
+        )
+        self.mysql.container = _container
+
+        self.mysql._run_mysqlcli_script("script")
+
+        _container.exec.assert_called_once_with(
+            [
+                "/usr/bin/mysql",
+                "-u",
+                "root",
+                "--protocol=SOCKET",
+                f"--socket={MYSQLD_SOCK_FILE}",
+                "-e",
+                "script",
+            ]
+        )
+
+    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script", return_value="INSTANCE_CONFIGURED")
+    def test_is_instance_configured_for_innodb(self, _run_mysqlsh_script):
+        """Test with no exceptions while calling the is_instance_configured_for_innodb method."""
+        # test successfully configured instance
+        check_instance_configuration_commands = (
+            "shell.connect('clusteradmin:clusteradminpassword@mysql-k8s-43.mysql-k8s-endpoints')",
+            "instance_configured = dba.check_instance_configuration()['status'] == 'ok'",
+            'print("INSTANCE_CONFIGURED" if instance_configured else "INSTANCE_NOT_CONFIGURED")',
+        )
+
+        is_instance_configured = self.mysql.is_instance_configured_for_innodb(
+            "mysql-k8s-43.mysql-k8s-endpoints"
+        )
+
+        _run_mysqlsh_script.assert_called_once_with(
+            "\n".join(check_instance_configuration_commands), verbose=0
+        )
+        self.assertTrue(is_instance_configured)
+
+        # reset mocks
+        _run_mysqlsh_script.reset_mock()
+
+        # test instance not configured for innodb
+        _run_mysqlsh_script.return_value = "INSTANCE_NOT_CONFIGURED"
+
+        is_instance_configured = self.mysql.is_instance_configured_for_innodb(
+            "mysql-k8s-43.mysql-k8s-endpoints"
+        )
+
+        _run_mysqlsh_script.assert_called_once_with(
+            "\n".join(check_instance_configuration_commands), verbose=0
+        )
+        self.assertFalse(is_instance_configured)
