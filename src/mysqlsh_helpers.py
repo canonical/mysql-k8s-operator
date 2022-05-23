@@ -10,7 +10,7 @@ import re
 from typing import List, Tuple
 
 from ops.model import Container
-from ops.pebble import ExecError
+from ops.pebble import ExecError, PathError, ProtocolError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -473,7 +473,7 @@ class MySQL:
 
         try:
             self.container.remove_path(MYSQLD_CONFIG_FILE)
-        except:
+        except (PathError, ProtocolError):
             pass
         try:
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
@@ -587,7 +587,7 @@ class MySQL:
                 f"cluster = dba.get_cluster('{self.cluster_name}')",
                 "number_cluster_members = len(cluster.status()['defaultReplicaSet']['topology'])",
                 f"cluster.remove_instance('{self.cluster_admin_user}@{self.instance_address}', {json.dumps(remove_instance_options)})"
-                + " if number_cluster_members > 1 else cluster.dissolve({json.dumps(dissolve_cluster_options)})",
+                + f" if number_cluster_members > 1 else cluster.dissolve({json.dumps(dissolve_cluster_options)})",
             )
             self._run_mysqlsh_script("\n".join(remove_instance_commands))
         except ExecError as e:

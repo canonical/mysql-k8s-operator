@@ -90,9 +90,9 @@ flowchart TD
     id304 -- yes --> id306[check instance\nconfiguration]
     id306 --> id307{instance\nconfigured?}
     id307 -- no --> id303
-    id307 -- yes --> id308{instance\nin cluster?}
+    id307 -- yes --> id308{instance\n in cluster?}
     id308 -- yes --> id399
-    id308 -- no --> id309[store instance\naddress to databag]
+    id308 -- no --> id309[store instance\n address to databag]
     id309 --> id310[update cluster allowlist]
     id310 --> id311[add instance to cluster]
     id311 --> id312[trigger peer\nrelation changed]
