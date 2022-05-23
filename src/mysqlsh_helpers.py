@@ -467,7 +467,7 @@ class MySQL:
         """Create custom configuration file.
 
         Necessary for k8s deployments.
-        Raises ExecError if the script gets a non-zero return code.
+        Raises MySQLCreateCustomConfigFileError if the script gets a non-zero return code.
         """
         content = ("[mysqld]", f"report_host = {report_host}", "")
 

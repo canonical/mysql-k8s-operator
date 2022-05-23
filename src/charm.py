@@ -326,7 +326,6 @@ class MySQLOperatorCharm(CharmBase):
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
-
         # This handler is only taking care of setting
         # active status for secondary units
         if not self._is_peer_data_set:
