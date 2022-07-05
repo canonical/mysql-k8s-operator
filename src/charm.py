@@ -319,7 +319,6 @@ class MySQLOperatorCharm(CharmBase):
 
         # Add new instance to the cluster
         try:
-            new_instance_label = event.unit.name.replace("/", "-")
             self._mysql.add_instance_to_cluster(new_instance_fqdn, new_instance_label)
             logger.debug(f"Added instance {new_instance_fqdn} to cluster")
 
