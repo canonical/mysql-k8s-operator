@@ -9,6 +9,12 @@ import logging
 import secrets
 import string
 
+from charms.mysql.v0.mysql import (
+    MySQLAddInstanceToClusterError,
+    MySQLConfigureInstanceError,
+    MySQLConfigureMySQLUsersError,
+    MySQLCreateClusterError,
+)
 from ops.charm import ActionEvent, CharmBase, RelationChangedEvent, RelationJoinedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
@@ -16,10 +22,6 @@ from ops.pebble import Layer
 
 from mysqlsh_helpers import (
     MySQL,
-    MySQLAddInstanceToClusterError,
-    MySQLConfigureInstanceError,
-    MySQLConfigureMySQLUsersError,
-    MySQLCreateClusterError,
     MySQLCreateCustomConfigFileError,
     MySQLInitialiseMySQLDError,
     MySQLUpdateAllowListError,
@@ -67,8 +69,10 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
+
         # Actions events
         self.framework.observe(
             self.on.get_cluster_admin_credentials_action, self._on_get_cluster_admin_credentials
@@ -217,7 +221,7 @@ class MySQLOperatorCharm(CharmBase):
                 logger.info("Add pebble layer")
                 container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
                 container.restart(MYSQLD_SERVICE)
-                self._mysql._wait_until_mysql_connection()
+                self._mysql.wait_until_mysql_connection()
             self.unit.status = ActiveStatus()
             return
 
@@ -239,7 +243,7 @@ class MySQLOperatorCharm(CharmBase):
             container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
             container.restart(MYSQLD_SERVICE)
             logger.debug("Waiting for instance to be ready")
-            self._mysql._wait_until_mysql_connection()
+            self._mysql.wait_until_mysql_connection()
             logger.info("Configuring instance")
             # Configure all base users and revoke
             # privileges from the root users
@@ -260,7 +264,8 @@ class MySQLOperatorCharm(CharmBase):
         if self.unit.is_leader():
             try:
                 # Create the cluster when is the leader unit
-                self._mysql.create_cluster()
+                unit_label = self.unit.name.replace("/", "-")
+                self._mysql.create_cluster(unit_label)
                 # Create control file in data directory
                 container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
                 self._peers.data[self.app]["units-added-to-cluster"] = "1"
@@ -286,22 +291,25 @@ class MySQLOperatorCharm(CharmBase):
             event.defer()
             return
 
-        new_instance = self._get_unit_fqdn(event.unit.name)
+        new_instance_fqdn = self._get_unit_fqdn(event.unit.name)
+        new_instance_label = event.unit.name.replace("/", "-")
 
         # Check if new instance is ready to be added to the cluster
-        if not self._mysql.is_instance_configured_for_innodb(new_instance):
+        if not self._mysql.is_instance_configured_for_innodb(
+            new_instance_fqdn, new_instance_label
+        ):
             event.defer()
             return
 
         # Check if instance was already added to the cluster
-        if self._mysql.is_instance_in_cluster(self._get_unit_hostname(event.unit.name)):
-            logger.debug(f"Instance {new_instance} already in cluster")
+        if self._mysql.is_instance_in_cluster(new_instance_label):
+            logger.debug(f"Instance {new_instance_fqdn} already in cluster")
             return
 
         # Add new instance to ipAllowlist global variable
         peer_data = self._peers.data[self.app]
-        if new_instance not in peer_data.get("allowlist").split(","):
-            peer_data["allowlist"] = f"{peer_data['allowlist']},{new_instance}"
+        if new_instance_fqdn not in peer_data.get("allowlist").split(","):
+            peer_data["allowlist"] = f"{peer_data['allowlist']},{new_instance_fqdn}"
             try:
                 self._mysql.update_allowlist(peer_data["allowlist"])
             except MySQLUpdateAllowListError:
@@ -311,8 +319,9 @@ class MySQLOperatorCharm(CharmBase):
 
         # Add new instance to the cluster
         try:
-            self._mysql.add_instance_to_cluster(new_instance)
-            logger.debug(f"Added instance {new_instance} to cluster")
+            new_instance_label = event.unit.name.replace("/", "-")
+            self._mysql.add_instance_to_cluster(new_instance_fqdn, new_instance_label)
+            logger.debug(f"Added instance {new_instance_fqdn} to cluster")
 
             # Update 'units-added-to-cluster' counter in the peer relation databag
             # in order to trigger a relation_changed event which will move the added unit
@@ -321,7 +330,7 @@ class MySQLOperatorCharm(CharmBase):
             self._peers.data[self.app]["units-added-to-cluster"] = str(units_started + 1)
 
         except MySQLAddInstanceToClusterError:
-            logger.debug(f"Unable to add instance {new_instance} to cluster.")
+            logger.debug(f"Unable to add instance {new_instance_fqdn} to cluster.")
             event.defer()
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
@@ -333,13 +342,13 @@ class MySQLOperatorCharm(CharmBase):
             event.defer()
             return
 
-        instance_cluster_address = self._get_unit_hostname(self.unit.name)
+        instance_label = self.unit.name.replace("/", "-")
         # Test if non-leader unit is ready
         if isinstance(self.unit.status, WaitingStatus) and self._mysql.is_instance_in_cluster(
-            instance_cluster_address
+            instance_label
         ):
             self.unit.status = ActiveStatus()
-            logger.debug(f"Instance {instance_cluster_address} is cluster member")
+            logger.debug(f"Instance {instance_label} is cluster member")
 
     # =========================================================================
     # Charm action handlers
