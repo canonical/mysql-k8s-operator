@@ -27,6 +27,7 @@ resources:
     type: oci-image
     description: Ubuntu LTS Docker image for MySQL
     upstream-source: mysql-dp:8.0
+    local-source: mysql-dp:8.0
 peers:
   database-peers:
     interface: mysql-peers
@@ -34,3 +35,6 @@ storage:
   database:
     type: filesystem
     description: Persistent storage for MySQL data
+provides:
+  mysql:
+    interface: mysql

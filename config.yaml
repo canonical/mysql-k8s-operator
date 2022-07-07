@@ -5,3 +5,12 @@ options:
   cluster-name:
     description: "Optional - Name of the MySQL InnoDB cluster"
     type: "string"
+# Config options for the legacy 'mysql relation'
+  user:
+    default: "mysqltest"
+    description: "The database username"
+    type: "string"
+  database:
+    default: "database1"
+    description: "The database name"
+    type: "string"

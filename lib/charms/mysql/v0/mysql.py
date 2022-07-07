@@ -273,7 +273,9 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlcli_script("; ".join(user_existence_commands))
+            output = self._run_mysqlcli_script(
+                "; ".join(user_existence_commands), password=self.root_password
+            )
             return "USER_EXISTS" in output
         except MySQLClientError as e:
             logger.exception(
@@ -296,24 +298,31 @@ class MySQLBase(ABC):
         Raises MySQLConfigureRouterUserError
             if there is an issue creating and configuring the mysqlrouter user
         """
-        mysqlrouter_user_attributes = {"unit_name": unit_name}
-        create_mysqlrouter_user_commands = (
-            f"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{json.dumps(mysqlrouter_user_attributes)}'",
-        )
-        mysqlrouter_user_grant_commands = (
-            f"GRANT CREATE USER ON *.* TO '{username}'@'{hostname}' WITH GRANT OPTION",
-            f"GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON mysql_innodb_cluster_metadata.* TO '{username}'@'{hostname}'",
-            f"GRANT SELECT ON mysql.user TO '{username}'@'{hostname}'",
-            f"GRANT SELECT ON performance_schema.replication_group_members TO '{username}'@'{hostname}'",
-            f"GRANT SELECT ON performance_schema.replication_group_member_stats TO '{username}'@'{hostname}'",
-            f"GRANT SELECT ON performance_schema.global_variables TO '{username}'@'{hostname}'",
-        )
-
         try:
+            primary_address = self.get_cluster_primary_address()
+
+            escaped_mysqlrouter_user_attributes = json.dumps({"unit_name": unit_name}).replace(
+                '"', r"\""
+            )
+            create_mysqlrouter_user_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_mysqlrouter_user_attributes}';\")",
+            )
+
+            mysqlrouter_user_grant_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"GRANT CREATE USER ON *.* TO '{username}'@'{hostname}' WITH GRANT OPTION;\")",
+                f"session.run_sql(\"GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON mysql_innodb_cluster_metadata.* TO '{username}'@'{hostname}';\")",
+                f"session.run_sql(\"GRANT SELECT ON mysql.user TO '{username}'@'{hostname}';\")",
+                f"session.run_sql(\"GRANT SELECT ON performance_schema.replication_group_members TO '{username}'@'{hostname}';\")",
+                f"session.run_sql(\"GRANT SELECT ON performance_schema.replication_group_member_stats TO '{username}'@'{hostname}';\")",
+                f"session.run_sql(\"GRANT SELECT ON performance_schema.global_variables TO '{username}'@'{hostname}';\")",
+            )
+
             logger.debug(f"Configuring MySQLRouter user for {self.instance_address}")
-            self._run_mysqlcli_script("; ".join(create_mysqlrouter_user_commands))
+            self._run_mysqlsh_script("\n".join(create_mysqlrouter_user_commands))
             # grant permissions to the newly created mysqlrouter user
-            self._run_mysqlcli_script("; ".join(mysqlrouter_user_grant_commands))
+            self._run_mysqlsh_script("\n".join(mysqlrouter_user_grant_commands))
         except MySQLClientError as e:
             logger.exception(
                 f"Failed to configure mysqlrouter user for: {self.instance_address} with error {e.message}",
@@ -336,17 +345,24 @@ class MySQLBase(ABC):
         Raises MySQLCreateApplicationDatabaseAndScopedUserError
             if there is an issue creating the application database or a user scoped to the database
         """
-        create_database_commands = (f"CREATE DATABASE IF NOT EXISTS {database_name}",)
-        user_attributes = {"unit_name": unit_name}
-        create_scoped_user_commands = (
-            f"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{json.dumps(user_attributes)}'",
-            f"GRANT USAGE ON *.* TO '{username}'@`{hostname}`",
-            f"GRANT ALL PRIVILEGES ON `{database_name}`.* TO `{username}`@`{hostname}`",
-        )
-
         try:
-            self._run_mysqlcli_script("; ".join(create_database_commands))
-            self._run_mysqlcli_script("; ".join(create_scoped_user_commands))
+            primary_address = self.get_cluster_primary_address()
+
+            create_database_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f'session.run_sql("CREATE DATABASE IF NOT EXISTS {database_name};")',
+            )
+
+            escaped_user_attributes = json.dumps({"unit_name": unit_name}).replace('"', r"\"")
+            create_scoped_user_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
+                f"session.run_sql(\"GRANT USAGE ON *.* TO '{username}'@`{hostname}`;\")",
+                f'session.run_sql("GRANT ALL PRIVILEGES ON `{database_name}`.* TO `{username}`@`{hostname}`;")',
+            )
+
+            self._run_mysqlsh_script("\n".join(create_database_commands))
+            self._run_mysqlsh_script("\n".join(create_scoped_user_commands))
         except MySQLClientError as e:
             logger.exception(
                 f"Failed to create application database {database_name} and scoped user {username}@{hostname}",
@@ -380,7 +396,7 @@ class MySQLBase(ABC):
 
             primary_address = self.get_cluster_primary_address()
             drop_users_command = (
-                f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{primary_address}')",
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"DROP USER IF EXISTS {', '.join(users)};\")",
             )
             self._run_mysqlsh_script("\n".join(drop_users_command))
