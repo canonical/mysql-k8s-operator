@@ -234,8 +234,9 @@ class MySQL(MySQLBase):
         allowlist_commands = f"SET PERSIST group_replication_ip_allowlist='{allowlist}';"
 
         try:
+            # Use server config credentials as cluster admin do not have enough permissions
             self._run_mysqlcli_script(
-                allowlist_commands, self.cluster_admin_password, self.cluster_admin_user
+                allowlist_commands, self.server_config_password, self.server_config_user
             )
         except ExecError:
             logger.debug("Failed to update cluster ipAllowlist")

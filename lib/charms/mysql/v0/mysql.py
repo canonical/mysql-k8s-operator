@@ -83,7 +83,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 1
+LIBPATCH = 2
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -304,11 +304,13 @@ class MySQLBase(ABC):
             escaped_mysqlrouter_user_attributes = json.dumps({"unit_name": unit_name}).replace(
                 '"', r"\""
             )
+            # Using server_config_user as we are sure it has create user grants
             create_mysqlrouter_user_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_mysqlrouter_user_attributes}';\")",
             )
 
+            # Using server_config_user as we are sure it has create user grants
             mysqlrouter_user_grant_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"GRANT CREATE USER ON *.* TO '{username}'@'{hostname}' WITH GRANT OPTION;\")",
@@ -348,12 +350,14 @@ class MySQLBase(ABC):
         try:
             primary_address = self.get_cluster_primary_address()
 
+            # Using server_config_user as we are sure it has create database grants
             create_database_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f'session.run_sql("CREATE DATABASE IF NOT EXISTS {database_name};")',
             )
 
             escaped_user_attributes = json.dumps({"unit_name": unit_name}).replace('"', r"\"")
+            # Using server_config_user as we are sure it has create user grants
             create_scoped_user_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
@@ -395,6 +399,8 @@ class MySQLBase(ABC):
                 return
 
             primary_address = self.get_cluster_primary_address()
+
+            # Using server_config_user as we are sure it has drop user grants
             drop_users_command = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"DROP USER IF EXISTS {', '.join(users)};\")",
