@@ -267,6 +267,8 @@ class MySQLOperatorCharm(CharmBase):
                 self._mysql.create_cluster(unit_label)
                 # Create control file in data directory
                 container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
+                # Initialize the juju units operations table (used for locking during scale down)
+                self._mysql.initialize_juju_units_operations_table()
                 self._peers.data[self.app]["units-added-to-cluster"] = "1"
                 self.unit.status = ActiveStatus()
             except MySQLCreateClusterError as e:
