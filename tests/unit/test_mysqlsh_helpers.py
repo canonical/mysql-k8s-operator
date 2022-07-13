@@ -62,9 +62,10 @@ class TestMySQL(unittest.TestCase):
 
     @patch("ops.model.Container")
     @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysqlsh_helpers.MySQL._run_mysqlcli_script")
     @patch("mysqlsh_helpers.MySQL.wait_until_mysql_connection")
     def test_configure_instance(
-        self, _wait_until_mysql_connection, _run_mysqlsh_script, _container
+        self, _wait_until_mysql_connection, _run_mysqlcli_script, _run_mysqlsh_script, _container
     ):
         """Test a successful execution of configure_instance."""
         configure_instance_commands = (
