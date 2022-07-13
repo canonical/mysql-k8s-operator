@@ -22,6 +22,7 @@ UNIT_IDS = [0, 1, 2]
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
+@pytest.mark.ha_tests
 async def test_build_and_deploy(ops_test: OpsTest):
     """Build the charm-under-test and deploy it.
 
@@ -47,6 +48,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
+@pytest.mark.ha_tests
 async def test_scale_to_ha(ops_test: OpsTest):
     """Scale the charm to HA."""
     await ops_test.model.applications[APP_NAME].scale(len(UNIT_IDS))
@@ -78,6 +80,8 @@ async def test_scale_to_ha(ops_test: OpsTest):
     cnx.close()
 
 
+@pytest.mark.abort_on_fail
+@pytest.mark.ha_tests
 async def test_replicated_write_n_read(ops_test: OpsTest):
     """Write on primary and read on secondary."""
     # get the cluster admin password
