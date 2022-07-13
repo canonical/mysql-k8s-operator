@@ -187,7 +187,7 @@ async def test_kubeflow_mysql(ops_test: OpsTest) -> None:
 
         # Wait till all services are active
         await ops_test.model.wait_for_idle(
-            applications=[DATABASE_APP_NAME, KFP_API_APP_NAME, "minio", "kfp-viz"],
+            apps=[DATABASE_APP_NAME, KFP_API_APP_NAME, "minio", "kfp-viz"],
             status="active",
             timeout=1000,
         )
