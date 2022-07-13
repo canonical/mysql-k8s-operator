@@ -7,10 +7,10 @@ options:
     type: "string"
 # Config options for the legacy 'mysql relation'
   user:
-    default: "mysqltest"
+    default: "mysql"
     description: "The database username"
     type: "string"
   database:
-    default: "database1"
+    default: "default_database"
     description: "The database name"
     type: "string"

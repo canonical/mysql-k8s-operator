@@ -18,11 +18,11 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 from ops.pebble import Layer
 
 from constants import (
-    PASSWORD_LENGTH,
-    PEER,
+    CLUSTER_ADMIN_USERNAME,
     CONFIGURED_FILE,
     MYSQLD_SERVICE,
-    CLUSTER_ADMIN_USERNAME,
+    PASSWORD_LENGTH,
+    PEER,
     SERVER_CONFIG_USERNAME,
 )
 from mysqlsh_helpers import (

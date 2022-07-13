@@ -6,7 +6,7 @@
 import json
 import logging
 
-from ops.charm import RelationCreatedEvent, RelationBrokenEvent
+from ops.charm import RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
 
 from constants import LEGACY_MYSQL, PASSWORD_LENGTH
@@ -27,9 +27,11 @@ class MySQLRelation(Object):
         self.framework.observe(
             self.charm.on[LEGACY_MYSQL].relation_created, self._on_mysql_relation_created
         )
-        self.framework.observe(
-            self.charm.on[LEGACY_MYSQL].relation_broken, self._on_mysql_relation_broken
-        )
+
+        # TODO: uncomment once https://bugs.launchpad.net/juju/+bug/1951415 has been resolved
+        # self.framework.observe(
+        #     self.charm.on[LEGACY_MYSQL].relation_broken, self._on_mysql_relation_broken
+        # )
 
     def _get_or_set_password_in_peer_databag(self, username: str) -> str:
         """Get a user's password from the peer databag if it exists, else populate a password.
@@ -73,7 +75,7 @@ class MySQLRelation(Object):
                     relation_databag[self.charm.unit][key] = value
 
             # Assign the cluster primary's address as the database host
-            primary_address = self.charm._mysql.get_cluster_primary_address()
+            primary_address = self.charm._mysql.get_cluster_primary_address().split(":")[0]
             relation_databag[self.charm.unit]["host"] = primary_address
 
     def _on_mysql_relation_created(self, event: RelationCreatedEvent) -> None:
@@ -116,7 +118,7 @@ class MySQLRelation(Object):
             "mysql-legacy-relation",
         )
 
-        primary_address = self.charm._mysql.get_cluster_primary_address()
+        primary_address = self.charm._mysql.get_cluster_primary_address().split(":")[0]
         updates = {
             "database": database,
             "host": primary_address,
