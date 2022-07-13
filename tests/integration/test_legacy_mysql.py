@@ -2,7 +2,6 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from http import server
 import logging
 from pathlib import Path
 
@@ -40,9 +39,7 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
     async with ops_test.fast_forward():
         # Build and deploy the mysql charm
         charm = await ops_test.build_charm(".")
-        resources = {
-            "mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]
-        }
+        resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
         config = {
             "user": "keystone",
             "database": "keystone",
@@ -87,9 +84,7 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
         )
 
         # Relate the mysql charm with the osm-keystone charm
-        await ops_test.model.relate(
-            f"{OSM_KEYSTONE_APP_NAME}:db", f"{DATABASE_APP_NAME}:mysql"
-        )
+        await ops_test.model.relate(f"{OSM_KEYSTONE_APP_NAME}:db", f"{DATABASE_APP_NAME}:mysql")
         await ops_test.model.wait_for_idle(
             apps=[OSM_KEYSTONE_APP_NAME, DATABASE_APP_NAME],
             status="active",
@@ -176,8 +171,8 @@ async def test_kubeflow_mysql(ops_test: OpsTest) -> None:
         )
 
         # Deploy minio and relate it to kfp-api
-        MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
-        await ops_test.model.deploy(entity_url="minio", config=MINIO_CONFIG)
+        minio_config = {"access-key": "minio", "secret-key": "minio-secret-key"}
+        await ops_test.model.deploy(entity_url="minio", config=minio_config)
         await ops_test.model.relate(
             f"{KFP_API_APP_NAME}:object-storage",
             "minio:object-storage",
@@ -192,7 +187,7 @@ async def test_kubeflow_mysql(ops_test: OpsTest) -> None:
 
         # Wait till all services are active
         await ops_test.model.wait_for_idle(
-            applications=[DATABASE_APP_NAME, KFP_API_APP_NAME, "minio", "kfp-viz"]
+            applications=[DATABASE_APP_NAME, KFP_API_APP_NAME, "minio", "kfp-viz"],
             status="active",
             timeout=1000,
         )

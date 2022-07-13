@@ -2,7 +2,6 @@
 # See LICENSE file for licensing details.
 
 import itertools
-
 from typing import Dict, List
 
 import mysql.connector
@@ -83,7 +82,7 @@ async def get_unit_address(ops_test: OpsTest, unit_name: str) -> str:
 
 
 async def scale_application(ops_test: OpsTest, application_name: str, desired_count: int) -> None:
-    """Scale a given application to the desired unit count
+    """Scale a given application to the desired unit count.
 
     Args:
         ops_test: The ops test framework
@@ -93,8 +92,4 @@ async def scale_application(ops_test: OpsTest, application_name: str, desired_co
     await ops_test.model.applications[application_name].scale(desired_count)
 
     if desired_count > 0:
-        await ops_test.model.wait_for_idle(
-            apps=[application_name],
-            status="active",
-            timeout=1000
-        )
+        await ops_test.model.wait_for_idle(apps=[application_name], status="active", timeout=1000)
