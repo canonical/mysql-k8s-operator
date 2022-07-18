@@ -1,10 +1,10 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
+import tenacity
 from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureInstanceError,
@@ -17,8 +17,29 @@ from mysqlsh_helpers import (
     MYSQLSH_SCRIPT_FILE,
     MySQL,
     MySQLInitialiseMySQLDError,
+    MySQLRemoveInstancesNotOnlineRetryError,
     MySQLServiceNotRunningError,
 )
+
+GET_CLUSTER_STATUS_RETURN = {
+    "defaultreplicaset": {
+        "status": "no_quorum",
+        "topology": {
+            "mysql-0": {
+                "status": "online",
+                "address": "mysql-1.mysql-endpoints",
+            },
+            "mysql-2": {
+                "status": "unreachable",
+                "address": "mysql-2.mysql-endpoints",
+            },
+            "mysql-1": {
+                "status": "(missing)",
+                "address": "mysql-1.mysql-endpoints",
+            },
+        },
+    },
+}
 
 
 class TestMySQL(unittest.TestCase):
@@ -147,6 +168,77 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLConfigureMySQLUsersError):
             self.mysql.configure_mysql_users()
+
+    @patch("mysqlsh_helpers.MySQL._wait_till_all_members_are_online")
+    @patch("mysqlsh_helpers.MySQL.get_cluster_status")
+    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    def test_remove_instances_not_online(
+        self, _run_mysqlsh_script, _get_cluster_status, _wait_till_all_members_are_online
+    ):
+        """Test a successful execution of remove_instances_not_online."""
+        _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
+
+        _expected_force_quorum_commands = "\n".join(
+            (
+                "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
+                "cluster = dba.get_cluster('test_cluster')",
+                "cluster.force_quorum_using_partition_of('clusteradmin@mysql-1.mysql-endpoints', 'clusteradminpassword')",
+            )
+        )
+
+        _expected_remove_instance_one_commands = "\n".join(
+            (
+                "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
+                "cluster = dba.get_cluster('test_cluster')",
+                'cluster.remove_instance(\'mysql-1.mysql-endpoints\', {"force": "true"})',
+            )
+        )
+        _expected_remove_instance_two_commands = "\n".join(
+            (
+                "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
+                "cluster = dba.get_cluster('test_cluster')",
+                'cluster.remove_instance(\'mysql-2.mysql-endpoints\', {"force": "true"})',
+            )
+        )
+
+        # disable tenacity retry
+        self.mysql.remove_instances_not_online.retry.retry = tenacity.retry_if_not_result(
+            lambda x: True
+        )
+
+        self.mysql.remove_instances_not_online()
+
+        self.assertEqual(_run_mysqlsh_script.call_count, 3)
+
+        self.assertEqual(
+            sorted(_run_mysqlsh_script.mock_calls),
+            sorted(
+                [
+                    call(_expected_force_quorum_commands),
+                    call(_expected_remove_instance_one_commands),
+                    call(_expected_remove_instance_two_commands),
+                ]
+            ),
+        )
+
+    @patch("mysqlsh_helpers.MySQL.get_cluster_status")
+    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    def test_remove_instances_not_online_exception(self, _run_mysqlsh_script, _get_cluster_status):
+        """Test an exception while executing remove_instances_not_online."""
+        # disable tenacity retry
+        self.mysql.remove_instances_not_online.retry.retry = tenacity.retry_if_not_result(
+            lambda x: True
+        )
+
+        _get_cluster_status.return_value = None
+        with self.assertRaises(MySQLRemoveInstancesNotOnlineRetryError):
+            self.mysql.remove_instances_not_online()
+
+        _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
+        _run_mysqlsh_script.side_effect = MySQLClientError("Error running mysqlsh")
+
+        with self.assertRaises(MySQLRemoveInstancesNotOnlineRetryError):
+            self.mysql.remove_instances_not_online()
 
     @patch("ops.model.Container")
     def test_run_mysqlsh_script(self, _container):

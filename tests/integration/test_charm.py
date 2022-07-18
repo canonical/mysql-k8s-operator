@@ -5,147 +5,171 @@
 
 import logging
 from pathlib import Path
-from time import sleep
 
-import mysql.connector
 import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
+from tenacity import AsyncRetrying, RetryError, stop_after_delay, wait_fixed
+
+from tests.integration.helpers import (
+    execute_queries_on_unit,
+    generate_random_string,
+    get_cluster_status,
+    get_primary_unit,
+    get_server_config_credentials,
+    get_unit_address,
+    scale_application,
+)
 
 logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
+CLUSTER_NAME = "test_cluster"
 
 UNIT_IDS = [0, 1, 2]
 
 
+@pytest.mark.order(1)
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest):
-    """Build the charm-under-test and deploy it.
+async def test_build_and_deploy(ops_test: OpsTest) -> None:
+    """Build the mysql charm and deploy it."""
+    async with ops_test.fast_forward():
+        charm = await ops_test.build_charm(".")
+        resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+        config = {"cluster-name": CLUSTER_NAME}
+        await ops_test.model.deploy(
+            charm, resources=resources, application_name=APP_NAME, config=config, num_units=3
+        )
 
-    Assert on the unit status before any relations/configurations take place.
-    """
-    # build and deploy charm from local source folder
-    charm = await ops_test.build_charm(".")
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-    await ops_test.model.deploy(charm, resources=resources, application_name=APP_NAME, num_units=1)
+        await ops_test.model.wait_for_idle(
+            apps=[APP_NAME],
+            status="active",
+            raise_on_blocked=True,
+            timeout=1000,
+            wait_for_exact_units=3,
+        )
+        assert len(ops_test.model.applications[APP_NAME].units) == 3
 
-    # issuing dummy update_status just to trigger an event
-    await ops_test.model.set_config({"update-status-hook-interval": "10s"})
+        random_unit = ops_test.model.applications[APP_NAME].units[0]
+        server_config_credentials = await get_server_config_credentials(random_unit)
 
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        raise_on_blocked=True,
-        timeout=1000,
-    )
-    assert len(ops_test.model.applications[APP_NAME].units) == 1
-    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
+        count_group_replication_members_sql = [
+            "SELECT count(*) FROM performance_schema.replication_group_members where MEMBER_STATE='ONLINE';",
+        ]
+
+        for unit in ops_test.model.applications[APP_NAME].units:
+            assert unit.workload_status == "active"
+
+            unit_address = await get_unit_address(ops_test, unit.name)
+            output = await execute_queries_on_unit(
+                unit_address,
+                server_config_credentials["username"],
+                server_config_credentials["password"],
+                count_group_replication_members_sql,
+            )
+            assert output[0] == 3
 
 
-@pytest.mark.skip_if_deployed
+@pytest.mark.order(2)
 @pytest.mark.abort_on_fail
-async def test_scale_to_ha(ops_test: OpsTest):
-    """Scale the charm to HA."""
-    await ops_test.model.applications[APP_NAME].scale(len(UNIT_IDS))
+async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> None:
+    """Confirm that data is replicated from the primary node to all the replicas."""
+    # Insert values into a table on the primary unit
+    random_unit = ops_test.model.applications[APP_NAME].units[0]
+    server_config_credentials = await get_server_config_credentials(random_unit)
 
-    # Blocks until all units are in active state
-    logger.info("Wait for app active status")
-    sleep(10)
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        raise_on_blocked=True,
-        timeout=1000,
+    primary_unit = await get_primary_unit(
+        ops_test,
+        random_unit,
+        APP_NAME,
     )
+    primary_unit_address = await get_unit_address(ops_test, primary_unit.name)
 
-    assert len(ops_test.model.applications[APP_NAME].units) == len(UNIT_IDS)
-
-    root_password = await get_password(ops_test, "root-password")
-    # Primary will be ID 0, since the unit is deployed first
-    host_ip = await get_pod_ip(ops_test, f"{APP_NAME}/0")
-    # connect to the MySQL server
-    cnx = db_connect(host_ip, root_password)
-    cursor = cnx.cursor()
-    query = "SELECT count(*) FROM performance_schema.replication_group_members where MEMBER_STATE='ONLINE';"
-    cursor.execute(query)
-
-    result = cursor.fetchone()
-    assert result[0] == len(UNIT_IDS)
-    cursor.close()
-    cnx.close()
-
-
-async def test_replicated_write_n_read(ops_test: OpsTest):
-    """Write on primary and read on secondary."""
-    # get the cluster admin password
-    root_password = await get_password(ops_test, "root-password")
-    # Primary will be ID 0, since the unit is deployed first
-    host_ip = await get_pod_ip(ops_test, f"{APP_NAME}/0")
-    # connect to the MySQL server
-    cnx = db_connect(host_ip, root_password)
-    cursor = cnx.cursor()
-    # ensure table cleanup (when running with --no-deploy)
-    # create a table and insert a row
-    queries = [
-        "DROP TABLE IF EXISTS mysql.charmtest;",
-        "CREATE TABLE mysql.charmtest (test_field VARCHAR(255) PRIMARY KEY);",
-        "INSERT INTO mysql.charmtest VALUES ('hello');",
+    random_chars = generate_random_string(40)
+    create_records_sql = [
+        "CREATE DATABASE IF NOT EXISTS test",
+        "CREATE TABLE IF NOT EXISTS test.data_replication_table (id varchar(40), primary key(id))",
+        f"INSERT INTO test.data_replication_table VALUES ('{random_chars}')",
     ]
-    for query in queries:
-        cursor.execute(query)
-    cnx.commit()
-    cursor.close()
-    cnx.close()
-    # replication take a little time
-    sleep(1)
-    # test on all secondaries
-    for unit_id in UNIT_IDS[1:]:
-        secondary_host_ip = await get_pod_ip(ops_test, f"{APP_NAME}/{unit_id}")
-        cnx = db_connect(secondary_host_ip, root_password)
-        cursor = cnx.cursor()
-        # Query the table
-        cursor.execute("SELECT * FROM mysql.charmtest;")
-        # fetch the result
-        result = cursor.fetchall()
-        assert result[0][0] == "hello"
+
+    await execute_queries_on_unit(
+        primary_unit_address,
+        server_config_credentials["username"],
+        server_config_credentials["password"],
+        create_records_sql,
+        commit=True,
+    )
+
+    select_data_sql = [
+        f"SELECT * FROM test.data_replication_table WHERE id = '{random_chars}'",
+    ]
+
+    # Retry
+    try:
+        for attempt in AsyncRetrying(stop=stop_after_delay(5), wait=wait_fixed(3)):
+            with attempt:
+                # Confirm that the values are available on all units
+                for unit in ops_test.model.applications[APP_NAME].units:
+                    unit_address = await get_unit_address(ops_test, unit.name)
+
+                    output = await execute_queries_on_unit(
+                        unit_address,
+                        server_config_credentials["username"],
+                        server_config_credentials["password"],
+                        select_data_sql,
+                    )
+                    assert random_chars in output
+    except RetryError:
+        assert False
 
 
-async def get_password(ops_test: OpsTest, password_key: str) -> str:
-    """Get password using the action."""
-    unit = ops_test.model.units.get(f"{APP_NAME}/0")
-    action = await unit.run_action("get-root-credentials")
-    result = await action.wait()
-    return result.results[password_key]
+@pytest.mark.order(3)
+@pytest.mark.abort_on_fail
+async def test_scale_up_and_down(ops_test: OpsTest) -> None:
+    """Confirm that a new primary is elected when the current primary is torn down."""
+    async with ops_test.fast_forward():
+        random_unit = ops_test.model.applications[APP_NAME].units[0]
 
+        await scale_application(ops_test, APP_NAME, 5)
 
-def db_connect(host: str, root_password: str):
-    """Create a connection to the MySQL server.
+        cluster_status = await get_cluster_status(ops_test, random_unit)
+        online_member_addresses = [
+            member["address"]
+            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if member["status"] == "online"
+        ]
+        assert len(online_member_addresses) == 5
 
-    uses root user to connect to the MySQL server.
+        await scale_application(ops_test, APP_NAME, 1, wait=False)
 
-    Returns:
-        MySQLConnection: connection to the MySQL server
-    """
-    cnx = mysql.connector.connect(user="root", password=root_password, host=host)
-    return cnx
+        await ops_test.model.block_until(
+            lambda: len(ops_test.model.applications[APP_NAME].units) == 1
+            and ops_test.model.applications[APP_NAME].units[0].workload_status == "maintenance"
+        )
+        await ops_test.model.wait_for_idle(
+            apps=[APP_NAME],
+            status="active",
+            raise_on_blocked=True,
+            timeout=1500,
+        )
 
+        random_unit = ops_test.model.applications[APP_NAME].units[0]
+        cluster_status = await get_cluster_status(ops_test, random_unit)
+        online_member_addresses = [
+            member["address"]
+            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if member["status"] == "online"
+        ]
+        assert len(online_member_addresses) == 1
 
-async def get_pod_ip(ops_test: OpsTest, unit_name: str) -> str:
-    """Get the pod IP address for the given unit.
+        not_online_member_addresses = [
+            member["address"]
+            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if member["status"] != "online"
+        ]
+        assert len(not_online_member_addresses) == 0
 
-    Args:
-        ops_test: test fixture
-        unit_name: unit name
-    Returns:
-        str: pod IP address
-    """
-    status = await ops_test.model.get_status()
-    for _, unit in status["applications"][APP_NAME]["units"].items():
-        if unit["provider-id"] == unit_name.replace("/", "-"):
-            pod_ip = unit["address"]
-            break
-
-    return pod_ip
+        await scale_application(ops_test, APP_NAME, 0)
+        await ops_test.model.remove_application(APP_NAME)

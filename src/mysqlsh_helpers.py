@@ -4,6 +4,7 @@
 
 """Helper class to manage the MySQL InnoDB cluster lifecycle with MySQL Shell."""
 
+import json
 import logging
 import os
 
@@ -15,7 +16,16 @@ from charms.mysql.v0.mysql import (
 )
 from ops.model import Container
 from ops.pebble import ExecError
-from tenacity import retry, stop_after_delay, wait_fixed
+from tenacity import (
+    RetryError,
+    retry,
+    retry_if_exception_type,
+    retry_if_result,
+    stop_after_attempt,
+    stop_after_delay,
+    wait_fixed,
+    wait_random,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +48,14 @@ class MySQLCreateCustomConfigFileError(Exception):
 
 class MySQLUpdateAllowListError(Exception):
     """Exception raised when there is an issue updating the allowlist."""
+
+
+class MySQLRemoveInstancesNotOnlineError(Exception):
+    """Exception raised when there is an issue removing not online instances."""
+
+
+class MySQLRemoveInstancesNotOnlineRetryError(Exception):
+    """Exception raised when retry required for remove_instances_not_online."""
 
 
 class MySQL(MySQLBase):
@@ -240,6 +258,110 @@ class MySQL(MySQLBase):
         except ExecError:
             logger.debug("Failed to update cluster ipAllowlist")
             raise MySQLUpdateAllowListError()
+
+    @retry(
+        retry=retry_if_result(lambda x: not x),
+        stop=stop_after_attempt(10),
+        wait=wait_fixed(60),
+    )
+    def _wait_till_all_members_are_online(self) -> None:
+        """Wait until all members of the cluster are online.
+
+        Retries every minute for 10 minute if not all members are online.
+
+        Raises:
+            RetryError - if timeout reached before all members are online.
+        """
+        cluster_status = self.get_cluster_status()
+
+        online_members = [
+            label
+            for label, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if member["status"] == "online"
+        ]
+
+        return len(online_members) == len(cluster_status["defaultreplicaset"]["topology"])
+
+    def _remove_unreachable_instances(self) -> None:
+        """Removes all unreachable instances in the cluster."""
+        cluster_status = self.get_cluster_status()
+        if not cluster_status:
+            raise MySQLRemoveInstancesNotOnlineRetryError("Unable to retrieve cluster status")
+
+        # Remove each member that is not online or recovering
+        # All member status available at
+        # https://dev.mysql.com/doc/mysql-shell/8.0/en/monitoring-innodb-cluster.html
+        not_online_members_addresses = [
+            member["address"]
+            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if member["status"] not in ["online", "recovering"]
+        ]
+        for member_address in not_online_members_addresses:
+            logger.info(f"Removing unreachable member {member_address} from the cluster")
+
+            remove_instance_options = {
+                "force": "true",
+            }
+            remove_instance_commands = (
+                f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+                f"cluster = dba.get_cluster('{self.cluster_name}')",
+                f"cluster.remove_instance('{member_address}', {json.dumps(remove_instance_options)})",
+            )
+
+            self._run_mysqlsh_script("\n".join(remove_instance_commands))
+
+    @retry(
+        retry=retry_if_exception_type(MySQLRemoveInstancesNotOnlineRetryError),
+        stop=stop_after_attempt(3),
+        reraise=True,
+        wait=wait_random(min=4, max=30),
+    )
+    def remove_instances_not_online(self) -> None:
+        """Remove all instances in the cluster that are not online.
+
+        Raises:
+            MySQLRemoveInstancesNotOnlineRetryError - to retry this method
+                if there was an issue removing not online instances
+        """
+        try:
+            cluster_status = self.get_cluster_status()
+            if not cluster_status:
+                raise MySQLRemoveInstancesNotOnlineRetryError("Unable to retrieve cluster status")
+
+            # If the cluster has no quorum, force quorum using partition of
+            # the first online instance
+            if cluster_status["defaultreplicaset"]["status"] == "no_quorum":
+                logger.warning("Cluster has no quorum")
+
+                online_member_address = [
+                    member["address"]
+                    for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+                    if member["status"] == "online"
+                ][0]
+
+                logger.info(f"Forcing quorum using {online_member_address}")
+                force_quorum_commands = (
+                    f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+                    f"cluster = dba.get_cluster('{self.cluster_name}')",
+                    f"cluster.force_quorum_using_partition_of('{self.cluster_admin_user}@{online_member_address}', '{self.cluster_admin_password}')",
+                )
+
+                self._run_mysqlsh_script("\n".join(force_quorum_commands))
+
+            self._remove_unreachable_instances()
+            self._wait_till_all_members_are_online()
+        except MySQLClientError as e:
+            # In case of an error (cluster still not stable), raise an error and retry
+            logger.warning(
+                f"Failed to remove unreachable instances on {self.instance_address} with error {e.message}"
+            )
+            raise MySQLRemoveInstancesNotOnlineRetryError(e.message)
+        except RetryError as e:
+            logger.exception(
+                "Failed to remove not online instances from the cluster",
+                exc_info=e,
+            )
+            raise MySQLRemoveInstancesNotOnlineError(e.message)
 
     def _run_mysqlsh_script(self, script: str, verbose: int = 1) -> str:
         """Execute a MySQL shell script.
