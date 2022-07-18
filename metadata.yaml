@@ -1,4 +1,4 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 name: mysql-k8s
@@ -26,8 +26,7 @@ resources:
   mysql-image:
     type: oci-image
     description: Ubuntu LTS Docker image for MySQL
-    upstream-source: mysql-dp:8.0
-    local-source: mysql-dp:8.0
+    upstream-source: dataplatformoci/mysql-and-shell:latest
 peers:
   database-peers:
     interface: mysql-peers
@@ -38,3 +37,5 @@ storage:
 provides:
   mysql:
     interface: mysql
+assumes:
+  - k8s-api
