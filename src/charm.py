@@ -31,6 +31,8 @@ from mysqlsh_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
     MySQLInitialiseMySQLDError,
+    MySQLRemoveInstancesNotOnlineError,
+    MySQLRemoveInstancesNotOnlineRetryError,
     MySQLUpdateAllowListError,
 )
 
@@ -219,7 +221,11 @@ class MySQLOperatorCharm(CharmBase):
             self.unit.status = MaintenanceStatus("Removing unreachable instances")
 
             # Remove unreachable instances from the cluster
-            self._mysql.remove_instances_not_online()
+            try:
+                self._mysql.remove_instances_not_online()
+            except (MySQLRemoveInstancesNotOnlineError, MySQLRemoveInstancesNotOnlineRetryError):
+                logger.debug("Unable to remove unreachable instances from the cluster")
+                self.unit.status = BlockedStatus("Failed to remove unreachable instances")
 
             # Since we do not have name of the prior leader unit, use planned units
             # to remove units with index >= planned units from the allowlist
@@ -228,7 +234,7 @@ class MySQLOperatorCharm(CharmBase):
             new_allowlist = set(allowlist)
 
             for fqdn in allowlist:
-                unit_number = int(fqdn.split(".")[0].split("-")[1])
+                unit_number = int(fqdn.split(".")[0].split("-")[-1])
 
                 if unit_number >= planned_units:
                     new_allowlist.remove(fqdn)
@@ -398,10 +404,13 @@ class MySQLOperatorCharm(CharmBase):
     def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
         """Handle the relation departed event.
 
-        Update the allowlist to remove the departing unit for all units.
+        Update the allowlist to remove the departing unit from the leader unit.
         Only on the leader, update the allowlist in the peer relation databag
         and remove unreachable instances from the cluster.
         """
+        if not self.unit.is_leader():
+            return
+
         departing_unit_fqdn = self._get_unit_fqdn(event.unit.name)
         allowlist = set(self._peers.data[self.app].get("allowlist").split(","))
         allowlist.discard(departing_unit_fqdn)
@@ -413,13 +422,16 @@ class MySQLOperatorCharm(CharmBase):
             event.defer()
             return
 
-        if not self.unit.is_leader():
-            return
-
         self._peers.data[self.app]["allowlist"] = ",".join(allowlist)
 
         self.unit.status = MaintenanceStatus("Removing unreachable instances")
-        self._mysql.remove_instances_not_online()
+
+        try:
+            self._mysql.remove_instances_not_online()
+        except (MySQLRemoveInstancesNotOnlineError, MySQLRemoveInstancesNotOnlineRetryError):
+            logger.debug("Unable to remove unreachable instances from the cluster")
+            self.unit.status = BlockedStatus("Failed to remove unreachable instances")
+
         self.unit.status = ActiveStatus()
 
     # =========================================================================

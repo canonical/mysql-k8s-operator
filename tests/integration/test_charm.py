@@ -4,12 +4,12 @@
 
 
 import logging
-import time
 from pathlib import Path
 
 import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
+from tenacity import AsyncRetrying, RetryError, stop_after_delay, wait_fixed
 
 from tests.integration.helpers import (
     execute_queries_on_unit,
@@ -102,24 +102,27 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
         commit=True,
     )
 
-    # Allow time for the data to be replicated
-    time.sleep(2)
-
     select_data_sql = [
         f"SELECT * FROM test.data_replication_table WHERE id = '{random_chars}'",
     ]
 
-    # Confirm that the values are available on all units
-    for unit in ops_test.model.applications[APP_NAME].units:
-        unit_address = await get_unit_address(ops_test, unit.name)
+    # Retry
+    try:
+        for attempt in AsyncRetrying(stop=stop_after_delay(5), wait=wait_fixed(3)):
+            with attempt:
+                # Confirm that the values are available on all units
+                for unit in ops_test.model.applications[APP_NAME].units:
+                    unit_address = await get_unit_address(ops_test, unit.name)
 
-        output = await execute_queries_on_unit(
-            unit_address,
-            server_config_credentials["username"],
-            server_config_credentials["password"],
-            select_data_sql,
-        )
-        assert random_chars in output
+                    output = await execute_queries_on_unit(
+                        unit_address,
+                        server_config_credentials["username"],
+                        server_config_credentials["password"],
+                        select_data_sql,
+                    )
+                    assert random_chars in output
+    except RetryError:
+        assert False
 
 
 @pytest.mark.order(3)
@@ -139,7 +142,18 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         ]
         assert len(online_member_addresses) == 5
 
-        await scale_application(ops_test, APP_NAME, 1)
+        await scale_application(ops_test, APP_NAME, 1, wait=False)
+
+        await ops_test.model.block_until(
+            lambda: len(ops_test.model.applications[APP_NAME].units) == 1
+            and ops_test.model.applications[APP_NAME].units[0].workload_status == "maintenance"
+        )
+        await ops_test.model.wait_for_idle(
+            apps=[APP_NAME],
+            status="active",
+            raise_on_blocked=True,
+            timeout=1500,
+        )
 
         random_unit = ops_test.model.applications[APP_NAME].units[0]
         cluster_status = await get_cluster_status(ops_test, random_unit)

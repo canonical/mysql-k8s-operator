@@ -142,20 +142,24 @@ async def get_server_config_credentials(unit: Unit) -> Dict:
     }
 
 
-async def scale_application(ops_test: OpsTest, application_name: str, desired_count: int) -> None:
+async def scale_application(
+    ops_test: OpsTest, application_name: str, desired_count: int, wait: bool = True
+) -> None:
     """Scale a given application to the desired unit count.
 
     Args:
         ops_test: The ops test framework
         application_name: The name of the application
         desired_count: The number of units to scale to
+        wait: Boolean indicating whether to wait until units
+            reach desired count
     """
     await ops_test.model.applications[application_name].scale(desired_count)
 
-    if desired_count > 0:
+    if desired_count > 0 and wait:
         await ops_test.model.wait_for_idle(
             apps=[application_name],
             status="active",
-            timeout=1000,
+            timeout=2000,
             wait_for_exact_units=desired_count,
         )

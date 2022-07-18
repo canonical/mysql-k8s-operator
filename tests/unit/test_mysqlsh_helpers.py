@@ -21,6 +21,26 @@ from mysqlsh_helpers import (
     MySQLServiceNotRunningError,
 )
 
+GET_CLUSTER_STATUS_RETURN = {
+    "defaultreplicaset": {
+        "status": "no_quorum",
+        "topology": {
+            "mysql-0": {
+                "status": "online",
+                "address": "mysql-1.mysql-endpoints",
+            },
+            "mysql-2": {
+                "status": "unreachable",
+                "address": "mysql-2.mysql-endpoints",
+            },
+            "mysql-1": {
+                "status": "(missing)",
+                "address": "mysql-1.mysql-endpoints",
+            },
+        },
+    },
+}
+
 
 class TestMySQL(unittest.TestCase):
     def setUp(self):
@@ -149,30 +169,14 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLConfigureMySQLUsersError):
             self.mysql.configure_mysql_users()
 
+    @patch("mysqlsh_helpers.MySQL._wait_till_all_members_are_online")
     @patch("mysqlsh_helpers.MySQL.get_cluster_status")
     @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
-    def test_remove_instances_not_online(self, _run_mysqlsh_script, _get_cluster_status):
+    def test_remove_instances_not_online(
+        self, _run_mysqlsh_script, _get_cluster_status, _wait_till_all_members_are_online
+    ):
         """Test a successful execution of remove_instances_not_online."""
-        get_cluster_status_return = {
-            "defaultreplicaset": {
-                "status": "no_quorum",
-                "topology": {
-                    "mysql-0": {
-                        "status": "online",
-                        "address": "mysql-1.mysql-endpoints",
-                    },
-                    "mysql-2": {
-                        "status": "unreachable",
-                        "address": "mysql-2.mysql-endpoints",
-                    },
-                    "mysql-1": {
-                        "status": "(missing)",
-                        "address": "mysql-1.mysql-endpoints",
-                    },
-                },
-            },
-        }
-        _get_cluster_status.return_value = get_cluster_status_return
+        _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
 
         _expected_force_quorum_commands = "\n".join(
             (
@@ -230,26 +234,7 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLRemoveInstancesNotOnlineRetryError):
             self.mysql.remove_instances_not_online()
 
-        get_cluster_status_return = {
-            "defaultreplicaset": {
-                "status": "no_quorum",
-                "topology": {
-                    "mysql-0": {
-                        "status": "online",
-                        "address": "mysql-1.mysql-endpoints",
-                    },
-                    "mysql-2": {
-                        "status": "unreachable",
-                        "address": "mysql-2.mysql-endpoints",
-                    },
-                    "mysql-1": {
-                        "status": "(missing)",
-                        "address": "mysql-1.mysql-endpoints",
-                    },
-                },
-            },
-        }
-        _get_cluster_status.return_value = get_cluster_status_return
+        _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
         _run_mysqlsh_script.side_effect = MySQLClientError("Error running mysqlsh")
 
         with self.assertRaises(MySQLRemoveInstancesNotOnlineRetryError):
