@@ -63,7 +63,7 @@ class MySQLRelation(Object):
             return
 
         relation_data = json.loads(
-            self.charm._peers.data[self.charm.app].get("mysql_relation_data")
+            self.charm._peers.data[self.charm.app].get("mysql_relation_data", "{}")
         )
 
         for relation in self.charm.model.relations.get(LEGACY_MYSQL, []):
