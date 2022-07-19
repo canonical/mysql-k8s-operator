@@ -46,10 +46,6 @@ class MySQLCreateCustomConfigFileError(Exception):
     """Exception raised when there is an issue creating custom config file."""
 
 
-class MySQLUpdateAllowListError(Exception):
-    """Exception raised when there is an issue updating the allowlist."""
-
-
 class MySQLRemoveInstancesNotOnlineError(Exception):
     """Exception raised when there is an issue removing not online instances."""
 
@@ -240,25 +236,6 @@ class MySQL(MySQLBase):
         except Exception:
             raise MySQLCreateCustomConfigFileError()
 
-    def update_allowlist(self, allowlist: str) -> None:
-        """Update the allowlist for the cluster.
-
-        Updates the ipAllowlist global variable in the cluster for GR access.
-        https://dev.mysql.com/doc/refman/8.0/en/group-replication-ip-address-permissions.html
-
-        Args:
-            allowlist: comma separated hosts
-        """
-        allowlist_commands = f"SET PERSIST group_replication_ip_allowlist='{allowlist}';"
-
-        try:
-            self._run_mysqlcli_script(
-                allowlist_commands, self.cluster_admin_password, self.cluster_admin_user
-            )
-        except ExecError:
-            logger.debug("Failed to update cluster ipAllowlist")
-            raise MySQLUpdateAllowListError()
-
     @retry(
         retry=retry_if_result(lambda x: not x),
         stop=stop_after_attempt(10),
@@ -394,10 +371,6 @@ class MySQL(MySQLBase):
             stdout, _ = process.wait_output()
             return stdout
         except ExecError as e:
-            logger.error("Exited with code %d. Stderr:", e.exit_code)
-            if e.stderr:
-                for line in e.stderr.splitlines():
-                    logger.error("  %s", line)
             raise MySQLClientError(e.stderr)
 
     def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> None:
@@ -428,8 +401,4 @@ class MySQL(MySQLBase):
             process = self.container.exec(command)
             process.wait_output()
         except ExecError as e:
-            logger.error("Exited with code %d. Stderr:", e.exit_code)
-            if e.stderr:
-                for line in e.stderr.splitlines():
-                    logger.error("  %s", line)
             raise MySQLClientError(e.stderr)
