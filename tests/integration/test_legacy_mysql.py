@@ -162,7 +162,9 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
 #             wait_for_exact_units=1,
 #         )
 #         assert len(ops_test.model.applications[DATABASE_APP_NAME].units) == 1
-#         assert ops_test.model.applications[DATABASE_APP_NAME].units[0].workload_status == "active"
+#         assert (
+#             ops_test.model.applications[DATABASE_APP_NAME].units[0].workload_status == "active"
+#         )
 
 #         # Deploy the kfp-api charm and relate it with mysql
 #         await ops_test.model.deploy(
