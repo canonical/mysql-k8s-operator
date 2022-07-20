@@ -213,9 +213,7 @@ class MySQL(MySQLBase):
         Necessary for k8s deployments.
         Raises MySQLClientError if the script gets a non-zero return code.
         """
-        commands = (
-            "INSTALL PLUGIN group_replication SONAME 'group_replication.so';",
-        )
+        commands = ("INSTALL PLUGIN group_replication SONAME 'group_replication.so';",)
 
         self._run_mysqlcli_script(
             " ".join(commands), self.cluster_admin_password, self.cluster_admin_user
