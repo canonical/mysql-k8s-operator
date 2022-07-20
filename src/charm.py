@@ -12,7 +12,14 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
 )
-from ops.charm import ActionEvent, CharmBase, RelationChangedEvent, RelationJoinedEvent
+from ops.charm import (
+    ActionEvent,
+    CharmBase,
+    LeaderElectedEvent,
+    RelationChangedEvent,
+    RelationDepartedEvent,
+    RelationJoinedEvent,
+)
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.pebble import Layer
@@ -29,7 +36,8 @@ from mysqlsh_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
     MySQLInitialiseMySQLDError,
-    MySQLUpdateAllowListError,
+    MySQLRemoveInstancesNotOnlineError,
+    MySQLRemoveInstancesNotOnlineRetryError,
 )
 from relations.mysql import MySQLRelation
 from utils import generate_random_hash, generate_random_password
@@ -50,6 +58,7 @@ class MySQLOperatorCharm(CharmBase):
 
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
+        self.framework.observe(self.on[PEER].relation_departed, self._on_peer_relation_departed)
 
         # Actions events
         self.framework.observe(
@@ -95,6 +104,11 @@ class MySQLOperatorCharm(CharmBase):
             and peer_data.get("cluster-admin-password")
             and peer_data.get("allowlist")
         )
+
+    @property
+    def _is_cluster_initialized(self):
+        """Returns True if the cluster is initialized."""
+        return self._peers.data[self.app].get("units-added-to-cluster", "0") >= "1"
 
     @property
     def _pebble_layer(self) -> Layer:
@@ -163,13 +177,16 @@ class MySQLOperatorCharm(CharmBase):
         if not peer_data.get("allowlist"):
             peer_data["allowlist"] = f"{self._get_unit_fqdn(self.unit.name)}"
 
-    def _on_leader_elected(self, _):
+    def _on_leader_elected(self, event: LeaderElectedEvent) -> None:
         """Handle the leader elected event.
 
-        Set config values in the peer relation databag.
+        Set config values in the peer relation databag if not already set.
+        Idempotently remove unreachable instances from the cluster and update
+        the allowlist accordingly.
         """
         peer_data = self._peers.data[self.app]
 
+        # Set required passwords if not already set
         required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
 
         for required_password in required_passwords:
@@ -177,6 +194,19 @@ class MySQLOperatorCharm(CharmBase):
                 logger.debug(f"Setting {required_password}")
                 password = generate_random_password(PASSWORD_LENGTH)
                 peer_data[required_password] = password
+
+        # If this node was elected a leader due to a prior leader unit being down scaled
+        if self._is_peer_data_set and self._is_cluster_initialized:
+            self.unit.status = MaintenanceStatus("Removing unreachable instances")
+
+            # Remove unreachable instances from the cluster
+            try:
+                self._mysql.remove_instances_not_online()
+            except (MySQLRemoveInstancesNotOnlineError, MySQLRemoveInstancesNotOnlineRetryError):
+                logger.debug("Unable to remove unreachable instances from the cluster")
+                self.unit.status = BlockedStatus("Failed to remove unreachable instances")
+
+            self.unit.status = ActiveStatus()
 
     def _on_mysql_pebble_ready(self, event):
         """Pebble ready handler.
@@ -286,17 +316,6 @@ class MySQLOperatorCharm(CharmBase):
             logger.debug(f"Instance {new_instance_fqdn} already in cluster")
             return
 
-        # Add new instance to ipAllowlist global variable
-        peer_data = self._peers.data[self.app]
-        if new_instance_fqdn not in peer_data.get("allowlist").split(","):
-            peer_data["allowlist"] = f"{peer_data['allowlist']},{new_instance_fqdn}"
-            try:
-                self._mysql.update_allowlist(peer_data["allowlist"])
-            except MySQLUpdateAllowListError:
-                logger.debug("Unable to update allowlist")
-                event.defer()
-                return
-
         # Add new instance to the cluster
         try:
             self._mysql.add_instance_to_cluster(new_instance_fqdn, new_instance_label)
@@ -328,6 +347,26 @@ class MySQLOperatorCharm(CharmBase):
         ):
             self.unit.status = ActiveStatus()
             logger.debug(f"Instance {instance_label} is cluster member")
+
+    def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
+        """Handle the relation departed event.
+
+        Update the allowlist to remove the departing unit from the leader unit.
+        Only on the leader, update the allowlist in the peer relation databag
+        and remove unreachable instances from the cluster.
+        """
+        if not self.unit.is_leader():
+            return
+
+        self.unit.status = MaintenanceStatus("Removing unreachable instances")
+
+        try:
+            self._mysql.remove_instances_not_online()
+        except (MySQLRemoveInstancesNotOnlineError, MySQLRemoveInstancesNotOnlineRetryError):
+            logger.debug("Unable to remove unreachable instances from the cluster")
+            self.unit.status = BlockedStatus("Failed to remove unreachable instances")
+
+        self.unit.status = ActiveStatus()
 
     # =========================================================================
     # Charm action handlers
@@ -367,7 +406,7 @@ class MySQLOperatorCharm(CharmBase):
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Get the cluster status without topology."""
-        event.set_results(self._mysql._get_cluster_status())
+        event.set_results(self._mysql.get_cluster_status())
 
 
 if __name__ == "__main__":

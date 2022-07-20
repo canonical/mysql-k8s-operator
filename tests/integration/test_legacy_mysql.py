@@ -41,8 +41,8 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
         charm = await ops_test.build_charm(".")
         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
         config = {
-            "user": "keystone",
-            "database": "keystone",
+            "mysql-interface-user": "keystone",
+            "mysql-interface-database": "keystone",
         }
         await ops_test.model.deploy(
             charm,
@@ -140,8 +140,8 @@ async def test_kubeflow_mysql(ops_test: OpsTest) -> None:
         charm = await ops_test.build_charm(".")
         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
         config = {
-            "user": "mysql",
-            "database": "mlpipeline",
+            "mysql-interface-user": "mysql",
+            "mysql-interface-database": "mlpipeline",
         }
         await ops_test.model.deploy(
             charm,

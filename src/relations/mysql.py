@@ -63,7 +63,7 @@ class MySQLRelation(Object):
             return
 
         relation_data = json.loads(
-            self.charm._peers.data[self.charm.app].get("mysql_relation_data")
+            self.charm._peers.data[self.charm.app].get("mysql_relation_data", "{}")
         )
 
         for relation in self.charm.model.relations.get(LEGACY_MYSQL, []):
@@ -97,8 +97,8 @@ class MySQLRelation(Object):
 
         logger.warning("DEPRECATION WARNING - `mysql` is a legacy interface")
 
-        username = self.charm.config.get("user")
-        database = self.charm.config.get("database")
+        username = self.charm.config.get("mysql-interface-user")
+        database = self.charm.config.get("mysql-interface-database")
 
         if not username or not database:
             event.defer()

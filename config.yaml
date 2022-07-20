@@ -6,11 +6,11 @@ options:
     description: "Optional - Name of the MySQL InnoDB cluster"
     type: "string"
 # Config options for the legacy 'mysql relation'
-  user:
+  mysql-interface-user:
     default: "mysql"
-    description: "The database username"
+    description: "The database username for the legacy 'mysql' relation"
     type: "string"
-  database:
+  mysql-interface-database:
     default: "default_database"
-    description: "The database name"
+    description: "The database name for the legacy 'mysql' relation"
     type: "string"
