@@ -67,6 +67,7 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
         osm_keystone_resources = {
             "keystone-image": "opensourcemano/keystone:testing-daily",
         }
+        # TODO: Replace edge channel with stable when osm-keystone is promoted
         await ops_test.model.deploy(
             "osm-keystone",
             channel="edge",
@@ -131,104 +132,106 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
         await ops_test.model.remove_application(DATABASE_APP_NAME, block_until_done=True)
 
 
-@pytest.mark.order(2)
-@pytest.mark.abort_on_fail
-@pytest.mark.legacy_mysql_tests
-async def test_kubeflow_mysql(ops_test: OpsTest) -> None:
-    async with ops_test.fast_forward():
-        # Build and deploy the mysql charm
-        charm = await ops_test.build_charm(".")
-        resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-        config = {
-            "mysql-interface-user": "mysql",
-            "mysql-interface-database": "mlpipeline",
-        }
-        await ops_test.model.deploy(
-            charm,
-            resources=resources,
-            config=config,
-            application_name=DATABASE_APP_NAME,
-            num_units=1,
-        )
+# TODO: uncomment when ready to integrate with kfp-api
+# TODO: (once https://github.com/canonical/kfp-operators/issues/75 is completed)
+# @pytest.mark.order(2)
+# @pytest.mark.abort_on_fail
+# @pytest.mark.legacy_mysql_tests
+# async def test_kubeflow_mysql(ops_test: OpsTest) -> None:
+#     async with ops_test.fast_forward():
+#         # Build and deploy the mysql charm
+#         charm = await ops_test.build_charm(".")
+#         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+#         config = {
+#             "mysql-interface-user": "mysql",
+#             "mysql-interface-database": "mlpipeline",
+#         }
+#         await ops_test.model.deploy(
+#             charm,
+#             resources=resources,
+#             config=config,
+#             application_name=DATABASE_APP_NAME,
+#             num_units=1,
+#         )
 
-        await ops_test.model.wait_for_idle(
-            apps=[DATABASE_APP_NAME],
-            status="active",
-            raise_on_blocked=True,
-            timeout=1000,
-            wait_for_exact_units=1,
-        )
-        assert len(ops_test.model.applications[DATABASE_APP_NAME].units) == 1
-        assert ops_test.model.applications[DATABASE_APP_NAME].units[0].workload_status == "active"
+#         await ops_test.model.wait_for_idle(
+#             apps=[DATABASE_APP_NAME],
+#             status="active",
+#             raise_on_blocked=True,
+#             timeout=1000,
+#             wait_for_exact_units=1,
+#         )
+#         assert len(ops_test.model.applications[DATABASE_APP_NAME].units) == 1
+#         assert ops_test.model.applications[DATABASE_APP_NAME].units[0].workload_status == "active"
 
-        # Deploy the kfp-api charm and relate it with mysql
-        await ops_test.model.deploy(
-            entity_url="kfp-api", application_name=KFP_API_APP_NAME, trust=True
-        )
-        await ops_test.model.relate(
-            f"{KFP_API_APP_NAME}:mysql",
-            f"{DATABASE_APP_NAME}:mysql",
-        )
+#         # Deploy the kfp-api charm and relate it with mysql
+#         await ops_test.model.deploy(
+#             entity_url="kfp-api", application_name=KFP_API_APP_NAME, trust=True
+#         )
+#         await ops_test.model.relate(
+#             f"{KFP_API_APP_NAME}:mysql",
+#             f"{DATABASE_APP_NAME}:mysql",
+#         )
 
-        # Deploy minio and relate it to kfp-api
-        minio_config = {"access-key": "minio", "secret-key": "minio-secret-key"}
-        await ops_test.model.deploy(entity_url="minio", config=minio_config)
-        await ops_test.model.relate(
-            f"{KFP_API_APP_NAME}:object-storage",
-            "minio:object-storage",
-        )
+#         # Deploy minio and relate it to kfp-api
+#         minio_config = {"access-key": "minio", "secret-key": "minio-secret-key"}
+#         await ops_test.model.deploy(entity_url="minio", config=minio_config)
+#         await ops_test.model.relate(
+#             f"{KFP_API_APP_NAME}:object-storage",
+#             "minio:object-storage",
+#         )
 
-        # Deploy kfp-viz and relate it to kfp-api
-        await ops_test.model.deploy(entity_url="kfp-viz")
-        await ops_test.model.relate(
-            f"{KFP_API_APP_NAME}:kfp-viz",
-            "kfp-viz:kfp-viz",
-        )
+#         # Deploy kfp-viz and relate it to kfp-api
+#         await ops_test.model.deploy(entity_url="kfp-viz")
+#         await ops_test.model.relate(
+#             f"{KFP_API_APP_NAME}:kfp-viz",
+#             "kfp-viz:kfp-viz",
+#         )
 
-        # Wait till all services are active
-        await ops_test.model.wait_for_idle(
-            apps=[DATABASE_APP_NAME, KFP_API_APP_NAME, "minio", "kfp-viz"],
-            status="active",
-            timeout=1000,
-        )
+#         # Wait till all services are active
+#         await ops_test.model.wait_for_idle(
+#             apps=[DATABASE_APP_NAME, KFP_API_APP_NAME, "minio", "kfp-viz"],
+#             status="active",
+#             timeout=1000,
+#         )
 
-        # Ensure that the mlpipeline database exists and tables within it exist
-        show_databases_sql = [
-            "SHOW DATABASES",
-        ]
-        get_count_mlpipeline_tables = [
-            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'mlpipeline'",
-        ]
+#         # Ensure that the mlpipeline database exists and tables within it exist
+#         show_databases_sql = [
+#             "SHOW DATABASES",
+#         ]
+#         get_count_mlpipeline_tables = [
+#             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'mlpipeline'",
+#         ]
 
-        random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[0]
-        server_config_credentials = await get_server_config_credentials(random_unit)
+#         random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[0]
+#         server_config_credentials = await get_server_config_credentials(random_unit)
 
-        for unit in ops_test.model.applications[DATABASE_APP_NAME].units:
-            unit_address = await get_unit_address(ops_test, unit.name)
+#         for unit in ops_test.model.applications[DATABASE_APP_NAME].units:
+#             unit_address = await get_unit_address(ops_test, unit.name)
 
-            output = await execute_queries_on_unit(
-                unit_address,
-                server_config_credentials["username"],
-                server_config_credentials["password"],
-                show_databases_sql,
-            )
-            assert "mlpipeline" in output
+#             output = await execute_queries_on_unit(
+#                 unit_address,
+#                 server_config_credentials["username"],
+#                 server_config_credentials["password"],
+#                 show_databases_sql,
+#             )
+#             assert "mlpipeline" in output
 
-            output = await execute_queries_on_unit(
-                unit_address,
-                server_config_credentials["username"],
-                server_config_credentials["password"],
-                get_count_mlpipeline_tables,
-            )
-            assert output[0] > 0
+#             output = await execute_queries_on_unit(
+#                 unit_address,
+#                 server_config_credentials["username"],
+#                 server_config_credentials["password"],
+#                 get_count_mlpipeline_tables,
+#             )
+#             assert output[0] > 0
 
-        # Scale down all applications
-        await scale_application(ops_test, "minio", 0)
-        await scale_application(ops_test, "kfp-viz", 0)
-        await scale_application(ops_test, KFP_API_APP_NAME, 0)
-        await scale_application(ops_test, DATABASE_APP_NAME, 0)
+#         # Scale down all applications
+#         await scale_application(ops_test, "minio", 0)
+#         await scale_application(ops_test, "kfp-viz", 0)
+#         await scale_application(ops_test, KFP_API_APP_NAME, 0)
+#         await scale_application(ops_test, DATABASE_APP_NAME, 0)
 
-        await ops_test.model.remove_application("minio", block_until_done=True)
-        await ops_test.model.remove_application("kfp-viz", block_until_done=True)
-        await ops_test.model.remove_application(KFP_API_APP_NAME, block_until_done=True)
-        await ops_test.model.remove_application(DATABASE_APP_NAME, block_until_done=True)
+#         await ops_test.model.remove_application("minio", block_until_done=True)
+#         await ops_test.model.remove_application("kfp-viz", block_until_done=True)
+#         await ops_test.model.remove_application(KFP_API_APP_NAME, block_until_done=True)
+#         await ops_test.model.remove_application(DATABASE_APP_NAME, block_until_done=True)
