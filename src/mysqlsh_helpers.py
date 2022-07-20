@@ -373,7 +373,7 @@ class MySQL(MySQLBase):
         except ExecError as e:
             raise MySQLClientError(e.stderr)
 
-    def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> None:
+    def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> str:
         """Execute a MySQL CLI script.
 
         Execute SQL script as instance root user.
@@ -399,6 +399,7 @@ class MySQL(MySQLBase):
 
         try:
             process = self.container.exec(command)
-            process.wait_output()
+            stdout, _ = process.wait_output()
+            return stdout
         except ExecError as e:
             raise MySQLClientError(e.stderr)

@@ -4,10 +4,7 @@
 
 """Charm for MySQL."""
 
-import hashlib
 import logging
-import secrets
-import string
 
 from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
@@ -27,6 +24,14 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.pebble import Layer
 
+from constants import (
+    CLUSTER_ADMIN_USERNAME,
+    CONFIGURED_FILE,
+    MYSQLD_SERVICE,
+    PASSWORD_LENGTH,
+    PEER,
+    SERVER_CONFIG_USERNAME,
+)
 from mysqlsh_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
@@ -34,37 +39,10 @@ from mysqlsh_helpers import (
     MySQLRemoveInstancesNotOnlineError,
     MySQLRemoveInstancesNotOnlineRetryError,
 )
+from relations.mysql import MySQLRelation
+from utils import generate_random_hash, generate_random_password
 
 logger = logging.getLogger(__name__)
-
-PASSWORD_LENGTH = 24
-PEER = "database-peers"
-CONFIGURED_FILE = "/var/lib/mysql/charmed"
-MYSQLD_SERVICE = "mysqld"
-CLUSTER_ADMIN_USERNAME = "clusteradmin"
-SERVER_CONFIG_USERNAME = "serverconfig"
-
-
-def generate_random_password(length: int) -> str:
-    """Randomly generate a string intended to be used as a password.
-
-    Args:
-        length: length of the randomly generated string to be returned
-    Returns:
-        A randomly generated string intended to be used as a password.
-    """
-    choices = string.ascii_letters + string.digits
-    return "".join([secrets.choice(choices) for i in range(length)])
-
-
-def generate_random_hash() -> str:
-    """Generate a hash based on a random string.
-
-    Returns:
-        A hash based on a random string.
-    """
-    random_characters = generate_random_password(10)
-    return hashlib.md5(random_characters.encode("utf-8")).hexdigest()
 
 
 class MySQLOperatorCharm(CharmBase):
@@ -91,6 +69,8 @@ class MySQLOperatorCharm(CharmBase):
         )
         self.framework.observe(self.on.get_root_credentials_action, self._on_get_root_credentials)
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
+
+        self.mysql_relation = MySQLRelation(self)
 
     @property
     def _peers(self):
