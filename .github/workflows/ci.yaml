@@ -43,7 +43,6 @@ jobs:
         run: tox -e integration-ha
   integration-legacy-mysql-test-microk8s:
     name: Integration tests for legacy mysql relation (microk8s)
-    needs: build-oci-image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -54,14 +53,6 @@ jobs:
           provider: microk8s
           # workaround for https://github.com/charmed-kubernetes/actions-operator/issues/37
           channel: 1.23/stable
-      # These two steps (download and load image) are needed until the OCI image is published to ROCKS.
-      - name: Download image built in build oci image step
-        uses: actions/download-artifact@v2
-        with:
-          name: image
-          path: /tmp
-      - name: Load Image into microk8s
-        run: |
-          /usr/bin/sg microk8s -c "microk8s ctr image import /tmp/image.tar"
+          bootstrap-options: "--agent-version 2.9.29"
       - name: Run integration tests
         run: tox -e integration-legacy-mysql
