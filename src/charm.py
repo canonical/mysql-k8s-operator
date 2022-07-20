@@ -38,7 +38,6 @@ from mysqlsh_helpers import (
     MySQLInitialiseMySQLDError,
     MySQLRemoveInstancesNotOnlineError,
     MySQLRemoveInstancesNotOnlineRetryError,
-    MySQLUpdateAllowListError,
 )
 from relations.mysql import MySQLRelation
 from utils import generate_random_hash, generate_random_password
@@ -207,27 +206,6 @@ class MySQLOperatorCharm(CharmBase):
                 logger.debug("Unable to remove unreachable instances from the cluster")
                 self.unit.status = BlockedStatus("Failed to remove unreachable instances")
 
-            # Since we do not have name of the prior leader unit, use planned units
-            # to remove units with index >= planned units from the allowlist
-            planned_units = self.app.planned_units()
-            allowlist = set(self._peers.data[self.app].get("allowlist").split(","))
-            new_allowlist = set(allowlist)
-
-            for fqdn in allowlist:
-                unit_number = int(fqdn.split(".")[0].split("-")[-1])
-
-                if unit_number >= planned_units:
-                    new_allowlist.remove(fqdn)
-
-            try:
-                self._mysql.update_allowlist(",".join(new_allowlist))
-            except MySQLUpdateAllowListError:
-                logger.debug("Unable to update allowlist")
-                event.defer()
-                return
-
-            self._peers.data[self.app]["allowlist"] = ",".join(new_allowlist)
-
             self.unit.status = ActiveStatus()
 
     def _on_mysql_pebble_ready(self, event):
@@ -338,17 +316,6 @@ class MySQLOperatorCharm(CharmBase):
             logger.debug(f"Instance {new_instance_fqdn} already in cluster")
             return
 
-        # Add new instance to ipAllowlist global variable
-        peer_data = self._peers.data[self.app]
-        if new_instance_fqdn not in peer_data.get("allowlist").split(","):
-            peer_data["allowlist"] = f"{peer_data['allowlist']},{new_instance_fqdn}"
-            try:
-                self._mysql.update_allowlist(peer_data["allowlist"])
-            except MySQLUpdateAllowListError:
-                logger.debug("Unable to update allowlist")
-                event.defer()
-                return
-
         # Add new instance to the cluster
         try:
             self._mysql.add_instance_to_cluster(new_instance_fqdn, new_instance_label)
@@ -390,19 +357,6 @@ class MySQLOperatorCharm(CharmBase):
         """
         if not self.unit.is_leader():
             return
-
-        departing_unit_fqdn = self._get_unit_fqdn(event.unit.name)
-        allowlist = set(self._peers.data[self.app].get("allowlist").split(","))
-        allowlist.discard(departing_unit_fqdn)
-
-        try:
-            self._mysql.update_allowlist(",".join(allowlist))
-        except MySQLUpdateAllowListError:
-            logger.debug("Unable to update allowlist")
-            event.defer()
-            return
-
-        self._peers.data[self.app]["allowlist"] = ",".join(allowlist)
 
         self.unit.status = MaintenanceStatus("Removing unreachable instances")
 
