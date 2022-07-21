@@ -64,18 +64,19 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
             assert unit.workload_status == "active"
 
         # Build and deploy the osm-keystone charm
-        osm_keystone_resources = {
-            "keystone-image": "opensourcemano/keystone:testing-daily",
-        }
+        # (using ops_test.juju instead of ops_test.deploy as the latter does
+        # not correctly deploy with the correct resources)
         # TODO: Replace edge channel with stable when osm-keystone is promoted
-        await ops_test.model.deploy(
+        await ops_test.juju(
+            "deploy",
+            "--channel=latest/edge",
+            "--trust",
+            "--resource",
+            "keystone-image=opensourcemano/keystone:testing-daily",
             "osm-keystone",
-            channel="edge",
-            application_name=OSM_KEYSTONE_APP_NAME,
-            num_units=1,
-            trust=True,
-            resources=osm_keystone_resources,
+            f"{OSM_KEYSTONE_APP_NAME}",
         )
+
         await ops_test.model.wait_for_idle(
             apps=[OSM_KEYSTONE_APP_NAME],
             status="blocked",
@@ -93,13 +94,9 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
             timeout=1000,
         )
 
-        # Ensure that the keystone database exists and tables within it exist
-        # (the keystone app migrated successfully)
+        # Ensure that the keystone database exists
         show_databases_sql = [
             "SHOW DATABASES",
-        ]
-        get_count_keystone_tables_sql = [
-            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'keystone'",
         ]
 
         random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[0]
@@ -115,14 +112,6 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
                 show_databases_sql,
             )
             assert "keystone" in output
-
-            output = await execute_queries_on_unit(
-                unit_address,
-                server_config_credentials["username"],
-                server_config_credentials["password"],
-                get_count_keystone_tables_sql,
-            )
-            assert output[0] > 0
 
         # Scale down all applications
         await scale_application(ops_test, OSM_KEYSTONE_APP_NAME, 0)
