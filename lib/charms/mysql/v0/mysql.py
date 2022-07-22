@@ -69,7 +69,7 @@ import json
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
 
@@ -83,7 +83,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 2
+LIBPATCH = 4
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -126,6 +126,10 @@ class MySQLDeleteUsersForUnitError(Error):
     """Exception raised when there is an issue deleting users for a unit."""
 
 
+class MySQLDeleteUserForRelationError(Error):
+    """Exception raised when there is an issue deleting a user for a relation."""
+
+
 class MySQLConfigureInstanceError(Error):
     """Exception raised when there is an issue configuring a MySQL instance."""
 
@@ -161,6 +165,14 @@ class MySQLClientError(Error):
 
     Abstract platform specific exceptions for external commands execution Errors.
     """
+
+
+class MySQLGetClusterMembersAddressesError(Error):
+    """Exception raised when there is an issue getting the cluster members addresses."""
+
+
+class MySQLGetMySQLVersionError(Error):
+    """Exception raised when there is an issue getting the MySQL version."""
 
 
 class MySQLBase(ABC):
@@ -410,6 +422,27 @@ class MySQLBase(ABC):
             logger.exception(f"Failed to query and delete users for unit {unit_name}", exc_info=e)
             raise MySQLDeleteUsersForUnitError(e.message)
 
+    def delete_user_for_relation(self, relation_id: int) -> None:
+        """Delete user for a relation.
+
+        Args:
+            relation_id: The id of the relation for which to delete mysql users for
+
+        Raises:
+            MySQLDeleteUserForRelationError if there is an error deleting users for the relation
+        """
+        try:
+            user = f"relation-{str(relation_id)}"
+            primary_address = self.get_cluster_primary_address()
+            drop_users_command = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
+            )
+            self._run_mysqlsh_script("\n".join(drop_users_command))
+        except MySQLClientError as e:
+            logger.exception(f"Failed to delete users for relation {relation_id}", exc_info=e)
+            raise MySQLDeleteUserForRelationError(e.message)
+
     def configure_instance(self, restart: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
 
@@ -565,7 +598,6 @@ class MySQLBase(ABC):
             # confirmation can fail if the clusteradmin user does not yet exist on the instance
             logger.warning(
                 f"Failed to confirm instance configuration for {instance_address} with error {e.message}",
-                exc_info=e,
             )
             return False
 
@@ -825,13 +857,66 @@ class MySQLBase(ABC):
 
         return matches.group(1)
 
+    def get_cluster_members_addresses(self) -> Optional[Iterable[str]]:
+        """Get the addresses of the cluster's members.
+
+        Returns:
+            Iterable of members addresses
+        """
+        get_cluster_members_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            "members = ','.join((member['address'] for member in cluster.describe()['defaultReplicaSet']['topology']))",
+            "print(f'<MEMBERS>{members}</MEMBERS>')",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(get_cluster_members_commands))
+        except MySQLClientError as e:
+            logger.warning("Failed to get cluster members addresses", exc_info=e)
+            raise MySQLGetClusterMembersAddressesError(e.message)
+
+        matches = re.search(r"<MEMBERS>(.+)</MEMBERS>", output)
+
+        if not matches:
+            return None
+
+        return set(matches.group(1).split(","))
+
+    def get_mysql_version(self) -> Optional[str]:
+        """Get the MySQL version.
+
+        Returns:
+            The MySQL full version
+        """
+        logger.debug("Getting InnoDB version")
+
+        get_version_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            'result = session.run_sql("SELECT version()")',
+            'print(f"<VERSION>{result.fetch_one()[0]}</VERSION>")',
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(get_version_commands))
+        except MySQLClientError as e:
+            logger.warning("Failed to get workload version", exc_info=e)
+            raise MySQLGetMySQLVersionError(e.message)
+
+        matches = re.search(r"<VERSION>(.+)</VERSION>", output)
+
+        if not matches:
+            return None
+
+        return matches.group(1)
+
     @abstractmethod
     def wait_until_mysql_connection(self) -> None:
         """Wait until a connection to MySQL has been obtained.
 
         Implemented in subclasses, test for socket file existence.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _run_mysqlsh_script(self, script: str) -> str:
@@ -845,7 +930,7 @@ class MySQLBase(ABC):
         Returns:
             String representing the output of the mysqlsh command
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _run_mysqlcli_script(self, script: str, user: str = "root", password: str = None) -> str:
@@ -860,4 +945,4 @@ class MySQLBase(ABC):
             user: (optional) user to invoke the mysql cli script with (default is "root")
             password: (optional) password to invoke the mysql cli script with
         """
-        pass
+        raise NotImplementedError
