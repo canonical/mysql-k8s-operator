@@ -28,10 +28,10 @@ KFP_API_APP_NAME = "kfp-api"
 
 
 @pytest.mark.order(1)
-@pytest.mark.abort_on_fail
+@pytest.mark.skip_if_deployed
 @pytest.mark.legacy_mysql_tests
-async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
-    """Deploy the osm keystone bundle to test the legacy 'mysql' relation.
+async def test_build_and_deploy(ops_test: OpsTest) -> None:
+    """Build and deploy the mysql charm.
 
     Args:
         ops_test: The ops test framework
@@ -63,6 +63,17 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
         for unit in ops_test.model.applications[DATABASE_APP_NAME].units:
             assert unit.workload_status == "active"
 
+
+@pytest.mark.order(2)
+@pytest.mark.abort_on_fail
+@pytest.mark.legacy_mysql_tests
+async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
+    """Deploy the osm keystone bundle to test the legacy 'mysql' relation.
+
+    Args:
+        ops_test: The ops test framework
+    """
+    async with ops_test.fast_forward():
         # Build and deploy the osm-keystone charm
         # (using ops_test.juju instead of ops_test.deploy as the latter does
         # not correctly deploy with the correct resources)
@@ -113,48 +124,19 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
             )
             assert "keystone" in output
 
-        # Scale down all applications
+        # Scale down the keystone application
         await scale_application(ops_test, OSM_KEYSTONE_APP_NAME, 0)
-        await scale_application(ops_test, DATABASE_APP_NAME, 0)
 
         await ops_test.model.remove_application(OSM_KEYSTONE_APP_NAME)
-        await ops_test.model.remove_application(DATABASE_APP_NAME)
 
 
 # TODO: uncomment when ready to integrate with kfp-api
 # TODO: (once https://github.com/canonical/kfp-operators/issues/75 is completed)
-# @pytest.mark.order(2)
+# @pytest.mark.order(3)
 # @pytest.mark.abort_on_fail
 # @pytest.mark.legacy_mysql_tests
 # async def test_kubeflow_mysql(ops_test: OpsTest) -> None:
 #     async with ops_test.fast_forward():
-#         # Build and deploy the mysql charm
-#         charm = await ops_test.build_charm(".")
-#         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-#         config = {
-#             "mysql-interface-user": "mysql",
-#             "mysql-interface-database": "mlpipeline",
-#         }
-#         await ops_test.model.deploy(
-#             charm,
-#             resources=resources,
-#             config=config,
-#             application_name=DATABASE_APP_NAME,
-#             num_units=1,
-#         )
-
-#         await ops_test.model.wait_for_idle(
-#             apps=[DATABASE_APP_NAME],
-#             status="active",
-#             raise_on_blocked=True,
-#             timeout=1000,
-#             wait_for_exact_units=1,
-#         )
-#         assert len(ops_test.model.applications[DATABASE_APP_NAME].units) == 1
-#         assert (
-#             ops_test.model.applications[DATABASE_APP_NAME].units[0].workload_status == "active"
-#         )
-
 #         # Deploy the kfp-api charm and relate it with mysql
 #         await ops_test.model.deploy(
 #             entity_url="kfp-api", application_name=KFP_API_APP_NAME, trust=True
@@ -220,9 +202,7 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
 #         await scale_application(ops_test, "minio", 0)
 #         await scale_application(ops_test, "kfp-viz", 0)
 #         await scale_application(ops_test, KFP_API_APP_NAME, 0)
-#         await scale_application(ops_test, DATABASE_APP_NAME, 0)
 
-#         await ops_test.model.remove_application("minio", block_until_done=True)
-#         await ops_test.model.remove_application("kfp-viz", block_until_done=True)
-#         await ops_test.model.remove_application(KFP_API_APP_NAME, block_until_done=True)
-#         await ops_test.model.remove_application(DATABASE_APP_NAME, block_until_done=True)
+#         await ops_test.model.remove_application("minio")
+#         await ops_test.model.remove_application("kfp-viz")
+#         await ops_test.model.remove_application(KFP_API_APP_NAME)
