@@ -52,6 +52,9 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
+          # workaround for https://github.com/charmed-kubernetes/actions-operator/issues/37
+          channel: 1.23/stable
+          bootstrap-options: "--agent-version 2.9.29"
       - name: Run integration tests
         run: tox -e integration
 
