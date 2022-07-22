@@ -117,8 +117,8 @@ async def test_osm_keystone_bundle_mysql(ops_test: OpsTest) -> None:
         await scale_application(ops_test, OSM_KEYSTONE_APP_NAME, 0)
         await scale_application(ops_test, DATABASE_APP_NAME, 0)
 
-        await ops_test.model.remove_application(OSM_KEYSTONE_APP_NAME, block_until_done=True)
-        await ops_test.model.remove_application(DATABASE_APP_NAME, block_until_done=True)
+        await ops_test.model.remove_application(OSM_KEYSTONE_APP_NAME)
+        await ops_test.model.remove_application(DATABASE_APP_NAME)
 
 
 # TODO: uncomment when ready to integrate with kfp-api
