@@ -37,5 +37,7 @@ storage:
 provides:
   mysql:
     interface: mysql
+  osm-mysql:
+    interface: mysql
 assumes:
   - k8s-api

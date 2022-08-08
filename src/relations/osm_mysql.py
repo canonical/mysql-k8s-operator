@@ -1,37 +1,36 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Library containing the implementation of the legacy mysql relation."""
+"""Library containing the implementation of the legacy osm-mysql relation."""
 
 import json
 import logging
 
 from ops.charm import CharmBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
+from ops.model import BlockedStatus
 
-from constants import LEGACY_MYSQL, PASSWORD_LENGTH
+from constants import LEGACY_OSM_MYSQL, PASSWORD_LENGTH
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
 
 
-class MySQLRelation(Object):
-    """Encapsulation of the legacy mysql relation."""
+class MySQLOSMRelation(Object):
+    """Encapsulation of the legacy osm-mysql relation."""
 
     def __init__(self, charm: CharmBase):
-        super().__init__(charm, LEGACY_MYSQL)
+        super().__init__(charm, LEGACY_OSM_MYSQL)
 
         self.charm = charm
 
         self.framework.observe(self.charm.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
-            self.charm.on[LEGACY_MYSQL].relation_created, self._on_mysql_relation_created
+            self.charm.on[LEGACY_OSM_MYSQL].relation_created, self._on_osm_mysql_relation_created
         )
-
-        # TODO: uncomment once https://bugs.launchpad.net/juju/+bug/1951415 has been resolved
-        # self.framework.observe(
-        #     self.charm.on[LEGACY_MYSQL].relation_broken, self._on_mysql_relation_broken
-        # )
+        self.framework.observe(
+            self.charm.on[LEGACY_OSM_MYSQL].relation_broken, self._on_osm_mysql_relation_broken
+        )
 
     def _get_or_set_password_in_peer_databag(self, username: str) -> str:
         """Get a user's password from the peer databag if it exists, else populate a password.
@@ -63,10 +62,10 @@ class MySQLRelation(Object):
             return
 
         relation_data = json.loads(
-            self.charm._peers.data[self.charm.app].get("mysql_relation_data", "{}")
+            self.charm._peers.data[self.charm.app].get("osm_mysql_relation_data", "{}")
         )
 
-        for relation in self.charm.model.relations.get(LEGACY_MYSQL, []):
+        for relation in self.charm.model.relations.get(LEGACY_OSM_MYSQL, []):
             relation_databag = relation.data
 
             # Copy relation data into the new leader unit's databag
@@ -78,7 +77,7 @@ class MySQLRelation(Object):
             primary_address = self.charm._mysql.get_cluster_primary_address().split(":")[0]
             relation_databag[self.charm.unit]["host"] = primary_address
 
-    def _on_mysql_relation_created(self, event: RelationCreatedEvent) -> None:
+    def _on_osm_mysql_relation_created(self, event: RelationCreatedEvent) -> None:
         """Handle the legacy 'mysql' relation created event.
 
         Will set up the database and the scoped application user. The connection
@@ -95,28 +94,32 @@ class MySQLRelation(Object):
             event.defer()
             return
 
-        logger.warning("DEPRECATION WARNING - `mysql` is a legacy interface")
+        logger.warning("DEPRECATION WARNING - `osm-mysql` is a legacy interface")
 
-        username = self.charm.config.get("mysql-interface-user")
-        database = self.charm.config.get("mysql-interface-database")
+        username = self.charm.config.get("osm-mysql-interface-user")
+        database = self.charm.config.get("osm-mysql-interface-database")
 
         if not username or not database:
-            event.defer()
+            self.unit.status = BlockedStatus("Missing `osm-mysql` relation data")
             return
 
         # Only execute if the application user does not exist
         if self.charm._mysql.does_mysql_user_exist(username, "%"):
+            osm_mysql_relation_data = self.charm._peers.data[self.charm.app][
+                "osm_mysql_relation_data"
+            ]
+
+            updates = json.loads(osm_mysql_relation_data)
+            event.relation.data[self.charm.unit].update(updates)
+
             return
 
         password = self._get_or_set_password_in_peer_databag(username)
 
-        self.charm._mysql.create_application_database_and_scoped_user(
-            database,
-            username,
-            password,
-            "%",
-            "mysql-legacy-relation",
-        )
+        self.charm._mysql.create_database(database)
+        self.charm._mysql.create_user(username, password, "osm-mysql-legacy-relation")
+        self.charm._mysql.escalate_user_privileges("root")
+        self.charm._mysql.escalate_user_privileges(username)
 
         primary_address = self.charm._mysql.get_cluster_primary_address().split(":")[0]
         updates = {
@@ -131,9 +134,9 @@ class MySQLRelation(Object):
         event.relation.data[self.charm.unit].update(updates)
 
         # Store the relation data into the peer relation databag
-        self.charm._peers.data[self.charm.app]["mysql_relation_data"] = json.dumps(updates)
+        self.charm._peers.data[self.charm.app]["osm_mysql_relation_data"] = json.dumps(updates)
 
-    def _on_mysql_relation_broken(self, event: RelationBrokenEvent) -> None:
+    def _on_osm_mysql_relation_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the 'mysql' legacy relation broken event.
 
         Delete the application user created in the relation created
@@ -142,6 +145,9 @@ class MySQLRelation(Object):
         if not self.charm.unit.is_leader():
             return
 
-        logger.warning("DEPRECATION WARNING - `mysql` is a legacy interface")
+        if len(self.charm.model.relations[LEGACY_OSM_MYSQL]) > 1:
+            return
 
-        self.charm._mysql.delete_users_for_unit("mysql-legacy-relation")
+        logger.warning("DEPRECATION WARNING - `osm-mysql` is a legacy interface")
+
+        self.charm._mysql.delete_users_with_label("label", "osm-mysql-legacy-relation")
