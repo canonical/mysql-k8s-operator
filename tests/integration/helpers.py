@@ -164,6 +164,7 @@ async def scale_application(
             wait_for_exact_units=desired_count,
         )
 
+
 def is_relation_joined(ops_test: OpsTest, endpoint_one: str, endpoint_two: str) -> bool:
     """Check if a relation is joined.
 

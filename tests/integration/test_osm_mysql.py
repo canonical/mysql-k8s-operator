@@ -10,7 +10,12 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
-from tests.integration.helpers import execute_queries_on_unit, get_unit_address, is_relation_joined, get_server_config_credentials
+from tests.integration.helpers import (
+    execute_queries_on_unit,
+    get_server_config_credentials,
+    get_unit_address,
+    is_relation_joined,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +42,9 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
         }
 
         await asyncio.gather(
-            ops_test.model.deploy(charm, application_name=APP_NAME, resources=resources, config=config, num_units=3),
+            ops_test.model.deploy(
+                charm, application_name=APP_NAME, resources=resources, config=config, num_units=3
+            ),
             # Deploy the osm-keystone charm
             # (using ops_test.juju instead of ops_test.deploy as the latter does
             # not correctly deploy with the correct resources)
@@ -50,21 +57,40 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
                 "osm-keystone",
                 "osm-keystone",
             ),
-            ops_test.model.deploy("osm-pol", application_name="osm-pol", channel="latest/candidate", resources=osm_pol_resources),
+            ops_test.model.deploy(
+                "osm-pol",
+                application_name="osm-pol",
+                channel="latest/candidate",
+                resources=osm_pol_resources,
+            ),
             ops_test.model.deploy("charmed-osm-kafka-k8s", application_name="osm-kafka"),
             ops_test.model.deploy("charmed-osm-zookeeper-k8s", application_name="osm-zookeeper"),
             ops_test.model.deploy("charmed-osm-mongodb-k8s", application_name="osm-mongodb"),
         )
 
-        await ops_test.model.block_until(lambda: len(ops_test.model.applications[APP_NAME].units) == 3)
-        await ops_test.model.block_until(lambda: len(ops_test.model.applications["osm-keystone"].units) == 1)
-        await ops_test.model.block_until(lambda: len(ops_test.model.applications["osm-pol"].units) == 1)
-        await ops_test.model.block_until(lambda: len(ops_test.model.applications["osm-kafka"].units) == 1)
-        await ops_test.model.block_until(lambda: len(ops_test.model.applications["osm-zookeeper"].units) == 1)
-        await ops_test.model.block_until(lambda: len(ops_test.model.applications["osm-mongodb"].units) == 1)
+        await ops_test.model.block_until(
+            lambda: len(ops_test.model.applications[APP_NAME].units) == 3
+        )
+        await ops_test.model.block_until(
+            lambda: len(ops_test.model.applications["osm-keystone"].units) == 1
+        )
+        await ops_test.model.block_until(
+            lambda: len(ops_test.model.applications["osm-pol"].units) == 1
+        )
+        await ops_test.model.block_until(
+            lambda: len(ops_test.model.applications["osm-kafka"].units) == 1
+        )
+        await ops_test.model.block_until(
+            lambda: len(ops_test.model.applications["osm-zookeeper"].units) == 1
+        )
+        await ops_test.model.block_until(
+            lambda: len(ops_test.model.applications["osm-mongodb"].units) == 1
+        )
 
         await ops_test.model.relate("osm-kafka", "osm-zookeeper")
-        await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "zookeeper", "zookeeper"))
+        await ops_test.model.block_until(
+            lambda: is_relation_joined(ops_test, "zookeeper", "zookeeper")
+        )
 
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME, "osm-kafka", "osm-zookeeper", "osm-mongodb"],
@@ -91,11 +117,20 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
         await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "kafka", "kafka"))
 
         await ops_test.model.relate("osm-pol:mysql", f"{APP_NAME}:osm-mysql")
-        await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "mysql", "osm-mysql"))
+        await ops_test.model.block_until(
+            lambda: is_relation_joined(ops_test, "mysql", "osm-mysql")
+        )
 
         # osm-pol is initially in blocked status
         await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, "osm-keystone", "osm-pol", "osm-kafka", "osm-zookeeper", "osm-mongodb"],
+            apps=[
+                APP_NAME,
+                "osm-keystone",
+                "osm-pol",
+                "osm-kafka",
+                "osm-zookeeper",
+                "osm-mongodb",
+            ],
             status="active",
             raise_on_blocked=False,
             timeout=1000,
@@ -105,7 +140,7 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
             "SHOW DATABASES",
         ]
         get_count_pol_tables = [
-             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'pol'",
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'pol'",
         ]
 
         db_unit = ops_test.model.applications[APP_NAME].units[0]
