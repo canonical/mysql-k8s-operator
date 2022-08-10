@@ -27,12 +27,11 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 CLUSTER_NAME = "test_cluster"
 
-UNIT_IDS = [0, 1, 2]
-
 
 @pytest.mark.order(1)
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
+@pytest.mark.ha_tests
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Build the mysql charm and deploy it."""
     async with ops_test.fast_forward():
@@ -74,6 +73,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 @pytest.mark.order(2)
 @pytest.mark.abort_on_fail
+@pytest.mark.ha_tests
 async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> None:
     """Confirm that data is replicated from the primary node to all the replicas."""
     # Insert values into a table on the primary unit
@@ -127,6 +127,7 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
 
 @pytest.mark.order(3)
 @pytest.mark.abort_on_fail
+@pytest.mark.ha_tests
 async def test_scale_up_and_down(ops_test: OpsTest) -> None:
     """Confirm that a new primary is elected when the current primary is torn down."""
     async with ops_test.fast_forward():

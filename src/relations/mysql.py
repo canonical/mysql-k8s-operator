@@ -142,6 +142,9 @@ class MySQLRelation(Object):
         if not self.charm.unit.is_leader():
             return
 
+        if len(self.charm.model.relations[LEGACY_MYSQL]) > 1:
+            return
+
         logger.warning("DEPRECATION WARNING - `mysql` is a legacy interface")
 
         self.charm._mysql.delete_users_for_unit("mysql-legacy-relation")
