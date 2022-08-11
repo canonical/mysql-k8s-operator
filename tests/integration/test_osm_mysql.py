@@ -68,11 +68,10 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
             ops_test.model.deploy("charmed-osm-mongodb-k8s", application_name="osm-mongodb"),
         )
 
+        # cannot block until "osm-keystone" units are available since they are not
+        # registered with ops_test.model.applications (due to the way it's deployed)
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[APP_NAME].units) == 3
-        )
-        await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications["osm-keystone"].units) == 1
         )
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications["osm-pol"].units) == 1
