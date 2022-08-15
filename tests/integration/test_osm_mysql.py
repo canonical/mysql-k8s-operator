@@ -86,7 +86,7 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
             lambda: len(ops_test.model.applications["osm-mongodb"].units) == 1
         )
 
-        await ops_test.model.relate("osm-kafka", "osm-zookeeper")
+        await ops_test.model.relate("osm-kafka:zookeeper", "osm-zookeeper:zookeeper")
         await ops_test.model.block_until(
             lambda: is_relation_joined(ops_test, "zookeeper", "zookeeper")
         )
@@ -121,19 +121,19 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
         )
 
         # osm-pol is initially in blocked status
-        await ops_test.model.wait_for_idle(
-            apps=[
-                APP_NAME,
-                "osm-keystone",
-                "osm-pol",
-                "osm-kafka",
-                "osm-zookeeper",
-                "osm-mongodb",
-            ],
-            status="active",
-            raise_on_blocked=False,
-            timeout=1000,
-        )
+        # await ops_test.model.wait_for_idle(
+        #     apps=[
+        #         APP_NAME,
+        #         "osm-keystone",
+        #         "osm-pol",
+        #         "osm-kafka",
+        #         "osm-zookeeper",
+        #         "osm-mongodb",
+        #     ],
+        #     status="active",
+        #     raise_on_blocked=False,
+        #     timeout=1000,
+        # )
 
         show_databases_sql = [
             "SHOW DATABASES",
