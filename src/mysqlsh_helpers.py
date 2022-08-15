@@ -54,6 +54,22 @@ class MySQLRemoveInstancesNotOnlineRetryError(Exception):
     """Exception raised when retry required for remove_instances_not_online."""
 
 
+class MySQLCreateDatabaseError(Exception):
+    """Exception raised when there is an issue creating a database."""
+
+
+class MySQLCreateUserError(Exception):
+    """Exception raised when there is an issue creating a user."""
+
+
+class MySQLEscalateUserPrivilegesError(Exception):
+    """Exception raised when there is an issue escalating user privileges."""
+
+
+class MySQLDeleteUsersWithLabelError(Exception):
+    """Exception raised when there is an issue deleting users with a label."""
+
+
 class MySQL(MySQLBase):
     """Class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -357,7 +373,7 @@ class MySQL(MySQLBase):
             self._run_mysqlsh_script("\n".join(create_database_commands))
         except MySQLClientError as e:
             logger.exception(f"Failed to create database {database_name}", exc_info=e)
-            raise
+            raise MySQLCreateDatabaseError(e.message)
 
     def create_user(self, username: str, password: str, label: str, hostname: str = "%") -> None:
         """Creates a new user.
@@ -374,13 +390,13 @@ class MySQL(MySQLBase):
             escaped_user_attributes = json.dumps({"label": label}).replace('"', r"\"")
             create_user_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
-                f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}'\");",
+                f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
             )
 
             self._run_mysqlsh_script("\n".join(create_user_commands))
         except MySQLClientError as e:
             logger.exception(f"Failed to create user {username}@{hostname}", exc_info=e)
-            raise
+            raise MySQLCreateUserError(e.message)
 
     def escalate_user_privileges(self, username: str, hostname: str = "%") -> None:
         """Escalates the provided user's privileges.
@@ -409,7 +425,7 @@ class MySQL(MySQLBase):
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"GRANT ALL ON *.* TO '{username}'@'{hostname}' WITH GRANT OPTION;\")",
                 f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM '{username}'@'{hostname}';\")",
-                'session.run_sql("FLUSH PRIVILEGES")',
+                'session.run_sql("FLUSH PRIVILEGES;")',
             )
 
             self._run_mysqlsh_script("\n".join(escalate_user_privileges_commands))
@@ -417,7 +433,7 @@ class MySQL(MySQLBase):
             logger.exception(
                 f"Failed to escalate user privileges for {username}@{hostname}", exc_info=e
             )
-            raise
+            raise MySQLEscalateUserPrivilegesError(e.message)
 
     def delete_users_with_label(self, label_name: str, label_value: str) -> None:
         """Delete users for a unit.
@@ -428,7 +444,7 @@ class MySQL(MySQLBase):
         Raises:
             MySQLDeleteUsersForUnitError if there is an error deleting users for the unit
         """
-        get_unit_user_commands = (
+        get_label_users = (
             "SELECT CONCAT(user.user, '@', user.host) FROM mysql.user AS user "
             "JOIN information_schema.user_attributes AS attributes"
             " ON (user.user = attributes.user AND user.host = attributes.host) "
@@ -437,7 +453,7 @@ class MySQL(MySQLBase):
 
         try:
             output = self._run_mysqlcli_script(
-                "; ".join(get_unit_user_commands),
+                "; ".join(get_label_users),
                 user=self.server_config_user,
                 password=self.server_config_password,
             )
@@ -461,7 +477,7 @@ class MySQL(MySQLBase):
                 f"Failed to query and delete users for label {label_name}={label_value}",
                 exc_info=e,
             )
-            raise
+            raise MySQLDeleteUsersWithLabelError(e.message)
 
     def _run_mysqlsh_script(self, script: str, verbose: int = 1) -> str:
         """Execute a MySQL shell script.

@@ -26,23 +26,6 @@ jobs:
       - name: Run tests
         run: tox -e unit
 
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup operator environment
-      uses: charmed-kubernetes/actions-operator@main
-      with:
-        provider: microk8s
-        # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
-        channel: 1.23/stable
-        bootstrap-options: "--agent-version 2.9.29"
-    - name: Setup upterm session
-      uses: lhotari/action-upterm@v1
-      with:
-        limit-access-to-actor: true
-        limit-access-to-users: shayancanonical
-
   integration-test-microk8s-ha:
     name: Integration HA tests (microk8s)
     runs-on: ubuntu-latest

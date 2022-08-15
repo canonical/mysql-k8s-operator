@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
-from tenacity import AsyncRetrying, RetryError, stop_after_attempt
+from tenacity import AsyncRetrying, RetryError, stop_after_attempt, wait_fixed
 
 from tests.integration.helpers import (
     execute_queries_on_unit,
@@ -121,21 +121,6 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
             lambda: is_relation_joined(ops_test, "mysql", "osm-mysql")
         )
 
-        # osm-pol is initially in blocked status
-        # await ops_test.model.wait_for_idle(
-        #     apps=[
-        #         APP_NAME,
-        #         "osm-keystone",
-        #         "osm-pol",
-        #         "osm-kafka",
-        #         "osm-zookeeper",
-        #         "osm-mongodb",
-        #     ],
-        #     status="active",
-        #     raise_on_blocked=False,
-        #     timeout=1000,
-        # )
-
         show_databases_sql = [
             "SHOW DATABASES",
         ]
@@ -146,8 +131,10 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
         db_unit = ops_test.model.applications[APP_NAME].units[0]
         server_config_credentials = await get_server_config_credentials(db_unit)
 
+        # Retry until osm-pol runs migrations since it is not possible to wait_for_idle
+        # as osm-pol throws intermittent pod errors (due to being a podspec charm)
         try:
-            async for attempt in AsyncRetrying(stop=stop_after_attempt(3)):
+            async for attempt in AsyncRetrying(stop=stop_after_attempt(10), wait=wait_fixed(30)):
                 with attempt:
                     for unit in ops_test.model.applications[APP_NAME].units:
                         unit_address = await get_unit_address(ops_test, unit.name)
