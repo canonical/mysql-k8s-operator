@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
+from tenacity import AsyncRetrying, RetryError, stop_after_attempt
 
 from tests.integration.helpers import (
     execute_queries_on_unit,
@@ -145,24 +146,29 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
         db_unit = ops_test.model.applications[APP_NAME].units[0]
         server_config_credentials = await get_server_config_credentials(db_unit)
 
-        for unit in ops_test.model.applications[APP_NAME].units:
-            unit_address = await get_unit_address(ops_test, unit.name)
+        try:
+            async for attempt in AsyncRetrying(stop=stop_after_attempt(3)):
+                with attempt:
+                    for unit in ops_test.model.applications[APP_NAME].units:
+                        unit_address = await get_unit_address(ops_test, unit.name)
 
-            # test that the `keystone` and `pol` databases exist
-            output = await execute_queries_on_unit(
-                unit_address,
-                server_config_credentials["username"],
-                server_config_credentials["password"],
-                show_databases_sql,
-            )
-            assert "keystone" in output
-            assert "pol" in output
+                        # test that the `keystone` and `pol` databases exist
+                        output = await execute_queries_on_unit(
+                            unit_address,
+                            server_config_credentials["username"],
+                            server_config_credentials["password"],
+                            show_databases_sql,
+                        )
+                        assert "keystone" in output
+                        assert "pol" in output
 
-            # test that osm-pol successfully creates tables
-            output = await execute_queries_on_unit(
-                unit_address,
-                server_config_credentials["username"],
-                server_config_credentials["password"],
-                get_count_pol_tables,
-            )
-            assert output[0] > 0
+                        # test that osm-pol successfully creates tables
+                        output = await execute_queries_on_unit(
+                            unit_address,
+                            server_config_credentials["username"],
+                            server_config_credentials["password"],
+                            get_count_pol_tables,
+                        )
+                        assert output[0] > 0
+        except RetryError:
+            assert False
