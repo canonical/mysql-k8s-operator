@@ -6,18 +6,17 @@
 import json
 import logging
 
+from charms.mysql.v0.mysql import (
+    MySQLCheckUserExistenceError,
+    MySQLCreateApplicationDatabaseAndScopedUserError,
+    MySQLDeleteUsersForUnitError,
+)
 from ops.charm import CharmBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
 from ops.model import BlockedStatus
 
 from constants import LEGACY_MYSQL, PASSWORD_LENGTH
 from utils import generate_random_password
-
-from charms.mysql.v0.mysql import (
-    MySQLCheckUserExistenceError,
-    MySQLCreateApplicationDatabaseAndScopedUserError,
-    MySQLDeleteUsersForUnitError,
-)
 
 logger = logging.getLogger(__name__)
 
