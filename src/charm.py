@@ -11,6 +11,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLGetMySQLVersionError,
 )
 from ops.charm import (
     ActionEvent,
@@ -39,6 +40,7 @@ from mysqlsh_helpers import (
     MySQLRemoveInstancesNotOnlineError,
     MySQLRemoveInstancesNotOnlineRetryError,
 )
+from relations.database import DatabaseRelation
 from relations.mysql import MySQLRelation
 from utils import generate_random_hash, generate_random_password
 
@@ -71,6 +73,7 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
 
         self.mysql_relation = MySQLRelation(self)
+        self.database_relation = DatabaseRelation(self)
 
     @property
     def _peers(self):
@@ -106,7 +109,7 @@ class MySQLOperatorCharm(CharmBase):
         )
 
     @property
-    def _is_cluster_initialized(self):
+    def cluster_initialized(self):
         """Returns True if the cluster is initialized."""
         return self._peers.data[self.app].get("units-added-to-cluster", "0") >= "1"
 
@@ -196,7 +199,7 @@ class MySQLOperatorCharm(CharmBase):
                 peer_data[required_password] = password
 
         # If this node was elected a leader due to a prior leader unit being down scaled
-        if self._is_peer_data_set and self._is_cluster_initialized:
+        if self._is_peer_data_set and self.cluster_initialized:
             self.unit.status = MaintenanceStatus("Removing unreachable instances")
 
             # Remove unreachable instances from the cluster
@@ -260,6 +263,9 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.configure_mysql_users()
             # Configure instance as a cluster node
             self._mysql.configure_instance()
+            # set workload version
+            workload_version = self._mysql.get_mysql_version()
+            self.unit.set_workload_version(workload_version)
 
         except (
             MySQLConfigureInstanceError,
@@ -270,6 +276,9 @@ class MySQLOperatorCharm(CharmBase):
             self.unit.status = BlockedStatus("Unable to configure instance")
             logger.debug("Unable to configure instance: {}".format(e))
             return
+        except MySQLGetMySQLVersionError:
+            # Do not block the charm if the version cannot be retrieved
+            pass
 
         if self.unit.is_leader():
             try:
