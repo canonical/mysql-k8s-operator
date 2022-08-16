@@ -13,6 +13,16 @@ from ops.model import BlockedStatus
 from constants import LEGACY_OSM_MYSQL, PASSWORD_LENGTH
 from utils import generate_random_password
 
+from charms.mysql.v0.mysql import (
+    MySQLCheckUserExistenceError,
+    MySQLDeleteUsersForUnitError,
+)
+from mysqlsh_helpers import (
+    MySQLCreateDatabaseError,
+    MySQLCreateUserError,
+    MySQLEscalateUserPrivilegesError,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +42,7 @@ class MySQLOSMRelation(Object):
             self.charm.on[LEGACY_OSM_MYSQL].relation_broken, self._on_osm_mysql_relation_broken
         )
 
-    def _get_or_set_password_in_peer_databag(self, username: str) -> str:
+    def _get_password_from_peer_databag(self, username: str) -> str:
         """Get a user's password from the peer databag if it exists, else populate a password.
 
         Args:
@@ -74,8 +84,14 @@ class MySQLOSMRelation(Object):
                     relation_databag[self.charm.unit][key] = value
 
             # Assign the cluster primary's address as the database host
-            primary_address = self.charm._mysql.get_cluster_primary_address().split(":")[0]
-            relation_databag[self.charm.unit]["host"] = primary_address
+            primary_address = self.charm._mysql.get_cluster_primary_address()
+            if not primary_address:
+                self.charm.unit.status = BlockedStatus(
+                    "Failed to retrieve cluster primary address"
+                )
+                return
+
+            relation_databag[self.charm.unit]["host"] = primary_address.split(":")[0]
 
     def _on_osm_mysql_relation_created(self, event: RelationCreatedEvent) -> None:
         """Handle the legacy 'mysql' relation created event.
@@ -99,12 +115,20 @@ class MySQLOSMRelation(Object):
         username = self.charm.config.get("osm-mysql-interface-user")
         database = self.charm.config.get("osm-mysql-interface-database")
 
+        # Ensure that config values exist, else we will be unable to create database and user
         if not username or not database:
             self.unit.status = BlockedStatus("Missing `osm-mysql` relation data")
             return
 
+        user_exists = False
+        try:
+            user_exists = self.charm._mysql.does_mysql_user_exist(username, "%")
+        except MySQLCheckUserExistenceError:
+            self.charm.unit.status = BlockedStatus("Failed to check user existence")
+            return
+
         # Only execute if the application user does not exist
-        if self.charm._mysql.does_mysql_user_exist(username, "%"):
+        if user_exists:
             osm_mysql_relation_data = self.charm._peers.data[self.charm.app][
                 "osm_mysql_relation_data"
             ]
@@ -114,17 +138,26 @@ class MySQLOSMRelation(Object):
 
             return
 
-        password = self._get_or_set_password_in_peer_databag(username)
+        password = self._get_password_from_peer_databag(username)
 
-        self.charm._mysql.create_database(database)
-        self.charm._mysql.create_user(username, password, "osm-mysql-legacy-relation")
-        self.charm._mysql.escalate_user_privileges("root")
-        self.charm._mysql.escalate_user_privileges(username)
+        try:
+            self.charm._mysql.create_database(database)
+            self.charm._mysql.create_user(username, password, "osm-mysql-legacy-relation")
+            self.charm._mysql.escalate_user_privileges("root")
+            self.charm._mysql.escalate_user_privileges(username)
+        except (MySQLCreateDatabaseError, MySQLCreateUserError, MySQLEscalateUserPrivilegesError):
+            self.charm.unit.status = BlockedStatus("Failed to create relation database and users")
+            return
 
-        primary_address = self.charm._mysql.get_cluster_primary_address().split(":")[0]
+        primary_address = self.charm._mysql.get_cluster_primary_address()
+        if not primary_address:
+            self.charm.unit.status = BlockedStatus(
+                "Failed to retrieve the cluster primary address"
+            )
+
         updates = {
             "database": database,
-            "host": primary_address,
+            "host": primary_address.split(":")[0],
             "password": password,
             "port": "3306",
             "root_password": self.charm._peers.data[self.charm.app]["root-password"],
@@ -145,9 +178,14 @@ class MySQLOSMRelation(Object):
         if not self.charm.unit.is_leader():
             return
 
+        # Only execute if the last `osm-mysql` relation is broken
+        # as there can be multiple applications using the same relation interface
         if len(self.charm.model.relations[LEGACY_OSM_MYSQL]) > 1:
             return
 
         logger.warning("DEPRECATION WARNING - `osm-mysql` is a legacy interface")
 
-        self.charm._mysql.delete_users_with_label("label", "osm-mysql-legacy-relation")
+        try:
+            self.charm._mysql.delete_users_with_label("label", "osm-mysql-legacy-relation")
+        except MySQLDeleteUsersForUnitError:
+            self.charm.unit.status = BlockedStatus("Failed to delete database users")

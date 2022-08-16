@@ -28,8 +28,8 @@ CLUSTER_NAME = "test_cluster"
 # TODO: deploy and relate osm-grafana once it can be use with MySQL Group Replication
 @pytest.mark.order(1)
 @pytest.mark.osm_mysql_tests
-async def test_osm_bundle(ops_test: OpsTest) -> None:
-    """Test the osm bundle with mysql replacing mariadb."""
+async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
+    """Test the deployment and relation with osm bundle with mysql replacing mariadb."""
     async with ops_test.fast_forward():
         charm = await ops_test.build_charm(".")
         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
@@ -121,41 +121,46 @@ async def test_osm_bundle(ops_test: OpsTest) -> None:
             lambda: is_relation_joined(ops_test, "mysql", "osm-mysql")
         )
 
-        show_databases_sql = [
-            "SHOW DATABASES",
-        ]
-        get_count_pol_tables = [
-            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'pol'",
-        ]
 
-        db_unit = ops_test.model.applications[APP_NAME].units[0]
-        server_config_credentials = await get_server_config_credentials(db_unit)
+@pytest.mark.order(2)
+@pytest.mark.osm_mysql_tests
+async def test_osm_pol_operations(ops_test: OpsTest) -> None:
+    """Test the existence of databases and tables created by osm-pol's migrations."""
+    show_databases_sql = [
+        "SHOW DATABASES",
+    ]
+    get_count_pol_tables = [
+        "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'pol'",
+    ]
 
-        # Retry until osm-pol runs migrations since it is not possible to wait_for_idle
-        # as osm-pol throws intermittent pod errors (due to being a podspec charm)
-        try:
-            async for attempt in AsyncRetrying(stop=stop_after_attempt(10), wait=wait_fixed(30)):
-                with attempt:
-                    for unit in ops_test.model.applications[APP_NAME].units:
-                        unit_address = await get_unit_address(ops_test, unit.name)
+    db_unit = ops_test.model.applications[APP_NAME].units[0]
+    server_config_credentials = await get_server_config_credentials(db_unit)
 
-                        # test that the `keystone` and `pol` databases exist
-                        output = await execute_queries_on_unit(
-                            unit_address,
-                            server_config_credentials["username"],
-                            server_config_credentials["password"],
-                            show_databases_sql,
-                        )
-                        assert "keystone" in output
-                        assert "pol" in output
+    # Retry until osm-pol runs migrations since it is not possible to wait_for_idle
+    # as osm-pol throws intermittent pod errors (due to being a podspec charm)
+    try:
+        async for attempt in AsyncRetrying(stop=stop_after_attempt(10), wait=wait_fixed(30)):
+            with attempt:
+                for unit in ops_test.model.applications[APP_NAME].units:
+                    unit_address = await get_unit_address(ops_test, unit.name)
 
-                        # test that osm-pol successfully creates tables
-                        output = await execute_queries_on_unit(
-                            unit_address,
-                            server_config_credentials["username"],
-                            server_config_credentials["password"],
-                            get_count_pol_tables,
-                        )
-                        assert output[0] > 0
-        except RetryError:
-            assert False
+                    # test that the `keystone` and `pol` databases exist
+                    output = await execute_queries_on_unit(
+                        unit_address,
+                        server_config_credentials["username"],
+                        server_config_credentials["password"],
+                        show_databases_sql,
+                    )
+                    assert "keystone" in output
+                    assert "pol" in output
+
+                    # test that osm-pol successfully creates tables
+                    output = await execute_queries_on_unit(
+                        unit_address,
+                        server_config_credentials["username"],
+                        server_config_credentials["password"],
+                        get_count_pol_tables,
+                    )
+                    assert output[0] > 0
+    except RetryError:
+        assert False

@@ -361,6 +361,9 @@ class MySQL(MySQLBase):
 
         Args:
             database_name: Name of database to create
+
+        Raises:
+            MySQLCreateDatabaseError if there is an issue creating specified database
         """
         try:
             primary_address = self.get_cluster_primary_address()
@@ -383,6 +386,9 @@ class MySQL(MySQLBase):
             password: THe user's password
             label: The label to tag the user with (to be able to delete it later)
             hostname: (Optional) The hostname of the new user to create (% by default)
+
+        Raises:
+            MySQLCreateUserError if there is an issue creating specified user
         """
         try:
             primary_address = self.get_cluster_primary_address()
@@ -404,6 +410,9 @@ class MySQL(MySQLBase):
         Args:
             username: The username of the user to escalate privileges for
             hostname: The hostname of the user to escalate privileges for
+
+        Raises:
+            MySQLEscalateUserPrivilegesError if there is an error escalating user privileges
         """
         try:
             super_privileges_to_revoke = (
@@ -442,7 +451,7 @@ class MySQL(MySQLBase):
             unit_name: The name of the unit for which to delete mysql users for
 
         Raises:
-            MySQLDeleteUsersForUnitError if there is an error deleting users for the unit
+            MySQLDeleteUsersWIthLabelError if there is an error deleting users for the label
         """
         get_label_users = (
             "SELECT CONCAT(user.user, '@', user.host) FROM mysql.user AS user "

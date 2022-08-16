@@ -7,19 +7,15 @@ options:
     type: "string"
 # Config options for the legacy 'mysql' relation
   mysql-interface-user:
-    default: "mysql"
     description: "The database username for the legacy 'mysql' relation"
     type: "string"
   mysql-interface-database:
-    default: "default_mysql_database"
     description: "The database name for the legacy 'mysql' relation"
     type: "string"
 # Config options for the legacy 'osm-mysql' relation
   osm-mysql-interface-user:
-    default: "osm_mysql"
     description: "The database username for the legacy 'osm-mysql' relation"
     type: "string"
   osm-mysql-interface-database:
-    default: "default_osm_database"
     description: "The database name for the legacy 'osm-mysql' relation"
     type: "string"
