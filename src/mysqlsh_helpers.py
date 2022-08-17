@@ -445,10 +445,11 @@ class MySQL(MySQLBase):
             raise MySQLEscalateUserPrivilegesError(e.message)
 
     def delete_users_with_label(self, label_name: str, label_value: str) -> None:
-        """Delete users for a unit.
+        """Delete users with the provided label.
 
         Args:
-            unit_name: The name of the unit for which to delete mysql users for
+            label_name: The name of the label for users to be deleted
+            label_value: The value of the label for users to be deleted
 
         Raises:
             MySQLDeleteUsersWIthLabelError if there is an error deleting users for the label
