@@ -77,7 +77,6 @@ class MySQLOperatorCharm(CharmBase):
         self.database_relation = DatabaseRelation(self)
         self.osm_mysql_relation = MySQLOSMRelation(self)
 
-
     @property
     def _peers(self):
         """Retrieve the peer relation (`ops.model.Relation`)."""
