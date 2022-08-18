@@ -54,6 +54,22 @@ class MySQLRemoveInstancesNotOnlineRetryError(Exception):
     """Exception raised when retry required for remove_instances_not_online."""
 
 
+class MySQLCreateDatabaseError(Exception):
+    """Exception raised when there is an issue creating a database."""
+
+
+class MySQLCreateUserError(Exception):
+    """Exception raised when there is an issue creating a user."""
+
+
+class MySQLEscalateUserPrivilegesError(Exception):
+    """Exception raised when there is an issue escalating user privileges."""
+
+
+class MySQLDeleteUsersWithLabelError(Exception):
+    """Exception raised when there is an issue deleting users with a label."""
+
+
 class MySQL(MySQLBase):
     """Class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -339,6 +355,139 @@ class MySQL(MySQLBase):
                 exc_info=e,
             )
             raise MySQLRemoveInstancesNotOnlineError(e.message)
+
+    def create_database(self, database_name: str) -> None:
+        """Creates a database.
+
+        Args:
+            database_name: Name of database to create
+
+        Raises:
+            MySQLCreateDatabaseError if there is an issue creating specified database
+        """
+        try:
+            primary_address = self.get_cluster_primary_address()
+
+            create_database_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f'session.run_sql("CREATE DATABASE IF NOT EXISTS {database_name};")',
+            )
+
+            self._run_mysqlsh_script("\n".join(create_database_commands))
+        except MySQLClientError as e:
+            logger.exception(f"Failed to create database {database_name}", exc_info=e)
+            raise MySQLCreateDatabaseError(e.message)
+
+    def create_user(self, username: str, password: str, label: str, hostname: str = "%") -> None:
+        """Creates a new user.
+
+        Args:
+            username: The username of the user to create
+            password: THe user's password
+            label: The label to tag the user with (to be able to delete it later)
+            hostname: (Optional) The hostname of the new user to create (% by default)
+
+        Raises:
+            MySQLCreateUserError if there is an issue creating specified user
+        """
+        try:
+            primary_address = self.get_cluster_primary_address()
+
+            escaped_user_attributes = json.dumps({"label": label}).replace('"', r"\"")
+            create_user_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
+            )
+
+            self._run_mysqlsh_script("\n".join(create_user_commands))
+        except MySQLClientError as e:
+            logger.exception(f"Failed to create user {username}@{hostname}", exc_info=e)
+            raise MySQLCreateUserError(e.message)
+
+    def escalate_user_privileges(self, username: str, hostname: str = "%") -> None:
+        """Escalates the provided user's privileges.
+
+        Args:
+            username: The username of the user to escalate privileges for
+            hostname: The hostname of the user to escalate privileges for
+
+        Raises:
+            MySQLEscalateUserPrivilegesError if there is an error escalating user privileges
+        """
+        try:
+            super_privileges_to_revoke = (
+                "SYSTEM_USER",
+                "SYSTEM_VARIABLES_ADMIN",
+                "SUPER",
+                "REPLICATION_SLAVE_ADMIN",
+                "GROUP_REPLICATION_ADMIN",
+                "BINLOG_ADMIN",
+                "SET_USER_ID",
+                "ENCRYPTION_KEY_ADMIN",
+                "VERSION_TOKEN_ADMIN",
+                "CONNECTION_ADMIN",
+            )
+
+            primary_address = self.get_cluster_primary_address()
+
+            escalate_user_privileges_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"GRANT ALL ON *.* TO '{username}'@'{hostname}' WITH GRANT OPTION;\")",
+                f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM '{username}'@'{hostname}';\")",
+                'session.run_sql("FLUSH PRIVILEGES;")',
+            )
+
+            self._run_mysqlsh_script("\n".join(escalate_user_privileges_commands))
+        except MySQLClientError as e:
+            logger.exception(
+                f"Failed to escalate user privileges for {username}@{hostname}", exc_info=e
+            )
+            raise MySQLEscalateUserPrivilegesError(e.message)
+
+    def delete_users_with_label(self, label_name: str, label_value: str) -> None:
+        """Delete users with the provided label.
+
+        Args:
+            label_name: The name of the label for users to be deleted
+            label_value: The value of the label for users to be deleted
+
+        Raises:
+            MySQLDeleteUsersWIthLabelError if there is an error deleting users for the label
+        """
+        get_label_users = (
+            "SELECT CONCAT(user.user, '@', user.host) FROM mysql.user AS user "
+            "JOIN information_schema.user_attributes AS attributes"
+            " ON (user.user = attributes.user AND user.host = attributes.host) "
+            f'WHERE attributes.attribute LIKE \'%"{label_name}": "{label_value}"%\'',
+        )
+
+        try:
+            output = self._run_mysqlcli_script(
+                "; ".join(get_label_users),
+                user=self.server_config_user,
+                password=self.server_config_password,
+            )
+            users = [line.strip() for line in output.split("\n") if line.strip()][1:]
+            users = [f"'{user.split('@')[0]}'@'{user.split('@')[1]}'" for user in users]
+
+            if len(users) == 0:
+                logger.debug(f"There are no users to drop for label {label_name}={label_value}")
+                return
+
+            primary_address = self.get_cluster_primary_address()
+
+            # Using server_config_user as we are sure it has drop user grants
+            drop_users_command = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"DROP USER IF EXISTS {', '.join(users)};\")",
+            )
+            self._run_mysqlsh_script("\n".join(drop_users_command))
+        except MySQLClientError as e:
+            logger.exception(
+                f"Failed to query and delete users for label {label_name}={label_value}",
+                exc_info=e,
+            )
+            raise MySQLDeleteUsersWithLabelError(e.message)
 
     def _run_mysqlsh_script(self, script: str, verbose: int = 1) -> str:
         """Execute a MySQL shell script.

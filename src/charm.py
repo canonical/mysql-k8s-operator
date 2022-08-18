@@ -42,6 +42,7 @@ from mysqlsh_helpers import (
 )
 from relations.database import DatabaseRelation
 from relations.mysql import MySQLRelation
+from relations.osm_mysql import MySQLOSMRelation
 from utils import generate_random_hash, generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -74,6 +75,8 @@ class MySQLOperatorCharm(CharmBase):
 
         self.mysql_relation = MySQLRelation(self)
         self.database_relation = DatabaseRelation(self)
+        self.osm_mysql_relation = MySQLOSMRelation(self)
+
 
     @property
     def _peers(self):

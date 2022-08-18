@@ -27,8 +27,6 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 CLUSTER_NAME = "test_cluster"
 
-UNIT_IDS = [0, 1, 2]
-
 
 @pytest.mark.order(1)
 @pytest.mark.skip_if_deployed

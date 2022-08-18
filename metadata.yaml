@@ -39,5 +39,7 @@ provides:
     interface: mysql
   database:
     interface: mysql_client
+  osm-mysql:
+    interface: mysql
 assumes:
   - k8s-api
