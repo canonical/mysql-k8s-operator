@@ -19,7 +19,9 @@ from charms.data_platform_libs.v0.database_requires import (
 from connector import MysqlConnector
 from ops.charm import CharmBase, RelationChangedEvent
 from ops.main import main
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import ActiveStatus, WaitingStatus, BlockedStatus
+
+from mysql.connector.errors import DatabaseError
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +125,7 @@ class ApplicationCharm(CharmBase):
             "raise_on_warnings": False,
         }
 
+        # Assert data reads
         with MysqlConnector(config, commit=False) as cursor:
             rows = self._read_test_data(cursor, remote_relation.id)
             first_row = rows[0]
@@ -134,6 +137,24 @@ class ApplicationCharm(CharmBase):
             assert first_row[5] == remote_data["read-only-endpoints"]
 
         logger.info("Relation data replicated in the cluster")
+
+        # Assert not data writes
+        with MysqlConnector(config, commit=True) as cursor:
+            try:
+                self._insert_test_data(
+                    cursor,
+                    "some",
+                    "dummy",
+                    "data",
+                    "that",
+                    "fails",
+                )
+                self.unit.status = BlockedStatus("Data was written in read-only database")
+            except DatabaseError:
+                # we expect an exception here
+                logger.info("Data was not written in read-only database ✅")
+                pass
+
         self.unit.status = ActiveStatus()
 
     def _on_database_broken(self, _):
