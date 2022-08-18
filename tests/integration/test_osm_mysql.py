@@ -106,7 +106,9 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         )
 
         await ops_test.model.relate("osm-keystone:db", f"{APP_NAME}:osm-mysql")
-        await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "db", "osm-mysql"), timeout=1000)
+        await ops_test.model.block_until(
+            lambda: is_relation_joined(ops_test, "db", "osm-mysql"), timeout=1000
+        )
 
         # osm-keystone is initially in blocked status
         await ops_test.model.wait_for_idle(
@@ -117,10 +119,14 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         )
 
         await ops_test.model.relate("osm-pol:mongodb", "osm-mongodb:mongo")
-        await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "mongodb", "mongo"), timeout=1000)
+        await ops_test.model.block_until(
+            lambda: is_relation_joined(ops_test, "mongodb", "mongo"), timeout=1000
+        )
 
         await ops_test.model.relate("osm-pol:kafka", "osm-kafka:kafka")
-        await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "kafka", "kafka"), timeout=1000)
+        await ops_test.model.block_until(
+            lambda: is_relation_joined(ops_test, "kafka", "kafka"), timeout=1000
+        )
 
         await ops_test.model.relate("osm-pol:mysql", f"{APP_NAME}:osm-mysql")
         await ops_test.model.block_until(
