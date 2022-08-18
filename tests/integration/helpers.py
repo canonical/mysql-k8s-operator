@@ -163,3 +163,19 @@ async def scale_application(
             timeout=2000,
             wait_for_exact_units=desired_count,
         )
+
+
+def is_relation_joined(ops_test: OpsTest, endpoint_one: str, endpoint_two: str) -> bool:
+    """Check if a relation is joined.
+
+    Args:
+        ops_test: The ops test framework
+        endpoint_one: The first endpoint of the relation
+        endpoint_two: The second endpoint of the relation
+    """
+    for relation in ops_test.model.relations:
+        endpoints = [endpoint.name for endpoint in relation.endpoints]
+        if endpoint_one in endpoints and endpoint_two in endpoints:
+            return True
+
+    return False

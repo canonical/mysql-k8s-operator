@@ -40,6 +40,7 @@ from mysqlsh_helpers import (
     MySQLRemoveInstancesNotOnlineRetryError,
 )
 from relations.mysql import MySQLRelation
+from relations.osm_mysql import MySQLOSMRelation
 from utils import generate_random_hash, generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,7 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
 
         self.mysql_relation = MySQLRelation(self)
+        self.osm_mysql_relation = MySQLOSMRelation(self)
 
     @property
     def _peers(self):
