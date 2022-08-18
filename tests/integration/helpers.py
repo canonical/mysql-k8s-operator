@@ -169,13 +169,27 @@ def is_relation_joined(ops_test: OpsTest, endpoint_one: str, endpoint_two: str) 
     """Check if a relation is joined.
 
     Args:
-        ops_test: The ops test framework
+        ops_test: The ops test object passed into every test case
         endpoint_one: The first endpoint of the relation
         endpoint_two: The second endpoint of the relation
     """
-    for relation in ops_test.model.relations:
-        endpoints = [endpoint.name for endpoint in relation.endpoints]
+    for rel in ops_test.model.relations:
+        endpoints = [endpoint.name for endpoint in rel.endpoints]
         if endpoint_one in endpoints and endpoint_two in endpoints:
             return True
+    return False
 
+
+def is_relation_broken(ops_test: OpsTest, endpoint_one: str, endpoint_two: str) -> bool:
+    """Check if a relation is broken.
+
+    Args:
+        ops_test: The ops test object passed into every test case
+        endpoint_one: The first endpoint of the relation
+        endpoint_two: The second endpoint of the relation
+    """
+    for rel in ops_test.model.relations:
+        endpoints = [endpoint.name for endpoint in rel.endpoints]
+        if endpoint_one not in endpoints and endpoint_two not in endpoints:
+            return True
     return False

@@ -42,6 +42,22 @@ jobs:
       - name: Run HA integration tests
         run: tox -e integration-ha
 
+  integration-test-database-relation:
+    name: Integration tests for database relation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
+          channel: 1.23/stable
+          bootstrap-options: "--agent-version 2.9.29"
+      - name: Run integration database tests
+        run: tox -e integration-database-relation
+
   integration-test-microk8s-osm-mysql:
     name: Integration osm-msyql relation tests (microk8s)
     runs-on: ubuntu-latest

@@ -37,6 +37,8 @@ storage:
 provides:
   mysql:
     interface: mysql
+  database:
+    interface: mysql_client
   osm-mysql:
     interface: mysql
 assumes:
