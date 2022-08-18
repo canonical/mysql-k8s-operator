@@ -84,7 +84,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             timeout=1000,
         )
         await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications["osm-zookeeper"].units) == 1
+            lambda: len(ops_test.model.applications["osm-zookeeper"].units) == 1,
             timeout=1000,
         )
         await ops_test.model.block_until(
