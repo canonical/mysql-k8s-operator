@@ -17,11 +17,8 @@ jobs:
       # - name: Select charmhub channel
       #   uses: canonical/charming-actions/channel@1.0.3
       #   id: channel
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          limit-access-to-actor: true
-          limit-access-to-users: paulomach
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Upload charm to charmhub
         uses: canonical/charming-actions/upload-charm@1.0.3
         with:
