@@ -100,7 +100,9 @@ class TestCharm(unittest.TestCase):
     def test_mysql_pebble_ready_non_leader(self, _mysql_mock):
         # Test pebble ready when not leader
         # Expect unit to be in waiting status
-        self.harness.update_relation_data(self.peer_relation_id, f"{APP_NAME}/1", {"configured": "True"})
+        self.harness.update_relation_data(
+            self.peer_relation_id, f"{APP_NAME}/1", {"configured": "True"}
+        )
 
         _mysql_mock.get_mysql_version.return_value = "8.0.25"
         self.charm._mysql = _mysql_mock
