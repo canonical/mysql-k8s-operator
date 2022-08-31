@@ -26,7 +26,7 @@ class TestCharm(unittest.TestCase):
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
         self.peer_relation_id = self.harness.add_relation("database-peers", "database-peers")
-        self.harness.add_relation_unit(self.peer_relation_id, "mysql/1")
+        self.harness.add_relation_unit(self.peer_relation_id, f"{APP_NAME}/1")
         self.charm = self.harness.charm
         self.layer_dict = {
             "summary": "mysqld layer",
@@ -100,7 +100,7 @@ class TestCharm(unittest.TestCase):
     def test_mysql_pebble_ready_non_leader(self, _mysql_mock):
         # Test pebble ready when not leader
         # Expect unit to be in waiting status
-        self.harness.update_relation_data(self.peer_relation_id, "mysql/1", {"configured": "True"})
+        self.harness.update_relation_data(self.peer_relation_id, f"{APP_NAME}/1", {"configured": "True"})
 
         _mysql_mock.get_mysql_version.return_value = "8.0.25"
         self.charm._mysql = _mysql_mock
@@ -136,7 +136,7 @@ class TestCharm(unittest.TestCase):
         self.charm.on.config_changed.emit()
         self.harness.update_relation_data(
             self.peer_relation_id,
-            "mysql/1",
+            f"{APP_NAME}/1",
             {
                 "cluster-name": "cluster-1",
                 "root-password": "root-password",
@@ -185,14 +185,14 @@ class TestCharm(unittest.TestCase):
         # Test basic peer relation joined calls
         self.harness.set_leader()
         event = MagicMock()
-        event.unit.name.return_value = "mysql/2"
+        event.unit.name.return_value = f"{APP_NAME}/2"
         self.charm._mysql = _mysql_mock
 
         _mysql_mock.is_instance_configured_for_innodb.return_value = True
 
         self.charm._on_peer_relation_joined(event)
 
-        _mysql_mock.add_instance_to_cluster.called_once_with("mysql-k8s-endpoints.mysql-2")
+        _mysql_mock.add_instance_to_cluster.called_once_with("mysql-k8s-endpoints.mysql-k8s-2")
         _mysql_mock.is_instance_configured_for_innodb.called_once_with(
-            "mysql-k8s-endpoints.mysql-2"
+            "mysql-k8s-endpoints.mysql-k8s-2"
         )
