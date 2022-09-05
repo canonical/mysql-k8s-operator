@@ -1,11 +1,27 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-get-cluster-admin-credentials:
-  description: Get the credentials for the cluster admin user
-get-server-config-credentials:
-  description: Get the credentials for the server config user
-get-root-credentials:
-  description: Get the credentials for the root user
 get-cluster-status:
   description: Get cluster status information without topology
+get-password:
+  description: Fetch the system user's password, which is used by charm.
+    It is for internal charm users and SHOULD NOT be used by applications.
+  params:
+    username:
+      type: string
+      description: The username, the default value 'operator'.
+        Possible values - operator, backup, replication.
+  required: [username]
+
+set-password:
+  description: Change the system user's password, which is used by charm.
+    It is for internal charm users and SHOULD NOT be used by applications.
+  params:
+    username:
+      type: string
+      description: The username, the default value 'operator'.
+        Possible values - operator, backup, replication.
+    password:
+      type: string
+      description: The password will be auto-generated if this option is not specified.
+  required: [username]

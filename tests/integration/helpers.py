@@ -10,6 +10,8 @@ import mysql.connector
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 
+from constants import SERVER_CONFIG_USERNAME
+
 
 def generate_random_string(length: int) -> str:
     """Generate a random string of the provided length.
@@ -128,18 +130,50 @@ async def get_server_config_credentials(unit: Unit) -> Dict:
     """Helper to run an action to retrieve server config credentials.
 
     Args:
-        unit: The juju unit on which to run the get-server-config-credentials action
+        unit: The juju unit on which to run the get-password action for server-config credentials
 
     Returns:
         A dictionary with the server config username and password
     """
-    action = await unit.run_action("get-server-config-credentials")
+    action = await unit.run_action(action_name="get-password", username=SERVER_CONFIG_USERNAME)
     result = await action.wait()
 
-    return {
-        "username": result.results["server-config-username"],
-        "password": result.results["server-config-password"],
-    }
+    return result.results
+
+
+async def fetch_credentials(unit: Unit, username: str) -> Dict:
+    """Helper to run an action to fetch credentials.
+
+    Args:
+        unit: The juju unit on which to run the get-password action for credentials
+
+    Returns:
+        A dictionary with the server config username and password
+    """
+    action = await unit.run_action(action_name="get-password", username=username)
+    result = await action.wait()
+
+    return result.results
+
+
+async def rotate_credentials(unit: Unit, username: str, password: str = None) -> Dict:
+    """Helper to run an action to rotate credentials.
+
+    Args:
+        unit: The juju unit on which to run the set-password action for credentials
+
+    Returns:
+        A dictionary with the action result
+    """
+    if password is None:
+        action = await unit.run_action(action_name="set-password", username=username)
+    else:
+        action = await unit.run_action(
+            action_name="set-password", username=username, password=password
+        )
+    result = await action.wait()
+
+    return result.results
 
 
 async def scale_application(

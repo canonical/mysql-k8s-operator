@@ -9,12 +9,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import (
-    CLUSTER_ADMIN_USERNAME,
-    PASSWORD_LENGTH,
-    SERVER_CONFIG_USERNAME,
-    MySQLOperatorCharm,
-)
+from charm import PASSWORD_LENGTH, MySQLOperatorCharm
 from mysqlsh_helpers import MySQL, MySQLInitialiseMySQLDError
 
 APP_NAME = "mysql-k8s"
@@ -150,38 +145,6 @@ class TestCharm(unittest.TestCase):
         mysql = self.charm._mysql
         self.assertTrue(isinstance(mysql, MySQL))
 
-    def test_on_get_cluster_admin_credentials(self):
-        # Test get generated passwords function
-        # used as action
-        self.harness.set_leader()
-        event = MagicMock()
-        self.charm._on_get_cluster_admin_credentials(event)
-
-        event.set_results.assert_called_with(
-            {
-                "cluster-admin-username": CLUSTER_ADMIN_USERNAME,
-                "cluster-admin-password": self.charm._peers.data[self.charm.app][
-                    "cluster-admin-password"
-                ],
-            }
-        )
-
-    def test_on_get_server_config_credentials(self):
-        # Test get generated passwords function
-        # used as action
-        self.harness.set_leader()
-        event = MagicMock()
-        self.charm._on_get_server_config_credentials(event)
-
-        event.set_results.assert_called_with(
-            {
-                "server-config-username": SERVER_CONFIG_USERNAME,
-                "server-config-password": self.charm._peers.data[self.charm.app][
-                    "server-config-password"
-                ],
-            }
-        )
-
     @patch("charm.MySQLOperatorCharm._mysql")
     def test_on_peer_relation_joined(self, _mysql_mock):
         # Test basic peer relation joined calls
@@ -197,4 +160,31 @@ class TestCharm(unittest.TestCase):
         _mysql_mock.add_instance_to_cluster.called_once_with("mysql-k8s-endpoints.mysql-k8s-2")
         _mysql_mock.is_instance_configured_for_innodb.called_once_with(
             "mysql-k8s-endpoints.mysql-k8s-2"
+        )
+
+    # @patch_network_get(private_address="1.1.1.1")
+    @patch("charm.MySQLOperatorCharm._on_leader_elected")
+    def test_get_secret(self, _):
+        self.harness.set_leader()
+
+        # Test application scope.
+        assert self.charm._get_secret("password") is None
+        self.harness.update_relation_data(
+            self.peer_relation_id, self.charm.app.name, {"password": "test-password"}
+        )
+        assert self.charm._get_secret("password") == "test-password"
+
+    # @patch_network_get(private_address="1.1.1.1")
+    @patch("charm.MySQLOperatorCharm._on_leader_elected")
+    def test_set_secret(self, _):
+        self.harness.set_leader()
+
+        # Test application scope.
+        assert "password" not in self.harness.get_relation_data(
+            self.peer_relation_id, self.charm.app.name
+        )
+        self.charm._set_secret("password", "test-password")
+        assert (
+            self.harness.get_relation_data(self.peer_relation_id, self.charm.app.name)["password"]
+            == "test-password"
         )
