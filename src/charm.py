@@ -91,11 +91,11 @@ class MySQLOperatorCharm(CharmBase):
         return MySQL(
             self._get_unit_fqdn(self.unit.name),
             peer_data["cluster-name"],
-            self._get_secret(ROOT_PASSWORD_KEY),
+            self._get_secret("app", ROOT_PASSWORD_KEY),
             SERVER_CONFIG_USERNAME,
-            self._get_secret(SERVER_CONFIG_PASSWORD_KEY),
+            self._get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
             CLUSTER_ADMIN_USERNAME,
-            self._get_secret(CLUSTER_ADMIN_PASSWORD_KEY),
+            self._get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),
             self.unit.get_container("mysql"),
         )
 
@@ -105,9 +105,9 @@ class MySQLOperatorCharm(CharmBase):
 
         return (
             peer_data.get("cluster-name")
-            and self._get_secret(ROOT_PASSWORD_KEY)
-            and self._get_secret(SERVER_CONFIG_PASSWORD_KEY)
-            and self._get_secret(CLUSTER_ADMIN_PASSWORD_KEY)
+            and self._get_secret("app", ROOT_PASSWORD_KEY)
+            and self._get_secret("app", SERVER_CONFIG_PASSWORD_KEY)
+            and self._get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
             and peer_data.get("allowlist")
         )
 
@@ -198,9 +198,11 @@ class MySQLOperatorCharm(CharmBase):
         ]
 
         for required_password in required_passwords:
-            if not self._get_secret(required_password):
+            if not self._get_secret("app", required_password):
                 logger.debug(f"Setting {required_password}")
-                self._set_secret(required_password, generate_random_password(PASSWORD_LENGTH))
+                self._set_secret(
+                    "app", required_password, generate_random_password(PASSWORD_LENGTH)
+                )
 
         # If this node was elected a leader due to a prior leader unit being down scaled
         if self._is_peer_data_set and self.cluster_initialized:
@@ -386,13 +388,11 @@ class MySQLOperatorCharm(CharmBase):
     # =========================================================================
     def _on_get_password(self, event: ActionEvent) -> None:
         """Action used to retrieve the system user's password."""
-        if "username" not in event.params:
-            raise RuntimeError("Undefined parameter username.")
+        username = event.params.get("username") or ROOT_USERNAME
 
-        if event.params["username"] not in REQUIRED_USERNAMES:
+        if username not in REQUIRED_USERNAMES:
             raise RuntimeError("Invalid username.")
 
-        username = event.params["username"]
         if username == ROOT_USERNAME:
             secret_key = ROOT_PASSWORD_KEY
         elif username == SERVER_CONFIG_USERNAME:
@@ -402,22 +402,18 @@ class MySQLOperatorCharm(CharmBase):
         else:
             raise RuntimeError("Invalid username.")
 
-        event.set_results(
-            {"username": event.params["username"], "password": self._get_secret(secret_key)}
-        )
+        event.set_results({"username": username, "password": self._get_secret("app", secret_key)})
 
     def _on_set_password(self, event: ActionEvent) -> None:
         """Action used to update/rotate the system user's password."""
         if not self.unit.is_leader():
             raise RuntimeError("set-password action can only be run on the leader unit.")
 
-        if "username" not in event.params:
-            raise RuntimeError("Undefined parameter username.")
+        username = event.params.get("username") or ROOT_USERNAME
 
-        if event.params["username"] not in REQUIRED_USERNAMES:
+        if username not in REQUIRED_USERNAMES:
             raise RuntimeError("Invalid username.")
 
-        username = event.params["username"]
         if username == ROOT_USERNAME:
             secret_key = ROOT_PASSWORD_KEY
         elif username == SERVER_CONFIG_USERNAME:
@@ -427,17 +423,11 @@ class MySQLOperatorCharm(CharmBase):
         else:
             raise RuntimeError("Invalid username.")
 
-        username = event.params["username"]
-        new_password = None
-        if "password" not in event.params or event.params["password"] == "":
-            new_password = generate_random_password(PASSWORD_LENGTH)
-        else:
-            new_password = event.params["password"]
+        new_password = event.params.get("password") or generate_random_password(PASSWORD_LENGTH)
 
-        current_server_config_password = self._get_secret(SERVER_CONFIG_PASSWORD_KEY)
-        self._mysql.update_user_password(username, new_password, current_server_config_password)
+        self._mysql.update_user_password(username, new_password)
 
-        self._set_secret(secret_key, new_password)
+        self._set_secret("app", secret_key, new_password)
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Get the cluster status without topology."""
@@ -459,16 +449,29 @@ class MySQLOperatorCharm(CharmBase):
 
         return self._peers.data[self.unit]
 
-    def _get_secret(self, key: str) -> Optional[str]:
+    def _get_secret(self, scope: str, key: str) -> Optional[str]:
         """Get secret from the secret storage."""
-        return self.app_peer_data.get(key, None)
+        if scope == "unit":
+            return self.unit_peer_data.get(key, None)
+        elif scope == "app":
+            return self.app_peer_data.get(key, None)
+        else:
+            raise RuntimeError("Unknown secret scope.")
 
-    def _set_secret(self, key: str, value: Optional[str]) -> None:
+    def _set_secret(self, scope: str, key: str, value: Optional[str]) -> None:
         """Set secret in the secret storage."""
-        if not value:
-            del self.app_peer_data[key]
-            return
-        self.app_peer_data.update({key: value})
+        if scope == "unit":
+            if not value:
+                del self.unit_peer_data[key]
+                return
+            self.unit_peer_data.update({key: value})
+        elif scope == "app":
+            if not value:
+                del self.app_peer_data[key]
+                return
+            self.app_peer_data.update({key: value})
+        else:
+            raise RuntimeError("Unknown secret scope.")
 
 
 if __name__ == "__main__":

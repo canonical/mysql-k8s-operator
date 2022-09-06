@@ -141,7 +141,7 @@ async def get_server_config_credentials(unit: Unit) -> Dict:
     return result.results
 
 
-async def fetch_credentials(unit: Unit, username: str) -> Dict:
+async def fetch_credentials(unit: Unit, username: str = None) -> Dict:
     """Helper to run an action to fetch credentials.
 
     Args:
@@ -150,13 +150,17 @@ async def fetch_credentials(unit: Unit, username: str) -> Dict:
     Returns:
         A dictionary with the server config username and password
     """
-    action = await unit.run_action(action_name="get-password", username=username)
+    if username is None:
+        action = await unit.run_action(action_name="get-password")
+    else:
+        action = await unit.run_action(action_name="get-password", username=username)
+
     result = await action.wait()
 
     return result.results
 
 
-async def rotate_credentials(unit: Unit, username: str, password: str = None) -> Dict:
+async def rotate_credentials(unit: Unit, username: str = None, password: str = None) -> Dict:
     """Helper to run an action to rotate credentials.
 
     Args:
@@ -165,7 +169,9 @@ async def rotate_credentials(unit: Unit, username: str, password: str = None) ->
     Returns:
         A dictionary with the action result
     """
-    if password is None:
+    if username is None:
+        action = await unit.run_action(action_name="set-password")
+    elif password is None:
         action = await unit.run_action(action_name="set-password", username=username)
     else:
         action = await unit.run_action(

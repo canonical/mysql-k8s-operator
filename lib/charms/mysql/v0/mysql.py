@@ -920,16 +920,21 @@ class MySQLBase(ABC):
         return matches.group(1)
 
     def update_user_password(
-        self, username: str, new_password: str, current_server_config_password: str
+        self, username: str, new_password: str
     ) -> None:
-        """Updates user password in MySQL database."""
+        """Updates user password in MySQL database.
+
+        Args:
+            username: The username of user to update the password for
+            new_password: The new password to be set for the user mentioned in username arg
+
+        Raises:
+            MySQLCheckUserExistenceError if there is an issue updating the user's password
+        """
         logger.debug(f"Updating password for {username}.")
 
-        connect_instance_address = self.instance_address
-        server_config_username = self.server_config_user
-
         update_user_password_commands = (
-            f"shell.connect('{server_config_username}:{current_server_config_password}@{connect_instance_address}')",
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"session.run_sql(\"ALTER USER '{username}'@'%' IDENTIFIED BY '{new_password}';\")",
             'session.run_sql("FLUSH PRIVILEGES;")',
         )
@@ -942,6 +947,9 @@ class MySQLBase(ABC):
                 exc_info=e,
             )
             raise MySQLCheckUserExistenceError(e.message)
+
+        if username == self.server_config_user:
+            self.server_config_password = new_password
 
     @abstractmethod
     def wait_until_mysql_connection(self) -> None:
