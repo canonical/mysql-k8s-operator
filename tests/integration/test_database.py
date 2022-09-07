@@ -97,11 +97,11 @@ async def test_build_and_deploy(ops_test: OpsTest):
 @pytest.mark.database_tests
 async def test_password_rotation(ops_test: OpsTest):
     """Rotate password and confirm changes."""
-    num_units = len(ops_test.model.applications[DATABASE_APP_NAME].units)
-    random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[num_units - 1]
+    random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[-1]
 
     old_credentials = await fetch_credentials(random_unit, CLUSTER_ADMIN_USERNAME)
 
+    # get primary unit first, need that to invoke set-password action
     primary_unit = await get_primary_unit(ops_test, random_unit, DATABASE_APP_NAME)
     primary_unit_address = await primary_unit.get_public_address()
     logger.debug(
@@ -118,6 +118,7 @@ async def test_password_rotation(ops_test: OpsTest):
     assert updated_credentials["password"] != old_credentials["password"]
     assert updated_credentials["password"] == new_password
 
+    # verify that the new password actually works
     primary_unit = await get_primary_unit(ops_test, random_unit, DATABASE_APP_NAME)
     primary_unit_address = await primary_unit.get_public_address()
     logger.debug(
@@ -130,11 +131,11 @@ async def test_password_rotation(ops_test: OpsTest):
 @pytest.mark.database_tests
 async def test_password_rotation_silent(ops_test: OpsTest):
     """Rotate password and confirm changes."""
-    num_units = len(ops_test.model.applications[DATABASE_APP_NAME].units)
-    random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[num_units - 1]
+    random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[-1]
 
     old_credentials = await fetch_credentials(random_unit, CLUSTER_ADMIN_USERNAME)
 
+    # get primary unit first, need that to invoke set-password action
     primary_unit = await get_primary_unit(ops_test, random_unit, DATABASE_APP_NAME)
     primary_unit_address = await primary_unit.get_public_address()
     logger.debug(
@@ -146,6 +147,7 @@ async def test_password_rotation_silent(ops_test: OpsTest):
     updated_credentials = await fetch_credentials(random_unit, CLUSTER_ADMIN_USERNAME)
     assert updated_credentials["password"] != old_credentials["password"]
 
+    # verify that the new password actually works
     primary_unit = await get_primary_unit(ops_test, random_unit, DATABASE_APP_NAME)
     primary_unit_address = await primary_unit.get_public_address()
     logger.debug(
@@ -158,14 +160,14 @@ async def test_password_rotation_silent(ops_test: OpsTest):
 @pytest.mark.database_tests
 async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
     """Rotate password and confirm changes."""
-    num_units = len(ops_test.model.applications[DATABASE_APP_NAME].units)
-    random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[num_units - 1]
+    random_unit = ops_test.model.applications[DATABASE_APP_NAME].units[-1]
 
     root_credentials = await fetch_credentials(random_unit, ROOT_USERNAME)
 
     old_credentials = await fetch_credentials(random_unit)
     assert old_credentials["password"] == root_credentials["password"]
 
+    # get primary unit first, need that to invoke set-password action
     primary_unit = await get_primary_unit(ops_test, random_unit, DATABASE_APP_NAME)
     primary_unit_address = await primary_unit.get_public_address()
     logger.debug(

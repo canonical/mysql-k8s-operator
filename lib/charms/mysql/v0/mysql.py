@@ -948,9 +948,6 @@ class MySQLBase(ABC):
             )
             raise MySQLCheckUserExistenceError(e.message)
 
-        if username == self.server_config_user:
-            self.server_config_password = new_password
-
     @abstractmethod
     def wait_until_mysql_connection(self) -> None:
         """Wait until a connection to MySQL has been obtained.
