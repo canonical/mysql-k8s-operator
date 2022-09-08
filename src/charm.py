@@ -5,6 +5,7 @@
 """Charm for MySQL."""
 
 import logging
+from typing import Dict, Optional
 
 from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
@@ -26,11 +27,16 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 from ops.pebble import Layer
 
 from constants import (
+    CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONFIGURED_FILE,
     MYSQLD_SERVICE,
     PASSWORD_LENGTH,
     PEER,
+    REQUIRED_USERNAMES,
+    ROOT_PASSWORD_KEY,
+    ROOT_USERNAME,
+    SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
 from mysqlsh_helpers import (
@@ -64,14 +70,9 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on[PEER].relation_departed, self._on_peer_relation_departed)
 
         # Actions events
-        self.framework.observe(
-            self.on.get_cluster_admin_credentials_action, self._on_get_cluster_admin_credentials
-        )
-        self.framework.observe(
-            self.on.get_server_config_credentials_action, self._on_get_server_config_credentials
-        )
-        self.framework.observe(self.on.get_root_credentials_action, self._on_get_root_credentials)
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
+        self.framework.observe(self.on.get_password_action, self._on_get_password)
+        self.framework.observe(self.on.set_password_action, self._on_set_password)
 
         self.mysql_relation = MySQLRelation(self)
         self.database_relation = DatabaseRelation(self)
@@ -90,11 +91,11 @@ class MySQLOperatorCharm(CharmBase):
         return MySQL(
             self._get_unit_fqdn(self.unit.name),
             peer_data["cluster-name"],
-            peer_data["root-password"],
+            self._get_secret("app", ROOT_PASSWORD_KEY),
             SERVER_CONFIG_USERNAME,
-            peer_data["server-config-password"],
+            self._get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
             CLUSTER_ADMIN_USERNAME,
-            peer_data["cluster-admin-password"],
+            self._get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),
             self.unit.get_container("mysql"),
         )
 
@@ -104,9 +105,9 @@ class MySQLOperatorCharm(CharmBase):
 
         return (
             peer_data.get("cluster-name")
-            and peer_data.get("root-password")
-            and peer_data.get("server-config-password")
-            and peer_data.get("cluster-admin-password")
+            and self._get_secret("app", ROOT_PASSWORD_KEY)
+            and self._get_secret("app", SERVER_CONFIG_PASSWORD_KEY)
+            and self._get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
             and peer_data.get("allowlist")
         )
 
@@ -189,16 +190,19 @@ class MySQLOperatorCharm(CharmBase):
         Idempotently remove unreachable instances from the cluster and update
         the allowlist accordingly.
         """
-        peer_data = self._peers.data[self.app]
-
         # Set required passwords if not already set
-        required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
+        required_passwords = [
+            ROOT_PASSWORD_KEY,
+            SERVER_CONFIG_PASSWORD_KEY,
+            CLUSTER_ADMIN_PASSWORD_KEY,
+        ]
 
         for required_password in required_passwords:
-            if not peer_data.get(required_password):
+            if not self._get_secret("app", required_password):
                 logger.debug(f"Setting {required_password}")
-                password = generate_random_password(PASSWORD_LENGTH)
-                peer_data[required_password] = password
+                self._set_secret(
+                    "app", required_password, generate_random_password(PASSWORD_LENGTH)
+                )
 
         # If this node was elected a leader due to a prior leader unit being down scaled
         if self._is_peer_data_set and self.cluster_initialized:
@@ -382,42 +386,92 @@ class MySQLOperatorCharm(CharmBase):
     # =========================================================================
     # Charm action handlers
     # =========================================================================
-    def _on_get_cluster_admin_credentials(self, event: ActionEvent) -> None:
-        """Action used to retrieve the cluster admin credentials."""
-        event.set_results(
-            {
-                "cluster-admin-username": CLUSTER_ADMIN_USERNAME,
-                "cluster-admin-password": self._peers.data[self.app].get(
-                    "cluster-admin-password", "<to_be_generated>"
-                ),
-            }
-        )
+    def _on_get_password(self, event: ActionEvent) -> None:
+        """Action used to retrieve the system user's password."""
+        username = event.params.get("username") or ROOT_USERNAME
 
-    def _on_get_server_config_credentials(self, event: ActionEvent) -> None:
-        """Action used to retrieve the server config credentials."""
-        event.set_results(
-            {
-                "server-config-username": SERVER_CONFIG_USERNAME,
-                "server-config-password": self._peers.data[self.app].get(
-                    "server-config-password", "<to_be_generated>"
-                ),
-            }
-        )
+        if username not in REQUIRED_USERNAMES:
+            raise RuntimeError("Invalid username.")
 
-    def _on_get_root_credentials(self, event: ActionEvent) -> None:
-        """Action used to retrieve the root credentials."""
-        event.set_results(
-            {
-                "root-username": "root",
-                "root-password": self._peers.data[self.app].get(
-                    "root-password", "<to_be_generated>"
-                ),
-            }
-        )
+        if username == ROOT_USERNAME:
+            secret_key = ROOT_PASSWORD_KEY
+        elif username == SERVER_CONFIG_USERNAME:
+            secret_key = SERVER_CONFIG_PASSWORD_KEY
+        elif username == CLUSTER_ADMIN_USERNAME:
+            secret_key = CLUSTER_ADMIN_PASSWORD_KEY
+        else:
+            raise RuntimeError("Invalid username.")
+
+        event.set_results({"username": username, "password": self._get_secret("app", secret_key)})
+
+    def _on_set_password(self, event: ActionEvent) -> None:
+        """Action used to update/rotate the system user's password."""
+        if not self.unit.is_leader():
+            raise RuntimeError("set-password action can only be run on the leader unit.")
+
+        username = event.params.get("username") or ROOT_USERNAME
+
+        if username not in REQUIRED_USERNAMES:
+            raise RuntimeError("Invalid username.")
+
+        if username == ROOT_USERNAME:
+            secret_key = ROOT_PASSWORD_KEY
+        elif username == SERVER_CONFIG_USERNAME:
+            secret_key = SERVER_CONFIG_PASSWORD_KEY
+        elif username == CLUSTER_ADMIN_USERNAME:
+            secret_key = CLUSTER_ADMIN_PASSWORD_KEY
+        else:
+            raise RuntimeError("Invalid username.")
+
+        new_password = event.params.get("password") or generate_random_password(PASSWORD_LENGTH)
+
+        self._mysql.update_user_password(username, new_password)
+
+        self._set_secret("app", secret_key, new_password)
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Get the cluster status without topology."""
         event.set_results(self._mysql.get_cluster_status())
+
+    @property
+    def app_peer_data(self) -> Dict:
+        """Application peer relation data object."""
+        if self._peers is None:
+            return {}
+
+        return self._peers.data[self.app]
+
+    @property
+    def unit_peer_data(self) -> Dict:
+        """Unit peer relation data object."""
+        if self._peers is None:
+            return {}
+
+        return self._peers.data[self.unit]
+
+    def _get_secret(self, scope: str, key: str) -> Optional[str]:
+        """Get secret from the secret storage."""
+        if scope == "unit":
+            return self.unit_peer_data.get(key, None)
+        elif scope == "app":
+            return self.app_peer_data.get(key, None)
+        else:
+            raise RuntimeError("Unknown secret scope.")
+
+    def _set_secret(self, scope: str, key: str, value: Optional[str]) -> None:
+        """Set secret in the secret storage."""
+        if scope == "unit":
+            if not value:
+                del self.unit_peer_data[key]
+                return
+            self.unit_peer_data.update({key: value})
+        elif scope == "app":
+            if not value:
+                del self.app_peer_data[key]
+                return
+            self.app_peer_data.update({key: value})
+        else:
+            raise RuntimeError("Unknown secret scope.")
 
 
 if __name__ == "__main__":
