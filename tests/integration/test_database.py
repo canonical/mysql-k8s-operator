@@ -119,6 +119,7 @@ async def test_password_rotation(ops_test: OpsTest):
     assert updated_credentials["password"] == new_password
 
     # verify that the new password actually works
+    # since get_primary_unit (and this get_cluster_status) use the cluster admin credentials
     primary_unit = await get_primary_unit(ops_test, random_unit, DATABASE_APP_NAME)
     primary_unit_address = await primary_unit.get_public_address()
     logger.debug(
@@ -148,6 +149,7 @@ async def test_password_rotation_silent(ops_test: OpsTest):
     assert updated_credentials["password"] != old_credentials["password"]
 
     # verify that the new password actually works
+    # since get_primary_unit (and this get_cluster_status) use the cluster admin credentials
     primary_unit = await get_primary_unit(ops_test, random_unit, DATABASE_APP_NAME)
     primary_unit_address = await primary_unit.get_public_address()
     logger.debug(
