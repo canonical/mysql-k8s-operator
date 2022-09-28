@@ -16,6 +16,8 @@ from charms.mysql.v0.mysql import (
     MySQLDeleteUserForRelationError,
     MySQLGetClusterMembersAddressesError,
     MySQLGetMySQLVersionError,
+    MySQLGrantPrivilegesToUserError,
+    MySQLUpgradeUserForMySQLRouterError,
 )
 from ops.charm import RelationDepartedEvent
 from ops.framework import Object
@@ -70,6 +72,9 @@ class DatabaseRelation(Object):
         # get base relation data
         relation_id = event.relation.id
         db_name = event.database
+        extra_user_roles = []
+        if event.extra_user_roles:
+            extra_user_roles = event.extra_user_roles.split(",")
         # user name is derived from the relation id
         db_user = f"relation-{relation_id}"
         db_pass = self._get_or_set_password(event.relation)
@@ -98,19 +103,23 @@ class DatabaseRelation(Object):
                 db_name, db_user, db_pass, "%", remote_app
             )
 
+            if "mysqlrouter" in extra_user_roles:
+                self.charm._mysql.upgrade_user_for_mysqlrouter(db_user, "%")
+                self.charm._mysql.grant_privileges_to_user(
+                    db_user, "%", ["CREATE USER"], with_grant_option=True
+                )
+
             logger.info(f"Created user for app {remote_app}")
-        except MySQLCreateApplicationDatabaseAndScopedUserError:
-            logger.error(f"Failed to create scoped user for app {remote_app}")
+        except (
+            MySQLCreateApplicationDatabaseAndScopedUserError,
+            MySQLGetMySQLVersionError,
+            MySQLGetClusterMembersAddressesError,
+            MySQLClientError,
+            MySQLUpgradeUserForMySQLRouterError,
+            MySQLGrantPrivilegesToUserError,
+        ) as e:
+            logger.exception("Failed to set up database relation", exc_info=e)
             self.charm.unit.status = BlockedStatus("Failed to create scoped user")
-        except MySQLGetMySQLVersionError as e:
-            logger.exception("Failed to get MySQL version", exc_info=e)
-            self.charm.unit.status = BlockedStatus("Failed to get MySQL version")
-        except MySQLGetClusterMembersAddressesError as e:
-            logger.exception("Failed to get cluster members", exc_info=e)
-            self.charm.unit.status = BlockedStatus("Failed to get cluster members")
-        except MySQLClientError as e:
-            logger.exception("Failed to get primary", exc_info=e)
-            self.charm.unit.status = BlockedStatus("Failed to get primary")
 
     def _on_database_broken(self, event: RelationDepartedEvent) -> None:
         """Handle the removal of database relation.

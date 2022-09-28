@@ -83,7 +83,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 5
+LIBPATCH = 6
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -175,8 +175,16 @@ class MySQLGetMySQLVersionError(Error):
     """Exception raised when there is an issue getting the MySQL version."""
 
 
-class MysqlGetClusterPrimaryAddressError(Error):
+class MySQLGetClusterPrimaryAddressError(Error):
     """Exception raised when there is an issue getting the primary instance."""
+
+
+class MySQLUpgradeUserForMySQLRouterError(Error):
+    """Exception raised when there is an issue upgrading user for mysqlrouter."""
+
+
+class MySQLGrantPrivilegesToUserError(Error):
+    """Exception raised when there is an issue granting privileges to user."""
 
 
 class MySQLBase(ABC):
@@ -290,7 +298,9 @@ class MySQLBase(ABC):
 
         try:
             output = self._run_mysqlcli_script(
-                "; ".join(user_existence_commands), password=self.root_password
+                "; ".join(user_existence_commands),
+                user=self.server_config_user,
+                password=self.server_config_password,
             )
             return "USER_EXISTS" in output
         except MySQLClientError as e:
@@ -858,7 +868,7 @@ class MySQLBase(ABC):
             output = self._run_mysqlsh_script("\n".join(get_cluster_primary_commands))
         except MySQLClientError as e:
             logger.warning("Failed to get cluster primary addresses", exc_info=e)
-            raise MysqlGetClusterPrimaryAddressError(e.message)
+            raise MySQLGetClusterPrimaryAddressError(e.message)
         matches = re.search(r"<PRIMARY_ADDRESS>(.+)</PRIMARY_ADDRESS>", output)
 
         if not matches:
@@ -919,9 +929,57 @@ class MySQLBase(ABC):
 
         return matches.group(1)
 
-    def update_user_password(
-        self, username: str, new_password: str
+    def upgrade_user_for_mysqlrouter(self, username, hostname) -> None:
+        """Upgrades a user for use with mysqlrouter.
+
+        Args:
+            username: The username of user to upgrade
+            hostname: The hostname of user to upgrade
+
+        Raises:
+            MySQLUpgradeUserForMySQLRouterError if there is an issue upgrading user for mysqlrouter
+        """
+        options = {"update": "true"}
+        upgrade_user_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            f"cluster.setup_router_account('{username}@{hostname}', {json.dumps(options)})",
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(upgrade_user_commands))
+        except MySQLClientError as e:
+            logger.warning(
+                f"Failed to upgrade user {username}@{hostname} for mysqlrouter", exc_info=e
+            )
+            raise MySQLUpgradeUserForMySQLRouterError(e.message)
+
+    def grant_privileges_to_user(
+        self, username, hostname, privileges, with_grant_option=False
     ) -> None:
+        """Grants specified privileges to the provided user.
+
+        Args:
+            username: The username of user to grant privileges to
+            hostname: The hostname of user to grant priviliges to
+            privileges: A list of privileges to grant to the user
+            with_grant_option: Indicating whether to provide with grant option to user
+
+        Raises:
+            MySQLGrantPrivilegesToUserError if there is an issue granting privileges to a user
+        """
+        grant_privileges_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"session.run_sql(\"GRANT {', '.join(privileges)} ON *.* TO '{username}'@'{hostname}'{' WITH GRANT OPTION' if with_grant_option else ''}\")",
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(grant_privileges_commands))
+        except MySQLClientError as e:
+            logger.warning(f"Failed to grant privileges to user {username}@{hostname}", exc_info=e)
+            raise MySQLGrantPrivilegesToUserError(e.message)
+
+    def update_user_password(self, username: str, new_password: str) -> None:
         """Updates user password in MySQL database.
 
         Args:
