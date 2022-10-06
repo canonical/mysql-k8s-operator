@@ -11,23 +11,19 @@ import yaml
 from pytest_operator.plugin import OpsTest
 from tenacity import AsyncRetrying, RetryError, stop_after_delay, wait_fixed
 
+from constants import CLUSTER_ADMIN_USERNAME, PASSWORD_LENGTH, ROOT_USERNAME
 from tests.integration.helpers import (
     execute_queries_on_unit,
+    fetch_credentials,
     generate_random_string,
     get_cluster_status,
     get_primary_unit,
     get_server_config_credentials,
     get_unit_address,
+    rotate_credentials,
     scale_application,
 )
-from constants import CLUSTER_ADMIN_USERNAME, PASSWORD_LENGTH, ROOT_USERNAME
-from tests.integration.helpers import (
-    fetch_credentials,
-    get_primary_unit,
-    rotate_credentials,
-)
 from utils import generate_random_password
-
 
 logger = logging.getLogger(__name__)
 

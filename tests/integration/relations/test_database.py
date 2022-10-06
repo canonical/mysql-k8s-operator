@@ -10,7 +10,6 @@ import yaml
 from helpers import is_relation_broken, is_relation_joined
 from pytest_operator.plugin import OpsTest
 
-
 logger = logging.getLogger(__name__)
 
 DB_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
