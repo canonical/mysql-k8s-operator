@@ -39,7 +39,7 @@ class ApplicationCharm(CharmBase):
 
         # Events related to the requested database
         # (these events are defined in the database requires charm library).
-        self.database_name = f'{self.app.name}-test-database'
+        self.database_name = f"{self.app.name}-test-database"
         self.database = DatabaseRequires(self, REMOTE, self.database_name)
         self.framework.observe(self.database.on.database_created, self._on_database_created)
         self.framework.observe(
