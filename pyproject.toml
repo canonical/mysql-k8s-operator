@@ -13,7 +13,7 @@ minversion = "6.0"
 log_cli_level = "INFO"
 asyncio_mode = "auto"
 markers = [
-    "ha_tests",
+    "charm_tests",
     "database_tests",
 ]
 
