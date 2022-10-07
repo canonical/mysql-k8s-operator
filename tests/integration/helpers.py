@@ -202,6 +202,7 @@ async def scale_application(
             status="active",
             timeout=(15 * 60),
             wait_for_exact_units=desired_count,
+            raise_on_blocked=True,
         )
 
 

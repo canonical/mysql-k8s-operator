@@ -29,6 +29,9 @@ jobs:
 
   integration-test-microk8s-charm:
     name: Charm integration tests (microk8s)
+    needs:
+      - lint
+      - unit-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,6 +48,9 @@ jobs:
 
   integration-test-database-relation:
     name: Integration tests for database relation
+    needs:
+      - lint
+      - unit-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -61,6 +67,9 @@ jobs:
 
   integration-test-microk8s-osm-mysql:
     name: Integration osm-msyql relation tests (microk8s)
+    needs:
+      - lint
+      - unit-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
