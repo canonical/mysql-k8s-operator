@@ -152,7 +152,8 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[APP_NAME].units) == 1
-            and ops_test.model.applications[APP_NAME].units[0].workload_status in ("maintenance", "error", "blocked")
+            and ops_test.model.applications[APP_NAME].units[0].workload_status
+            in ("maintenance", "error", "blocked")
         )
         assert ops_test.model.applications[APP_NAME].units[0].workload_status == "maintenance"
 
