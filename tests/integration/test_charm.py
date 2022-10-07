@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 CLUSTER_NAME = "test_cluster"
+TIMEOUT = 15 * 60
 
 
 @pytest.mark.order(1)
@@ -50,7 +51,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             apps=[APP_NAME],
             status="active",
             raise_on_blocked=True,
-            timeout=1000,
+            timeout=TIMEOUT,
             wait_for_exact_units=3,
         )
         assert len(ops_test.model.applications[APP_NAME].units) == 3
@@ -151,13 +152,15 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[APP_NAME].units) == 1
-            and ops_test.model.applications[APP_NAME].units[0].workload_status == "maintenance"
+            and ops_test.model.applications[APP_NAME].units[0].workload_status in ("maintenance", "error", "blocked")
         )
+        assert ops_test.model.applications[APP_NAME].units[0].workload_status == "maintenance"
+
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME],
             status="active",
             raise_on_blocked=True,
-            timeout=1500,
+            timeout=TIMEOUT,
         )
 
         random_unit = ops_test.model.applications[APP_NAME].units[0]
