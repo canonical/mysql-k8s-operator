@@ -19,11 +19,16 @@ from charms.mysql.v0.mysql import (
     MySQLGrantPrivilegesToUserError,
     MySQLUpgradeUserForMySQLRouterError,
 )
-from ops.charm import RelationDepartedEvent
+from ops.charm import (
+    PebbleReadyEvent,
+    RelationBrokenEvent,
+    RelationDepartedEvent,
+    RelationJoinedEvent,
+)
 from ops.framework import Object
 from ops.model import BlockedStatus
 
-from constants import DB_RELATION_NAME, PASSWORD_LENGTH
+from constants import CONTAINER_RESTARTS, DB_RELATION_NAME, PASSWORD_LENGTH, PEER
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -44,6 +49,18 @@ class DatabaseRelation(Object):
             self.charm.on[DB_RELATION_NAME].relation_broken, self._on_database_broken
         )
 
+        self.framework.observe(
+            self.charm.on[PEER].relation_departed, self._on_peer_relation_departed
+        )
+        self.framework.observe(self.charm.on[PEER].relation_joined, self._on_peer_relation_joined)
+        self.framework.observe(self.charm.on[PEER].relation_changed, self._configure_endpoints)
+        self.framework.observe(self.charm.on.leader_elected, self._configure_endpoints)
+        self.framework.observe(self.charm.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
+
+    # =============
+    # Helpers
+    # =============
+
     def _get_or_set_password(self, relation) -> str:
         """Retrieve password from cache or generate a new one.
 
@@ -59,7 +76,34 @@ class DatabaseRelation(Object):
         relation.data[self.charm.app]["password"] = password
         return password
 
-    def _on_database_requested(self, event: DatabaseRequestedEvent):
+    def _update_endpoints(self, relation_id: int) -> None:
+        """Updates the endpoints + read-only-endpoints in the relation.
+
+        Args:
+            relation_id: The id of the relation for which to update the endpoints
+        """
+        try:
+            logger.debug(f"Updating the endpoints for relation {relation_id}")
+            primary_endpoint = self.charm._mysql.get_cluster_primary_address()
+            self.database.set_endpoints(relation_id, primary_endpoint)
+
+            logger.debug(f"Updating the read_only_endpoints for relation {relation_id}")
+            read_only_endpoints = sorted(
+                self.charm._mysql.get_cluster_members_addresses() - {primary_endpoint}
+            )
+            self.database.set_read_only_endpoints(relation_id, ",".join(read_only_endpoints))
+        except MySQLGetClusterMembersAddressesError as e:
+            logger.exception("Failed to get cluster members", exc_info=e)
+            self.charm.unit.status = BlockedStatus("Failed to get cluster members")
+        except MySQLClientError as e:
+            logger.exception("Failed to get primary", exc_info=e)
+            self.charm.unit.status = BlockedStatus("Failed to get primary")
+
+    # =============
+    # Handlers
+    # =============
+
+    def _on_database_requested(self, event: DatabaseRequestedEvent) -> None:
         """Handle the `database-requested` event."""
         if not self.charm.unit.is_leader():
             return
@@ -121,7 +165,102 @@ class DatabaseRelation(Object):
             logger.exception("Failed to set up database relation", exc_info=e)
             self.charm.unit.status = BlockedStatus("Failed to create scoped user")
 
-    def _on_database_broken(self, event: RelationDepartedEvent) -> None:
+    def _on_mysql_pebble_ready(self, event: PebbleReadyEvent) -> None:
+        """Handle the mysql pebble ready event.
+
+        Update a value in the peer app databag to trigger the peer_relation_changed
+        handler which will in turn update the endpoints.
+        """
+        charm_unit_label = self.charm.unit.name.replace("/", "-")
+        if not self.charm._mysql.is_instance_in_cluster(charm_unit_label):
+            event.defer()
+            return
+
+        container_restarts = int(self.charm.unit_peer_data.get(CONTAINER_RESTARTS, "0"))
+        self.charm.unit_peer_data[CONTAINER_RESTARTS] = str(container_restarts + 1)
+
+        self._configure_endpoints(None)
+
+    def _on_peer_relation_joined(self, event: RelationJoinedEvent) -> None:
+        """Handle the peer relation joined event.
+
+        Update the endpoints + read_only_endpoints.
+        """
+        if not self.charm.unit.is_leader():
+            return
+
+        relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
+        if not relations:
+            return
+
+        if not self.charm.cluster_initialized:
+            return
+
+        event_unit_label = event.unit.name.replace("/", "-")
+        if not self.charm._mysql.is_instance_in_cluster(event_unit_label):
+            event.defer()
+            return
+
+        relation_data = self.database.fetch_relation_data()
+        for relation in relations:
+            # only update endpoints if on_database_requested has executed
+            if relation.id not in relation_data:
+                continue
+
+            self._update_endpoints(relation.id)
+
+    def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
+        """Handle the peer relation departed event.
+
+        Update the endpoints + read_only_endpoints.
+        """
+        if not self.charm.unit.is_leader():
+            return
+
+        relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
+        if not relations:
+            return
+
+        if not self.charm.cluster_initialized:
+            logger.debug("Waiting for the cluster to be initialized")
+            return
+
+        departing_unit_name = event.departing_Unit.name.replace("/", "-")
+
+        if self.charm._mysql.is_instance_in_cluster(departing_unit_name):
+            logger.debug(f"Departing unit {departing_unit_name} still in cluster")
+            event.defer()
+            return
+
+        relation_data = self.database.fetch_relation_data()
+        for relation in relations:
+            # only update endpoints if on_database_requested has executed
+            if relation.id not in relation_data:
+                continue
+
+            self._update_endpoints(relation.id)
+
+    def _configure_endpoints(self, _) -> None:
+        """Update the endpoints + read_only_endpoints."""
+        if not self.charm.unit.is_leader():
+            return
+
+        relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
+        if not relations:
+            return
+
+        if not self.charm.cluster_initialized:
+            return
+
+        relation_data = self.database.fetch_relation_data()
+        for relation in relations:
+            # only update endpoints if on_database_requested has executed
+            if relation.id not in relation_data:
+                continue
+
+            self._update_endpoints(relation.id)
+
+    def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.
 
         Remove user, keeping database intact.
