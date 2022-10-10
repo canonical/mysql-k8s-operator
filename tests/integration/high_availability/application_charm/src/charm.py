@@ -17,7 +17,7 @@ from connector import MySQLConnector
 from ops.charm import ActionEvent, CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus
+from ops.model import ActiveStatus, WaitingStatus
 from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
 
 logger = logging.getLogger(__name__)
@@ -122,29 +122,27 @@ class ContinuousWritesApplication(CharmBase):
         proc = subprocess.Popen(["pkill", "--signal", "SIGKILL", "-f", "src/continuous_writes.py"])
         proc.communicate()
 
+        self._stored.continuous_writes_pid = None
+
         # Query and return the max value inserted in the database
         # (else -1 if unable to query)
         try:
             for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(5)):
                 with attempt:
-                    with MySQLConnector(self._database_config) as cursor:
-                        cursor.execute(
-                            f"SELECT MAX(number) FROM `{DATABASE_NAME}`.`{TABLE_NAME}`;"
-                        )
-                        last_written_value = int(cursor.fetchone()[0])
+                    last_written_value = self._max_written_value()
         except RetryError as e:
             logger.exception("Unable to query the database", exc_info=e)
             return -1
 
         return last_written_value
 
-    def _count_writes(self) -> int:
+    def _max_written_value(self) -> int:
         """Returns the count of rows in the continuous writes table."""
         if not self._database_config:
-            return 0
+            return -1
 
         with MySQLConnector(self._database_config) as cursor:
-            cursor.execute(f"SELECT COUNT(number) FROM `{DATABASE_NAME}`.`{TABLE_NAME}`;")
+            cursor.execute(f"SELECT MAX(number) FROM `{DATABASE_NAME}`.`{TABLE_NAME}`;")
             return cursor.fetchone()[0]
 
     # ==============
@@ -153,7 +151,7 @@ class ContinuousWritesApplication(CharmBase):
 
     def _on_start(self, _) -> None:
         """Handle the start event."""
-        self.unit.status = ActiveStatus()
+        self.unit.status = WaitingStatus()
 
     def _on_clear_continuous_writes_action(self, _) -> None:
         """Handle the clear continuous writes action event."""
@@ -182,10 +180,11 @@ class ContinuousWritesApplication(CharmBase):
     def _on_database_created(self, _) -> None:
         """Handle the database created event."""
         self._start_continuous_writes(1)
+        self.unit.status = ActiveStatus()
 
     def _on_endpoints_changed(self, _) -> None:
         """Handle the database endpoints changed event."""
-        count = self._count_writes()
+        count = self._max_written_value()
         self._start_continuous_writes(count + 1)
 
 

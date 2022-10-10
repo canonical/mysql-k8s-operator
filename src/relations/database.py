@@ -171,6 +171,9 @@ class DatabaseRelation(Object):
         Update a value in the peer app databag to trigger the peer_relation_changed
         handler which will in turn update the endpoints.
         """
+        if not self.charm.cluster_initialized:
+            return
+
         charm_unit_label = self.charm.unit.name.replace("/", "-")
         if not self.charm._mysql.is_instance_in_cluster(charm_unit_label):
             event.defer()
@@ -225,7 +228,7 @@ class DatabaseRelation(Object):
             logger.debug("Waiting for the cluster to be initialized")
             return
 
-        departing_unit_name = event.departing_Unit.name.replace("/", "-")
+        departing_unit_name = event.departing_unit.name.replace("/", "-")
 
         if self.charm._mysql.is_instance_in_cluster(departing_unit_name):
             logger.debug(f"Departing unit {departing_unit_name} still in cluster")
