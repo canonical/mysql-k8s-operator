@@ -84,6 +84,22 @@ class MySQLOperatorCharm(CharmBase):
         return self.model.get_relation(PEER)
 
     @property
+    def app_peer_data(self) -> Dict:
+        """Application peer relation data object."""
+        if self._peers is None:
+            return {}
+
+        return self._peers.data[self.app]
+
+    @property
+    def unit_peer_data(self) -> Dict:
+        """Unit peer relation data object."""
+        if self._peers is None:
+            return {}
+
+        return self._peers.data[self.unit]
+
+    @property
     def _mysql(self):
         """Returns an instance of the MySQL object from mysqlsh_helpers."""
         peer_data = self._peers.data[self.app]
@@ -432,22 +448,6 @@ class MySQLOperatorCharm(CharmBase):
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Get the cluster status without topology."""
         event.set_results(self._mysql.get_cluster_status())
-
-    @property
-    def app_peer_data(self) -> Dict:
-        """Application peer relation data object."""
-        if self._peers is None:
-            return {}
-
-        return self._peers.data[self.app]
-
-    @property
-    def unit_peer_data(self) -> Dict:
-        """Unit peer relation data object."""
-        if self._peers is None:
-            return {}
-
-        return self._peers.data[self.unit]
 
     def _get_secret(self, scope: str, key: str) -> Optional[str]:
         """Get secret from the secret storage."""

@@ -7,7 +7,12 @@ description: |
 summary: |
   Data platform libs application meant to be used
   only for testing high availability of the MySQL charm.
+
 requires:
   database:
     interface: mysql_client
     limit: 1
+
+peers:
+  application-peers:
+    interface: application-peers

@@ -10,26 +10,25 @@ high availability of the MySQL charm.
 
 import logging
 import subprocess
-from typing import Optional
+from typing import Dict, Optional
 
 from charms.data_platform_libs.v0.database_requires import DatabaseRequires
 from connector import MySQLConnector
 from ops.charm import ActionEvent, CharmBase
-from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import ActiveStatus, Relation, WaitingStatus
 from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
 
 logger = logging.getLogger(__name__)
 
 DATABASE_NAME = "continuous_writes_database"
+PEER = "application-peers"
+PROC_PID_KEY = "proc-pid"
 TABLE_NAME = "data"
 
 
 class ContinuousWritesApplication(CharmBase):
     """Application charm that continuously writes to MySQL."""
-
-    _stored = StoredState()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -55,6 +54,19 @@ class ContinuousWritesApplication(CharmBase):
     # ==============
     # Properties
     # ==============
+
+    @property
+    def _peers(self) -> Optional[Relation]:
+        """Retrieve the peer relation (`ops.model.Relation`)."""
+        return self.model.get_relation(PEER)
+
+    @property
+    def app_peer_data(self) -> Dict:
+        """Application peer relation data object."""
+        if self._peers is None:
+            return {}
+
+        return self._peers.data[self.app]
 
     @property
     def _database_config(self):
@@ -105,24 +117,21 @@ class ContinuousWritesApplication(CharmBase):
         )
 
         # Store the continuous writes process id in stored state to be able to stop it later
-        self._stored.continuous_writes_pid = proc.pid
+        self.app_peer_data[PROC_PID_KEY] = str(proc.pid)
 
     def _stop_continuous_writes(self) -> Optional[int]:
         """Stop continuous writes to the MySQL cluster and return the last written value."""
         if not self._database_config:
             return None
 
-        if (
-            not hasattr(self._stored, "continuous_writes_pid")
-            or not self._stored.continuous_writes_pid
-        ):
+        if not self.app_peer_data.get(PROC_PID_KEY):
             return None
 
         # Send a SIGKILL to the process and wait for the process to exit
         proc = subprocess.Popen(["pkill", "--signal", "SIGKILL", "-f", "src/continuous_writes.py"])
         proc.communicate()
 
-        self._stored.continuous_writes_pid = None
+        del self.app_peer_data[PROC_PID_KEY]
 
         # Query and return the max value inserted in the database
         # (else -1 if unable to query)
