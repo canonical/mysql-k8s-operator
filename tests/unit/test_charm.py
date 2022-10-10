@@ -62,8 +62,10 @@ class TestCharm(unittest.TestCase):
     @patch("mysqlsh_helpers.MySQL.create_cluster")
     @patch("mysqlsh_helpers.MySQL.create_custom_config_file")
     @patch("mysqlsh_helpers.MySQL.initialise_mysqld")
+    @patch("mysqlsh_helpers.MySQL.is_instance_in_cluster")
     def test_mysql_pebble_ready(
         self,
+        _is_instance_in_cluster,
         _initialise_mysqld,
         _create_custom_config_file,
         _create_cluster,

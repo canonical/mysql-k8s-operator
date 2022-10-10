@@ -2,19 +2,20 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import lightkube
 import logging
+from pathlib import Path
+
+import lightkube
 import pytest
 import yaml
-
+from helpers import get_cluster_status, get_primary_unit
 from lightkube.resources.core_v1 import Pod
-from pathlib import Path
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
 
-from helpers import get_cluster_status, get_primary_unit
-from tests.integration.high_availability.high_availability_helpers import get_max_written_value_in_database
-
+from tests.integration.high_availability.high_availability_helpers import (
+    get_max_written_value_in_database,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,9 @@ TIMEOUT = 15 * 60
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Build, deploy and relate the mysql and test applications."""
     mysql_charm = await ops_test.build_charm(".")
-    application_charm = await ops_test.build_charm("./tests/integration/high_availability/application_charm/")
+    application_charm = await ops_test.build_charm(
+        "./tests/integration/high_availability/application_charm/"
+    )
 
     mysql_config = {"cluster-name": CLUSTER_NAME}
     mysql_resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
@@ -51,7 +54,9 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             num_units=1,
         )
 
-        await ops_test.model.relate(f"{MYSQL_APP_NAME}:database", f"{APPLICATION_APP_NAME}:database")
+        await ops_test.model.relate(
+            f"{MYSQL_APP_NAME}:database", f"{APPLICATION_APP_NAME}:database"
+        )
 
         await ops_test.model.wait_for_idle(
             apps=[MYSQL_APP_NAME, APPLICATION_APP_NAME],
@@ -104,12 +109,18 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest) -> None:
             for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
                 with attempt:
                     cluster_status = await get_cluster_status(ops_test, mysql_unit)
-                    online_members = [label for label, member in cluster_status["defaultreplicaset"]["topology"].items() if member["status"] == "online"]
+                    online_members = [
+                        label
+                        for label, member in cluster_status["defaultreplicaset"][
+                            "topology"
+                        ].items()
+                        if member["status"] == "online"
+                    ]
                     assert len(online_members) == 3
                     break
         except RetryError:
             assert False, "Old primary has not come back online after being killed"
-        
+
     for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(3)):
         with attempt:
             for unit in ops_test.model.applications[MYSQL_APP_NAME].units:
