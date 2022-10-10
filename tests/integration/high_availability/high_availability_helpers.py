@@ -161,9 +161,7 @@ async def relate_mysql_and_application(
     await ops_test.model.relate(
         f"{application_name}:database", f"{mysql_application_name}:database"
     )
-    await ops_test.model.block_until(
-        lambda: is_relation_joined(ops_test, "database", "database")
-    )
+    await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "database", "database"))
 
 
 async def high_availability_test_setup(ops_test: OpsTest) -> Tuple[str, str]:
