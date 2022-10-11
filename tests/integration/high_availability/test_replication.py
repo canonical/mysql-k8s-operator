@@ -19,6 +19,7 @@ from lightkube.resources.core_v1 import Pod
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
 
+from tests.integration.high_availability.fixtures import continuous_writes
 from tests.integration.high_availability.high_availability_helpers import (
     deploy_and_scale_mysql,
     get_max_written_value_in_database,
@@ -31,17 +32,22 @@ TIMEOUT = 15 * 60
 
 
 @pytest.mark.order(1)
+@pytest.mark.replication_tests
+async def test_build_and_deploy(ops_test: OpsTest) -> None:
+    """Simple test to ensure that the mysql and application charms get deployed."""
+    await high_availability_test_setup(ops_test)
+
+
+@pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
-async def test_kill_primary_check_reelection(ops_test: OpsTest) -> None:
+async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_writes) -> None:
     """Test to kill the primary under load and ensure re-election of primary."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
     primary_name = primary.name
-
-    last_written_value = await get_max_written_value_in_database(ops_test, primary)
 
     # kill the primary pod
     client = lightkube.Client()
@@ -80,10 +86,11 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest) -> None:
         except RetryError:
             assert False, "Old primary has not come back online after being killed"
 
-    # For 2 minutes, ensure that data is being written in the database by the
-    # continuous writes application charm
+    last_written_value = await get_max_written_value_in_database(ops_test, primary)
+
     for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(3)):
         with attempt:
+            # ensure that all units are up to date (including the previous primary)
             for unit in ops_test.model.applications[mysql_application_name].units:
                 written_value = await get_max_written_value_in_database(ops_test, unit)
                 assert written_value > last_written_value, "Continuous writes not incrementing"
@@ -91,20 +98,15 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest) -> None:
                 last_written_value = written_value
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(3)
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
-async def test_check_consistency(ops_test: OpsTest) -> None:
+async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
     """Test to write to primary, and read the same data back from replicas."""
-    mysql_application_name, application_name = await high_availability_test_setup(ops_test)
-    application_unit = ops_test.model.applications[application_name].units[0]
+    mysql_application_name, _ = await high_availability_test_setup(ops_test)
 
     # assert that there are 3 units in the mysql cluster
     assert len(ops_test.model.applications[mysql_application_name].units) == 3
-
-    # stop the continuous writes for this test
-    clear_writes_action = await application_unit.run_action("clear-continuous-writes")
-    await clear_writes_action.wait()
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
@@ -150,20 +152,15 @@ async def test_check_consistency(ops_test: OpsTest) -> None:
             assert False, f"Unable to query inserted data from unit {unit.name}"
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(4)
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
-async def test_no_replication_across_clusters(ops_test: OpsTest) -> None:
+async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writes) -> None:
     """Test to ensure that writes to one cluster do not replicate to another cluster."""
-    mysql_application_name, application_name = await high_availability_test_setup(ops_test)
-    application_unit = ops_test.model.applications[application_name].units[0]
+    mysql_application_name, _ = await high_availability_test_setup(ops_test)
 
     # assert that there are 3 units in the mysql cluster
     assert len(ops_test.model.applications[mysql_application_name].units) == 3
-
-    # stop the continuous writes for this test
-    clear_writes_action = await application_unit.run_action("clear-continuous-writes")
-    await clear_writes_action.wait()
 
     # deploy another mysql application cluster with the same 'cluster-name'
     another_mysql_application_name = "another"
@@ -173,7 +170,7 @@ async def test_no_replication_across_clusters(ops_test: OpsTest) -> None:
         mysql_application_name=another_mysql_application_name,
     )
 
-    # insert some data into the mysql cluster
+    # insert some data into the first/original mysql cluster
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     mysql_primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
     mysql_primary_address = await get_unit_address(ops_test, mysql_primary.name)
@@ -246,6 +243,4 @@ async def test_no_replication_across_clusters(ops_test: OpsTest) -> None:
     await ops_test.model.remove_application(
         another_mysql_application_name,
         block_until_done=True,
-        force=True,
-        destroy_storage=True,
     )

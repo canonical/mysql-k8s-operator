@@ -176,6 +176,7 @@ class DatabaseRelation(Object):
 
         charm_unit_label = self.charm.unit.name.replace("/", "-")
         if not self.charm._mysql.is_instance_in_cluster(charm_unit_label):
+            logger.debug(f"Unit {self.charm.unit.name} is not yet a member of the cluster")
             event.defer()
             return
 
@@ -189,18 +190,13 @@ class DatabaseRelation(Object):
 
         Update the endpoints + read_only_endpoints.
         """
-        if not self.charm.unit.is_leader():
-            return
-
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not relations:
-            return
-
-        if not self.charm.cluster_initialized:
+        if not self.charm.unit.is_leader() or not relations or not self.charm.cluster_initialized:
             return
 
         event_unit_label = event.unit.name.replace("/", "-")
         if not self.charm._mysql.is_instance_in_cluster(event_unit_label):
+            logger.debug(f"Unit {event.unit.name} is not yet a member of the cluster")
             event.defer()
             return
 
@@ -217,15 +213,8 @@ class DatabaseRelation(Object):
 
         Update the endpoints + read_only_endpoints.
         """
-        if not self.charm.unit.is_leader():
-            return
-
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not relations:
-            return
-
-        if not self.charm.cluster_initialized:
-            logger.debug("Waiting for the cluster to be initialized")
+        if not self.charm.unit.is_leader() or not relations or not self.charm.cluster_initialized:
             return
 
         departing_unit_name = event.departing_unit.name.replace("/", "-")
@@ -245,14 +234,8 @@ class DatabaseRelation(Object):
 
     def _configure_endpoints(self, _) -> None:
         """Update the endpoints + read_only_endpoints."""
-        if not self.charm.unit.is_leader():
-            return
-
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not relations:
-            return
-
-        if not self.charm.cluster_initialized:
+        if not self.charm.unit.is_leader() or not relations or not self.charm.cluster_initialized:
             return
 
         relation_data = self.database.fetch_relation_data()

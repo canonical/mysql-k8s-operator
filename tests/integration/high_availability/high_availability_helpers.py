@@ -203,12 +203,4 @@ async def high_availability_test_setup(ops_test: OpsTest) -> Tuple[str, str]:
 
     await relate_mysql_and_application(ops_test, mysql_application_name, application_name)
 
-    application_unit = ops_test.model.applications[application_name].units[0]
-
-    clear_writes_action = await application_unit.run_action("clear-continuous-writes")
-    await clear_writes_action.wait()
-
-    start_writes_action = await application_unit.run_action("start-continuous-writes")
-    await start_writes_action.wait()
-
     return mysql_application_name, application_name
