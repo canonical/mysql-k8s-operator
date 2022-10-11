@@ -72,7 +72,11 @@ async def get_application_name(ops_test: OpsTest, application_name: str) -> str:
     return None
 
 
-async def deploy_and_scale_mysql(ops_test: OpsTest) -> str:
+async def deploy_and_scale_mysql(
+        ops_test: OpsTest,
+        check_for_existing_application: bool = True,
+        mysql_application_name: str = MYSQL_DEFAULT_APP_NAME,
+    ) -> str:
     """Deploys and scales the mysql application charm.
 
     Args:
@@ -80,7 +84,7 @@ async def deploy_and_scale_mysql(ops_test: OpsTest) -> str:
     """
     application_name = await get_application_name(ops_test, "mysql")
 
-    if application_name:
+    if check_for_existing_application and application_name:
         if len(ops_test.model.applications[application_name].units) != 3:
             async with ops_test.fast_forward():
                 await scale_application(ops_test, application_name, 3)
@@ -99,22 +103,22 @@ async def deploy_and_scale_mysql(ops_test: OpsTest) -> str:
     async with ops_test.fast_forward():
         await ops_test.model.deploy(
             mysql_charm,
-            application_name=MYSQL_DEFAULT_APP_NAME,
+            application_name=mysql_application_name,
             config=config,
             resources=resources,
             num_units=3,
         )
 
         await ops_test.model.wait_for_idle(
-            apps=[MYSQL_DEFAULT_APP_NAME],
+            apps=[mysql_application_name],
             status="active",
             raise_on_blocked=True,
             timeout=TIMEOUT,
         )
 
-        assert len(ops_test.model.applications[MYSQL_DEFAULT_APP_NAME].units) == 3
+        assert len(ops_test.model.applications[mysql_application_name].units) == 3
 
-    return MYSQL_DEFAULT_APP_NAME
+    return mysql_application_name
 
 
 async def deploy_and_scale_application(ops_test: OpsTest) -> str:
