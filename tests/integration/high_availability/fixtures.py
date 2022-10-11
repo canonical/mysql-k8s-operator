@@ -2,7 +2,6 @@
 # See LICENSE file for licensing details.
 
 import pytest
-
 from high_availability_helpers import get_application_name
 from pytest_operator.plugin import OpsTest
 

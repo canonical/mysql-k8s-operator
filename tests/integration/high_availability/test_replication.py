@@ -19,7 +19,6 @@ from lightkube.resources.core_v1 import Pod
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
 
-from tests.integration.high_availability.fixtures import continuous_writes
 from tests.integration.high_availability.high_availability_helpers import (
     deploy_and_scale_mysql,
     get_max_written_value_in_database,
