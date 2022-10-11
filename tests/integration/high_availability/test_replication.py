@@ -13,6 +13,7 @@ from helpers import (
     get_primary_unit,
     get_server_config_credentials,
     get_unit_address,
+    scale_application,
 )
 from lightkube.resources.core_v1 import Pod
 from pytest_operator.plugin import OpsTest
@@ -217,7 +218,9 @@ async def test_no_replication_across_clusters(ops_test: OpsTest) -> None:
 
     # ensure that the inserted data DOES NOT get replicated into the another mysql cluster
     another_mysql_unit = ops_test.model.applications[another_mysql_application_name].units[0]
-    another_mysql_primary = await get_primary_unit(ops_test, another_mysql_unit, another_mysql_application_name)
+    another_mysql_primary = await get_primary_unit(
+        ops_test, another_mysql_unit, another_mysql_application_name
+    )
     another_server_config_credentials = await get_server_config_credentials(another_mysql_primary)
 
     select_databases_sql = [
@@ -237,3 +240,12 @@ async def test_no_replication_across_clusters(ops_test: OpsTest) -> None:
         assert len(output) > 0
         assert "information_schema" in output
         assert database_name not in output
+
+    # remove another mysql application cluster
+    await scale_application(ops_test, another_mysql_application_name, 0)
+    await ops_test.model.remove_application(
+        another_mysql_application_name,
+        block_until_done=True,
+        force=True,
+        destroy_storage=True,
+    )

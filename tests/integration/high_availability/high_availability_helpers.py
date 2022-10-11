@@ -73,14 +73,17 @@ async def get_application_name(ops_test: OpsTest, application_name: str) -> str:
 
 
 async def deploy_and_scale_mysql(
-        ops_test: OpsTest,
-        check_for_existing_application: bool = True,
-        mysql_application_name: str = MYSQL_DEFAULT_APP_NAME,
-    ) -> str:
+    ops_test: OpsTest,
+    check_for_existing_application: bool = True,
+    mysql_application_name: str = MYSQL_DEFAULT_APP_NAME,
+) -> str:
     """Deploys and scales the mysql application charm.
 
     Args:
         ops_test: The ops test framework
+        check_for_existing_application: Whether to check for existing mysql applications
+            in the model
+        mysql_application_name: The name of the mysql application if it is to be deployed
     """
     application_name = await get_application_name(ops_test, "mysql")
 
