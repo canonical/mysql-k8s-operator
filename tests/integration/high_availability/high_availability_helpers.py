@@ -73,7 +73,11 @@ async def get_application_name(ops_test: OpsTest, application_name: str) -> str:
 
 
 async def deploy_and_scale_mysql(ops_test: OpsTest) -> str:
-    """Deploys and scales the mysql application charm."""
+    """Deploys and scales the mysql application charm.
+
+    Args:
+        ops_test: The ops test framework
+    """
     application_name = await get_application_name(ops_test, "mysql")
 
     if application_name:
@@ -114,11 +118,15 @@ async def deploy_and_scale_mysql(ops_test: OpsTest) -> str:
 
 
 async def deploy_and_scale_application(ops_test: OpsTest) -> str:
-    """Deploys and scales the test application charm."""
+    """Deploys and scales the test application charm.
+
+    Args:
+        ops_test: The ops test framework
+    """
     application_name = await get_application_name(ops_test, "application")
 
     if application_name:
-        if len(ops_test.model.application[application_name].units) != 1:
+        if len(ops_test.model.applications[application_name].units) != 1:
             async with ops_test.fast_forward():
                 await scale_application(ops_test, application_name, 1)
 
@@ -154,7 +162,13 @@ async def deploy_and_scale_application(ops_test: OpsTest) -> str:
 async def relate_mysql_and_application(
     ops_test: OpsTest, mysql_application_name: str, application_name: str
 ) -> None:
-    """Relates the mysql and application charms."""
+    """Relates the mysql and application charms.
+
+    Args:
+        ops_test: The ops test framework
+        mysql_application_name: The mysql charm application name
+        application_name: The continuous writes test charm application name
+    """
     if is_relation_joined(ops_test, "database", "database"):
         return
 
@@ -162,6 +176,13 @@ async def relate_mysql_and_application(
         f"{application_name}:database", f"{mysql_application_name}:database"
     )
     await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "database", "database"))
+
+    await ops_test.model.wait_for_idle(
+        apps=[mysql_application_name, application_name],
+        status="active",
+        raise_on_blocked=True,
+        timeout=TIMEOUT,
+    )
 
 
 async def high_availability_test_setup(ops_test: OpsTest) -> Tuple[str, str]:
