@@ -21,6 +21,7 @@ from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
 
 from tests.integration.high_availability.high_availability_helpers import (
     deploy_and_scale_mysql,
+    get_application_name,
     get_max_written_value_in_database,
     high_availability_test_setup,
 )
@@ -28,6 +29,22 @@ from tests.integration.high_availability.high_availability_helpers import (
 logger = logging.getLogger(__name__)
 
 TIMEOUT = 15 * 60
+
+
+@pytest.fixture(scope="module")
+async def continuous_writes(ops_test: OpsTest):
+    """Starts continuous writes to the MySQL cluster for a test and clear the writes at the end."""
+    application_name = await get_application_name(ops_test, "application")
+
+    application_unit = ops_test.model.applications[application_name].units[0]
+
+    start_writes_action = await application_unit.run_action("start-continuous-writes")
+    await start_writes_action.wait()
+
+    yield
+
+    clear_writes_action = await application_unit.run_action("clear-continuous-writes")
+    await clear_writes_action.wait()
 
 
 @pytest.mark.order(1)
