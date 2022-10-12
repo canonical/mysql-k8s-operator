@@ -354,7 +354,9 @@ class MySQLOperatorCharm(CharmBase):
                 self.unit.status = BlockedStatus("Unable to retrieve the cluster primary")
                 return
 
-            self._mysql.add_instance_to_cluster(new_instance_fqdn, new_instance_label, from_instance=cluster_primary)
+            self._mysql.add_instance_to_cluster(
+                new_instance_fqdn, new_instance_label, from_instance=cluster_primary
+            )
             logger.debug(f"Added instance {new_instance_fqdn} to cluster")
 
             # Update 'units-added-to-cluster' counter in the peer relation databag
