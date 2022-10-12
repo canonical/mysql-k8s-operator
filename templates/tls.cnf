@@ -1,0 +1,7 @@
+[mysqld]
+ssl_ca = "$tls_ssl_ca_file"
+ssl_cert = "$tls_ssl_cert_file"
+ssl_key = "$tls_ssl_key_file"
+group_replication_ssl_mode = VERIFY_CA
+group_replication_recovery_use_ssl = ON
+require_secure_transport = ON

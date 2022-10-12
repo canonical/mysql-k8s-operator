@@ -32,6 +32,9 @@ logger = logging.getLogger(__name__)
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
 MYSQLD_CONFIG_FILE = "/etc/mysql/conf.d/z-report-host-custom.cnf"
+MYSQL_SYSTEM_USER = "mysql"
+MYSQL_DATA_DIR = "/var/lib/mysql"
+MYSQLD_CONFIG_DIRECTORY = "/etc/mysql/conf.d"
 
 
 class MySQLInitialiseMySQLDError(Exception):
@@ -552,3 +555,30 @@ class MySQL(MySQLBase):
             return stdout
         except ExecError as e:
             raise MySQLClientError(e.stderr)
+
+    def write_content_to_file(
+        self,
+        path: str,
+        content: str,
+        owner: str = MYSQL_SYSTEM_USER,
+        group: str = MYSQL_SYSTEM_USER,
+        permission: int = 0o640,
+    ) -> None:
+        """Write content to file.
+
+        Args:
+            path: filesystem full path (with filename)
+            content: string content to write
+            owner: file owner
+            group: file group
+            permission: file permission
+        """
+        self.container.push(path, content, permissions=permission, user=owner, group=group)
+
+    def remove_file(self, path: str) -> None:
+        """Remove a file from container workload.
+
+        Args:
+            path: Full filesystem path to remove
+        """
+        self.container.remove_path(path)
