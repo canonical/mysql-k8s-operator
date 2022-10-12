@@ -38,6 +38,9 @@ async def continuous_writes(ops_test: OpsTest):
 
     application_unit = ops_test.model.applications[application_name].units[0]
 
+    stop_writes_action = await application_unit.run_action("stop-continuous-writes")
+    await stop_writes_action.wait()
+
     start_writes_action = await application_unit.run_action("start-continuous-writes")
     await start_writes_action.wait()
 
@@ -112,6 +115,59 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_write
                 assert written_value > last_written_value, "Continuous writes not incrementing"
 
                 last_written_value = written_value
+
+    # insert some data into the new primary and ensure that the writes get replicated
+    server_config_credentials = await get_server_config_credentials(new_primary)
+    new_primary_address = await get_unit_address(ops_test, new_primary_name)
+
+    value = generate_random_string(255)
+    database_name, table_name = "test-kill-primary-check-reelection", "data"
+    insert_value_sql = [
+        f"CREATE DATABASE IF NOT EXISTS `{database_name}`",
+        f"CREATE TABLE IF NOT EXISTS `{database_name}`.`{table_name}` (id varchar(255), primary key (id))",
+        f"INSERT INTO `{database_name}`.`{table_name}` (id) VALUES ('{value}')",
+    ]
+
+    await execute_queries_on_unit(
+        new_primary_address,
+        server_config_credentials["username"],
+        server_config_credentials["password"],
+        insert_value_sql,
+        commit=True,
+    )
+
+    select_value_sql = [
+        f"SELECT id FROM `{database_name}`.`{table_name}` WHERE id = '{value}'",
+    ]
+
+    try:
+        for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
+            with attempt:
+                for unit in ops_test.model.applications[mysql_application_name].units:
+                    unit_address = await get_unit_address(ops_test, unit.name)
+
+                    output = await execute_queries_on_unit(
+                        unit_address,
+                        server_config_credentials["username"],
+                        server_config_credentials["password"],
+                        select_value_sql,
+                    )
+                    assert output[0] == value
+    except RetryError:
+        assert False, "Cannot query inserted data from all units"
+
+    clean_up_database_and_table_sql = [
+        f"DROP TABLE IF EXISTS `{database_name}`.`{table_name}`",
+        f"DROP DATABASE IF EXISTS `{database_name}`",
+    ]
+
+    await execute_queries_on_unit(
+        new_primary_address,
+        server_config_credentials["username"],
+        server_config_credentials["password"],
+        clean_up_database_and_table_sql,
+        commit=True,
+    )
 
 
 @pytest.mark.order(3)
