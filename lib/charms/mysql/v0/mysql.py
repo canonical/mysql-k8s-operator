@@ -69,7 +69,7 @@ import json
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
 
@@ -83,7 +83,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 6
+LIBPATCH = 8
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -185,6 +185,14 @@ class MySQLUpgradeUserForMySQLRouterError(Error):
 
 class MySQLGrantPrivilegesToUserError(Error):
     """Exception raised when there is an issue granting privileges to user."""
+
+
+class MySQLGetMemberStateError(Error):
+    """Exception raised when there is an issue getting member state."""
+
+
+class MySQLRebootFromCompleteOutageError(Error):
+    """Exception raised when there is an issue rebooting from complete outage."""
 
 
 class MySQLBase(ABC):
@@ -379,15 +387,15 @@ class MySQLBase(ABC):
             # Using server_config_user as we are sure it has create database grants
             create_database_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
-                f'session.run_sql("CREATE DATABASE IF NOT EXISTS {database_name};")',
+                f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
             )
 
             escaped_user_attributes = json.dumps({"unit_name": unit_name}).replace('"', r"\"")
             # Using server_config_user as we are sure it has create user grants
             create_scoped_user_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
-                f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
-                f"session.run_sql(\"GRANT USAGE ON *.* TO '{username}'@`{hostname}`;\")",
+                f"session.run_sql(\"CREATE USER `{username}`@`{hostname}` IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
+                f'session.run_sql("GRANT USAGE ON *.* TO `{username}`@`{hostname}`;")',
                 f'session.run_sql("GRANT ALL PRIVILEGES ON `{database_name}`.* TO `{username}`@`{hostname}`;")',
             )
 
@@ -535,7 +543,9 @@ class MySQLBase(ABC):
             )
             raise MySQLInitializeJujuOperationsTableError(e.message)
 
-    def add_instance_to_cluster(self, instance_address: str, instance_unit_label: str) -> None:
+    def add_instance_to_cluster(
+        self, instance_address: str, instance_unit_label: str, from_instance: Optional[str] = None
+    ) -> None:
         """Add an instance to the InnoDB cluster.
 
         This method is only called from the juju leader unit (thus locks are
@@ -547,6 +557,7 @@ class MySQLBase(ABC):
         Args:
             instance_address: address of the instance to add to the cluster
             instance_unit_label: the label/name of the unit
+            from_instance: address of the adding instance, e.g. primary
         """
         options = {
             "password": self.cluster_admin_password,
@@ -554,7 +565,10 @@ class MySQLBase(ABC):
         }
 
         connect_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            (
+                f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}"
+                f"@{from_instance or self.instance_address}')"
+            ),
             f"cluster = dba.get_cluster('{self.cluster_name}')",
         )
 
@@ -615,6 +629,26 @@ class MySQLBase(ABC):
                 f"Failed to confirm instance configuration for {instance_address} with error {e.message}",
             )
             return False
+
+    def remove_obsoletes_instance(self, from_instance: Optional[str] = None) -> None:
+        """Purge obsoletes instances from cluster metadata.
+
+        Args:
+            from_instance: member instance to run the command from (fallback to current one)
+        """
+        auto_remove_command = (
+            (
+                f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@"
+                f"{from_instance or self.instance_address}')"
+            ),
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            "cluster.rescan({'removeInstances':'auto'})",
+        )
+        try:
+            logger.debug("Removing obsolete instances")
+            self._run_mysqlsh_script("\n".join(auto_remove_command))
+        except MySQLClientError:
+            logger.warning("No instance removed")
 
     def is_instance_in_cluster(self, unit_label: str) -> bool:
         """Confirm if instance is in the cluster.
@@ -961,7 +995,7 @@ class MySQLBase(ABC):
 
         Args:
             username: The username of user to grant privileges to
-            hostname: The hostname of user to grant priviliges to
+            hostname: The hostname of user to grant privileges to
             privileges: A list of privileges to grant to the user
             with_grant_option: Indicating whether to provide with grant option to user
 
@@ -1005,6 +1039,56 @@ class MySQLBase(ABC):
                 exc_info=e,
             )
             raise MySQLCheckUserExistenceError(e.message)
+
+    def get_member_state(self) -> Tuple[str, str]:
+        """Get member status in cluster.
+
+        Returns:
+            A tuple(str) with the MEMBER_STATE and MEMBER_ROLE within the cluster.
+        """
+        member_state_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            (
+                "raw_result=session.run_sql('SELECT MEMBER_STATE, MEMBER_ROLE FROM"
+                " performance_schema.replication_group_members WHERE MEMBER_ID = @@server_uuid;')"
+            ),
+            "result=raw_result.fetch_one()",
+            "print(result[0],result[1])",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(member_state_commands))
+        except MySQLClientError as e:
+            logger.error(
+                "Failed to get member state: mysqld daemon is down or unaccessible",
+            )
+            raise MySQLGetMemberStateError(e.message)
+
+        results = output.lower().split()
+        # MEMBER_ROLE is empty if member is not in a group
+        return results[0], results[1] if len(results) == 2 else "unknown"
+
+    def reboot_from_complete_outage(self, instance_names: Set[str]) -> None:
+        """Wrapper for reboot_cluster_from_complete_outage command.
+
+        Args:
+            instance_names: set of instance names (e.g. `juju-e3f183-4:3306`)
+        """
+        options = {"rejoinInstances": list(instance_names)}
+
+        rejoin_command = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"dba.reboot_cluster_from_complete_outage('{self.cluster_name}', {json.dumps(options)} )",
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(rejoin_command))
+        except MySQLClientError as e:
+            logger.exception(
+                "Failed to reboot cluster",
+                exc_info=e,
+            )
+            raise MySQLRebootFromCompleteOutageError(e.message)
 
     @abstractmethod
     def wait_until_mysql_connection(self) -> None:

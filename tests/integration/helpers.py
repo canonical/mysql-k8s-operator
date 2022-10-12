@@ -197,13 +197,14 @@ async def scale_application(
     await ops_test.model.applications[application_name].scale(desired_count)
 
     if desired_count > 0 and wait:
-        await ops_test.model.wait_for_idle(
-            apps=[application_name],
-            status="active",
-            timeout=(15 * 60),
-            wait_for_exact_units=desired_count,
-            raise_on_blocked=True,
-        )
+        async with ops_test.fast_forward():
+            await ops_test.model.wait_for_idle(
+                apps=[application_name],
+                status="active",
+                timeout=(15 * 60),
+                wait_for_exact_units=desired_count,
+                raise_on_blocked=True,
+            )
 
 
 def is_relation_joined(ops_test: OpsTest, endpoint_one: str, endpoint_two: str) -> bool:
