@@ -302,7 +302,7 @@ class MySQLOperatorCharm(CharmBase):
                 logger.debug("Cluster configured on unit")
                 # Create control file in data directory
                 container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
-                self._peers.data[self.app]["units-added-to-cluster"] = "1"
+                self.peers.data[self.app]["units-added-to-cluster"] = "1"
                 self.unit.status = ActiveStatus()
             except MySQLCreateClusterError as e:
                 self.unit.status = BlockedStatus("Unable to create cluster")
