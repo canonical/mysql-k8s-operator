@@ -2,13 +2,23 @@
 # See LICENSE file for licensing details.
 
 import itertools
+import json
 import secrets
 import string
+import yaml
 from typing import Dict, List
 
 import mysql.connector
+from connector import MysqlConnector
 from juju.unit import Unit
+from mysql.connector.errors import (
+    DatabaseError,
+    InterfaceError,
+    OperationalError,
+    ProgrammingError,
+)
 from pytest_operator.plugin import OpsTest
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from constants import SERVER_CONFIG_USERNAME
 
@@ -234,3 +244,116 @@ def is_relation_broken(ops_test: OpsTest, endpoint_one: str, endpoint_two: str) 
         if endpoint_one not in endpoints and endpoint_two not in endpoints:
             return True
     return False
+
+
+async def app_name(ops_test: OpsTest) -> str:
+    """Returns the name of the application running MySQL.
+
+    This is important since not all deployments of the MySQL charm have the application name
+    "mysql-k8s".
+
+    Note: if multiple clusters are running MySQL this will return the one first found.
+    """
+    status = await ops_test.model.get_status()
+    for app in ops_test.model.applications:
+        # note that format of the charm field is not exactly "mysql-k8s" but instead takes the form
+        # of `local:focal/mysql-6`
+        if "mysql-k8s" in status["applications"][app]["charm"]:
+            return app
+
+    return None
+
+
+@retry(stop=stop_after_attempt(8), wait=wait_fixed(15), reraise=True)
+def is_connection_possible(credentials: Dict, **extra_opts) -> bool:
+    """Test a connection to a MySQL server.
+
+    Args:
+        credentials: A dictionary with the credentials to test
+        extra_opts: extra options for mysql connection
+    """
+    config = {
+        "user": credentials["username"],
+        "password": credentials["password"],
+        "host": credentials["host"],
+        "raise_on_warnings": False,
+        "connection_timeout": 10,
+        **extra_opts,
+    }
+
+    try:
+        with MysqlConnector(config) as cursor:
+            cursor.execute("SELECT 1")
+            return cursor.fetchone()[0] == 1
+    except (DatabaseError, InterfaceError, OperationalError, ProgrammingError):
+        # Errors raised when the connection is not possible
+        return False
+
+
+async def get_process_pid(ops_test: OpsTest, unit_name: str, process: str) -> int:
+    """Return the pid of a process running in a given unit.
+
+    Args:
+        ops_test: The ops test object passed into every test case
+        unit_name: The name of the unit
+        process: The process name to search for
+    Returns:
+        A integer for the process id
+    """
+    try:
+        _, raw_pid, _ = await ops_test.juju(
+            "ssh", "--container", "mysql", unit_name, "pgrep", process
+        )
+        pid = int(raw_pid.strip())
+
+        return pid
+    except Exception:
+        return None
+
+
+async def get_tls_ca(
+    ops_test: OpsTest,
+    unit_name: str,
+) -> str:
+    """Returns the TLS CA used by the unit.
+
+    Args:
+        ops_test: The ops test framework instance
+        unit_name: The name of the unit
+
+    Returns:
+        TLS CA or an empty string if there is no CA.
+    """
+    raw_data = (await ops_test.juju("show-unit", unit_name))[1]
+    if not raw_data:
+        raise ValueError(f"no unit info could be grabbed for {unit_name}")
+    data = yaml.safe_load(raw_data)
+    # Filter the data based on the relation name.
+    relation_data = [
+        v for v in data[unit_name]["relation-info"] if v["endpoint"] == "certificates"
+    ]
+    if len(relation_data) == 0:
+        return ""
+    return json.loads(relation_data[0]["application-data"]["certificates"])[0].get("ca")
+
+
+async def unit_file_md5(ops_test: OpsTest, unit_name: str, file_path: str) -> str:
+    """Return md5 hash for given file.
+
+    Args:
+        ops_test: The ops test framework instance
+        unit_name: The name of the unit
+        file_path: The path to the file
+
+    Returns:
+        md5sum hash string
+    """
+    try:
+        _, md5sum_raw, _ = await ops_test.juju(
+            "ssh", "--container", "mysql", unit_name, "md5sum", file_path
+        )
+
+        return md5sum_raw.strip().split()[0]
+
+    except Exception:
+        return None

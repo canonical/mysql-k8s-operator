@@ -15,6 +15,7 @@ asyncio_mode = "auto"
 markers = [
     "charm_tests",
     "database_tests",
+    "tls_tests",
 ]
 
 # Formatting tools configuration
