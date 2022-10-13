@@ -6,7 +6,7 @@
 import mysql.connector
 
 
-class MysqlConnector:
+class MySQLConnector:
     """Context manager for mysql connector."""
 
     def __init__(self, config: dict, commit: bool = True):

@@ -9,7 +9,7 @@ from typing import Dict, List
 
 import mysql.connector
 import yaml
-from connector import MysqlConnector
+from connector import MySQLConnector
 from juju.unit import Unit
 from mysql.connector.errors import (
     DatabaseError,
@@ -282,7 +282,7 @@ def is_connection_possible(credentials: Dict, **extra_opts) -> bool:
     }
 
     try:
-        with MysqlConnector(config) as cursor:
+        with MySQLConnector(config) as cursor:
             cursor.execute("SELECT 1")
             return cursor.fetchone()[0] == 1
     except (DatabaseError, InterfaceError, OperationalError, ProgrammingError):
