@@ -5,10 +5,10 @@ import itertools
 import json
 import secrets
 import string
-import yaml
 from typing import Dict, List
 
 import mysql.connector
+import yaml
 from connector import MysqlConnector
 from juju.unit import Unit
 from mysql.connector.errors import (

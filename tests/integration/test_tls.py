@@ -12,8 +12,8 @@ from pytest_operator.plugin import OpsTest
 from constants import CLUSTER_ADMIN_USERNAME, TLS_SSL_CERT_FILE
 from tests.integration.helpers import (
     app_name,
-    get_process_pid,
     fetch_credentials,
+    get_process_pid,
     get_tls_ca,
     get_unit_address,
     is_connection_possible,
