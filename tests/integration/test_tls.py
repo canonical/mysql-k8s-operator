@@ -56,7 +56,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             apps=[APP_NAME],
             status="active",
             raise_on_blocked=True,
-            timeout=1000,
+            timeout=15 * 60,
         )
 
 
@@ -103,7 +103,7 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     async with ops_test.fast_forward():
         tls_config = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
         await ops_test.model.deploy(TLS_APP_NAME, channel="edge", config=tls_config)
-        await ops_test.model.wait_for_idle(apps=[TLS_APP_NAME], status="active", timeout=1000)
+        await ops_test.model.wait_for_idle(apps=[TLS_APP_NAME], status="active", timeout=15 * 60)
 
     # Relate with TLS charm
     logger.info("Relate to TLS operator")
@@ -111,10 +111,10 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
 
     # Wait for hooks start reconfiguring app
     await ops_test.model.block_until(
-        lambda: ops_test.model.applications[app].status != "active", timeout=200
+        lambda: ops_test.model.applications[app].status != "active", timeout=4 * 60
     )
 
-    await ops_test.model.wait_for_idle(status="active", timeout=1000)
+    await ops_test.model.wait_for_idle(status="active", timeout=15 * 60)
 
     # After relating to only encrypted connection should be possible
     logger.info("Asserting connections after relation")
@@ -163,9 +163,9 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
 
     # Wait for hooks start reconfiguring app
     await ops_test.model.block_until(
-        lambda: ops_test.model.applications[app].status != "active", timeout=200
+        lambda: ops_test.model.applications[app].status != "active", timeout=4 * 60
     )
-    await ops_test.model.wait_for_idle(apps=[app], status="active", timeout=1000)
+    await ops_test.model.wait_for_idle(apps=[app], status="active", timeout=15 * 60)
 
     # After updating both the external key and the internal key a new certificate request will be
     # made; then the certificates should be available and updated.
@@ -209,9 +209,9 @@ async def test_disable_tls(ops_test: OpsTest) -> None:
 
     # Wait for hooks start reconfiguring app
     await ops_test.model.block_until(
-        lambda: ops_test.model.applications[app].status != "active", timeout=200
+        lambda: ops_test.model.applications[app].status != "active", timeout=4 * 60
     )
-    await ops_test.model.wait_for_idle(apps=[app], status="active", timeout=1000)
+    await ops_test.model.wait_for_idle(apps=[app], status="active", timeout=15 * 60)
 
     # After relation removal both encrypted and unencrypted connection should be possible
     for unit in all_units:
