@@ -65,6 +65,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 @pytest.mark.abort_on_fail
 @pytest.mark.tls_tests
 async def test_connection_before_tls(ops_test: OpsTest) -> None:
+    """Ensure connections (with and without ssl) are possible before relating with TLS operator."""
     app = await app_name(ops_test)
     all_units = ops_test.model.applications[app].units
 
