@@ -85,7 +85,7 @@ jobs:
         run: tox -e integration-osm-mysql
 
   integration-test-microk8s-replication:
-    name: Integration replication relation tests (microk8s)
+    name: Integration replication tests (microk8s)
     needs:
       - lint
       - unit-test
@@ -102,3 +102,22 @@ jobs:
           bootstrap-options: "--agent-version 2.9.29"
       - name: Run replication integration tests
         run: tox -e integration-replication
+
+  integration-test-microk8s-self-healing:
+    name: Integration self healing tests (microk8s)
+    needs:
+      - lint
+      - unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
+          channel: 1.23/stable
+          bootstrap-options: "--agent-version 2.9.29"
+      - name: Run self healing integration tests
+        run: tox -e integration-self-healing

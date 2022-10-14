@@ -5,10 +5,13 @@ import logging
 from pathlib import Path
 from typing import Tuple
 
+import kubernetes
 import yaml
 from helpers import (
     execute_queries_on_unit,
+    generate_random_string,
     get_cluster_status,
+    get_primary_unit,
     get_server_config_credentials,
     get_unit_address,
     is_relation_joined,
@@ -231,3 +234,112 @@ async def high_availability_test_setup(ops_test: OpsTest) -> Tuple[str, str]:
     await relate_mysql_and_application(ops_test, mysql_application_name, application_name)
 
     return mysql_application_name, application_name
+
+
+async def send_signal_to_pod_container_process(
+    ops_test: OpsTest, unit_name: str, container_name: str, process: str, signal_code: str
+) -> None:
+    """Send the specified signal to a pod container process."""
+    kubernetes.config.load_kube_config()
+
+    pod_name = unit_name.replace("/", "-")
+
+    send_signal_command = f"pkill --signal {signal_code} -f {process}"
+    response = kubernetes.stream.stream(
+        kubernetes.client.api.core_v1_api.CoreV1Api().connect_get_namespaced_pod_exec,
+        pod_name,
+        ops_test.model.info.name,
+        container=container_name,
+        command=send_signal_command.split(),
+        stdin=False,
+        stdout=True,
+        stderr=True,
+        tty=False,
+        _preload_content=False,
+    )
+    response.run_forever(timeout=5)
+
+    assert (
+        response.returncode == 0
+    ), f"Failed to send {signal_code} signal, unit={unit_name}, container={container_name}, process={process}"
+
+
+async def insert_data_into_mysql_and_validate_replication(
+    ops_test: OpsTest,
+    database_name: str,
+    table_name: str,
+) -> None:
+    """Inserts data into the mysql cluster and validates its replication."""
+    mysql_application_name = await get_application_name(ops_test, "mysql")
+
+    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
+    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+
+    # insert some data into the new primary and ensure that the writes get replicated
+    server_config_credentials = await get_server_config_credentials(primary)
+    primary_address = await get_unit_address(ops_test, primary.name)
+
+    value = generate_random_string(255)
+    table_name = "data"
+    insert_value_sql = [
+        f"CREATE DATABASE IF NOT EXISTS `{database_name}`",
+        f"CREATE TABLE IF NOT EXISTS `{database_name}`.`{table_name}` (id varchar(255), primary key (id))",
+        f"INSERT INTO `{database_name}`.`{table_name}` (id) VALUES ('{value}')",
+    ]
+
+    await execute_queries_on_unit(
+        primary_address,
+        server_config_credentials["username"],
+        server_config_credentials["password"],
+        insert_value_sql,
+        commit=True,
+    )
+
+    select_value_sql = [
+        f"SELECT id FROM `{database_name}`.`{table_name}` WHERE id = '{value}'",
+    ]
+
+    try:
+        for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
+            with attempt:
+                for unit in ops_test.model.applications[mysql_application_name].units:
+                    unit_address = await get_unit_address(ops_test, unit.name)
+
+                    output = await execute_queries_on_unit(
+                        unit_address,
+                        server_config_credentials["username"],
+                        server_config_credentials["password"],
+                        select_value_sql,
+                    )
+                    assert output[0] == value
+    except RetryError:
+        assert False, "Cannot query inserted data from all units"
+
+    return value
+
+
+async def clean_up_database_and_table(
+    ops_test: OpsTest, database_name: str, table_name: str
+) -> None:
+    """Cleans the database and table created by insert_data_into_mysql_and_validate_replication."""
+    mysql_application_name = await get_application_name(ops_test, "mysql")
+
+    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
+
+    server_config_credentials = await get_server_config_credentials(mysql_unit)
+
+    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+    primary_address = await get_unit_address(ops_test, primary.name)
+
+    clean_up_database_and_table_sql = [
+        f"DROP TABLE IF EXISTS `{database_name}`.`{table_name}`",
+        f"DROP DATABASE IF EXISTS `{database_name}`",
+    ]
+
+    await execute_queries_on_unit(
+        primary_address,
+        server_config_credentials["username"],
+        server_config_credentials["password"],
+        clean_up_database_and_table_sql,
+        commit=True,
+    )
