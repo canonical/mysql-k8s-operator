@@ -18,3 +18,7 @@ SERVER_CONFIG_PASSWORD_KEY = "server-config-password"
 CLUSTER_ADMIN_PASSWORD_KEY = "cluster-admin-password"
 REQUIRED_USERNAMES = [ROOT_USERNAME, SERVER_CONFIG_USERNAME, CLUSTER_ADMIN_USERNAME]
 CONTAINER_RESTARTS = "unit-container-restarts"
+TLS_RELATION = "certificates"
+TLS_SSL_CA_FILE = "custom-ca.pem"
+TLS_SSL_KEY_FILE = "custom-server-key.pem"
+TLS_SSL_CERT_FILE = "custom-server-cert.pem"

@@ -311,7 +311,7 @@ async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writ
         assert database_name not in output
 
     # remove another mysql application cluster
-    await scale_application(ops_test, another_mysql_application_name, 0)
+    await scale_application(ops_test, another_mysql_application_name, 0, wait=False)
     await ops_test.model.remove_application(
         another_mysql_application_name,
         block_until_done=True,
