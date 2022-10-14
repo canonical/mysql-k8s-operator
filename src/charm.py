@@ -14,6 +14,7 @@ from charms.mysql.v0.mysql import (
     MySQLCreateClusterError,
     MySQLGetMySQLVersionError,
 )
+from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops.charm import (
     ActionEvent,
     CharmBase,
@@ -25,6 +26,7 @@ from ops.charm import (
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.pebble import Layer
+from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
 
 from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
@@ -48,6 +50,7 @@ from mysqlsh_helpers import (
 )
 from relations.database import DatabaseRelation
 from relations.mysql import MySQLRelation
+from relations.mysql_tls import MySQLTLS
 from relations.osm_mysql import MySQLOSMRelation
 from utils import generate_random_hash, generate_random_password
 
@@ -77,44 +80,48 @@ class MySQLOperatorCharm(CharmBase):
         self.mysql_relation = MySQLRelation(self)
         self.database_relation = DatabaseRelation(self)
         self.osm_mysql_relation = MySQLOSMRelation(self)
+        self.tls = MySQLTLS(self)
+        self.restart_manager = RollingOpsManager(
+            charm=self, relation="restart", callback=self._restart
+        )
 
     @property
-    def _peers(self):
+    def peers(self):
         """Retrieve the peer relation (`ops.model.Relation`)."""
         return self.model.get_relation(PEER)
 
     @property
     def _mysql(self):
         """Returns an instance of the MySQL object from mysqlsh_helpers."""
-        peer_data = self._peers.data[self.app]
+        peer_data = self.peers.data[self.app]
 
         return MySQL(
-            self._get_unit_fqdn(self.unit.name),
+            self.get_unit_hostname(self.unit.name),
             peer_data["cluster-name"],
-            self._get_secret("app", ROOT_PASSWORD_KEY),
+            self.get_secret("app", ROOT_PASSWORD_KEY),
             SERVER_CONFIG_USERNAME,
-            self._get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
+            self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
             CLUSTER_ADMIN_USERNAME,
-            self._get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),
+            self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),
             self.unit.get_container("mysql"),
         )
 
     @property
     def _is_peer_data_set(self):
-        peer_data = self._peers.data[self.app]
+        peer_data = self.peers.data[self.app]
 
         return (
             peer_data.get("cluster-name")
-            and self._get_secret("app", ROOT_PASSWORD_KEY)
-            and self._get_secret("app", SERVER_CONFIG_PASSWORD_KEY)
-            and self._get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
+            and self.get_secret("app", ROOT_PASSWORD_KEY)
+            and self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY)
+            and self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
             and peer_data.get("allowlist")
         )
 
     @property
     def cluster_initialized(self):
         """Returns True if the cluster is initialized."""
-        return self._peers.data[self.app].get("units-added-to-cluster", "0") >= "1"
+        return self.peers.data[self.app].get("units-added-to-cluster", "0") >= "1"
 
     @property
     def _pebble_layer(self) -> Layer:
@@ -136,7 +143,7 @@ class MySQLOperatorCharm(CharmBase):
             }
         )
 
-    def _get_unit_hostname(self, unit_name: str) -> str:
+    def get_unit_hostname(self, unit_name: str) -> str:
         """Get the hostname.localdomain for a unit.
 
         Translate juju unit name to hostname.localdomain, necessary
@@ -159,7 +166,7 @@ class MySQLOperatorCharm(CharmBase):
         Returns:
             A string representing the fqdn of the unit.
         """
-        return f"{self._get_unit_hostname(unit_name)}.{self.model.name}.svc.cluster.local"
+        return f"{self.get_unit_hostname(unit_name)}.{self.model.name}.svc.cluster.local"
 
     # =========================================================================
     # Charm event handlers
@@ -172,7 +179,7 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         # Set the cluster name in the peer relation databag if it is not already set
-        peer_data = self._peers.data[self.app]
+        peer_data = self.peers.data[self.app]
 
         if not peer_data.get("cluster-name"):
             peer_data["cluster-name"] = (
@@ -198,9 +205,9 @@ class MySQLOperatorCharm(CharmBase):
         ]
 
         for required_password in required_passwords:
-            if not self._get_secret("app", required_password):
+            if not self.get_secret("app", required_password):
                 logger.debug(f"Setting {required_password}")
-                self._set_secret(
+                self.set_secret(
                     "app", required_password, generate_random_password(PASSWORD_LENGTH)
                 )
 
@@ -254,8 +261,9 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.initialise_mysqld()
 
             # Create custom server config file
+            logger.debug("Create custom config")
             self._mysql.create_custom_config_file(
-                report_host=self._get_unit_hostname(self.unit.name)
+                report_host=self.get_unit_hostname(self.unit.name)
             )
 
             # Add the pebble layer
@@ -291,9 +299,10 @@ class MySQLOperatorCharm(CharmBase):
                 # Create the cluster when is the leader unit
                 unit_label = self.unit.name.replace("/", "-")
                 self._mysql.create_cluster(unit_label)
+                logger.debug("Cluster configured on unit")
                 # Create control file in data directory
                 container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
-                self._peers.data[self.app]["units-added-to-cluster"] = "1"
+                self.peers.data[self.app]["units-added-to-cluster"] = "1"
                 self.unit.status = ActiveStatus()
             except MySQLCreateClusterError as e:
                 self.unit.status = BlockedStatus("Unable to create cluster")
@@ -339,8 +348,8 @@ class MySQLOperatorCharm(CharmBase):
             # Update 'units-added-to-cluster' counter in the peer relation databag
             # in order to trigger a relation_changed event which will move the added unit
             # into ActiveStatus
-            units_started = int(self._peers.data[self.app]["units-added-to-cluster"])
-            self._peers.data[self.app]["units-added-to-cluster"] = str(units_started + 1)
+            units_started = int(self.peers.data[self.app]["units-added-to-cluster"])
+            self.peers.data[self.app]["units-added-to-cluster"] = str(units_started + 1)
 
         except MySQLAddInstanceToClusterError:
             logger.debug(f"Unable to add instance {new_instance_fqdn} to cluster.")
@@ -402,7 +411,7 @@ class MySQLOperatorCharm(CharmBase):
         else:
             raise RuntimeError("Invalid username.")
 
-        event.set_results({"username": username, "password": self._get_secret("app", secret_key)})
+        event.set_results({"username": username, "password": self.get_secret("app", secret_key)})
 
     def _on_set_password(self, event: ActionEvent) -> None:
         """Action used to update/rotate the system user's password."""
@@ -427,7 +436,7 @@ class MySQLOperatorCharm(CharmBase):
 
         self._mysql.update_user_password(username, new_password)
 
-        self._set_secret("app", secret_key, new_password)
+        self.set_secret("app", secret_key, new_password)
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Get the cluster status without topology."""
@@ -436,20 +445,20 @@ class MySQLOperatorCharm(CharmBase):
     @property
     def app_peer_data(self) -> Dict:
         """Application peer relation data object."""
-        if self._peers is None:
+        if self.peers is None:
             return {}
 
-        return self._peers.data[self.app]
+        return self.peers.data[self.app]
 
     @property
     def unit_peer_data(self) -> Dict:
         """Unit peer relation data object."""
-        if self._peers is None:
+        if self.peers is None:
             return {}
 
-        return self._peers.data[self.unit]
+        return self.peers.data[self.unit]
 
-    def _get_secret(self, scope: str, key: str) -> Optional[str]:
+    def get_secret(self, scope: str, key: str) -> Optional[str]:
         """Get secret from the secret storage."""
         if scope == "unit":
             return self.unit_peer_data.get(key, None)
@@ -458,7 +467,7 @@ class MySQLOperatorCharm(CharmBase):
         else:
             raise RuntimeError("Unknown secret scope.")
 
-    def _set_secret(self, scope: str, key: str, value: Optional[str]) -> None:
+    def set_secret(self, scope: str, key: str, value: Optional[str]) -> None:
         """Set secret in the secret storage."""
         if scope == "unit":
             if not value:
@@ -472,6 +481,32 @@ class MySQLOperatorCharm(CharmBase):
             self.app_peer_data.update({key: value})
         else:
             raise RuntimeError("Unknown secret scope.")
+
+    def _restart(self, _) -> None:
+        """Restart server rolling ops callback function.
+
+        Hold execution until server is back in the cluster.
+        Used exclusively for rolling restarts.
+        """
+        logger.debug("Restarting mysqld daemon")
+
+        container = self.unit.get_container("mysql")
+        container.restart(MYSQLD_SERVICE)
+
+        unit_label = self.unit.name.replace("/", "-")
+
+        try:
+            for attempt in Retrying(stop=stop_after_attempt(24), wait=wait_fixed(5)):
+                with attempt:
+                    if self._mysql.is_instance_in_cluster(unit_label):
+                        # TODO: update status setting to set message with
+                        # `self.active_status_message` once it gets merged
+                        self.unit.status = ActiveStatus()
+                        return
+                    raise Exception
+        except RetryError:
+            logger.error("Unable to rejoin mysqld instance to the cluster.")
+            self.unit.status = BlockedStatus("Restarted node unable to rejoin the cluster")
 
 
 if __name__ == "__main__":

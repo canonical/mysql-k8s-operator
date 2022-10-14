@@ -16,7 +16,7 @@ from charms.data_platform_libs.v0.database_requires import (
     DatabaseEndpointsChangedEvent,
     DatabaseRequires,
 )
-from connector import MysqlConnector
+from connector import MySQLConnector
 from mysql.connector.errors import DatabaseError
 from ops.charm import CharmBase, RelationChangedEvent
 from ops.main import main
@@ -69,7 +69,7 @@ class ApplicationCharm(CharmBase):
             "raise_on_warnings": False,
         }
 
-        with MysqlConnector(config) as cursor:
+        with MySQLConnector(config) as cursor:
             self._create_test_table(cursor)
 
             self._insert_test_data(
@@ -125,7 +125,7 @@ class ApplicationCharm(CharmBase):
         }
 
         # Assert data reads
-        with MysqlConnector(config, commit=False) as cursor:
+        with MySQLConnector(config, commit=False) as cursor:
             rows = self._read_test_data(cursor, remote_relation.id)
             first_row = rows[0]
             # username, password, endpoints, version, ro-endpoints
@@ -138,7 +138,7 @@ class ApplicationCharm(CharmBase):
         logger.info("Relation data replicated in the cluster")
 
         # Assert not data writes
-        with MysqlConnector(config, commit=True) as cursor:
+        with MySQLConnector(config, commit=True) as cursor:
             try:
                 self._insert_test_data(
                     cursor,
