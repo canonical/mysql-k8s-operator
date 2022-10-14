@@ -184,6 +184,30 @@ class MySQLOperatorCharm(CharmBase):
         """
         return f"{self.get_unit_hostname(unit_name)}.{self.model.name}.svc.cluster.local"
 
+    def get_secret(self, scope: str, key: str) -> Optional[str]:
+        """Get secret from the secret storage."""
+        if scope == "unit":
+            return self.unit_peer_data.get(key, None)
+        elif scope == "app":
+            return self.app_peer_data.get(key, None)
+        else:
+            raise RuntimeError("Unknown secret scope.")
+
+    def set_secret(self, scope: str, key: str, value: Optional[str]) -> None:
+        """Set secret in the secret storage."""
+        if scope == "unit":
+            if not value:
+                del self.unit_peer_data[key]
+                return
+            self.unit_peer_data.update({key: value})
+        elif scope == "app":
+            if not value:
+                del self.app_peer_data[key]
+                return
+            self.app_peer_data.update({key: value})
+        else:
+            raise RuntimeError("Unknown secret scope.")
+
     # =========================================================================
     # Charm event handlers
     # =========================================================================
@@ -457,46 +481,6 @@ class MySQLOperatorCharm(CharmBase):
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Get the cluster status without topology."""
         event.set_results(self._mysql.get_cluster_status())
-
-    @property
-    def app_peer_data(self) -> Dict:
-        """Application peer relation data object."""
-        if self.peers is None:
-            return {}
-
-        return self.peers.data[self.app]
-
-    @property
-    def unit_peer_data(self) -> Dict:
-        """Unit peer relation data object."""
-        if self.peers is None:
-            return {}
-
-        return self.peers.data[self.unit]
-
-    def get_secret(self, scope: str, key: str) -> Optional[str]:
-        """Get secret from the secret storage."""
-        if scope == "unit":
-            return self.unit_peer_data.get(key, None)
-        elif scope == "app":
-            return self.app_peer_data.get(key, None)
-        else:
-            raise RuntimeError("Unknown secret scope.")
-
-    def set_secret(self, scope: str, key: str, value: Optional[str]) -> None:
-        """Set secret in the secret storage."""
-        if scope == "unit":
-            if not value:
-                del self.unit_peer_data[key]
-                return
-            self.unit_peer_data.update({key: value})
-        elif scope == "app":
-            if not value:
-                del self.app_peer_data[key]
-                return
-            self.app_peer_data.update({key: value})
-        else:
-            raise RuntimeError("Unknown secret scope.")
 
     def _restart(self, _) -> None:
         """Restart server rolling ops callback function.
