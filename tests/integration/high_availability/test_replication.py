@@ -337,7 +337,7 @@ async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writ
 @pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
-async def test_preserves_data_on_delete(ops_test: OpsTest) -> None:
+async def test_scaling_without_data_loss(ops_test: OpsTest) -> None:
     """Test to ensure that data is preserved when a unit is scaled up and then down.
 
     Ensures that there are no running continuous writes as the extra data in the
