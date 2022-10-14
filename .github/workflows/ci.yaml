@@ -118,6 +118,5 @@ jobs:
           # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
           channel: 1.23/stable
           bootstrap-options: "--agent-version 2.9.29"
-    name: Integration tls relation tests
-      - name: Run osm-mysql relation integration tests
+      - name: Integration tls relation tests
         run: tox -e integration-tls
