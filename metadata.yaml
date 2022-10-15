@@ -30,6 +30,8 @@ resources:
 peers:
   database-peers:
     interface: mysql-peers
+  restart:
+    interface: rolling_op
 storage:
   database:
     type: filesystem
@@ -41,5 +43,9 @@ provides:
     interface: mysql_client
   osm-mysql:
     interface: mysql
+requires:
+  certificates:
+    interface: tls-certificates
+    limit: 1
 assumes:
   - k8s-api
