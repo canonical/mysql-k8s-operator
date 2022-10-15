@@ -8,6 +8,7 @@ from typing import Tuple
 import yaml
 from helpers import (
     execute_queries_on_unit,
+    get_cluster_status,
     get_server_config_credentials,
     get_unit_address,
     is_relation_joined,
@@ -15,6 +16,7 @@ from helpers import (
 )
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
+from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
 
 # Copied these values from high_availability.application_charm.src.charm
 DATABASE_NAME = "continuous_writes_database"
@@ -70,6 +72,31 @@ async def get_application_name(ops_test: OpsTest, application_name: str) -> str:
             return application
 
     return None
+
+
+async def ensure_n_online_mysql_members(ops_test: OpsTest, number_online_members: int) -> bool:
+    """Waits until N mysql cluster members are online.
+
+    Args:
+        ops_test: The ops test framework
+        number_online_members: Number of online members to wait for
+    """
+    mysql_application = await get_application_name(ops_test, "mysql")
+    mysql_unit = ops_test.model.applications[mysql_application].units[0]
+
+    try:
+        for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
+            with attempt:
+                cluster_status = await get_cluster_status(ops_test, mysql_unit)
+                online_members = [
+                    label
+                    for label, member in cluster_status["defaultreplicaset"]["topology"].items()
+                    if member["status"] == "online"
+                ]
+                assert len(online_members) == number_online_members
+                return True
+    except RetryError:
+        return False
 
 
 async def deploy_and_scale_mysql(

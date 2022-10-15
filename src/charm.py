@@ -382,7 +382,14 @@ class MySQLOperatorCharm(CharmBase):
 
         # Add new instance to the cluster
         try:
-            self._mysql.add_instance_to_cluster(new_instance_fqdn, new_instance_label)
+            cluster_primary = self._mysql.get_cluster_primary_address()
+            if not cluster_primary:
+                self.unit.status = BlockedStatus("Unable to retrieve the cluster primary")
+                return
+
+            self._mysql.add_instance_to_cluster(
+                new_instance_fqdn, new_instance_label, from_instance=cluster_primary
+            )
             logger.debug(f"Added instance {new_instance_fqdn} to cluster")
 
             # Update 'units-added-to-cluster' counter in the peer relation databag
@@ -393,7 +400,7 @@ class MySQLOperatorCharm(CharmBase):
 
         except MySQLAddInstanceToClusterError:
             logger.debug(f"Unable to add instance {new_instance_fqdn} to cluster.")
-            event.defer()
+            self.unit.status = BlockedStatus("Unable to add instance to cluster")
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
