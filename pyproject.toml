@@ -17,6 +17,7 @@ markers = [
     "database_tests",
     "replication_tests",
     "self_healing_tests",
+    "tls_tests",
 ]
 
 # Formatting tools configuration
@@ -26,6 +27,7 @@ target-version = ["py38"]
 
 [tool.isort]
 profile = "black"
+known_third_party = "mysql.connector"
 
 # Linting tools configuration
 [tool.flake8]
