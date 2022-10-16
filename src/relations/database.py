@@ -56,6 +56,7 @@ class DatabaseRelation(Object):
         self.framework.observe(self.charm.on[PEER].relation_changed, self._configure_endpoints)
         self.framework.observe(self.charm.on.leader_elected, self._configure_endpoints)
         self.framework.observe(self.charm.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
+        self.framework.observe(self.charm.on.update_status, self._configure_endpoints)
 
     # =============
     # Helpers

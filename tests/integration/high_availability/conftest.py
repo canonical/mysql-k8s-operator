@@ -14,8 +14,8 @@ async def continuous_writes(ops_test: OpsTest):
 
     application_unit = ops_test.model.applications[application_name].units[0]
 
-    stop_writes_action = await application_unit.run_action("stop-continuous-writes")
-    await stop_writes_action.wait()
+    clear_writes_action = await application_unit.run_action("clear-continuous-writes")
+    await clear_writes_action.wait()
 
     start_writes_action = await application_unit.run_action("start-continuous-writes")
     await start_writes_action.wait()

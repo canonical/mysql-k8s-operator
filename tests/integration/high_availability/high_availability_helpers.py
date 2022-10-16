@@ -239,29 +239,32 @@ async def high_availability_test_setup(ops_test: OpsTest) -> Tuple[str, str]:
 async def send_signal_to_pod_container_process(
     ops_test: OpsTest, unit_name: str, container_name: str, process: str, signal_code: str
 ) -> None:
-    """Send the specified signal to a pod container process."""
-    kubernetes.config.load_kube_config()
+    """Send the specified signal to a pod container process.
 
-    pod_name = unit_name.replace("/", "-")
+    Note: it is difficult to check for success of signal sent, since there is a
+    error (code 137) when sending the signal. Therefore, one needs to ensure that the
+    signal was sent successfully by other means (checking that the pid of process has
+    changed if it needs to change, etc.)
 
-    send_signal_command = f"pkill --signal {signal_code} -f {process}"
-    response = kubernetes.stream.stream(
-        kubernetes.client.api.core_v1_api.CoreV1Api().connect_get_namespaced_pod_exec,
-        pod_name,
-        ops_test.model.info.name,
-        container=container_name,
-        command=send_signal_command.split(),
-        stdin=False,
-        stdout=True,
-        stderr=True,
-        tty=False,
-        _preload_content=False,
-    )
-    response.run_forever(timeout=5)
-
-    assert (
-        response.returncode == 0
-    ), f"Failed to send {signal_code} signal, unit={unit_name}, container={container_name}, process={process}"
+    Args:
+        ops_test: The ops test framework
+        unit_name: The name of the unit to send signal to
+        container_name: The name of the container to send signal to
+        process: The name of the process to send signal to
+        signal_code: The code of the signal to send
+    """
+    send_signal_commands = [
+        "ssh",
+        "--container",
+        container_name,
+        unit_name,
+        "pkill",
+        "--signal",
+        signal_code,
+        "-f",
+        process,
+    ]
+    await ops_test.juju(*send_signal_commands)
 
 
 async def insert_data_into_mysql_and_validate_replication(
@@ -269,7 +272,11 @@ async def insert_data_into_mysql_and_validate_replication(
     database_name: str,
     table_name: str,
 ) -> None:
-    """Inserts data into the mysql cluster and validates its replication."""
+    """Inserts data into the mysql cluster and validates its replication.
+
+    database_name: The name of the database to create
+    table_name: The name of the table to create and insert data into
+    """
     mysql_application_name = await get_application_name(ops_test, "mysql")
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
@@ -321,7 +328,12 @@ async def insert_data_into_mysql_and_validate_replication(
 async def clean_up_database_and_table(
     ops_test: OpsTest, database_name: str, table_name: str
 ) -> None:
-    """Cleans the database and table created by insert_data_into_mysql_and_validate_replication."""
+    """Cleans the database and table created by insert_data_into_mysql_and_validate_replication.
+
+    Args:
+        database_name: The name of the database to drop
+        table_name: The name of the table to drop
+    """
     mysql_application_name = await get_application_name(ops_test, "mysql")
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
@@ -343,3 +355,22 @@ async def clean_up_database_and_table(
         clean_up_database_and_table_sql,
         commit=True,
     )
+
+
+async def ensure_all_units_continuous_writes_incrementing(ops_test: OpsTest) -> None:
+    """Ensure that continuous writes is incrementing on all units."""
+    mysql_application_name = await get_application_name(ops_test, "mysql")
+
+    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
+    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+
+    last_written_value = await get_max_written_value_in_database(ops_test, primary)
+
+    for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(3)):
+        with attempt:
+            # ensure that all units are up to date (including the previous primary)
+            for unit in ops_test.model.applications[mysql_application_name].units:
+                written_value = await get_max_written_value_in_database(ops_test, unit)
+                assert written_value > last_written_value, "Continuous writes not incrementing"
+
+                last_written_value = written_value

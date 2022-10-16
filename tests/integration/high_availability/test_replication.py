@@ -20,6 +20,7 @@ from tenacity import Retrying, stop_after_delay, wait_fixed
 from tests.integration.high_availability.high_availability_helpers import (
     clean_up_database_and_table,
     deploy_and_scale_mysql,
+    ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
     get_max_written_value_in_database,
     high_availability_test_setup,
@@ -46,6 +47,8 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_writes) -> None:
     """Test to kill the primary under load and ensure re-election of primary."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
@@ -76,16 +79,7 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_write
             ops_test, 3
         ), "Old primary has not come back online after being killed"
 
-    last_written_value = await get_max_written_value_in_database(ops_test, primary)
-
-    for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(3)):
-        with attempt:
-            # ensure that all units are up to date (including the previous primary)
-            for unit in ops_test.model.applications[mysql_application_name].units:
-                written_value = await get_max_written_value_in_database(ops_test, unit)
-                assert written_value > last_written_value, "Continuous writes not incrementing"
-
-                last_written_value = written_value
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
 
     database_name, table_name = "test-kill-primary-check-reelection", "data"
     await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
@@ -105,6 +99,8 @@ async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
     database_name, table_name = "test-check-consistency", "data"
     await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
     await clean_up_database_and_table(ops_test, database_name, table_name)
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
 @pytest.mark.order(2)

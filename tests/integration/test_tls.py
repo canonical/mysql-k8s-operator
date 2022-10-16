@@ -155,7 +155,7 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
         original_tls[unit.name]["cert"] = await unit_file_md5(
             ops_test, unit.name, f"/var/lib/mysql/{TLS_SSL_CERT_FILE}"
         )
-        original_tls[unit.name]["mysql_pid"] = await get_process_pid(ops_test, unit.name, "mysqld")
+        original_tls[unit.name]["mysql_pid"] = await get_process_pid(ops_test, unit.name, "mysql", "mysqld")
 
     # set key using auto-generated key for each unit
     for unit in ops_test.model.applications[app].units:
@@ -175,7 +175,7 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
         new_cert_md5 = await unit_file_md5(
             ops_test, unit.name, f"/var/lib/mysql/{TLS_SSL_CERT_FILE}"
         )
-        new_mysql_pid = await get_process_pid(ops_test, unit.name, "mysqld")
+        new_mysql_pid = await get_process_pid(ops_test, unit.name, "mysql", "mysqld")
 
         assert (
             new_cert_md5 != original_tls[unit.name]["cert"]
