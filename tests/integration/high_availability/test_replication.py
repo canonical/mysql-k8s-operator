@@ -22,7 +22,6 @@ from tests.integration.high_availability.high_availability_helpers import (
     deploy_and_scale_mysql,
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
-    get_max_written_value_in_database,
     high_availability_test_setup,
     insert_data_into_mysql_and_validate_replication,
 )

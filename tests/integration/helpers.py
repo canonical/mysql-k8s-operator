@@ -291,7 +291,9 @@ def is_connection_possible(credentials: Dict, **extra_opts) -> bool:
         return False
 
 
-async def get_process_pid(ops_test: OpsTest, unit_name: str, container_name: str, process: str) -> int:
+async def get_process_pid(
+    ops_test: OpsTest, unit_name: str, container_name: str, process: str
+) -> int:
     """Return the pid of a process running in a given unit.
 
     Args:
@@ -312,7 +314,9 @@ async def get_process_pid(ops_test: OpsTest, unit_name: str, container_name: str
     ]
     return_code, pid, _ = await ops_test.juju(*get_pid_commands)
 
-    assert return_code == 0, f"Failed getting pid, unit={unit_name}, container={container_name}, process={process}"
+    assert (
+        return_code == 0
+    ), f"Failed getting pid, unit={unit_name}, container={container_name}, process={process}"
     return int(pid.strip())
 
 

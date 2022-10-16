@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 from typing import Tuple
 
-import kubernetes
 import yaml
 from helpers import (
     execute_queries_on_unit,
@@ -331,6 +330,7 @@ async def clean_up_database_and_table(
     """Cleans the database and table created by insert_data_into_mysql_and_validate_replication.
 
     Args:
+        ops_test: The ops test framework
         database_name: The name of the database to drop
         table_name: The name of the table to drop
     """

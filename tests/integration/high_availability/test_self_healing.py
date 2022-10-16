@@ -60,10 +60,14 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
 
     new_mysql_pid = await get_process_pid(ops_test, primary.name, "mysql", "mysqld")
 
-    assert mysql_pid != new_mysql_pid, "The mysql process id is the same after sending it a SIGKILL"
+    assert (
+        mysql_pid != new_mysql_pid
+    ), "The mysql process id is the same after sending it a SIGKILL"
 
     new_primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
-    assert primary.name != new_primary.name, "The mysql primary has not been reelected after sending a SIGKILL"
+    assert (
+        primary.name != new_primary.name
+    ), "The mysql primary has not been reelected after sending a SIGKILL"
 
     async with ops_test.fast_forward():
         await ensure_all_units_continuous_writes_incrementing(ops_test)
