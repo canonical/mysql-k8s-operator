@@ -582,3 +582,21 @@ class MySQL(MySQLBase):
             path: Full filesystem path to remove
         """
         self.container.remove_path(path)
+
+    def check_if_mysqld_process_stopped(self) -> bool:
+        """Checks if the mysqld process is stopped on the container."""
+        command = ["ps", "-eo", "comm,stat"]
+
+        try:
+            process = self.container.exec(command)
+            stdout, _ = process.wait_output()
+
+            for line in stdout.strip().split("\n"):
+                [comm, stat] = line.split()
+
+                if comm == "mysqld":
+                    return "T" in stat
+
+            return False
+        except ExecError as e:
+            raise MySQLClientError(e.stderr)

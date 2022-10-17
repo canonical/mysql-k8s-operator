@@ -294,7 +294,7 @@ async def get_process_stat(
         "--container",
         container_name,
         unit_name,
-        f"ps aux | grep {process} | grep -v grep | awk '{{print $8}}'",
+        f"ps -eo comm,stat | grep {process} | awk '{{print $2}}'",
     ]
     return_code, stat, _ = await ops_test.juju(*get_stat_commands)
 
@@ -310,7 +310,7 @@ async def insert_data_into_mysql_and_validate_replication(
     database_name: str,
     table_name: str,
     mysql_units: Optional[List[Unit]] = None,
-) -> None:
+) -> str:
     """Inserts data into the mysql cluster and validates its replication.
 
     database_name: The name of the database to create

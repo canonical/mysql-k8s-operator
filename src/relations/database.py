@@ -3,8 +3,9 @@
 
 """Library containing the implementation of the standard relation."""
 
-
+import json
 import logging
+import time
 
 from charms.data_platform_libs.v0.database_provides import (
     DatabaseProvides,
@@ -28,7 +29,13 @@ from ops.charm import (
 from ops.framework import Object
 from ops.model import BlockedStatus
 
-from constants import CONTAINER_RESTARTS, DB_RELATION_NAME, PASSWORD_LENGTH, PEER
+from constants import (
+    CONTAINER_RESTARTS,
+    DB_RELATION_NAME,
+    PASSWORD_LENGTH,
+    PEER,
+    UNIT_ENDPOINTS_KEY,
+)
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -56,7 +63,7 @@ class DatabaseRelation(Object):
         self.framework.observe(self.charm.on[PEER].relation_changed, self._configure_endpoints)
         self.framework.observe(self.charm.on.leader_elected, self._configure_endpoints)
         self.framework.observe(self.charm.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
-        self.framework.observe(self.charm.on.update_status, self._configure_endpoints)
+        self.framework.observe(self.charm.on.update_status, self._on_update_status)
 
     # =============
     # Helpers
@@ -77,6 +84,41 @@ class DatabaseRelation(Object):
         relation.data[self.charm.app]["password"] = password
         return password
 
+    def _update_endpoints_from_unit_peer_data(self, relation_id: int) -> None:
+        """Updates the endpoints + read-only-endpoints in the relation from unit peer databag.
+
+        Args:
+            relation_id: The id of the relation for which to update the endpoints
+        """
+        logger.debug("Updating endpoints from unit peer data")
+
+        primary_endpoint, read_only_endpoints, latest_timestamp = None, None, -1
+
+        mysql_units = self.charm.model.relations[PEER][0].units
+        mysql_units.add(self.charm.unit)
+
+        # get the primary endpoint and read_only_endpoints from the latest timestamped
+        # unit peer databag
+        for unit in mysql_units:
+            unit_endpoints = self.charm.peers.data[unit].get(UNIT_ENDPOINTS_KEY)
+
+            if not unit_endpoints or unit_endpoints == "error":
+                continue
+
+            unit_endpoints = json.loads(unit_endpoints)
+
+            if unit_endpoints["timestamp"] > latest_timestamp:
+                primary_endpoint = unit_endpoints["endpoint"]
+                read_only_endpoints = unit_endpoints["read-only-endpoints"]
+                latest_timestamp = unit_endpoints["timestamp"]
+
+        # no-op if no endpoints exist in unit peer databag
+        if not primary_endpoint or not read_only_endpoints:
+            return
+
+        self.database.set_endpoints(relation_id, primary_endpoint)
+        self.database.set_read_only_endpoints(relation_id, read_only_endpoints)
+
     def _update_endpoints(self, relation_id: int) -> None:
         """Updates the endpoints + read-only-endpoints in the relation.
 
@@ -84,21 +126,35 @@ class DatabaseRelation(Object):
             relation_id: The id of the relation for which to update the endpoints
         """
         try:
+            # update endpoints from unit peer databag if mysqld stopped on this unit
+            if self.charm._mysql.check_if_mysqld_process_stopped():
+                self._update_endpoints_from_unit_peer_data(relation_id)
+                return
+
             logger.debug(f"Updating the endpoints for relation {relation_id}")
             primary_endpoint = self.charm._mysql.get_cluster_primary_address()
+            if not primary_endpoint:
+                self._update_endpoints_from_unit_peer_data(relation_id)
+                return
+
             self.database.set_endpoints(relation_id, primary_endpoint)
 
             logger.debug(f"Updating the read_only_endpoints for relation {relation_id}")
-            read_only_endpoints = sorted(
-                self.charm._mysql.get_cluster_members_addresses() - {primary_endpoint}
+            cluster_status = self.charm._mysql.get_cluster_status()
+            read_only_endpoints = ",".join(
+                [
+                    member["address"]
+                    for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+                    if member["status"] == "online"
+                ]
             )
-            self.database.set_read_only_endpoints(relation_id, ",".join(read_only_endpoints))
+            self.database.set_read_only_endpoints(relation_id, read_only_endpoints)
         except MySQLGetClusterMembersAddressesError as e:
             logger.exception("Failed to get cluster members", exc_info=e)
-            self.charm.unit.status = BlockedStatus("Failed to get cluster members")
+            self._update_endpoints_from_unit_peer_data(relation_id)
         except MySQLClientError as e:
             logger.exception("Failed to get primary", exc_info=e)
-            self.charm.unit.status = BlockedStatus("Failed to get primary")
+            self._update_endpoints_from_unit_peer_data(relation_id)
 
     # =============
     # Handlers
@@ -132,15 +188,17 @@ class DatabaseRelation(Object):
             self.database.set_credentials(relation_id, db_user, db_pass)
             self.database.set_endpoints(relation_id, primary_endpoint)
             self.database.set_version(relation_id, db_version)
-            # get read only endpoints by removing primary from all members
-            read_only_endpoints = sorted(
-                self.charm._mysql.get_cluster_members_addresses()
-                - {
-                    primary_endpoint,
-                }
+
+            cluster_status = self.charm._mysql.get_cluster_status()
+            read_only_endpoints = ",".join(
+                [
+                    member["address"]
+                    for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+                    if member["status"] == "online"
+                ]
             )
 
-            self.database.set_read_only_endpoints(relation_id, ",".join(read_only_endpoints))
+            self.database.set_read_only_endpoints(relation_id, read_only_endpoints)
             # TODO:
             # add setup of tls, tls_ca and status
             # add extra roles parsing from relation data
@@ -246,6 +304,53 @@ class DatabaseRelation(Object):
                 continue
 
             self._update_endpoints(relation.id)
+
+    def _on_update_status(self, _) -> None:
+        """Handle the update status event.
+
+        Primarily used to update the endpoints + read_only_endpoints.
+        """
+        if not self.charm.cluster_initialized or not self.charm.unit_initialized:
+            return
+
+        if self.charm.unit.is_leader():
+            # pass in None as the event as it is not being utilized in _configure_endpoints
+            self._configure_endpoints(None)
+
+        # do not set endpoints in unit peer databag if mysqld stopped on this unit
+        # (as mysqlsh commands will hang instead of failing due to the stopped process)
+        if self.charm._mysql.check_if_mysqld_process_stopped():
+            return
+
+        try:
+            primary_endpoint = self.charm._mysql.get_cluster_primary_address()
+            if not primary_endpoint:
+                return
+
+            cluster_status = self.charm._mysql.get_cluster_status()
+            read_only_endpoints = ",".join(
+                [
+                    member["address"]
+                    for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+                    if member["status"] == "online"
+                ]
+            )
+
+            unit_endpoints = json.loads(self.charm.unit_peer_data.get(UNIT_ENDPOINTS_KEY, "{}"))
+
+            if (
+                unit_endpoints.get("endpoint") != primary_endpoint
+                or unit_endpoints.get("read-only-endpoints") != read_only_endpoints
+            ):
+                self.charm.unit_peer_data[UNIT_ENDPOINTS_KEY] = json.dumps(
+                    {
+                        "endpoint": primary_endpoint,
+                        "read-only-endpoints": read_only_endpoints,
+                        "timestamp": int(time.time()),
+                    }
+                )
+        except (MySQLGetClusterMembersAddressesError, MySQLClientError):
+            self.charm.unit_peer_data[UNIT_ENDPOINTS_KEY] = "error"
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.

@@ -140,6 +140,11 @@ class MySQLOperatorCharm(CharmBase):
         return self.peers.data[self.app].get("units-added-to-cluster", "0") >= "1"
 
     @property
+    def unit_initialized(self):
+        """Return True if the unit is initialized."""
+        return self.unit_peer_data.get("unit-initialized") == "True"
+
+    @property
     def _pebble_layer(self) -> Layer:
         """Return a layer for the pebble service."""
         return Layer(
@@ -343,6 +348,7 @@ class MySQLOperatorCharm(CharmBase):
                 # Create control file in data directory
                 container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
                 self.peers.data[self.app]["units-added-to-cluster"] = "1"
+                self.unit_peer_data["unit-initialized"] = "True"
                 self.unit.status = ActiveStatus()
             except MySQLCreateClusterError as e:
                 self.unit.status = BlockedStatus("Unable to create cluster")
@@ -416,6 +422,7 @@ class MySQLOperatorCharm(CharmBase):
         if isinstance(self.unit.status, WaitingStatus) and self._mysql.is_instance_in_cluster(
             instance_label
         ):
+            self.unit_peer_data["unit-initialized"] = "True"
             self.unit.status = ActiveStatus()
             logger.debug(f"Instance {instance_label} is cluster member")
 

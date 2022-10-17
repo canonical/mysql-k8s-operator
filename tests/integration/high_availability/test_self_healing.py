@@ -144,14 +144,11 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
             )
             assert primary.name != new_primary.name, "new mysql primary was not elected"
 
-    # since endpoints (in database relation databag) cannot get updated
-    # (as sigstops are not detected in charm code), insert some random data in the
-    # remaining units and ensure you can query them as well
-    database_name, table_name = "test-freeze-db-process", "data"
-    await insert_data_into_mysql_and_validate_replication(
-        ops_test, database_name, table_name, remaining_online_units
-    )
-    await clean_up_database_and_table(ops_test, database_name, table_name)
+
+    async with ops_test.fast_forward():
+        for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
+            with attempt:
+                assert ensure_all_units_continuous_writes_incrementing(ops_test, remaining_online_units)
 
     await send_signal_to_pod_container_process(
         ops_test,
