@@ -317,7 +317,12 @@ async def get_process_pid(
     assert (
         return_code == 0
     ), f"Failed getting pid, unit={unit_name}, container={container_name}, process={process}"
-    return int(pid.strip())
+
+    stripped_pid = pid.strip()
+    if not stripped_pid:
+        return -1
+
+    return int(stripped_pid)
 
 
 async def get_tls_ca(

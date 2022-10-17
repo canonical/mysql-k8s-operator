@@ -3,8 +3,9 @@
 
 import logging
 from pathlib import Path
-from typing import Tuple
+from typing import List, Optional, Tuple
 
+import kubernetes
 import yaml
 from helpers import (
     execute_queries_on_unit,
@@ -76,15 +77,21 @@ async def get_application_name(ops_test: OpsTest, application_name: str) -> str:
     return None
 
 
-async def ensure_n_online_mysql_members(ops_test: OpsTest, number_online_members: int) -> bool:
+async def ensure_n_online_mysql_members(
+    ops_test: OpsTest, number_online_members: int, mysql_units: Optional[List[Unit]] = None
+) -> bool:
     """Waits until N mysql cluster members are online.
 
     Args:
         ops_test: The ops test framework
         number_online_members: Number of online members to wait for
+        mysql_units: Expected online mysql units
     """
     mysql_application = await get_application_name(ops_test, "mysql")
-    mysql_unit = ops_test.model.applications[mysql_application].units[0]
+
+    if not mysql_units:
+        mysql_units = ops_test.model.applications[mysql_application].units
+    mysql_unit = mysql_units[0]
 
     try:
         for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
@@ -240,11 +247,6 @@ async def send_signal_to_pod_container_process(
 ) -> None:
     """Send the specified signal to a pod container process.
 
-    Note: it is difficult to check for success of signal sent, since there is a
-    error (code 137) when sending the signal. Therefore, one needs to ensure that the
-    signal was sent successfully by other means (checking that the pid of process has
-    changed if it needs to change, etc.)
-
     Args:
         ops_test: The ops test framework
         unit_name: The name of the unit to send signal to
@@ -252,24 +254,62 @@ async def send_signal_to_pod_container_process(
         process: The name of the process to send signal to
         signal_code: The code of the signal to send
     """
-    send_signal_commands = [
+    kubernetes.config.load_kube_config()
+
+    pod_name = unit_name.replace("/", "-")
+
+    send_signal_command = f"pkill --signal {signal_code} -f {process}"
+    response = kubernetes.stream.stream(
+        kubernetes.client.api.core_v1_api.CoreV1Api().connect_get_namespaced_pod_exec,
+        pod_name,
+        ops_test.model.info.name,
+        container=container_name,
+        command=send_signal_command.split(),
+        stdin=False,
+        stdout=True,
+        stderr=True,
+        tty=False,
+        _preload_content=False,
+    )
+    response.run_forever(timeout=5)
+
+    assert (
+        response.returncode == 0
+    ), f"Failed to send {signal_code} signal, unit={unit_name}, container={container_name}, process={process}"
+
+
+async def get_process_stat(
+    ops_test: OpsTest, unit_name: str, container_name: str, process: str
+) -> str:
+    """Retrieve the STAT column of a process on a pod container.
+
+    Args:
+        ops_test: The ops test framework
+        unit_name: The name of the unit for the process
+        container_name: The name of the container for the process
+        process: The name of the process to get the STAT for
+    """
+    get_stat_commands = [
         "ssh",
         "--container",
         container_name,
         unit_name,
-        "pkill",
-        "--signal",
-        signal_code,
-        "-f",
-        process,
+        f"ps aux | grep {process} | grep -v grep | awk '{{print $8}}'",
     ]
-    await ops_test.juju(*send_signal_commands)
+    return_code, stat, _ = await ops_test.juju(*get_stat_commands)
+
+    assert (
+        return_code == 0
+    ), f"Failed to get STAT, unit_name={unit_name}, container_name={container_name}, process={process}"
+
+    return stat
 
 
 async def insert_data_into_mysql_and_validate_replication(
     ops_test: OpsTest,
     database_name: str,
     table_name: str,
+    mysql_units: Optional[List[Unit]] = None,
 ) -> None:
     """Inserts data into the mysql cluster and validates its replication.
 
@@ -278,8 +318,10 @@ async def insert_data_into_mysql_and_validate_replication(
     """
     mysql_application_name = await get_application_name(ops_test, "mysql")
 
-    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
-    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+    if not mysql_units:
+        mysql_units = ops_test.model.applications[mysql_application_name].units
+
+    primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
 
     # insert some data into the new primary and ensure that the writes get replicated
     server_config_credentials = await get_server_config_credentials(primary)
@@ -308,7 +350,7 @@ async def insert_data_into_mysql_and_validate_replication(
     try:
         for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
             with attempt:
-                for unit in ops_test.model.applications[mysql_application_name].units:
+                for unit in mysql_units:
                     unit_address = await get_unit_address(ops_test, unit.name)
 
                     output = await execute_queries_on_unit(
@@ -357,20 +399,25 @@ async def clean_up_database_and_table(
     )
 
 
-async def ensure_all_units_continuous_writes_incrementing(ops_test: OpsTest) -> None:
+async def ensure_all_units_continuous_writes_incrementing(
+    ops_test: OpsTest, mysql_units: Optional[List[Unit]] = None
+) -> None:
     """Ensure that continuous writes is incrementing on all units."""
     mysql_application_name = await get_application_name(ops_test, "mysql")
 
-    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
-    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+    if not mysql_units:
+        mysql_units = ops_test.model.applications[mysql_application_name].units
+
+    primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
 
     last_written_value = await get_max_written_value_in_database(ops_test, primary)
 
-    for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(3)):
-        with attempt:
-            # ensure that all units are up to date (including the previous primary)
-            for unit in ops_test.model.applications[mysql_application_name].units:
-                written_value = await get_max_written_value_in_database(ops_test, unit)
-                assert written_value > last_written_value, "Continuous writes not incrementing"
+    async with ops_test.fast_forward():
+        for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(10)):
+            with attempt:
+                # ensure that all units are up to date (including the previous primary)
+                for unit in mysql_units:
+                    written_value = await get_max_written_value_in_database(ops_test, unit)
+                    assert written_value > last_written_value, "Continuous writes not incrementing"
 
-                last_written_value = written_value
+                    last_written_value = written_value
