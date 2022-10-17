@@ -402,7 +402,11 @@ async def clean_up_database_and_table(
 async def ensure_all_units_continuous_writes_incrementing(
     ops_test: OpsTest, mysql_units: Optional[List[Unit]] = None
 ) -> None:
-    """Ensure that continuous writes is incrementing on all units."""
+    """Ensure that continuous writes is incrementing on all units.
+
+    Also, ensure that all continuous writes up to the max written value is available
+    on all units (ensure that no committed data is lost).
+    """
     mysql_application_name = await get_application_name(ops_test, "mysql")
 
     if not mysql_units:
@@ -410,14 +414,34 @@ async def ensure_all_units_continuous_writes_incrementing(
 
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
 
-    last_written_value = await get_max_written_value_in_database(ops_test, primary)
+    last_max_written_value = await get_max_written_value_in_database(ops_test, primary)
+
+    select_all_continuous_writes_sql = [f"SELECT * FROM `{DATABASE_NAME}`.`{TABLE_NAME}`"]
+    server_config_credentials = await get_server_config_credentials(mysql_units[0])
 
     async with ops_test.fast_forward():
         for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(10)):
             with attempt:
                 # ensure that all units are up to date (including the previous primary)
                 for unit in mysql_units:
-                    written_value = await get_max_written_value_in_database(ops_test, unit)
-                    assert written_value > last_written_value, "Continuous writes not incrementing"
+                    unit_address = await get_unit_address(ops_test, unit.name)
 
-                    last_written_value = written_value
+                    # ensure the max written value is incrementing (continuous writes is active)
+                    max_written_value = await get_max_written_value_in_database(ops_test, unit)
+                    assert (
+                        max_written_value > last_max_written_value
+                    ), "Continuous writes not incrementing"
+
+                    # ensure that the unit contains all values up to the max written value
+                    all_written_values = await execute_queries_on_unit(
+                        unit_address,
+                        server_config_credentials["username"],
+                        server_config_credentials["password"],
+                        select_all_continuous_writes_sql,
+                    )
+                    for number in range(1, max_written_value):
+                        assert (
+                            number in all_written_values
+                        ), f"Missing {number} in database for unit {unit.name}"
+
+                    last_max_written_value = max_written_value

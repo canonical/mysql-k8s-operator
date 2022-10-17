@@ -21,6 +21,9 @@ from tests.integration.high_availability.high_availability_helpers import (
 
 logger = logging.getLogger(__name__)
 
+MYSQL_CONTAINER_NAME = "mysql"
+MYSQLD_PROCESS_NAME = "mysqld"
+
 
 @pytest.mark.order(1)
 @pytest.mark.self_healing_tests
@@ -46,7 +49,9 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
         ops_test, 3
     ), "The deployed mysql application is not fully online"
 
-    mysql_pid = await get_process_pid(ops_test, primary.name, "mysql", "mysqld")
+    mysql_pid = await get_process_pid(
+        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+    )
 
     await send_signal_to_pod_container_process(
         ops_test,
@@ -60,8 +65,10 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
         ops_test, 3
     ), "The mysql application is not fully online after sending SIGKILL to primary"
 
-    new_mysql_pid = await get_process_pid(ops_test, primary.name, "mysql", "mysqld")
-
+    # ensure that the mysqld process got restarted and has a new process id
+    new_mysql_pid = await get_process_pid(
+        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+    )
     assert (
         mysql_pid != new_mysql_pid
     ), "The mysql process id is the same after sending it a SIGKILL"
@@ -71,11 +78,14 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
         primary.name != new_primary.name
     ), "The mysql primary has not been reelected after sending a SIGKILL"
 
+    # ensure continuous writes still incrementing for all units
     async with ops_test.fast_forward():
         await ensure_all_units_continuous_writes_incrementing(ops_test)
 
-    await insert_data_into_mysql_and_validate_replication(ops_test, "test-kill-db-process", "data")
-    await clean_up_database_and_table(ops_test, "test-kill-db-process", "data")
+    # ensure that we are able to insert data into the primary and have it replicated to all units
+    database_name, table_name = "test-kill-db-process", "data"
+    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
+    await clean_up_database_and_table(ops_test, database_name, table_name)
 
 
 @pytest.mark.order(2)
@@ -95,7 +105,9 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
         ops_test, 3
     ), "The deployed mysql application is not fully online"
 
-    mysql_pid = await get_process_pid(ops_test, primary.name, "mysql", "mysqld")
+    mysql_pid = await get_process_pid(
+        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+    )
     assert mysql_pid > 0, "mysql process id is not positive"
 
     await send_signal_to_pod_container_process(
@@ -106,8 +118,11 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
         "SIGSTOP",
     )
 
+    # ensure that the mysqld process is stopped after receiving the sigstop
+    # T = stopped by job control signal
+    # (see https://man7.org/linux/man-pages/man1/ps.1.html under PROCESS STATE CODES)
     mysql_process_stat_after_sigstop = await get_process_stat(
-        ops_test, primary.name, "mysql", "mysqld"
+        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
     )
     assert "T" in mysql_process_stat_after_sigstop, "mysql process is not stopped after sigstop"
 
@@ -117,6 +132,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
         if unit.name != primary.name
     ]
 
+    # retring as it may take time for the cluster to recognize that the primary process is stopped
     for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
         with attempt:
             assert await ensure_n_online_mysql_members(
@@ -145,17 +161,27 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
         "SIGCONT",
     )
 
+    # ensure that the mysqld process has started after receiving the sigstop
+    # T = stopped by job control signal
+    # R = running or runnable
+    # S = interruptible sleep
+    # I = idle kernel thread
+    # (see https://man7.org/linux/man-pages/man1/ps.1.html under PROCESS STATE CODES)
     mysql_process_stat_after_sigcont = await get_process_stat(
-        ops_test, primary.name, "mysql", "mysqld"
+        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
     )
     assert (
         "T" not in mysql_process_stat_after_sigcont
     ), "mysql process is not started after sigcont"
     assert (
-        "R" in mysql_process_stat_after_sigcont or "S" in mysql_process_stat_after_sigcont
+        "R" in mysql_process_stat_after_sigcont
+        or "S" in mysql_process_stat_after_sigcont
+        or "I" in mysql_process_stat_after_sigcont
     ), "mysql process not running or sleeping after sigcont"
 
-    new_mysql_pid = await get_process_pid(ops_test, primary.name, "mysql", "mysqld")
+    new_mysql_pid = await get_process_pid(
+        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+    )
     assert (
         new_mysql_pid == mysql_pid
     ), "mysql process id is not the same as it was before process was stopped"
