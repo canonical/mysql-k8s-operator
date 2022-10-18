@@ -144,7 +144,7 @@ class DatabaseRelation(Object):
             read_only_endpoints = ",".join(
                 [
                     member["address"]
-                    for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+                    for member in cluster_status["defaultreplicaset"]["topology"].values()
                     if member["status"] == "online"
                 ]
             )
@@ -193,7 +193,7 @@ class DatabaseRelation(Object):
             read_only_endpoints = ",".join(
                 [
                     member["address"]
-                    for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+                    for member in cluster_status["defaultreplicaset"]["topology"].values()
                     if member["status"] == "online"
                 ]
             )
@@ -310,7 +310,8 @@ class DatabaseRelation(Object):
 
         Primarily used to update the endpoints + read_only_endpoints.
         """
-        if not self.charm.cluster_initialized or not self.charm.unit_initialized:
+        container = self.charm.unit.get_container(self.charm.name)
+        if not container.can_connect() or not self.charm.cluster_initialized or not self.charm.unit_initialized:
             return
 
         if self.charm.unit.is_leader():
@@ -331,7 +332,7 @@ class DatabaseRelation(Object):
             read_only_endpoints = ",".join(
                 [
                     member["address"]
-                    for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+                    for member in cluster_status["defaultreplicaset"]["topology"].values()
                     if member["status"] == "online"
                 ]
             )
