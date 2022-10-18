@@ -597,6 +597,6 @@ class MySQL(MySQLBase):
                 if comm == "mysqld":
                     return "T" in stat
 
-            return False
+            return True
         except ExecError as e:
             raise MySQLClientError(e.stderr)
