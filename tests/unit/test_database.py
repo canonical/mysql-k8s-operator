@@ -26,7 +26,7 @@ SAMPLE_CLUSTER_STATUS = {
             "mysql-k8s/2": {
                 "address": "2.2.2.3:3306",
                 "status": "online",
-            }
+            },
         }
     }
 }
