@@ -311,7 +311,11 @@ class DatabaseRelation(Object):
         Primarily used to update the endpoints + read_only_endpoints.
         """
         container = self.charm.unit.get_container(self.charm.name)
-        if not container.can_connect() or not self.charm.cluster_initialized or not self.charm.unit_initialized:
+        if (
+            not container.can_connect()
+            or not self.charm.cluster_initialized
+            or not self.charm.unit_initialized
+        ):
             return
 
         if self.charm.unit.is_leader():
