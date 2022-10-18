@@ -32,6 +32,7 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONFIGURED_FILE,
+    CONTAINER_NAME,
     MYSQLD_SERVICE,
     PASSWORD_LENGTH,
     PEER,
@@ -504,7 +505,7 @@ class MySQLOperatorCharm(CharmBase):
         """
         logger.debug("Restarting mysqld daemon")
 
-        container = self.unit.get_container("mysql")
+        container = self.unit.get_container(CONTAINER_NAME)
         container.restart(MYSQLD_SERVICE)
 
         unit_label = self.unit.name.replace("/", "-")

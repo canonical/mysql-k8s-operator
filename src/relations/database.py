@@ -30,6 +30,7 @@ from ops.framework import Object
 from ops.model import BlockedStatus
 
 from constants import (
+    CONTAINER_NAME,
     CONTAINER_RESTARTS,
     DB_RELATION_NAME,
     PASSWORD_LENGTH,
@@ -310,7 +311,7 @@ class DatabaseRelation(Object):
 
         Primarily used to update the endpoints + read_only_endpoints.
         """
-        container = self.charm.unit.get_container(self.charm.name)
+        container = self.charm.unit.get_container(CONTAINER_NAME)
         if (
             not container.can_connect()
             or not self.charm.cluster_initialized
