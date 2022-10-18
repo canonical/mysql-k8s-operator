@@ -12,6 +12,25 @@ from constants import DB_RELATION_NAME
 
 APP_NAME = "mysql-k8s"
 
+SAMPLE_CLUSTER_STATUS = {
+    "defaultreplicaset": {
+        "topology": {
+            "mysql-k8s/0": {
+                "address": "2.2.2.1:3306",
+                "status": "online",
+            },
+            "mysql-k8s/1": {
+                "address": "2.2.2.2:3306",
+                "status": "gone_away",
+            },
+            "mysql-k8s/2": {
+                "address": "2.2.2.3:3306",
+                "status": "online",
+            }
+        }
+    }
+}
+
 
 class TestDatase(unittest.TestCase):
     def setUp(self):
@@ -25,21 +44,20 @@ class TestDatase(unittest.TestCase):
         self.charm = self.harness.charm
 
     @patch("mysqlsh_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
-    @patch(
-        "mysqlsh_helpers.MySQL.get_cluster_members_addresses",
-        return_value={"2.2.2.1:3306", "2.2.2.3:3306", "2.2.2.2:3306"},
-    )
     @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="2.2.2.2:3306")
     @patch("mysqlsh_helpers.MySQL.create_application_database_and_scoped_user")
+    @patch("mysqlsh_helpers.MySQL.get_cluster_status")
     @patch("relations.database.generate_random_password", return_value="super_secure_password")
     def test_database_requested(
         self,
         _generate_random_password,
+        _get_cluster_status,
         _create_application_database_and_scoped_user,
         _get_cluster_primary_address,
-        _get_cluster_members_addresses,
         _get_mysql_version,
     ):
+        _get_cluster_status.return_value = SAMPLE_CLUSTER_STATUS
+
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
         self.charm.on.config_changed.emit()
@@ -80,7 +98,7 @@ class TestDatase(unittest.TestCase):
         _generate_random_password.assert_called_once()
         _create_application_database_and_scoped_user.assert_called_once()
         _get_cluster_primary_address.assert_called_once()
-        _get_cluster_members_addresses.assert_called_once()
+        _get_cluster_status.assert_called_once()
         _get_mysql_version.assert_called_once()
 
     @patch("mysqlsh_helpers.MySQL.delete_user_for_relation")

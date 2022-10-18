@@ -144,11 +144,12 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
             )
             assert primary.name != new_primary.name, "new mysql primary was not elected"
 
-
     async with ops_test.fast_forward():
         for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
             with attempt:
-                assert ensure_all_units_continuous_writes_incrementing(ops_test, remaining_online_units)
+                assert ensure_all_units_continuous_writes_incrementing(
+                    ops_test, remaining_online_units
+                )
 
     await send_signal_to_pod_container_process(
         ops_test,
