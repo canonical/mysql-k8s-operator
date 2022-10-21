@@ -16,15 +16,18 @@ SAMPLE_CLUSTER_STATUS = {
     "defaultreplicaset": {
         "topology": {
             "mysql-k8s/0": {
-                "address": "2.2.2.1:3306",
+                "address": "2.2.2.2:3306",
+                "mode": "r/w",
                 "status": "online",
             },
             "mysql-k8s/1": {
-                "address": "2.2.2.2:3306",
+                "address": "2.2.2.1:3306",
+                "mode": "r/o",
                 "status": "gone_away",
             },
             "mysql-k8s/2": {
                 "address": "2.2.2.3:3306",
+                "mode": "r/0",
                 "status": "online",
             },
         }
@@ -44,7 +47,6 @@ class TestDatase(unittest.TestCase):
         self.charm = self.harness.charm
 
     @patch("mysqlsh_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="2.2.2.2:3306")
     @patch("mysqlsh_helpers.MySQL.create_application_database_and_scoped_user")
     @patch("mysqlsh_helpers.MySQL.get_cluster_status")
     @patch("relations.database.generate_random_password", return_value="super_secure_password")
@@ -53,7 +55,6 @@ class TestDatase(unittest.TestCase):
         _generate_random_password,
         _get_cluster_status,
         _create_application_database_and_scoped_user,
-        _get_cluster_primary_address,
         _get_mysql_version,
     ):
         _get_cluster_status.return_value = SAMPLE_CLUSTER_STATUS
@@ -91,13 +92,12 @@ class TestDatase(unittest.TestCase):
                 "username": f"relation-{self.database_relation_id}",
                 "endpoints": "2.2.2.2:3306",
                 "version": "8.0.29-0ubuntu0.20.04.3",
-                "read-only-endpoints": "2.2.2.1:3306,2.2.2.3:3306",
+                "read-only-endpoints": "2.2.2.2:3306,2.2.2.3:3306",
             },
         )
 
         _generate_random_password.assert_called_once()
         _create_application_database_and_scoped_user.assert_called_once()
-        _get_cluster_primary_address.assert_called_once()
         _get_cluster_status.assert_called_once()
         _get_mysql_version.assert_called_once()
 
