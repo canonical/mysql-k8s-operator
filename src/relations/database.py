@@ -15,7 +15,6 @@ from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLCreateApplicationDatabaseAndScopedUserError,
     MySQLDeleteUserForRelationError,
-    MySQLGetClusterMembersAddressesError,
     MySQLGetMySQLVersionError,
     MySQLGrantPrivilegesToUserError,
     MySQLUpgradeUserForMySQLRouterError,
@@ -132,16 +131,21 @@ class DatabaseRelation(Object):
                 self._update_endpoints_from_unit_peer_data(relation_id)
                 return
 
+            cluster_status = self.charm._mysql.get_cluster_status()
+
             logger.debug(f"Updating the endpoints for relation {relation_id}")
-            primary_endpoint = self.charm._mysql.get_cluster_primary_address()
-            if not primary_endpoint:
+            primary_endpoints = [
+                member["address"]
+                for member in cluster_status["defaultreplicaset"]["topology"].values()
+                if member["mode"] == "r/w" and member["status"] == "online"
+            ]
+            if not primary_endpoints:
                 self._update_endpoints_from_unit_peer_data(relation_id)
                 return
 
-            self.database.set_endpoints(relation_id, primary_endpoint)
+            self.database.set_endpoints(relation_id, primary_endpoints[0])
 
             logger.debug(f"Updating the read_only_endpoints for relation {relation_id}")
-            cluster_status = self.charm._mysql.get_cluster_status()
             read_only_endpoints = ",".join(
                 [
                     member["address"]
@@ -150,9 +154,6 @@ class DatabaseRelation(Object):
                 ]
             )
             self.database.set_read_only_endpoints(relation_id, read_only_endpoints)
-        except MySQLGetClusterMembersAddressesError as e:
-            logger.exception("Failed to get cluster members", exc_info=e)
-            self._update_endpoints_from_unit_peer_data(relation_id)
         except MySQLClientError as e:
             logger.exception("Failed to get primary", exc_info=e)
             self._update_endpoints_from_unit_peer_data(relation_id)
@@ -184,13 +185,23 @@ class DatabaseRelation(Object):
         remote_app = event.app.name
 
         try:
+            cluster_status = self.charm._mysql.get_cluster_status()
+            primary_endpoints = [
+                member["address"]
+                for member in cluster_status["defaultreplicaset"]["topology"].values()
+                if member["mode"] == "r/w" and member["status"] == "online"
+            ]
+            if not primary_endpoints:
+                logger.exception("Unable to retrieve primary endpoint address")
+                self.unit.status = BlockedStatus("Failed to get primary endpoint")
+                return
+
             db_version = self.charm._mysql.get_mysql_version()
-            primary_endpoint = self.charm._mysql.get_cluster_primary_address()
             self.database.set_credentials(relation_id, db_user, db_pass)
-            self.database.set_endpoints(relation_id, primary_endpoint)
             self.database.set_version(relation_id, db_version)
 
-            cluster_status = self.charm._mysql.get_cluster_status()
+            self.database.set_endpoints(relation_id, primary_endpoints[0])
+
             read_only_endpoints = ",".join(
                 [
                     member["address"]
@@ -217,7 +228,6 @@ class DatabaseRelation(Object):
         except (
             MySQLCreateApplicationDatabaseAndScopedUserError,
             MySQLGetMySQLVersionError,
-            MySQLGetClusterMembersAddressesError,
             MySQLClientError,
             MySQLUpgradeUserForMySQLRouterError,
             MySQLGrantPrivilegesToUserError,
@@ -329,11 +339,16 @@ class DatabaseRelation(Object):
             return
 
         try:
-            primary_endpoint = self.charm._mysql.get_cluster_primary_address()
-            if not primary_endpoint:
+            cluster_status = self.charm._mysql.get_cluster_status()
+
+            primary_endpoints = [
+                member["address"]
+                for member in cluster_status["defaultreplicaset"]["topology"].values()
+                if member["mode"] == "r/w" and member["status"] == "online"
+            ]
+            if not primary_endpoints:
                 return
 
-            cluster_status = self.charm._mysql.get_cluster_status()
             read_only_endpoints = ",".join(
                 [
                     member["address"]
@@ -345,17 +360,17 @@ class DatabaseRelation(Object):
             unit_endpoints = json.loads(self.charm.unit_peer_data.get(UNIT_ENDPOINTS_KEY, "{}"))
 
             if (
-                unit_endpoints.get("endpoint") != primary_endpoint
+                unit_endpoints.get("endpoint") != primary_endpoints[0]
                 or unit_endpoints.get("read-only-endpoints") != read_only_endpoints
             ):
                 self.charm.unit_peer_data[UNIT_ENDPOINTS_KEY] = json.dumps(
                     {
-                        "endpoint": primary_endpoint,
+                        "endpoint": primary_endpoints[0],
                         "read-only-endpoints": read_only_endpoints,
                         "timestamp": int(time.time()),
                     }
                 )
-        except (MySQLGetClusterMembersAddressesError, MySQLClientError):
+        except MySQLClientError:
             self.charm.unit_peer_data[UNIT_ENDPOINTS_KEY] = "error"
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
