@@ -241,6 +241,11 @@ class DatabaseRelation(Object):
         Update a value in the peer app databag to trigger the peer_relation_changed
         handler which will in turn update the endpoints.
         """
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            event.defer()
+            return
+
         if not self.charm.cluster_initialized:
             return
 

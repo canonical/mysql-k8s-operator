@@ -434,6 +434,11 @@ class MySQLOperatorCharm(CharmBase):
         Only on the leader, update the allowlist in the peer relation databag
         and remove unreachable instances from the cluster.
         """
+        container = self.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            event.defer()
+            return
+
         if not self.unit.is_leader():
             return
 
