@@ -15,6 +15,8 @@ asyncio_mode = "auto"
 markers = [
     "charm_tests",
     "database_tests",
+    "replication_tests",
+    "self_healing_tests",
     "tls_tests",
 ]
 

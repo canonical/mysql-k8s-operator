@@ -6,6 +6,7 @@
 PASSWORD_LENGTH = 24
 PEER = "database-peers"
 CONFIGURED_FILE = "/var/lib/mysql/charmed"
+CONTAINER_NAME = "mysql"
 MYSQLD_SERVICE = "mysqld"
 ROOT_USERNAME = "root"
 CLUSTER_ADMIN_USERNAME = "clusteradmin"
@@ -18,6 +19,7 @@ SERVER_CONFIG_PASSWORD_KEY = "server-config-password"
 CLUSTER_ADMIN_PASSWORD_KEY = "cluster-admin-password"
 REQUIRED_USERNAMES = [ROOT_USERNAME, SERVER_CONFIG_USERNAME, CLUSTER_ADMIN_USERNAME]
 CONTAINER_RESTARTS = "unit-container-restarts"
+UNIT_ENDPOINTS_KEY = "unit-endpoints"
 TLS_RELATION = "certificates"
 TLS_SSL_CA_FILE = "custom-ca.pem"
 TLS_SSL_KEY_FILE = "custom-server-key.pem"

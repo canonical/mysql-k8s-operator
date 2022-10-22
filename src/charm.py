@@ -32,6 +32,7 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONFIGURED_FILE,
+    CONTAINER_NAME,
     MYSQLD_SERVICE,
     PASSWORD_LENGTH,
     PEER,
@@ -138,6 +139,11 @@ class MySQLOperatorCharm(CharmBase):
     def cluster_initialized(self):
         """Returns True if the cluster is initialized."""
         return self.peers.data[self.app].get("units-added-to-cluster", "0") >= "1"
+
+    @property
+    def unit_initialized(self):
+        """Return True if the unit is initialized."""
+        return self.unit_peer_data.get("unit-initialized") == "True"
 
     @property
     def _pebble_layer(self) -> Layer:
@@ -343,6 +349,7 @@ class MySQLOperatorCharm(CharmBase):
                 # Create control file in data directory
                 container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
                 self.peers.data[self.app]["units-added-to-cluster"] = "1"
+                self.unit_peer_data["unit-initialized"] = "True"
                 self.unit.status = ActiveStatus()
             except MySQLCreateClusterError as e:
                 self.unit.status = BlockedStatus("Unable to create cluster")
@@ -416,6 +423,7 @@ class MySQLOperatorCharm(CharmBase):
         if isinstance(self.unit.status, WaitingStatus) and self._mysql.is_instance_in_cluster(
             instance_label
         ):
+            self.unit_peer_data["unit-initialized"] = "True"
             self.unit.status = ActiveStatus()
             logger.debug(f"Instance {instance_label} is cluster member")
 
@@ -426,6 +434,11 @@ class MySQLOperatorCharm(CharmBase):
         Only on the leader, update the allowlist in the peer relation databag
         and remove unreachable instances from the cluster.
         """
+        container = self.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            event.defer()
+            return
+
         if not self.unit.is_leader():
             return
 
@@ -497,7 +510,7 @@ class MySQLOperatorCharm(CharmBase):
         """
         logger.debug("Restarting mysqld daemon")
 
-        container = self.unit.get_container("mysql")
+        container = self.unit.get_container(CONTAINER_NAME)
         container.restart(MYSQLD_SERVICE)
 
         unit_label = self.unit.name.replace("/", "-")

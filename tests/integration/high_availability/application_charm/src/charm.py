@@ -169,7 +169,7 @@ class ContinuousWritesApplication(CharmBase):
 
         self._stop_continuous_writes()
         with MySQLConnector(self._database_config) as cursor:
-            cursor.execute(f"DROP TABLE `{DATABASE_NAME}`.`{TABLE_NAME}`;")
+            cursor.execute(f"DROP TABLE IF EXISTS `{DATABASE_NAME}`.`{TABLE_NAME}`;")
 
     def _on_start_continuous_writes_action(self, _) -> None:
         """Handle the start continuous writes action event."""
