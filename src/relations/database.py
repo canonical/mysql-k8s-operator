@@ -132,6 +132,9 @@ class DatabaseRelation(Object):
                 return
 
             cluster_status = self.charm._mysql.get_cluster_status()
+            if not cluster_status:
+                self._update_endpoints_from_unit_peer_data(relation_id)
+                return
 
             logger.debug(f"Updating the endpoints for relation {relation_id}")
             primary_endpoints = [
@@ -186,6 +189,10 @@ class DatabaseRelation(Object):
 
         try:
             cluster_status = self.charm._mysql.get_cluster_status()
+            if not cluster_status:
+                self.unit.status = BlockedStatus("Failed to get cluster status")
+                return
+
             primary_endpoints = [
                 member["address"]
                 for member in cluster_status["defaultreplicaset"]["topology"].values()
@@ -343,40 +350,39 @@ class DatabaseRelation(Object):
         if self.charm._mysql.check_if_mysqld_process_stopped():
             return
 
-        try:
-            cluster_status = self.charm._mysql.get_cluster_status()
+        cluster_status = self.charm._mysql.get_cluster_status()
+        if not cluster_status:
+            return
 
-            primary_endpoints = [
+        primary_endpoints = [
+            member["address"]
+            for member in cluster_status["defaultreplicaset"]["topology"].values()
+            if member["mode"] == "r/w" and member["status"] == "online"
+        ]
+        if not primary_endpoints:
+            return
+
+        read_only_endpoints = ",".join(
+            [
                 member["address"]
                 for member in cluster_status["defaultreplicaset"]["topology"].values()
-                if member["mode"] == "r/w" and member["status"] == "online"
+                if member["status"] == "online"
             ]
-            if not primary_endpoints:
-                return
+        )
 
-            read_only_endpoints = ",".join(
-                [
-                    member["address"]
-                    for member in cluster_status["defaultreplicaset"]["topology"].values()
-                    if member["status"] == "online"
-                ]
+        unit_endpoints = json.loads(self.charm.unit_peer_data.get(UNIT_ENDPOINTS_KEY, "{}"))
+
+        if (
+            unit_endpoints.get("endpoint") != primary_endpoints[0]
+            or unit_endpoints.get("read-only-endpoints") != read_only_endpoints
+        ):
+            self.charm.unit_peer_data[UNIT_ENDPOINTS_KEY] = json.dumps(
+                {
+                    "endpoint": primary_endpoints[0],
+                    "read-only-endpoints": read_only_endpoints,
+                    "timestamp": int(time.time()),
+                }
             )
-
-            unit_endpoints = json.loads(self.charm.unit_peer_data.get(UNIT_ENDPOINTS_KEY, "{}"))
-
-            if (
-                unit_endpoints.get("endpoint") != primary_endpoints[0]
-                or unit_endpoints.get("read-only-endpoints") != read_only_endpoints
-            ):
-                self.charm.unit_peer_data[UNIT_ENDPOINTS_KEY] = json.dumps(
-                    {
-                        "endpoint": primary_endpoints[0],
-                        "read-only-endpoints": read_only_endpoints,
-                        "timestamp": int(time.time()),
-                    }
-                )
-        except MySQLClientError:
-            self.charm.unit_peer_data[UNIT_ENDPOINTS_KEY] = "error"
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.
