@@ -56,8 +56,8 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
     await send_signal_to_pod_container_process(
         ops_test,
         primary.name,
-        "mysql",
-        "mysqld",
+        MYSQL_CONTAINER_NAME,
+        MYSQLD_PROCESS_NAME,
         "SIGKILL",
     )
 
@@ -113,8 +113,8 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     await send_signal_to_pod_container_process(
         ops_test,
         primary.name,
-        "mysql",
-        "mysqld",
+        MYSQL_CONTAINER_NAME,
+        MYSQLD_PROCESS_NAME,
         "SIGSTOP",
     )
 
@@ -154,8 +154,8 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     await send_signal_to_pod_container_process(
         ops_test,
         primary.name,
-        "mysql",
-        "mysqld",
+        MYSQL_CONTAINER_NAME,
+        MYSQLD_PROCESS_NAME,
         "SIGCONT",
     )
 
@@ -194,3 +194,62 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     ), "The deployed mysql application does not have three online nodes"
 
     await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+
+@pytest.mark.order(2)
+@pytest.mark.abort_on_fail
+@pytest.mark.self_healing_tests
+async def test_graceful_crash_of_priamry(ops_test: OpsTest, continuous_writes) -> None:
+    """Test to send SIGTERM to primary instance and then verify recovery"""
+    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+    assert await ensure_n_online_mysql_members(
+        ops_test, 3
+    ), "The deployed mysql application does not have three online nodes"
+
+    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
+    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+
+    mysql_pid = await get_process_pid(
+        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+    )
+
+    await send_signal_to_pod_container_process(
+        ops_test,
+        primary.name,
+        MYSQL_CONTAINER_NAME,
+        MYSQLD_PROCESS_NAME,
+        "SIGTERM",
+    )
+
+    new_mysql_pid = await get_process_pid(
+        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+    )
+    assert (
+        new_mysql_pid == mysql_pid
+    ), "mysql process id is not the same as it was before process was stopped"
+
+    remaining_online_units = [
+        unit
+        for unit in ops_test.model.applications[mysql_application_name].units
+        if unit.name != primary.name
+    ]
+
+    # retring as it may take time for the cluster to recognize that the primary process is stopped
+    for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(10)):
+        with attempt:
+            assert await ensure_n_online_mysql_members(
+                ops_test, 3
+            ), "The deployed mysql application does not have two online nodes"
+
+            new_primary = await get_primary_unit(
+                ops_test, remaining_online_units[0], mysql_application_name
+            )
+            assert primary.name != new_primary.name, "new mysql primary was not elected"
+
+    async with ops_test.fast_forward():
+        for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
+            with attempt:
+                assert ensure_all_units_continuous_writes_incrementing(ops_test)
