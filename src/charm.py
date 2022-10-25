@@ -13,6 +13,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
     MySQLGetMySQLVersionError,
+    MySQLRebootFromCompleteOutageError,
 )
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops.charm import (
@@ -513,6 +514,17 @@ class MySQLOperatorCharm(CharmBase):
         container = self.unit.get_container(CONTAINER_NAME)
         container.restart(MYSQLD_SERVICE)
 
+        # when restart done right after cluster creation (e.g bundles)
+        # or for single unit deployments, it's necessary reboot the
+        # cluster from outage to restore unit as primary
+        if self.app_peer_data["units-added-to-cluster"] == "1":
+            try:
+                self._mysql.reboot_from_complete_outage()
+            except MySQLRebootFromCompleteOutageError:
+                logger.error("Failed to restart single node cluster")
+                self.unit.status = BlockedStatus("Failed to restart primary")
+                return
+
         unit_label = self.unit.name.replace("/", "-")
 
         try:
@@ -523,10 +535,11 @@ class MySQLOperatorCharm(CharmBase):
                         # `self.active_status_message` once it gets merged
                         self.unit.status = ActiveStatus()
                         return
+                    logger.debug("Restarted instance not yet in cluster")
                     raise Exception
         except RetryError:
             logger.error("Unable to rejoin mysqld instance to the cluster.")
-            self.unit.status = BlockedStatus("Restarted node unable to rejoin the cluster")
+            self.unit.status = BlockedStatus("Restarted instance unable to rejoin the cluster")
 
 
 if __name__ == "__main__":
