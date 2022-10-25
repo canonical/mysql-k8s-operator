@@ -13,6 +13,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
     MySQLGetMySQLVersionError,
+    MySQLRebootFromCompleteOutageError,
 )
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops.charm import (
@@ -517,7 +518,12 @@ class MySQLOperatorCharm(CharmBase):
         # or for single unit deployments, it's necessary reboot the
         # cluster from outage to restore unit as primary
         if self.app_peer_data["units-added-to-cluster"] == "1":
-            self._mysql.reboot_from_complete_outage()
+            try:
+                self._mysql.reboot_from_complete_outage()
+            except MySQLRebootFromCompleteOutageError:
+                logger.error("Failed to restart single node cluster")
+                self.unit.status = BlockedStatus("Failed to restart primary")
+                return
 
         unit_label = self.unit.name.replace("/", "-")
 
