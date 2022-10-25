@@ -18,7 +18,7 @@ from charms.tls_certificates_interface.v1.tls_certificates import (
     generate_csr,
     generate_private_key,
 )
-from ops.charm import ActionEvent, CharmBase
+from ops.charm import ActionEvent, CharmBase, RelationJoinedEvent
 from ops.framework import Object
 from ops.model import MaintenanceStatus
 
@@ -66,6 +66,11 @@ class MySQLTLS(Object):
 
     def _on_certificate_available(self, event: CertificateAvailableEvent) -> None:
         """Enable TLS when TLS certificate available."""
+        if not self.charm.unit_initialized:
+            logger.debug("Wait unit initialise before request certificate.")
+            event.defer()
+            return
+
         if (
             event.certificate_signing_request.strip()
             != self.charm.get_secret(SCOPE, "csr").strip()
