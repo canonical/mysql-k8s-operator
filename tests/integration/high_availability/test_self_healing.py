@@ -199,7 +199,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
 @pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
-async def test_graceful_crash_of_priamry(ops_test: OpsTest, continuous_writes) -> None:
+async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send SIGTERM to primary instance and then verify recovery."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
 
@@ -242,7 +242,7 @@ async def test_graceful_crash_of_priamry(ops_test: OpsTest, continuous_writes) -
         with attempt:
             assert await ensure_n_online_mysql_members(
                 ops_test, 3
-            ), "The deployed mysql application does not have two online nodes"
+            ), "The deployed mysql application does not have three online nodes"
 
             new_primary = await get_primary_unit(
                 ops_test, remaining_online_units[0], mysql_application_name
