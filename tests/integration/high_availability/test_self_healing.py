@@ -200,7 +200,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
 async def test_graceful_crash_of_priamry(ops_test: OpsTest, continuous_writes) -> None:
-    """Test to send SIGTERM to primary instance and then verify recovery"""
+    """Test to send SIGTERM to primary instance and then verify recovery."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
 
     await ensure_all_units_continuous_writes_incrementing(ops_test)
