@@ -41,7 +41,7 @@ from utils import generate_random_password
 logger = logging.getLogger(__name__)
 
 
-class DatabaseRelation(Object):
+class MySQLProvider(Object):
     """Standard database relation class."""
 
     def __init__(self, charm):

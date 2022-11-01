@@ -13,7 +13,7 @@ from charms.mysql.v0.mysql import (
 )
 from ops.pebble import ExecError
 
-from mysqlsh_helpers import (
+from mysql_k8s_helpers import (
     MYSQLD_SOCK_FILE,
     MYSQLSH_SCRIPT_FILE,
     MySQL,
@@ -87,9 +87,9 @@ class TestMySQL(unittest.TestCase):
             self.mysql.initialise_mysqld()
 
     @patch("ops.model.Container")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlcli_script")
-    @patch("mysqlsh_helpers.MySQL.wait_until_mysql_connection")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
+    @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
     def test_configure_instance(
         self, _wait_until_mysql_connection, _run_mysqlcli_script, _run_mysqlsh_script, _container
     ):
@@ -105,8 +105,8 @@ class TestMySQL(unittest.TestCase):
         _wait_until_mysql_connection.assert_called_once()
 
     @patch("ops.model.Container")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
-    @patch("mysqlsh_helpers.MySQL.wait_until_mysql_connection")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
     def test_configure_instance_exceptions(
         self, _wait_until_mysql_connection, _run_mysqlsh_script, _container
     ):
@@ -133,7 +133,7 @@ class TestMySQL(unittest.TestCase):
 
         _run_mysqlsh_script.assert_called_once()
 
-    @patch("mysqlsh_helpers.MySQL._run_mysqlcli_script")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
     def test_configure_mysql_users(self, _run_mysqlcli_script):
         """Test failed to configuring the MySQL users."""
         privileges_to_revoke = (
@@ -167,7 +167,7 @@ class TestMySQL(unittest.TestCase):
 
         _run_mysqlcli_script.assert_called_once_with(_expected_configure_user_commands)
 
-    @patch("mysqlsh_helpers.MySQL._run_mysqlcli_script")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
     def test_configure_mysql_users_exception(self, _run_mysqlcli_script):
         """Test exceptions trying to configuring the MySQL users."""
         _run_mysqlcli_script.side_effect = MySQLClientError("Error running mysql")
@@ -175,9 +175,9 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLConfigureMySQLUsersError):
             self.mysql.configure_mysql_users()
 
-    @patch("mysqlsh_helpers.MySQL._wait_till_all_members_are_online")
-    @patch("mysqlsh_helpers.MySQL.get_cluster_status")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL._wait_till_all_members_are_online")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_status")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_remove_instances_not_online(
         self, _run_mysqlsh_script, _get_cluster_status, _wait_till_all_members_are_online
     ):
@@ -227,8 +227,8 @@ class TestMySQL(unittest.TestCase):
             ),
         )
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_status")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_status")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_remove_instances_not_online_exception(self, _run_mysqlsh_script, _get_cluster_status):
         """Test an exception while executing remove_instances_not_online."""
         # disable tenacity retry
@@ -246,8 +246,8 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLRemoveInstancesNotOnlineRetryError):
             self.mysql.remove_instances_not_online()
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_create_database(self, _run_mysqlsh_script, _get_cluster_primary_address):
         """Test successful execution of create_database."""
         _expected_create_database_commands = (
@@ -259,8 +259,8 @@ class TestMySQL(unittest.TestCase):
 
         _run_mysqlsh_script.assert_called_once_with("\n".join(_expected_create_database_commands))
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_create_database_exception(self, _run_mysqlsh_script, _get_cluster_primary_address):
         """Test exception while executing create_database."""
         _run_mysqlsh_script.side_effect = MySQLClientError("Error creating database")
@@ -268,8 +268,8 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLCreateDatabaseError):
             self.mysql.create_database("test_database")
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_create_user(self, _run_mysqlsh_script, _get_cluster_primary_address):
         """Test successful execution of create_user."""
         _escaped_attributes = json.dumps({"label": "test_label"}).replace('"', r"\"")
@@ -282,8 +282,8 @@ class TestMySQL(unittest.TestCase):
 
         _run_mysqlsh_script.assert_called_once_with("\n".join(_expected_create_user_commands))
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_create_user_exception(self, _run_mysqlsh_script, _get_cluster_primary_address):
         """Test exception while executing create_user."""
         _run_mysqlsh_script.side_effect = MySQLClientError("Error creating user")
@@ -291,8 +291,8 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLCreateUserError):
             self.mysql.create_user("test_user", "test_password", "test_label")
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_escalate_user_privileges(self, _run_mysqlsh_script, _get_cluster_primary_address):
         """Test successful execution of escalate_user_privileges."""
         super_privileges_to_revoke = (
@@ -321,8 +321,8 @@ class TestMySQL(unittest.TestCase):
             "\n".join(_expected_escalate_user_privileges_commands)
         )
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_escalate_user_privileges_exception(
         self, _run_mysqlsh_script, _get_cluster_primary_address
     ):
@@ -332,9 +332,9 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLEscalateUserPrivilegesError):
             self.mysql.escalate_user_privileges("test_user")
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlcli_script")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_delete_users_with_label(
         self, _run_mysqlsh_script, _run_mysqlcli_script, _get_cluster_primary_address
     ):
@@ -362,9 +362,9 @@ class TestMySQL(unittest.TestCase):
         )
         _run_mysqlsh_script.assert_called_once_with("\n".join(_expected_drop_users_commands))
 
-    @patch("mysqlsh_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlcli_script")
-    @patch("mysqlsh_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_delete_users_with_label_exception(
         self, _run_mysqlsh_script, _run_mysqlcli_script, _get_cluster_primary_address
     ):

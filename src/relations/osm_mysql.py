@@ -15,7 +15,7 @@ from ops.framework import Object
 from ops.model import BlockedStatus
 
 from constants import LEGACY_OSM_MYSQL, PASSWORD_LENGTH
-from mysqlsh_helpers import (
+from mysql_k8s_helpers import (
     MySQLCreateDatabaseError,
     MySQLCreateUserError,
     MySQLEscalateUserPrivilegesError,
@@ -50,13 +50,11 @@ class MySQLOSMRelation(Object):
         Returns:
             a string representing the password for the mysql user
         """
-        peer_databag = self.charm.peers.data[self.charm.app]
-
-        if peer_databag.get(f"{username}_password"):
-            return peer_databag.get(f"{username}_password")
+        if self.charm.app_peer_data.get(f"{username}_password"):
+            return self.charm.app_peer_data.get(f"{username}_password")
 
         password = generate_random_password(PASSWORD_LENGTH)
-        peer_databag[f"{username}_password"] = password
+        self.charm.app_peer_data[f"{username}_password"] = password
 
         return password
 
@@ -70,9 +68,7 @@ class MySQLOSMRelation(Object):
         if not self.charm._is_peer_data_set:
             return
 
-        relation_data = json.loads(
-            self.charm.peers.data[self.charm.app].get("osm_mysql_relation_data", "{}")
-        )
+        relation_data = json.loads(self.charm.app_peer_data("osm_mysql_relation_data", "{}"))
 
         for relation in self.charm.model.relations.get(LEGACY_OSM_MYSQL, []):
             relation_databag = relation.data
@@ -128,9 +124,7 @@ class MySQLOSMRelation(Object):
 
         # Only execute if the application user does not exist
         if user_exists:
-            osm_mysql_relation_data = self.charm.peers.data[self.charm.app][
-                "osm_mysql_relation_data"
-            ]
+            osm_mysql_relation_data = self.charm.app_peer_data["osm_mysql_relation_data"]
 
             updates = json.loads(osm_mysql_relation_data)
             event.relation.data[self.charm.unit].update(updates)
@@ -159,14 +153,14 @@ class MySQLOSMRelation(Object):
             "host": primary_address.split(":")[0],
             "password": password,
             "port": "3306",
-            "root_password": self.charm.peers.data[self.charm.app]["root-password"],
+            "root_password": self.charm.app_peer_data["root-password"],
             "user": username,
         }
 
         event.relation.data[self.charm.unit].update(updates)
 
         # Store the relation data into the peer relation databag
-        self.charm.peers.data[self.charm.app]["osm_mysql_relation_data"] = json.dumps(updates)
+        self.charm.app_peer_data["osm_mysql_relation_data"] = json.dumps(updates)
 
     def _on_osm_mysql_relation_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the 'mysql' legacy relation broken event.

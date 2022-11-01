@@ -27,14 +27,14 @@ from tenacity import (
     wait_random,
 )
 
-logger = logging.getLogger(__name__)
+from constants import (
+    MYSQL_SYSTEM_USER,
+    MYSQLD_CONFIG_FILE,
+    MYSQLD_SOCK_FILE,
+    MYSQLSH_SCRIPT_FILE,
+)
 
-MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
-MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
-MYSQLD_CONFIG_FILE = "/etc/mysql/conf.d/z-report-host-custom.cnf"
-MYSQL_SYSTEM_USER = "mysql"
-MYSQL_DATA_DIR = "/var/lib/mysql"
-MYSQLD_CONFIG_DIRECTORY = "/etc/mysql/conf.d"
+logger = logging.getLogger(__name__)
 
 
 class MySQLInitialiseMySQLDError(Exception):

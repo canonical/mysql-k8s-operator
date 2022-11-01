@@ -43,15 +43,15 @@ from constants import (
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
-from mysqlsh_helpers import (
+from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
     MySQLInitialiseMySQLDError,
     MySQLRemoveInstancesNotOnlineError,
     MySQLRemoveInstancesNotOnlineRetryError,
 )
-from relations.database import DatabaseRelation
 from relations.mysql import MySQLRelation
+from relations.mysql_provider import MySQLProvider
 from relations.mysql_tls import MySQLTLS
 from relations.osm_mysql import MySQLOSMRelation
 from utils import generate_random_hash, generate_random_password
@@ -80,7 +80,7 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.set_password_action, self._on_set_password)
 
         self.mysql_relation = MySQLRelation(self)
-        self.database_relation = DatabaseRelation(self)
+        self.database_relation = MySQLProvider(self)
         self.osm_mysql_relation = MySQLOSMRelation(self)
         self.tls = MySQLTLS(self)
         self.restart_manager = RollingOpsManager(
@@ -110,12 +110,10 @@ class MySQLOperatorCharm(CharmBase):
 
     @property
     def _mysql(self):
-        """Returns an instance of the MySQL object from mysqlsh_helpers."""
-        peer_data = self.peers.data[self.app]
-
+        """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
             self.get_unit_hostname(self.unit.name),
-            peer_data["cluster-name"],
+            self.app_peer_data["cluster-name"],
             self.get_secret("app", ROOT_PASSWORD_KEY),
             SERVER_CONFIG_USERNAME,
             self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
@@ -126,20 +124,18 @@ class MySQLOperatorCharm(CharmBase):
 
     @property
     def _is_peer_data_set(self):
-        peer_data = self.peers.data[self.app]
-
         return (
-            peer_data.get("cluster-name")
+            self.app_peer_data.get("cluster-name")
             and self.get_secret("app", ROOT_PASSWORD_KEY)
             and self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY)
             and self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
-            and peer_data.get("allowlist")
+            and self.app_peer_data.get("allowlist")
         )
 
     @property
     def cluster_initialized(self):
         """Returns True if the cluster is initialized."""
-        return self.peers.data[self.app].get("units-added-to-cluster", "0") >= "1"
+        return self.app_peer_data.get("units-added-to-cluster", "0") >= "1"
 
     @property
     def unit_initialized(self):
@@ -226,16 +222,14 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         # Set the cluster name in the peer relation databag if it is not already set
-        peer_data = self.peers.data[self.app]
-
-        if not peer_data.get("cluster-name"):
-            peer_data["cluster-name"] = (
+        if not self.app_peer_data.get("cluster-name"):
+            self.app_peer_data["cluster-name"] = (
                 self.config.get("cluster-name") or f"cluster_{generate_random_hash()}"
             )
 
         # initialise allowlist with leader hostname
-        if not peer_data.get("allowlist"):
-            peer_data["allowlist"] = f"{self._get_unit_fqdn(self.unit.name)}"
+        if not self.app_peer_data.get("allowlist"):
+            self.app_peer_data["allowlist"] = f"{self._get_unit_fqdn(self.unit.name)}"
 
     def _on_leader_elected(self, event: LeaderElectedEvent) -> None:
         """Handle the leader elected event.
@@ -349,7 +343,7 @@ class MySQLOperatorCharm(CharmBase):
                 logger.debug("Cluster configured on unit")
                 # Create control file in data directory
                 container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
-                self.peers.data[self.app]["units-added-to-cluster"] = "1"
+                self.app_peer_data["units-added-to-cluster"] = "1"
                 self.unit_peer_data["unit-initialized"] = "True"
                 self.unit.status = ActiveStatus()
             except MySQLCreateClusterError as e:
@@ -403,8 +397,8 @@ class MySQLOperatorCharm(CharmBase):
             # Update 'units-added-to-cluster' counter in the peer relation databag
             # in order to trigger a relation_changed event which will move the added unit
             # into ActiveStatus
-            units_started = int(self.peers.data[self.app]["units-added-to-cluster"])
-            self.peers.data[self.app]["units-added-to-cluster"] = str(units_started + 1)
+            units_started = int(self.app_peer_data["units-added-to-cluster"])
+            self.app_peer_data["units-added-to-cluster"] = str(units_started + 1)
 
         except MySQLAddInstanceToClusterError:
             logger.debug(f"Unable to add instance {new_instance_fqdn} to cluster.")
