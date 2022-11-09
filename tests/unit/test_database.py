@@ -46,10 +46,12 @@ class TestDatase(unittest.TestCase):
         self.harness.add_relation_unit(self.database_relation_id, "app/0")
         self.charm = self.harness.charm
 
-    @patch("mysqlsh_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
-    @patch("mysqlsh_helpers.MySQL.create_application_database_and_scoped_user")
-    @patch("mysqlsh_helpers.MySQL.get_cluster_status")
-    @patch("relations.database.generate_random_password", return_value="super_secure_password")
+    @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
+    @patch("mysql_k8s_helpers.MySQL.create_application_database_and_scoped_user")
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_status")
+    @patch(
+        "relations.mysql_provider.generate_random_password", return_value="super_secure_password"
+    )
     def test_database_requested(
         self,
         _generate_random_password,
@@ -101,7 +103,7 @@ class TestDatase(unittest.TestCase):
         _get_cluster_status.assert_called_once()
         _get_mysql_version.assert_called_once()
 
-    @patch("mysqlsh_helpers.MySQL.delete_user_for_relation")
+    @patch("mysql_k8s_helpers.MySQL.delete_user_for_relation")
     def test_database_broken(self, _delete_user_for_relation):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
@@ -111,7 +113,7 @@ class TestDatase(unittest.TestCase):
 
         _delete_user_for_relation.assert_called_once_with(self.database_relation_id)
 
-    @patch("mysqlsh_helpers.MySQL.delete_user_for_relation")
+    @patch("mysql_k8s_helpers.MySQL.delete_user_for_relation")
     def test_database_broken_failure(self, _delete_user_for_relation):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)

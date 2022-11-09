@@ -9,8 +9,9 @@ from unittest.mock import MagicMock, PropertyMock, patch
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import PASSWORD_LENGTH, MySQLOperatorCharm
-from mysqlsh_helpers import MySQL, MySQLInitialiseMySQLDError
+from charm import MySQLOperatorCharm
+from constants import PASSWORD_LENGTH
+from mysql_k8s_helpers import MySQL, MySQLInitialiseMySQLDError
 
 APP_NAME = "mysql-k8s"
 
@@ -55,14 +56,14 @@ class TestCharm(unittest.TestCase):
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
 
-    @patch("mysqlsh_helpers.MySQL.get_mysql_version", return_value="8.0.0")
-    @patch("mysqlsh_helpers.MySQL.wait_until_mysql_connection")
-    @patch("mysqlsh_helpers.MySQL.configure_mysql_users")
-    @patch("mysqlsh_helpers.MySQL.configure_instance")
-    @patch("mysqlsh_helpers.MySQL.create_cluster")
-    @patch("mysqlsh_helpers.MySQL.create_custom_config_file")
-    @patch("mysqlsh_helpers.MySQL.initialise_mysqld")
-    @patch("mysqlsh_helpers.MySQL.is_instance_in_cluster")
+    @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.0")
+    @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
+    @patch("mysql_k8s_helpers.MySQL.configure_mysql_users")
+    @patch("mysql_k8s_helpers.MySQL.configure_instance")
+    @patch("mysql_k8s_helpers.MySQL.create_cluster")
+    @patch("mysql_k8s_helpers.MySQL.create_custom_config_file")
+    @patch("mysql_k8s_helpers.MySQL.initialise_mysqld")
+    @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster")
     def test_mysql_pebble_ready(
         self,
         _is_instance_in_cluster,
@@ -129,7 +130,7 @@ class TestCharm(unittest.TestCase):
         )
 
     def test_mysql_property(self):
-        # Test mysql property instance of mysqlsh_helpers.MySQL
+        # Test mysql property instance of mysql_k8s_helpers.MySQL
         # set leader and populate peer relation data
         self.harness.set_leader()
         self.charm.on.config_changed.emit()
