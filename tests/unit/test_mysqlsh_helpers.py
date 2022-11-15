@@ -5,7 +5,6 @@ import json
 import unittest
 from unittest.mock import MagicMock, call, patch
 
-import tenacity
 from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureInstanceError,
@@ -367,7 +366,7 @@ class TestMySQL(unittest.TestCase):
             (
                 "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
                 "cluster = dba.get_cluster('test_cluster')",
-                "cluster.remove_instance('1.2.3.4', {\"force\": \"true\"})",
+                'cluster.remove_instance(\'1.2.3.4\', {"force": "true"})',
             )
         )
 
@@ -395,7 +394,9 @@ class TestMySQL(unittest.TestCase):
 
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_force_remove_unit_from_cluster_exception(self, _run_mysqlsh_script, _get_cluster_status):
+    def test_force_remove_unit_from_cluster_exception(
+        self, _run_mysqlsh_script, _get_cluster_status
+    ):
         """Test exceptions raised when executing force_remove_unit_from_cluster."""
         _get_cluster_status.return_value = None
 
