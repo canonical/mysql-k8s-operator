@@ -21,8 +21,8 @@ from mysql_k8s_helpers import (
     MySQLCreateUserError,
     MySQLDeleteUsersWithLabelError,
     MySQLEscalateUserPrivilegesError,
+    MySQLForceRemoveUnitFromClusterError,
     MySQLInitialiseMySQLDError,
-    MySQLRemoveInstancesNotOnlineRetryError,
     MySQLServiceNotRunningError,
 )
 
@@ -174,77 +174,6 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLConfigureMySQLUsersError):
             self.mysql.configure_mysql_users()
-
-    @patch("mysql_k8s_helpers.MySQL._wait_till_all_members_are_online")
-    @patch("mysql_k8s_helpers.MySQL.get_cluster_status")
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_remove_instances_not_online(
-        self, _run_mysqlsh_script, _get_cluster_status, _wait_till_all_members_are_online
-    ):
-        """Test a successful execution of remove_instances_not_online."""
-        _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
-
-        _expected_force_quorum_commands = "\n".join(
-            (
-                "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
-                "cluster = dba.get_cluster('test_cluster')",
-                "cluster.force_quorum_using_partition_of('clusteradmin@mysql-1.mysql-endpoints', 'clusteradminpassword')",
-            )
-        )
-
-        _expected_remove_instance_one_commands = "\n".join(
-            (
-                "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
-                "cluster = dba.get_cluster('test_cluster')",
-                'cluster.remove_instance(\'mysql-1.mysql-endpoints\', {"force": "true"})',
-            )
-        )
-        _expected_remove_instance_two_commands = "\n".join(
-            (
-                "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
-                "cluster = dba.get_cluster('test_cluster')",
-                'cluster.remove_instance(\'mysql-2.mysql-endpoints\', {"force": "true"})',
-            )
-        )
-
-        # disable tenacity retry
-        self.mysql.remove_instances_not_online.retry.retry = tenacity.retry_if_not_result(
-            lambda x: True
-        )
-
-        self.mysql.remove_instances_not_online()
-
-        self.assertEqual(_run_mysqlsh_script.call_count, 3)
-
-        self.assertEqual(
-            sorted(_run_mysqlsh_script.mock_calls),
-            sorted(
-                [
-                    call(_expected_force_quorum_commands),
-                    call(_expected_remove_instance_one_commands),
-                    call(_expected_remove_instance_two_commands),
-                ]
-            ),
-        )
-
-    @patch("mysql_k8s_helpers.MySQL.get_cluster_status")
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_remove_instances_not_online_exception(self, _run_mysqlsh_script, _get_cluster_status):
-        """Test an exception while executing remove_instances_not_online."""
-        # disable tenacity retry
-        self.mysql.remove_instances_not_online.retry.retry = tenacity.retry_if_not_result(
-            lambda x: True
-        )
-
-        _get_cluster_status.return_value = None
-        with self.assertRaises(MySQLRemoveInstancesNotOnlineRetryError):
-            self.mysql.remove_instances_not_online()
-
-        _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
-        _run_mysqlsh_script.side_effect = MySQLClientError("Error running mysqlsh")
-
-        with self.assertRaises(MySQLRemoveInstancesNotOnlineRetryError):
-            self.mysql.remove_instances_not_online()
 
     @patch("mysql_k8s_helpers.MySQL.get_cluster_primary_address", return_value="1.1.1.1:3306")
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
@@ -429,3 +358,59 @@ class TestMySQL(unittest.TestCase):
                 "script",
             ]
         )
+
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
+    def test_force_remove_unit_from_cluster(self, _run_mysqlsh_script, _get_cluster_status):
+        """Test the successful execution of force_remove_unit_from_cluster."""
+        _expected_remove_instance_commands = "\n".join(
+            (
+                "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
+                "cluster = dba.get_cluster('test_cluster')",
+                "cluster.remove_instance('1.2.3.4', {\"force\": \"true\"})",
+            )
+        )
+
+        _expected_force_quorum_commands = "\n".join(
+            (
+                "shell.connect('clusteradmin:clusteradminpassword@127.0.0.1')",
+                "cluster = dba.get_cluster('test_cluster')",
+                "cluster.force_quorum_using_partition_of('clusteradmin@127.0.0.1', 'clusteradminpassword')",
+            )
+        )
+
+        self.mysql.force_remove_unit_from_cluster("1.2.3.4")
+
+        self.assertEqual(_get_cluster_status.call_count, 1)
+        self.assertEqual(_run_mysqlsh_script.call_count, 2)
+        self.assertEqual(
+            sorted(_run_mysqlsh_script.mock_calls),
+            sorted(
+                [
+                    call(_expected_remove_instance_commands),
+                    call(_expected_force_quorum_commands),
+                ]
+            ),
+        )
+
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
+    def test_force_remove_unit_from_cluster_exception(self, _run_mysqlsh_script, _get_cluster_status):
+        """Test exceptions raised when executing force_remove_unit_from_cluster."""
+        _get_cluster_status.return_value = None
+
+        with self.assertRaises(MySQLForceRemoveUnitFromClusterError):
+            self.mysql.force_remove_unit_from_cluster("1.2.3.4")
+
+        self.assertEqual(_get_cluster_status.call_count, 1)
+        self.assertEqual(_run_mysqlsh_script.call_count, 0)
+
+        _get_cluster_status.reset_mock()
+        _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
+        _run_mysqlsh_script.side_effect = MySQLClientError("Mock error")
+
+        with self.assertRaises(MySQLForceRemoveUnitFromClusterError):
+            self.mysql.force_remove_unit_from_cluster("1.2.3.4")
+
+        self.assertEqual(_get_cluster_status.call_count, 1)
+        self.assertEqual(_run_mysqlsh_script.call_count, 1)

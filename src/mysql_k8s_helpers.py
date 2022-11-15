@@ -279,7 +279,15 @@ class MySQL(MySQLBase):
             raise MySQLWaitUntilUnitRemovedFromClusterError()
 
     def force_remove_unit_from_cluster(self, unit_address: str) -> None:
-        """Force removes the provided unit from the cluster."""
+        """Force removes the provided unit from the cluster.
+
+        Args:
+            unit_address: The address of unit to force remove from cluster
+
+        Raises:
+            MySQLForceRemoveUnitFromClusterError - if there was an issue force
+                removing the unit from the cluster
+        """
         cluster_status = self.get_cluster_status()
         if not cluster_status:
             raise MySQLForceRemoveUnitFromClusterError()
