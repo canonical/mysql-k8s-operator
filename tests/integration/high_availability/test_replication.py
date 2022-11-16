@@ -64,6 +64,7 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_write
             status="active",
             raise_on_blocked=True,
             timeout=TIMEOUT,
+            idle_period=30,
         )
 
         # ensure a new primary was elected

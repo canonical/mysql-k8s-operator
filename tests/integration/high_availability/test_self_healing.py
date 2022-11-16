@@ -8,6 +8,7 @@ import pytest
 from helpers import get_primary_unit, get_process_pid
 from pytest_operator.plugin import OpsTest
 from tenacity import Retrying, stop_after_delay, wait_fixed
+import time
 
 from tests.integration.high_availability.high_availability_helpers import (
     clean_up_database_and_table,
@@ -60,6 +61,9 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
         MYSQLD_PROCESS_NAME,
         "SIGKILL",
     )
+
+    # Wait for the SIGKILL above to take effect before continuining with test checks
+    time.sleep(10)
 
     assert await ensure_n_online_mysql_members(
         ops_test, 3
