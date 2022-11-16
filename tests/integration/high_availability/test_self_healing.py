@@ -3,12 +3,12 @@
 # See LICENSE file for licensing details.
 
 import logging
+import time
 
 import pytest
 from helpers import get_primary_unit, get_process_pid
 from pytest_operator.plugin import OpsTest
 from tenacity import Retrying, stop_after_delay, wait_fixed
-import time
 
 from tests.integration.high_availability.high_availability_helpers import (
     clean_up_database_and_table,
