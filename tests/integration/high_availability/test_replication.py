@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
+import time
 
 import lightkube
 import pytest
@@ -56,6 +57,8 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_write
     # kill the primary pod
     client = lightkube.Client()
     client.delete(Pod, primary.name.replace("/", "-"), namespace=ops_test.model.info.name)
+
+    time.sleep(60)
 
     async with ops_test.fast_forward():
         # wait for model to stabilize, k8s will re-create the killed pod
