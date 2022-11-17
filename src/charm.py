@@ -21,8 +21,8 @@ from ops.charm import (
     CharmBase,
     LeaderElectedEvent,
     RelationChangedEvent,
-    RelationDepartedEvent,
     RelationJoinedEvent,
+    UpdateStatusEvent,
 )
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
@@ -46,9 +46,8 @@ from constants import (
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
+    MySQLForceRemoveUnitFromClusterError,
     MySQLInitialiseMySQLDError,
-    MySQLRemoveInstancesNotOnlineError,
-    MySQLRemoveInstancesNotOnlineRetryError,
 )
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
@@ -69,10 +68,10 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.update_status, self._on_update_status)
 
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
-        self.framework.observe(self.on[PEER].relation_departed, self._on_peer_relation_departed)
 
         # Actions events
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
@@ -252,19 +251,6 @@ class MySQLOperatorCharm(CharmBase):
                     "app", required_password, generate_random_password(PASSWORD_LENGTH)
                 )
 
-        # If this node was elected a leader due to a prior leader unit being down scaled
-        if self._is_peer_data_set and self.cluster_initialized:
-            self.unit.status = MaintenanceStatus("Removing unreachable instances")
-
-            # Remove unreachable instances from the cluster
-            try:
-                self._mysql.remove_instances_not_online()
-            except (MySQLRemoveInstancesNotOnlineError, MySQLRemoveInstancesNotOnlineRetryError):
-                logger.debug("Unable to remove unreachable instances from the cluster")
-                self.unit.status = BlockedStatus("Failed to remove unreachable instances")
-
-            self.unit.status = ActiveStatus()
-
     def _on_mysql_pebble_ready(self, event):
         """Pebble ready handler.
 
@@ -356,6 +342,47 @@ class MySQLOperatorCharm(CharmBase):
             # Create control file in data directory
             container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
 
+    def _on_update_status(self, event: UpdateStatusEvent) -> None:
+        """Handle the update status event.
+
+        One purpose of this event handler is to ensure that scaled down units are
+        removed from the cluster.
+        """
+        if not self.unit.is_leader():
+            return
+
+        container = self.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            event.defer()
+            return
+
+        planned_units = self.app.planned_units()
+
+        cluster_status = self._mysql.get_cluster_status()
+        if not cluster_status:
+            self.unit.status = BlockedStatus("Failed to get cluster status")
+            return
+
+        addresses_of_units_to_remove = [
+            member["address"]
+            for unit_name, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if int(unit_name.split("-")[-1]) >= planned_units
+        ]
+
+        if not addresses_of_units_to_remove:
+            return
+
+        self.unit.status = MaintenanceStatus("Removing scaled down units from cluster")
+
+        for unit_address in addresses_of_units_to_remove:
+            try:
+                self._mysql.force_remove_unit_from_cluster(unit_address)
+            except MySQLForceRemoveUnitFromClusterError:
+                self.unit.status = BlockedStatus("Failed to remove scaled down unit from cluster")
+                return
+
+        self.unit.status = ActiveStatus()
+
     def _on_peer_relation_joined(self, event: RelationJoinedEvent):
         """Handle the peer relation joined event."""
         # Only leader unit add instances to the cluster
@@ -421,31 +448,6 @@ class MySQLOperatorCharm(CharmBase):
             self.unit_peer_data["unit-initialized"] = "True"
             self.unit.status = ActiveStatus()
             logger.debug(f"Instance {instance_label} is cluster member")
-
-    def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
-        """Handle the relation departed event.
-
-        Update the allowlist to remove the departing unit from the leader unit.
-        Only on the leader, update the allowlist in the peer relation databag
-        and remove unreachable instances from the cluster.
-        """
-        container = self.unit.get_container(CONTAINER_NAME)
-        if not container.can_connect():
-            event.defer()
-            return
-
-        if not self.unit.is_leader():
-            return
-
-        self.unit.status = MaintenanceStatus("Removing unreachable instances")
-
-        try:
-            self._mysql.remove_instances_not_online()
-        except (MySQLRemoveInstancesNotOnlineError, MySQLRemoveInstancesNotOnlineRetryError):
-            logger.debug("Unable to remove unreachable instances from the cluster")
-            self.unit.status = BlockedStatus("Failed to remove unreachable instances")
-
-        self.unit.status = ActiveStatus()
 
     # =========================================================================
     # Charm action handlers

@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
+import time
 
 import pytest
 from helpers import get_primary_unit, get_process_pid
@@ -60,6 +61,9 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
         MYSQLD_PROCESS_NAME,
         "SIGKILL",
     )
+
+    # Wait for the SIGKILL above to take effect before continuining with test checks
+    time.sleep(10)
 
     assert await ensure_n_online_mysql_members(
         ops_test, 3
