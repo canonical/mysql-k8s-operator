@@ -314,6 +314,8 @@ class MySQL(MySQLBase):
                 self._run_mysqlsh_script("\n".join(force_quorum_commands))
 
             self._run_mysqlsh_script("\n".join(remove_instance_commands))
+
+            self._wait_until_unit_removed_from_cluster(unit_address)
         except (
             MySQLClientError,
             MySQLWaitUntilUnitRemovedFromClusterError,
