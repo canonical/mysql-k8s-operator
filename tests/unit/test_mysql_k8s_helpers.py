@@ -5,6 +5,7 @@ import json
 import unittest
 from unittest.mock import MagicMock, call, patch
 
+import tenacity
 from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureInstanceError,
@@ -23,6 +24,7 @@ from mysql_k8s_helpers import (
     MySQLForceRemoveUnitFromClusterError,
     MySQLInitialiseMySQLDError,
     MySQLServiceNotRunningError,
+    MySQLWaitUntilUnitRemovedFromClusterError,
 )
 
 GET_CLUSTER_STATUS_RETURN = {
@@ -31,7 +33,7 @@ GET_CLUSTER_STATUS_RETURN = {
         "topology": {
             "mysql-0": {
                 "status": "online",
-                "address": "mysql-1.mysql-endpoints",
+                "address": "mysql-0.mysql-endpoints",
             },
             "mysql-2": {
                 "status": "unreachable",
@@ -359,8 +361,37 @@ class TestMySQL(unittest.TestCase):
         )
 
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
+    def test_wait_until_unit_removed_from_cluster(self, _get_cluster_status):
+        """Test the successful execution of _wait_until_unit_removed_from_cluster."""
+        self.mysql._wait_until_unit_removed_from_cluster("mysql-3.mysql-endpoints")
+
+        self.assertEqual(_get_cluster_status.call_count, 1)
+
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
+    def test_wait_until_unit_removed_from_cluster_exception(self, _get_cluster_status):
+        """Test an exception while executing _wait_until_unit_removed_from_cluster."""
+        # disable tenacity retry
+        self.mysql._wait_until_unit_removed_from_cluster.retry.retry = (
+            tenacity.retry_if_not_result(lambda x: True)
+        )
+
+        with self.assertRaises(MySQLWaitUntilUnitRemovedFromClusterError):
+            self.mysql._wait_until_unit_removed_from_cluster("mysql-0.mysql-endpoints")
+
+        self.assertEqual(_get_cluster_status.call_count, 1)
+
+        _get_cluster_status.reset_mock()
+        _get_cluster_status.return_value = None
+
+        with self.assertRaises(MySQLWaitUntilUnitRemovedFromClusterError):
+            self.mysql._wait_until_unit_removed_from_cluster("mysql-0.mysql-endpoints")
+
+    @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_force_remove_unit_from_cluster(self, _run_mysqlsh_script, _get_cluster_status):
+    @patch("mysql_k8s_helpers.MySQL._wait_until_unit_removed_from_cluster")
+    def test_force_remove_unit_from_cluster(
+        self, _wait_until_unit_removed_from_cluster, _run_mysqlsh_script, _get_cluster_status
+    ):
         """Test the successful execution of force_remove_unit_from_cluster."""
         _expected_remove_instance_commands = "\n".join(
             (
@@ -382,6 +413,7 @@ class TestMySQL(unittest.TestCase):
 
         self.assertEqual(_get_cluster_status.call_count, 1)
         self.assertEqual(_run_mysqlsh_script.call_count, 2)
+        self.assertEqual(_wait_until_unit_removed_from_cluster.call_count, 1)
         self.assertEqual(
             sorted(_run_mysqlsh_script.mock_calls),
             sorted(
@@ -394,8 +426,9 @@ class TestMySQL(unittest.TestCase):
 
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
+    @patch("mysql_k8s_helpers.MySQL._wait_until_unit_removed_from_cluster")
     def test_force_remove_unit_from_cluster_exception(
-        self, _run_mysqlsh_script, _get_cluster_status
+        self, _wait_until_unit_removed_from_cluster, _run_mysqlsh_script, _get_cluster_status
     ):
         """Test exceptions raised when executing force_remove_unit_from_cluster."""
         _get_cluster_status.return_value = None
@@ -405,6 +438,7 @@ class TestMySQL(unittest.TestCase):
 
         self.assertEqual(_get_cluster_status.call_count, 1)
         self.assertEqual(_run_mysqlsh_script.call_count, 0)
+        self.assertEqual(_wait_until_unit_removed_from_cluster.call_count, 0)
 
         _get_cluster_status.reset_mock()
         _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
@@ -415,3 +449,19 @@ class TestMySQL(unittest.TestCase):
 
         self.assertEqual(_get_cluster_status.call_count, 1)
         self.assertEqual(_run_mysqlsh_script.call_count, 1)
+        self.assertEqual(_wait_until_unit_removed_from_cluster.call_count, 0)
+
+        _get_cluster_status.reset_mock()
+        _get_cluster_status.return_value = GET_CLUSTER_STATUS_RETURN
+        _run_mysqlsh_script.reset_mock()
+        _run_mysqlsh_script.side_effect = None
+        _wait_until_unit_removed_from_cluster.side_effect = (
+            MySQLWaitUntilUnitRemovedFromClusterError("Mock error")
+        )
+
+        with self.assertRaises(MySQLForceRemoveUnitFromClusterError):
+            self.mysql.force_remove_unit_from_cluster("1.2.3.4")
+
+        self.assertEqual(_get_cluster_status.call_count, 1)
+        self.assertEqual(_run_mysqlsh_script.call_count, 2)
+        self.assertEqual(_wait_until_unit_removed_from_cluster.call_count, 1)

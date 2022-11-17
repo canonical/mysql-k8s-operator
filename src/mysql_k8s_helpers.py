@@ -9,6 +9,7 @@ import logging
 import os
 
 from charms.mysql.v0.mysql import (
+    Error,
     MySQLBase,
     MySQLClientError,
     MySQLConfigureInstanceError,
@@ -34,39 +35,39 @@ from constants import (
 logger = logging.getLogger(__name__)
 
 
-class MySQLInitialiseMySQLDError(Exception):
+class MySQLInitialiseMySQLDError(Error):
     """Exception raised when there is an issue initialising an instance."""
 
 
-class MySQLServiceNotRunningError(Exception):
+class MySQLServiceNotRunningError(Error):
     """Exception raised when the MySQL service is not running."""
 
 
-class MySQLCreateCustomConfigFileError(Exception):
+class MySQLCreateCustomConfigFileError(Error):
     """Exception raised when there is an issue creating custom config file."""
 
 
-class MySQLCreateDatabaseError(Exception):
+class MySQLCreateDatabaseError(Error):
     """Exception raised when there is an issue creating a database."""
 
 
-class MySQLCreateUserError(Exception):
+class MySQLCreateUserError(Error):
     """Exception raised when there is an issue creating a user."""
 
 
-class MySQLEscalateUserPrivilegesError(Exception):
+class MySQLEscalateUserPrivilegesError(Error):
     """Exception raised when there is an issue escalating user privileges."""
 
 
-class MySQLDeleteUsersWithLabelError(Exception):
+class MySQLDeleteUsersWithLabelError(Error):
     """Exception raised when there is an issue deleting users with a label."""
 
 
-class MySQLForceRemoveUnitFromClusterError(Exception):
+class MySQLForceRemoveUnitFromClusterError(Error):
     """Exception raised when there is an issue force removing a unit from the cluster."""
 
 
-class MySQLWaitUntilUnitRemovedFromClusterError(Exception):
+class MySQLWaitUntilUnitRemovedFromClusterError(Error):
     """Exception raised when there is an issue checking if a unit is removed from the cluster."""
 
 
@@ -268,7 +269,7 @@ class MySQL(MySQLBase):
         """
         cluster_status = self.get_cluster_status()
         if not cluster_status:
-            raise MySQLWaitUntilUnitRemovedFromClusterError()
+            raise MySQLWaitUntilUnitRemovedFromClusterError("Unable to get cluster status")
 
         members_in_cluster = [
             member["address"]
@@ -276,7 +277,7 @@ class MySQL(MySQLBase):
         ]
 
         if unit_address in members_in_cluster:
-            raise MySQLWaitUntilUnitRemovedFromClusterError()
+            raise MySQLWaitUntilUnitRemovedFromClusterError("Remove member still in cluster")
 
     def force_remove_unit_from_cluster(self, unit_address: str) -> None:
         """Force removes the provided unit from the cluster.
