@@ -6,18 +6,23 @@ import logging
 import time
 
 import pytest
-from helpers import get_primary_unit, get_process_pid
+from helpers import get_cluster_status, get_primary_unit, get_process_pid
 from pytest_operator.plugin import OpsTest
 from tenacity import Retrying, stop_after_delay, wait_fixed
 
 from tests.integration.high_availability.high_availability_helpers import (
     clean_up_database_and_table,
+    deploy_chaos_mesh,
+    destroy_chaos_mesh,
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
     get_process_stat,
     high_availability_test_setup,
     insert_data_into_mysql_and_validate_replication,
+    isolate_instance_from_cluster,
+    remove_instance_isolation,
     send_signal_to_pod_container_process,
+    wait_until_units_in_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -188,11 +193,6 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
         new_mysql_pid == mysql_pid
     ), "mysql process id is not the same as it was before process was stopped"
 
-    primary_after_sigstop = await get_primary_unit(
-        ops_test, remaining_online_units[0], mysql_application_name
-    )
-    assert new_primary.name == primary_after_sigstop.name, "mysql primary changed after sigstop"
-
     assert await ensure_n_online_mysql_members(
         ops_test, 3, remaining_online_units
     ), "The deployed mysql application does not have three online nodes"
@@ -257,3 +257,65 @@ async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -
         for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
             with attempt:
                 assert ensure_all_units_continuous_writes_incrementing(ops_test)
+
+
+@pytest.mark.order(2)
+@pytest.mark.abort_on_fail
+@pytest.mark.self_healing_tests
+async def test_network_cut_affecting_an_instance(ops_test: OpsTest, continuous_writes) -> None:
+    """Test for a network cut affecting an instance."""
+    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+    deploy_chaos_mesh(ops_test, ops_test.model.info.name)
+
+    assert await ensure_n_online_mysql_members(
+        ops_test, 3
+    ), "The deployed mysql application does not have three online nodes"
+
+    mysql_units = ops_test.model.applications[mysql_application_name].units
+    primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
+
+    # Create networkchaos policy to isolate instance from cluster
+    isolate_instance_from_cluster(ops_test, primary.name)
+
+    remaining_units = [unit for unit in mysql_units if unit.name != primary.name]
+
+    # Wait until MySQL GR actually detects isolated instance
+    await wait_until_units_in_status(ops_test, [primary], remaining_units[0], "(missing)")
+    await wait_until_units_in_status(ops_test, remaining_units, remaining_units[0], "online")
+
+    cluster_status = await get_cluster_status(ops_test, remaining_units[0])
+
+    isolated_primary_status, isolated_primary_memberrole = [
+        (member["status"], member["memberrole"])
+        for label, member in cluster_status["defaultreplicaset"]["topology"].items()
+        if label == primary.name.replace("/", "-")
+    ][0]
+    assert isolated_primary_status == "(missing)"
+    assert isolated_primary_memberrole == "secondary"
+
+    new_primary = await get_primary_unit(ops_test, remaining_units[0], mysql_application_name)
+    assert primary.name != new_primary.name
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test, remaining_units)
+
+    # Remove networkchaos policy isolating instance from cluster
+    remove_instance_isolation(ops_test)
+
+    await wait_until_units_in_status(ops_test, mysql_units, mysql_units[0], "online")
+
+    new_cluster_status = await get_cluster_status(ops_test, mysql_units[0])
+
+    isolated_primary_status, isolated_primary_memberrole = [
+        (member["status"], member["memberrole"])
+        for label, member in new_cluster_status["defaultreplicaset"]["topology"].items()
+        if label == primary.name.replace("/", "-")
+    ][0]
+    assert isolated_primary_status == "online"
+    assert isolated_primary_memberrole == "secondary"
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+    destroy_chaos_mesh(ops_test, ops_test.model.info.name)

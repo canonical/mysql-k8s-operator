@@ -32,8 +32,8 @@ from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
 from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
-    CONFIGURED_FILE,
     CONTAINER_NAME,
+    MYSQLD_CONFIG_FILE,
     MYSQLD_SERVICE,
     PASSWORD_LENGTH,
     PEER,
@@ -251,7 +251,48 @@ class MySQLOperatorCharm(CharmBase):
                     "app", required_password, generate_random_password(PASSWORD_LENGTH)
                 )
 
-    def _on_mysql_pebble_ready(self, event):
+    def _configure_instance(self, container) -> None:
+        """Configure the instance for use in Group Replication."""
+        try:
+            # Run mysqld for the first time to
+            # bootstrap the data directory and users
+            logger.debug("Initializing instance")
+            self._mysql.initialise_mysqld()
+
+            # Add the pebble layer
+            logger.debug("Adding pebble layer")
+            container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
+            container.restart(MYSQLD_SERVICE)
+
+            logger.debug("Waiting for instance to be ready")
+            self._mysql.wait_until_mysql_connection()
+
+            logger.info("Configuring instance")
+            # Configure all base users and revoke privileges from the root users
+            self._mysql.configure_mysql_users()
+            # Configure instance as a cluster node
+            self._mysql.configure_instance()
+
+            self.unit_peer_data["unit-configured"] = "True"
+        except (
+            MySQLConfigureInstanceError,
+            MySQLConfigureMySQLUsersError,
+            MySQLInitialiseMySQLDError,
+            MySQLCreateCustomConfigFileError,
+        ) as e:
+            self.unit.status = BlockedStatus("Unable to configure instance")
+            logger.debug("Unable to configure instance: {}".format(e))
+            return
+
+        try:
+            # Set workload version
+            workload_version = self._mysql.get_mysql_version()
+            self.unit.set_workload_version(workload_version)
+        except MySQLGetMySQLVersionError:
+            # Do not block the charm if the version cannot be retrieved
+            pass
+
+    def _on_mysql_pebble_ready(self, event) -> None:
         """Pebble ready handler.
 
         Define and start a pebble service and bootstrap instance.
@@ -264,83 +305,50 @@ class MySQLOperatorCharm(CharmBase):
 
         container = event.workload
 
-        if container.exists(CONFIGURED_FILE):
-            # When reusing a volume
-            # Configure the layer when changed
-            current_layer = container.get_plan()
-            new_layer = self._pebble_layer
-
-            if new_layer.services != current_layer:
-                logger.info("Add pebble layer")
-                container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
-                container.restart(MYSQLD_SERVICE)
-                self._mysql.wait_until_mysql_connection()
-            self.unit.status = ActiveStatus()
-            return
-
-        # First run setup
-        self.unit.status = MaintenanceStatus("Initialising mysqld")
-        try:
-
-            # Run mysqld for the first time to
-            # bootstrap the data directory and users
-            logger.debug("Initialising instance")
-            self._mysql.initialise_mysqld()
-
-            # Create custom server config file
-            logger.debug("Create custom config")
+        if not container.exists(MYSQLD_CONFIG_FILE):
             self._mysql.create_custom_config_file(
                 report_host=self.get_unit_hostname(self.unit.name)
             )
 
-            # Add the pebble layer
-            container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
-            container.restart(MYSQLD_SERVICE)
-            logger.debug("Waiting for instance to be ready")
-            self._mysql.wait_until_mysql_connection()
-            logger.info("Configuring instance")
-            # Configure all base users and revoke
-            # privileges from the root users
-            self._mysql.configure_mysql_users()
-            # Configure instance as a cluster node
-            self._mysql.configure_instance()
-            # set workload version
-            workload_version = self._mysql.get_mysql_version()
-            self.unit.set_workload_version(workload_version)
+        if self.unit_peer_data.get("unit-configured"):
+            # Only update pebble layer if unit is already configured for GR
+            current_layer = container.get_plan()
+            new_layer = self._pebble_layer
 
-        except (
-            MySQLConfigureInstanceError,
-            MySQLConfigureMySQLUsersError,
-            MySQLInitialiseMySQLDError,
-            MySQLCreateCustomConfigFileError,
-        ) as e:
-            self.unit.status = BlockedStatus("Unable to configure instance")
-            logger.debug("Unable to configure instance: {}".format(e))
+            if new_layer.services != current_layer:
+                logger.info("Adding pebble layer")
+
+                container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
+                container.restart(MYSQLD_SERVICE)
+                self._mysql.wait_until_mysql_connection()
+
+            self.unit.status = ActiveStatus()
             return
-        except MySQLGetMySQLVersionError:
-            # Do not block the charm if the version cannot be retrieved
-            pass
 
-        if self.unit.is_leader():
-            try:
-                # Create the cluster when is the leader unit
-                unit_label = self.unit.name.replace("/", "-")
-                self._mysql.create_cluster(unit_label)
-                logger.debug("Cluster configured on unit")
-                # Create control file in data directory
-                container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
-                self.app_peer_data["units-added-to-cluster"] = "1"
-                self.unit_peer_data["unit-initialized"] = "True"
-                self.unit.status = ActiveStatus()
-            except MySQLCreateClusterError as e:
-                self.unit.status = BlockedStatus("Unable to create cluster")
-                logger.debug("Unable to create cluster: {}".format(e))
-        else:
-            # When unit is not the leader, it should wait
-            # for the leader to configure it a cluster node
+        self.unit.status = MaintenanceStatus("Initialising mysqld")
+
+        # First run setup
+        self._configure_instance(container)
+
+        if not self.unit.is_leader():
+            # Non-leader units should wait for leader to add them to the cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
+            return
+
+        try:
+            # Create the cluster when is the leader unit
+            logger.info("Creating cluster on the leader unit")
+            unit_label = self.unit.name.replace("/", "-")
+            self._mysql.create_cluster(unit_label)
+
             # Create control file in data directory
-            container.push(CONFIGURED_FILE, make_dirs=True, source="configured")
+            self.app_peer_data["units-added-to-cluster"] = "1"
+            self.unit_peer_data["unit-initialized"] = "True"
+
+            self.unit.status = ActiveStatus()
+        except MySQLCreateClusterError as e:
+            self.unit.status = BlockedStatus("Unable to create cluster")
+            logger.debug("Unable to create cluster: {}".format(e))
 
     def _on_update_status(self, event: UpdateStatusEvent) -> None:
         """Handle the update status event.

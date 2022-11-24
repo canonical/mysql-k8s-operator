@@ -2,6 +2,10 @@
 # See LICENSE file for licensing details.
 
 import logging
+import os
+import string
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -19,7 +23,14 @@ from helpers import (
 )
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
-from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
+from tenacity import (
+    RetryError,
+    Retrying,
+    retry,
+    stop_after_attempt,
+    stop_after_delay,
+    wait_fixed,
+)
 
 # Copied these values from high_availability.application_charm.src.charm
 DATABASE_NAME = "continuous_writes_database"
@@ -225,6 +236,45 @@ async def relate_mysql_and_application(
         status="active",
         raise_on_blocked=True,
         timeout=TIMEOUT,
+    )
+
+
+def deploy_chaos_mesh(ops_test: OpsTest, namespace: str) -> None:
+    """Deploy chaos mesh to the provided namespace.
+
+    Args:
+        ops_test: The ops test framework
+        namespace: The namespace to deploy chaos mesh to
+    """
+    env = os.environ
+    env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
+
+    subprocess.check_output(
+        " ".join(
+            [
+                "tests/integration/high_availability/scripts/deploy_chaos_mesh.sh",
+                namespace,
+            ]
+        ),
+        shell=True,
+        env=env,
+    )
+
+
+def destroy_chaos_mesh(ops_test: OpsTest, namespace: str) -> None:
+    """Deploy chaos mesh to the provided namespace.
+
+    Args:
+        ops_test: The ops test framework
+        namespace: The namespace to deploy chaos mesh to
+    """
+    env = os.environ
+    env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
+
+    subprocess.check_output(
+        f"tests/integration/high_availability/scripts/destroy_chaos_mesh.sh {namespace}",
+        shell=True,
+        env=env,
     )
 
 
@@ -445,3 +495,53 @@ async def ensure_all_units_continuous_writes_incrementing(
                         ), f"Missing {number} in database for unit {unit.name}"
 
                     last_max_written_value = max_written_value
+
+
+def isolate_instance_from_cluster(ops_test: OpsTest, unit_name: str) -> None:
+    """Apply a NetworkChaos file to use chaos-mesh to simulate a network cut."""
+    with tempfile.NamedTemporaryFile() as temp_file:
+        with open(
+            "tests/integration/high_availability/manifests/chaos_network_loss.yml", "r"
+        ) as chaos_network_loss_file:
+            template = string.Template(chaos_network_loss_file.read())
+            chaos_network_loss = template.substitute(
+                namespace=ops_test.model.info.name,
+                pod=unit_name.replace("/", "-"),
+            )
+
+            temp_file.write(str.encode(chaos_network_loss))
+            temp_file.flush()
+
+        env = os.environ
+        env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
+        subprocess.check_output(
+            " ".join(["kubectl", "apply", "-f", temp_file.name]), shell=True, env=env
+        )
+
+
+def remove_instance_isolation(ops_test: OpsTest) -> None:
+    """Delete the NetworkChaos that is isolating the primary unit of the cluster."""
+    env = os.environ
+    env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
+    subprocess.check_output(
+        f"kubectl -n {ops_test.model.info.name} delete networkchaos network-loss-primary",
+        shell=True,
+        env=env,
+    )
+
+
+@retry(
+    stop=stop_after_attempt(10),
+    wait=wait_fixed(30),
+)
+async def wait_until_units_in_status(
+    ops_test: OpsTest, units_to_check: List[Unit], online_unit: Unit, status: str
+) -> None:
+    """Waits until all units specified are in a given status, or timeout occurs."""
+    cluster_status = await get_cluster_status(ops_test, online_unit)
+
+    for unit in units_to_check:
+        assert (
+            cluster_status["defaultreplicaset"]["topology"][unit.name.replace("/", "-")]["status"]
+            == status
+        )
