@@ -120,7 +120,7 @@ jobs:
           channel: 1.23/stable
           bootstrap-options: "--agent-version 2.9.29"
       - name: Install Helm
-        run: snap install helm3
+        run: /usr/bin/sudo snap install helm3
       - name: Run self healing integration tests
         run: tox -e integration-self-healing
 
