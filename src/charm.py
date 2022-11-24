@@ -391,47 +391,6 @@ class MySQLOperatorCharm(CharmBase):
 
         self.unit.status = ActiveStatus()
 
-    def _on_update_status(self, event: UpdateStatusEvent) -> None:
-        """Handle the update status event.
-
-        One purpose of this event handler is to ensure that scaled down units are
-        removed from the cluster.
-        """
-        if not self.unit.is_leader():
-            return
-
-        container = self.unit.get_container(CONTAINER_NAME)
-        if not container.can_connect():
-            event.defer()
-            return
-
-        planned_units = self.app.planned_units()
-
-        cluster_status = self._mysql.get_cluster_status()
-        if not cluster_status:
-            self.unit.status = BlockedStatus("Failed to get cluster status")
-            return
-
-        addresses_of_units_to_remove = [
-            member["address"]
-            for unit_name, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if int(unit_name.split("-")[-1]) >= planned_units
-        ]
-
-        if not addresses_of_units_to_remove:
-            return
-
-        self.unit.status = MaintenanceStatus("Removing scaled down units from cluster")
-
-        for unit_address in addresses_of_units_to_remove:
-            try:
-                self._mysql.force_remove_unit_from_cluster(unit_address)
-            except MySQLForceRemoveUnitFromClusterError:
-                self.unit.status = BlockedStatus("Failed to remove scaled down unit from cluster")
-                return
-
-        self.unit.status = ActiveStatus()
-
     def _on_peer_relation_joined(self, event: RelationJoinedEvent):
         """Handle the peer relation joined event."""
         # Only leader unit add instances to the cluster
