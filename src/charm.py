@@ -280,9 +280,8 @@ class MySQLOperatorCharm(CharmBase):
             MySQLInitialiseMySQLDError,
             MySQLCreateCustomConfigFileError,
         ) as e:
-            self.unit.status = BlockedStatus("Unable to configure instance")
             logger.debug("Unable to configure instance: {}".format(e))
-            return
+            return False
 
         try:
             # Set workload version
@@ -291,6 +290,8 @@ class MySQLOperatorCharm(CharmBase):
         except MySQLGetMySQLVersionError:
             # Do not block the charm if the version cannot be retrieved
             pass
+
+        return True
 
     def _on_mysql_pebble_ready(self, event) -> None:
         """Pebble ready handler.
@@ -328,7 +329,9 @@ class MySQLOperatorCharm(CharmBase):
         self.unit.status = MaintenanceStatus("Initialising mysqld")
 
         # First run setup
-        self._configure_instance(container)
+        if not self._configure_instance(container):
+            self.unit.status = BlockedStatus("Unable to configure instance")
+            return
 
         if not self.unit.is_leader():
             # Non-leader units should wait for leader to add them to the cluster
