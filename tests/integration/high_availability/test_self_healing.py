@@ -12,8 +12,6 @@ from tenacity import Retrying, stop_after_delay, wait_fixed
 
 from tests.integration.high_availability.high_availability_helpers import (
     clean_up_database_and_table,
-    deploy_chaos_mesh,
-    destroy_chaos_mesh,
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
     get_process_stat,
@@ -262,13 +260,13 @@ async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -
 @pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
-async def test_network_cut_affecting_an_instance(ops_test: OpsTest, continuous_writes) -> None:
+async def test_network_cut_affecting_an_instance(
+    ops_test: OpsTest, continuous_writes, chaos_mesh
+) -> None:
     """Test for a network cut affecting an instance."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
 
     await ensure_all_units_continuous_writes_incrementing(ops_test)
-
-    deploy_chaos_mesh(ops_test, ops_test.model.info.name)
 
     assert await ensure_n_online_mysql_members(
         ops_test, 3
@@ -317,5 +315,3 @@ async def test_network_cut_affecting_an_instance(ops_test: OpsTest, continuous_w
     assert isolated_primary_memberrole == "secondary"
 
     await ensure_all_units_continuous_writes_incrementing(ops_test)
-
-    destroy_chaos_mesh(ops_test, ops_test.model.info.name)

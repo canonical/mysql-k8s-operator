@@ -239,7 +239,7 @@ async def relate_mysql_and_application(
     )
 
 
-def deploy_chaos_mesh(ops_test: OpsTest, namespace: str) -> None:
+def deploy_chaos_mesh(namespace: str) -> None:
     """Deploy chaos mesh to the provided namespace.
 
     Args:
@@ -261,8 +261,8 @@ def deploy_chaos_mesh(ops_test: OpsTest, namespace: str) -> None:
     )
 
 
-def destroy_chaos_mesh(ops_test: OpsTest, namespace: str) -> None:
-    """Deploy chaos mesh to the provided namespace.
+def destroy_chaos_mesh(namespace: str) -> None:
+    """Remove chaos mesh from the provided namespace.
 
     Args:
         ops_test: The ops test framework
