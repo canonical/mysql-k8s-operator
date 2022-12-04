@@ -5,7 +5,6 @@
 
 PASSWORD_LENGTH = 24
 PEER = "database-peers"
-CONFIGURED_FILE = "/var/lib/mysql/charmed"
 CONTAINER_NAME = "mysql"
 MYSQLD_SERVICE = "mysqld"
 ROOT_USERNAME = "root"

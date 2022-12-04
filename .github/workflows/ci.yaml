@@ -119,6 +119,8 @@ jobs:
           # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
           channel: 1.23/stable
           bootstrap-options: "--agent-version 2.9.29"
+      - name: Install Helm
+        run: /usr/bin/sudo snap install helm3
       - name: Run self healing integration tests
         run: tox -e integration-self-healing
 
