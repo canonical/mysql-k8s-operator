@@ -12,6 +12,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
     MySQLRebootFromCompleteOutageError,
 )
@@ -160,6 +161,12 @@ class MySQLOperatorCharm(CharmBase):
                 },
             }
         )
+
+    @property
+    def active_status_message(self) -> str:
+        """The active status message."""
+        role = self.unit_peer_data.get("member-role")
+        return f"Unit is ready: Mode: {'RW' if role == 'primary' else 'RO'}"
 
     def get_unit_hostname(self, unit_name: str) -> str:
         """Get the hostname.localdomain for a unit.
@@ -336,6 +343,7 @@ class MySQLOperatorCharm(CharmBase):
         if not self.unit.is_leader():
             # Non-leader units should wait for leader to add them to the cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
+            self.unit_peer_data["member-role"] = "secondary"
             return
 
         try:
@@ -347,11 +355,65 @@ class MySQLOperatorCharm(CharmBase):
             # Create control file in data directory
             self.app_peer_data["units-added-to-cluster"] = "1"
             self.unit_peer_data["unit-initialized"] = "True"
+            self.unit_peer_data["member-role"] = "primary"
 
             self.unit.status = ActiveStatus()
         except MySQLCreateClusterError as e:
             self.unit.status = BlockedStatus("Unable to create cluster")
             logger.debug("Unable to create cluster: {}".format(e))
+
+    def _handle_potential_cluster_crash_scenario(self) -> bool:
+        """Handle potential full cluster crash scenarios.
+
+        Returns:
+            bool indicating whether the caller should return
+        """
+        if not self.cluster_initialized or not self.unit_peer_data.get("member-role"):
+            # health checks are only after cluster and members are initialized
+            return True
+
+        # retrieve and persist state for every unit
+        try:
+            state, role = self._mysql.get_member_state()
+            self.unit_peer_data["member-role"] = role
+            self.unit_peer_data["member-state"] = state
+        except MySQLGetMemberStateError:
+            if self.unit_peer_data.get("member-state") == "waiting":
+                # avoid changing status while in initialisation
+                return True
+            role = self.unit_peer_data["member-role"] = "unknown"
+            state = self.unit_peer_data["member-state"] = "unreachable"
+
+        logger.info(f"Unit workload member-state is {state} with member-role {role}")
+
+        # set unit status based on member-{state,role}
+        self.unit.status = (
+            ActiveStatus(self.active_status_message)
+            if state == "online"
+            else MaintenanceStatus(state)
+        )
+
+        if state == "unreachable" or state == "recovering":
+            return True
+
+        if state == "offline":
+            # Group Replication is active but the member does not belong to any group
+            all_states = {
+                self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
+            }
+
+            if all_states == {"offline"} and self.unit.is_leader():
+                # All instance are off, reboot cluster from outage from the leader unit
+
+                logger.info("Attempting reboot from complete outage.")
+                try:
+                    self._mysql.reboot_from_complete_outage()
+                    return True
+                except MySQLRebootFromCompleteOutageError:
+                    logger.error("Failed to reboot cluster from complete outage.")
+                    self.unit.status = BlockedStatus("failed to recover cluster.")
+
+        return False
 
     def _on_update_status(self, event: UpdateStatusEvent) -> None:
         """Handle the update status event.
@@ -359,12 +421,15 @@ class MySQLOperatorCharm(CharmBase):
         One purpose of this event handler is to ensure that scaled down units are
         removed from the cluster.
         """
-        if not self.unit.is_leader():
-            return
-
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
             event.defer()
+            return
+
+        if self._handle_potential_cluster_crash_scenario():
+            return
+
+        if not self.unit.is_leader():
             return
 
         planned_units = self.app.planned_units()
@@ -508,7 +573,7 @@ class MySQLOperatorCharm(CharmBase):
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Get the cluster status without topology."""
-        event.set_results(self._mysql.get_cluster_status())
+        event.set_results(self._mysql.get_cluster_status() or {})
 
     def _restart(self, _) -> None:
         """Restart server rolling ops callback function.
