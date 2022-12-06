@@ -15,7 +15,6 @@ from tests.integration.high_availability.high_availability_helpers import (
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
     ensure_process_not_running,
-    extend_pebble_restart_delay,
     get_max_written_value_in_database,
     get_process_stat,
     high_availability_test_setup,
@@ -23,6 +22,7 @@ from tests.integration.high_availability.high_availability_helpers import (
     isolate_instance_from_cluster,
     remove_instance_isolation,
     send_signal_to_pod_container_process,
+    update_pebble_plan,
     wait_until_units_in_status,
 )
 
@@ -324,7 +324,9 @@ async def test_network_cut_affecting_an_instance(
 @pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
-async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_writes) -> None:
+async def test_graceful_full_cluster_crash_test(
+    ops_test: OpsTest, continuous_writes, restart_policy
+) -> None:
     """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
     mysql_application_name, application_name = await high_availability_test_setup(ops_test)
 
@@ -343,9 +345,6 @@ async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_wr
 
         unit_mysqld_pids[unit.name] = pid
 
-    for unit in mysql_units:
-        extend_pebble_restart_delay(ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME)
-
     written_value = await get_max_written_value_in_database(ops_test, mysql_units[0])
 
     for unit in mysql_units:
@@ -360,10 +359,12 @@ async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_wr
                     ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
                 )
 
-    async with ops_test.fast_forward():
-        # The restart delay for pebble is 300s, sleep for 360s to ensure that mysqld is started
-        time.sleep(360)
+    # restart the cluster
+    await update_pebble_plan(
+        ops_test, {"on-failure": "restart", "on-success": "restart"}, mysql_application_name
+    )
 
+    async with ops_test.fast_forward():
         # wait for model to stabilize, and all members to recover
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],

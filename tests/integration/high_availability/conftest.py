@@ -7,6 +7,7 @@ from integration.high_availability.high_availability_helpers import (
     deploy_chaos_mesh,
     destroy_chaos_mesh,
     get_application_name,
+    update_pebble_plan,
 )
 from pytest_operator.plugin import OpsTest
 
@@ -38,3 +39,19 @@ async def chaos_mesh(ops_test: OpsTest) -> None:
     yield
 
     destroy_chaos_mesh(ops_test.model.info.name)
+
+
+@pytest.fixture()
+async def restart_policy(ops_test: OpsTest) -> None:
+    """Sets and resets service pebble restart policy on all units."""
+    mysql_application_name = await get_application_name(ops_test, "mysql")
+
+    await update_pebble_plan(
+        ops_test, {"on-failure": "ignore", "on-success": "ignore"}, mysql_application_name
+    )
+
+    yield
+
+    await update_pebble_plan(
+        ops_test, {"on-failure": "restart", "on-success": "restart"}, mysql_application_name
+    )
