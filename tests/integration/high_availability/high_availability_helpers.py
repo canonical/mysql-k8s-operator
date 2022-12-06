@@ -580,7 +580,7 @@ async def update_pebble_plan(
         "--container",
         CONTAINER_NAME,
     )
-    now = datetime.now().isoformat()
+    now = datetime.datetime.now().isoformat()
 
     for unit in ops_test.model.applications[mysql_application_name].units:
         echo_cmd = (
