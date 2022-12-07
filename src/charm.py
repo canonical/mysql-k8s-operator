@@ -401,6 +401,8 @@ class MySQLOperatorCharm(CharmBase):
             all_states = {
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
+            # Add state for this unit (self.peers.units does not include this unit)
+            all_states.add("offline")
 
             if all_states == {"offline"} and self.unit.is_leader():
                 # All instance are off, reboot cluster from outage from the leader unit
