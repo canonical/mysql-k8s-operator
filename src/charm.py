@@ -330,7 +330,7 @@ class MySQLOperatorCharm(CharmBase):
                 container.restart(MYSQLD_SERVICE)
                 self._mysql.wait_until_mysql_connection()
 
-            self.unit.status = ActiveStatus()
+            self.unit.status = ActiveStatus(self.active_status_message)
             return
 
         self.unit.status = MaintenanceStatus("Initialising mysqld")
@@ -344,6 +344,7 @@ class MySQLOperatorCharm(CharmBase):
             # Non-leader units should wait for leader to add them to the cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data["member-role"] = "secondary"
+            self.unit_peer_data["member-state"] = "waiting"
             return
 
         try:
@@ -357,7 +358,7 @@ class MySQLOperatorCharm(CharmBase):
             self.unit_peer_data["unit-initialized"] = "True"
             self.unit_peer_data["member-role"] = "primary"
 
-            self.unit.status = ActiveStatus()
+            self.unit.status = ActiveStatus(self.active_status_message)
         except MySQLCreateClusterError as e:
             self.unit.status = BlockedStatus("Unable to create cluster")
             logger.debug("Unable to create cluster: {}".format(e))
@@ -378,9 +379,6 @@ class MySQLOperatorCharm(CharmBase):
             self.unit_peer_data["member-role"] = role
             self.unit_peer_data["member-state"] = state
         except MySQLGetMemberStateError:
-            if self.unit_peer_data.get("member-state") == "waiting":
-                # avoid changing status while in initialisation
-                return True
             role = self.unit_peer_data["member-role"] = "unknown"
             state = self.unit_peer_data["member-state"] = "unreachable"
 
@@ -423,6 +421,10 @@ class MySQLOperatorCharm(CharmBase):
         One purpose of this event handler is to ensure that scaled down units are
         removed from the cluster.
         """
+        if self.unit_peer_data.get("member-state") == "waiting":
+            # avoid changing status while in initialisation
+            return
+
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
             event.defer()
@@ -459,7 +461,7 @@ class MySQLOperatorCharm(CharmBase):
                 self.unit.status = BlockedStatus("Failed to remove scaled down unit from cluster")
                 return
 
-        self.unit.status = ActiveStatus()
+        self.unit.status = ActiveStatus(self.active_status_message)
 
     def _on_peer_relation_joined(self, event: RelationJoinedEvent):
         """Handle the peer relation joined event."""
@@ -524,7 +526,7 @@ class MySQLOperatorCharm(CharmBase):
             instance_label
         ):
             self.unit_peer_data["unit-initialized"] = "True"
-            self.unit.status = ActiveStatus()
+            self.unit.status = ActiveStatus(self.active_status_message)
             logger.debug(f"Instance {instance_label} is cluster member")
 
     # =========================================================================
@@ -605,9 +607,7 @@ class MySQLOperatorCharm(CharmBase):
             for attempt in Retrying(stop=stop_after_attempt(24), wait=wait_fixed(5)):
                 with attempt:
                     if self._mysql.is_instance_in_cluster(unit_label):
-                        # TODO: update status setting to set message with
-                        # `self.active_status_message` once it gets merged
-                        self.unit.status = ActiveStatus()
+                        self.unit.status = ActiveStatus(self.active_status_message)
                         return
                     logger.debug("Restarted instance not yet in cluster")
                     raise Exception
