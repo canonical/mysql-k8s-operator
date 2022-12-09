@@ -44,7 +44,12 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
 
         await asyncio.gather(
             ops_test.model.deploy(
-                charm, application_name=APP_NAME, resources=resources, config=config, num_units=3
+                charm,
+                application_name=APP_NAME,
+                resources=resources,
+                config=config,
+                num_units=3,
+                series="jammy",
             ),
             # Deploy the osm-keystone charm
             # (using ops_test.juju instead of ops_test.deploy as the latter does
