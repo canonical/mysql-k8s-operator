@@ -5,11 +5,22 @@
 import logging
 import time
 
+import lightkube
 import pytest
-from helpers import get_cluster_status, get_primary_unit, get_process_pid
+from lightkube.resources.core_v1 import Pod
 from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, stop_after_delay, wait_fixed
+from tenacity import AsyncRetrying, RetryError, Retrying, stop_after_delay, wait_fixed
 
+from tests.integration.helpers import (
+    execute_queries_on_unit,
+    generate_random_string,
+    get_cluster_status,
+    get_primary_unit,
+    get_process_pid,
+    get_server_config_credentials,
+    get_unit_address,
+    scale_application,
+)
 from tests.integration.high_availability.high_availability_helpers import (
     clean_up_database_and_table,
     ensure_all_units_continuous_writes_incrementing,
@@ -401,3 +412,62 @@ async def test_graceful_full_cluster_crash_test(
 
     async with ops_test.fast_forward():
         await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+
+@pytest.mark.order(7)
+@pytest.mark.abort_on_fail
+@pytest.mark.self_healing_tests
+async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
+    """Delete the pod in a single unit deployment and write data to new pod."""
+    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    async with ops_test.fast_forward():
+        await scale_application(ops_test, mysql_application_name, 1)
+    unit = ops_test.model.applications[mysql_application_name].units[0]
+    assert unit.workload_status == "active"
+
+    # Delete pod
+    client = lightkube.Client()
+    client.delete(Pod, unit.name.replace("/", "-"), namespace=ops_test.model.info.name)
+    # Wait for new pod
+    async with ops_test.fast_forward():
+        await ops_test.model.wait_for_idle(
+            apps=[mysql_application_name],
+            status="active",
+            raise_on_blocked=True,
+            timeout=15 * 60,
+        )
+
+    # Write data
+    server_config_credentials = await get_server_config_credentials(unit)
+    primary_unit_address = await get_unit_address(ops_test, unit.name)
+    random_chars = generate_random_string(40)
+    create_records_sql = [
+        "CREATE DATABASE IF NOT EXISTS test",
+        "CREATE TABLE IF NOT EXISTS test.data_verification_table (id varchar(40), primary key(id))",
+        f"INSERT INTO test.data_verification_table VALUES ('{random_chars}')",
+    ]
+    await execute_queries_on_unit(
+        primary_unit_address,
+        server_config_credentials["username"],
+        server_config_credentials["password"],
+        create_records_sql,
+        commit=True,
+    )
+
+    # Verify written data
+    select_data_sql = [
+        f"SELECT * FROM test.data_verification_table WHERE id = '{random_chars}'",
+    ]
+    # Retry
+    try:
+        for attempt in AsyncRetrying(stop=stop_after_delay(5), wait=wait_fixed(3)):
+            with attempt:
+                output = await execute_queries_on_unit(
+                    primary_unit_address,
+                    server_config_credentials["username"],
+                    server_config_credentials["password"],
+                    select_data_sql,
+                )
+                assert random_chars in output
+    except RetryError:
+        assert False
