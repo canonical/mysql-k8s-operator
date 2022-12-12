@@ -112,7 +112,7 @@ class MySQLOSMRelation(Object):
 
         # Ensure that config values exist, else we will be unable to create database and user
         if not username or not database:
-            self.unit.status = BlockedStatus("Missing `osm-mysql` relation data")
+            self.charm.unit.status = BlockedStatus("Missing `osm-mysql` relation data")
             return
 
         user_exists = False
