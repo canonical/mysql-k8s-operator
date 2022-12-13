@@ -437,37 +437,7 @@ async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
             timeout=15 * 60,
         )
 
-    # Write data
-    server_config_credentials = await get_server_config_credentials(unit)
-    primary_unit_address = await get_unit_address(ops_test, unit.name)
-    random_chars = generate_random_string(40)
-    create_records_sql = [
-        "CREATE DATABASE IF NOT EXISTS test",
-        "CREATE TABLE IF NOT EXISTS test.data_verification_table (id varchar(40), primary key(id))",
-        f"INSERT INTO test.data_verification_table VALUES ('{random_chars}')",
-    ]
-    await execute_queries_on_unit(
-        primary_unit_address,
-        server_config_credentials["username"],
-        server_config_credentials["password"],
-        create_records_sql,
-        commit=True,
-    )
-
-    # Verify written data
-    select_data_sql = [
-        f"SELECT * FROM test.data_verification_table WHERE id = '{random_chars}'",
-    ]
-    # Retry
-    try:
-        for attempt in AsyncRetrying(stop=stop_after_delay(5), wait=wait_fixed(3)):
-            with attempt:
-                output = await execute_queries_on_unit(
-                    primary_unit_address,
-                    server_config_credentials["username"],
-                    server_config_credentials["password"],
-                    select_data_sql,
-                )
-                assert random_chars in output
-    except RetryError:
-        assert False
+    # Write data to unit & verify that data was written
+    database_name, table_name = "test-single-pod-delete", "data"
+    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
+    await clean_up_database_and_table(ops_test, database_name, table_name)
