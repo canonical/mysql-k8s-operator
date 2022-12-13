@@ -421,8 +421,8 @@ class MySQLOperatorCharm(CharmBase):
         One purpose of this event handler is to ensure that scaled down units are
         removed from the cluster.
         """
-        if self.unit_peer_data.get("member-state") == "waiting":
-            # avoid changing status while in initialisation
+        if self.unit_peer_data.get("member-state") == "restarting":
+            # avoid changing status while tls is being set up
             return
 
         container = self.unit.get_container(CONTAINER_NAME)

@@ -323,12 +323,14 @@ async def test_network_cut_affecting_an_instance(
 
 @pytest.mark.order(2)
 @pytest.mark.abort_on_fail
-@pytest.mark.self_healing_tests
+@pytest.mark.self_healing_tests_a
 async def test_graceful_full_cluster_crash_test(
     ops_test: OpsTest, continuous_writes, restart_policy
 ) -> None:
     """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
     mysql_application_name, application_name = await high_availability_test_setup(ops_test)
+
+    time.sleep(30)
 
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
@@ -358,6 +360,12 @@ async def test_graceful_full_cluster_crash_test(
                 await ensure_process_not_running(
                     ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
                 )
+
+    async with ops_test.fast_forward():
+        await ops_test.model.block_until(
+            lambda: ops_test.model.applications[mysql_application_name].status != "active",
+            timeout=15 * 60
+        )
 
     # restart the cluster
     await update_pebble_plan(
