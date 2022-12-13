@@ -240,7 +240,7 @@ class TestMySQL(unittest.TestCase):
 
         _expected_escalate_user_privileges_commands = (
             "shell.connect('serverconfig:serverconfigpassword@1.1.1.1:3306')",
-            "session.run_sql(\"GRANT ALL ON *.* TO `test_user`@`%` WITH GRANT OPTION;\")",
+            'session.run_sql("GRANT ALL ON *.* TO `test_user`@`%` WITH GRANT OPTION;")',
             f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM `test_user`@`%`;\")",
             'session.run_sql("FLUSH PRIVILEGES;")',
         )
