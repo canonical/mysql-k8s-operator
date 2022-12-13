@@ -9,16 +9,12 @@ import lightkube
 import pytest
 from lightkube.resources.core_v1 import Pod
 from pytest_operator.plugin import OpsTest
-from tenacity import AsyncRetrying, RetryError, Retrying, stop_after_delay, wait_fixed
+from tenacity import Retrying, stop_after_delay, wait_fixed
 
 from tests.integration.helpers import (
-    execute_queries_on_unit,
-    generate_random_string,
     get_cluster_status,
     get_primary_unit,
     get_process_pid,
-    get_server_config_credentials,
-    get_unit_address,
     scale_application,
 )
 from tests.integration.high_availability.high_availability_helpers import (
