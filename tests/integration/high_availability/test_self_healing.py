@@ -323,7 +323,7 @@ async def test_network_cut_affecting_an_instance(
 
 @pytest.mark.order(2)
 @pytest.mark.abort_on_fail
-@pytest.mark.self_healing_tests_a
+@pytest.mark.self_healing_tests
 async def test_graceful_full_cluster_crash_test(
     ops_test: OpsTest, continuous_writes, restart_policy
 ) -> None:
@@ -364,7 +364,7 @@ async def test_graceful_full_cluster_crash_test(
     async with ops_test.fast_forward():
         await ops_test.model.block_until(
             lambda: ops_test.model.applications[mysql_application_name].status != "active",
-            timeout=15 * 60
+            timeout=15 * 60,
         )
 
     # restart the cluster

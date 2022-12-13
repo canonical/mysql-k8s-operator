@@ -402,7 +402,7 @@ class MySQL(MySQLBase):
 
             escalate_user_privileges_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
-                f"session.run_sql(\"GRANT ALL ON *.* TO `{username}`@`{hostname}` WITH GRANT OPTION;\")",
+                f'session.run_sql("GRANT ALL ON *.* TO `{username}`@`{hostname}` WITH GRANT OPTION;")',
                 f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM `{username}`@`{hostname}`;\")",
                 'session.run_sql("FLUSH PRIVILEGES;")',
             )
