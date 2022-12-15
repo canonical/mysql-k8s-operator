@@ -9,7 +9,7 @@ import subprocess
 import tarfile
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import kubernetes
 import yaml
@@ -33,8 +33,6 @@ from tenacity import (
     stop_after_delay,
     wait_fixed,
 )
-
-from constants import CONTAINER_NAME, MYSQLD_SERVICE
 
 # Copied these values from high_availability.application_charm.src.charm
 DATABASE_NAME = "continuous_writes_database"
@@ -579,6 +577,7 @@ def copy_file_into_pod(
     source_path: str,
 ) -> None:
     """Copy file contents into pod.
+
     Args:
         client: The kubernetes CoreV1Api client
         namespace: The namespace of the pod to copy files to
@@ -626,14 +625,20 @@ def copy_file_into_pod(
 
 
 def modify_pebble_restart_delay(
-    ops_test: OpsTest, unit_name: str, container_name: str, process_name: str, pebble_plan_path: str
+    ops_test: OpsTest,
+    unit_name: str,
+    container_name: str,
+    process_name: str,
+    pebble_plan_path: str,
 ) -> None:
-    """Extend the pebble restart delay of the underlying process.
+    """Modify the pebble restart delay of the underlying process.
+
     Args:
         ops_test: The ops test framework
         unit_name: The name of unit to extend the pebble restart delay for
         container_name: The name of container to extend the pebble restart delay for
         process_name: The name of the mysqld process to extend the pebble restart delay for
+        pebble_plan_path: Path to the file with the modified pebble plan
     """
     kubernetes.config.load_kube_config()
     client = kubernetes.client.api.core_v1_api.CoreV1Api()
