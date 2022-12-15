@@ -1,0 +1,5 @@
+services:
+  mysqld:
+    override: merge
+    backoff-delay: 300s
+    backoff-limit: 300s

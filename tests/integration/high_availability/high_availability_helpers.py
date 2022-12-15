@@ -2,11 +2,11 @@
 # See LICENSE file for licensing details.
 
 import datetime
-import json
 import logging
 import os
 import string
 import subprocess
+import tarfile
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -570,46 +570,120 @@ async def ensure_process_not_running(
     ), f"Process {process} is still running with pid {pid} on unit {unit_name}, container {container_name}"
 
 
-async def update_pebble_plan(
-    ops_test: OpsTest, override: Dict[str, str], mysql_application_name: str
+def copy_file_into_pod(
+    client: kubernetes.client.api.core_v1_api.CoreV1Api,
+    namespace: str,
+    pod_name: str,
+    container_name: str,
+    destination_path: str,
+    source_path: str,
 ) -> None:
-    """Injects a given override in mongod services and replans."""
-    layer = json.dumps({"services": {MYSQLD_SERVICE: {"override": "merge", **override}}})
-    base_cmd = (
-        "ssh",
-        "--container",
-        CONTAINER_NAME,
-    )
+    """Copy file contents into pod.
+    Args:
+        client: The kubernetes CoreV1Api client
+        namespace: The namespace of the pod to copy files to
+        pod_name: The name of the pod to copy files to
+        container_name: The name of the pod container to copy files to
+        destination_path: The path to which the file should be copied over
+        source_path: The path of the file which needs to be copied over
+    """
+    try:
+        exec_command = ["tar", "xvf", "-", "-C", "/"]
+
+        api_response = kubernetes.stream.stream(
+            client.connect_get_namespaced_pod_exec,
+            pod_name,
+            namespace,
+            container=container_name,
+            command=exec_command,
+            stdin=True,
+            stdout=True,
+            stderr=True,
+            tty=False,
+            _preload_content=False,
+        )
+
+        with tempfile.TemporaryFile() as tar_buffer:
+            with tarfile.open(fileobj=tar_buffer, mode="w") as tar:
+                tar.add(source_path, destination_path)
+
+            tar_buffer.seek(0)
+            commands = []
+            commands.append(tar_buffer.read())
+
+            while api_response.is_open():
+                api_response.update(timeout=1)
+
+                if commands:
+                    command = commands.pop(0)
+                    api_response.write_stdin(command.decode())
+                else:
+                    break
+
+            api_response.close()
+    except kubernetes.client.rest.ApiException:
+        assert False
+
+
+def modify_pebble_restart_delay(
+    ops_test: OpsTest, unit_name: str, container_name: str, process_name: str, pebble_plan_path: str
+) -> None:
+    """Extend the pebble restart delay of the underlying process.
+    Args:
+        ops_test: The ops test framework
+        unit_name: The name of unit to extend the pebble restart delay for
+        container_name: The name of container to extend the pebble restart delay for
+        process_name: The name of the mysqld process to extend the pebble restart delay for
+    """
+    kubernetes.config.load_kube_config()
+    client = kubernetes.client.api.core_v1_api.CoreV1Api()
+
+    pod_name = unit_name.replace("/", "-")
     now = datetime.datetime.now().isoformat()
 
-    for unit in ops_test.model.applications[mysql_application_name].units:
-        echo_cmd = (
-            *base_cmd,
-            unit.name,
-            "echo",
-            f"'{layer}'",
-            ">",
-            "/ha_test.json",
-        )
-        ret_code, _, _ = await ops_test.juju(*echo_cmd)
-        assert ret_code == 0, f"Failed to create layer for {unit.name}"
-        add_plan_cmd = (
-            *base_cmd,
-            unit.name,
-            "/charm/bin/pebble",
-            "add",
-            # layer name label should be unique
-            f"ha_test_{now}",
-            "ha_test.json",
-        )
-        ret_code, _, _ = await ops_test.juju(*add_plan_cmd)
-        assert ret_code == 0, f"Failed to set pebble plan for unit {unit.name}"
+    copy_file_into_pod(
+        client,
+        ops_test.model.info.name,
+        pod_name,
+        container_name,
+        f"/tmp/pebble_plan_{now}.yml",
+        pebble_plan_path,
+    )
 
-        replan_cmd = (
-            *base_cmd,
-            unit.name,
-            "/charm/bin/pebble",
-            "replan",
-        )
-        ret_code, _, _ = await ops_test.juju(*replan_cmd)
-        assert ret_code == 0, f"Failed to replan for unit {unit.name}"
+    add_to_pebble_layer_commands = (
+        f"/charm/bin/pebble add --combine {process_name} /tmp/pebble_plan_{now}.yml"
+    )
+    response = kubernetes.stream.stream(
+        client.connect_get_namespaced_pod_exec,
+        pod_name,
+        ops_test.model.info.name,
+        container=container_name,
+        command=add_to_pebble_layer_commands.split(),
+        stdin=False,
+        stdout=True,
+        stderr=True,
+        tty=False,
+        _preload_content=False,
+    )
+    response.run_forever(timeout=5)
+    assert (
+        response.returncode == 0
+    ), f"Failed to add to pebble layer, unit={unit_name}, container={container_name}, process={process_name}"
+
+    replan_pebble_layer_commands = "/charm/bin/pebble replan"
+    response = kubernetes.stream.stream(
+        client.connect_get_namespaced_pod_exec,
+        pod_name,
+        ops_test.model.info.name,
+        container=container_name,
+        command=replan_pebble_layer_commands.split(),
+        stdin=False,
+        stdout=True,
+        stderr=True,
+        tty=False,
+        _preload_content=False,
+    )
+    response.run_forever(timeout=15)
+    assert (
+        response.returncode == 0
+    ), f"Failed to replan pebble layer, unit={unit_name}, container={container_name}, process={process_name}"

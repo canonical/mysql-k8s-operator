@@ -22,7 +22,6 @@ from tests.integration.high_availability.high_availability_helpers import (
     isolate_instance_from_cluster,
     remove_instance_isolation,
     send_signal_to_pod_container_process,
-    update_pebble_plan,
     wait_until_units_in_status,
 )
 
@@ -330,8 +329,6 @@ async def test_graceful_full_cluster_crash_test(
     """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
     mysql_application_name, application_name = await high_availability_test_setup(ops_test)
 
-    time.sleep(30)
-
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
     assert await ensure_n_online_mysql_members(
@@ -362,17 +359,10 @@ async def test_graceful_full_cluster_crash_test(
                 )
 
     async with ops_test.fast_forward():
-        await ops_test.model.block_until(
-            lambda: ops_test.model.applications[mysql_application_name].status != "active",
-            timeout=15 * 60,
-        )
+        logger.info("Sleeping for 6 minutes to await restart of mysqld processes in units")
+        # The restart delay for pebble is 300s, sleep for 360s to ensure that mysqld is started
+        time.sleep(360)
 
-    # restart the cluster
-    await update_pebble_plan(
-        ops_test, {"on-failure": "restart", "on-success": "restart"}, mysql_application_name
-    )
-
-    async with ops_test.fast_forward():
         # wait for model to stabilize, and all members to recover
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],

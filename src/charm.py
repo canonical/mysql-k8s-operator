@@ -391,7 +391,7 @@ class MySQLOperatorCharm(CharmBase):
             else MaintenanceStatus(state)
         )
 
-        if state == "unreachable" or state == "recovering":
+        if state in ["unreachable", "recovering"]:
             return True
 
         if state == "offline":
@@ -408,10 +408,11 @@ class MySQLOperatorCharm(CharmBase):
                 logger.info("Attempting reboot from complete outage.")
                 try:
                     self._mysql.reboot_from_complete_outage()
-                    return True
                 except MySQLRebootFromCompleteOutageError:
                     logger.error("Failed to reboot cluster from complete outage.")
                     self.unit.status = BlockedStatus("failed to recover cluster.")
+
+            return True
 
         return False
 
@@ -421,8 +422,8 @@ class MySQLOperatorCharm(CharmBase):
         One purpose of this event handler is to ensure that scaled down units are
         removed from the cluster.
         """
-        if self.unit_peer_data.get("member-state") == "restarting":
-            # avoid changing status while tls is being set up
+        if self.unit_peer_data.get("member-state") in ["waiting", "restarting"]:
+            # avoid changing status while tls is being set up or charm is being initialized
             return
 
         container = self.unit.get_container(CONTAINER_NAME)
@@ -526,6 +527,7 @@ class MySQLOperatorCharm(CharmBase):
             instance_label
         ):
             self.unit_peer_data["unit-initialized"] = "True"
+            self.unit_peer_data["member-state"] = "online"
             self.unit.status = ActiveStatus(self.active_status_message)
             logger.debug(f"Instance {instance_label} is cluster member")
 

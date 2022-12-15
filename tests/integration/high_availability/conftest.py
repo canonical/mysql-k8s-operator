@@ -2,14 +2,19 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import logging
 import pytest
+
 from integration.high_availability.high_availability_helpers import (
     deploy_chaos_mesh,
     destroy_chaos_mesh,
     get_application_name,
-    update_pebble_plan,
+    modify_pebble_restart_delay,
 )
+from constants import CONTAINER_NAME, MYSQLD_SERVICE
 from pytest_operator.plugin import OpsTest
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -46,12 +51,40 @@ async def restart_policy(ops_test: OpsTest) -> None:
     """Sets and resets service pebble restart policy on all units."""
     mysql_application_name = await get_application_name(ops_test, "mysql")
 
-    await update_pebble_plan(
-        ops_test, {"on-failure": "ignore", "on-success": "ignore"}, mysql_application_name
-    )
+    for unit in ops_test.model.applications[mysql_application_name].units:
+        modify_pebble_restart_delay(
+            ops_test,
+            unit.name,
+            CONTAINER_NAME,
+            MYSQLD_SERVICE,
+            "tests/integration/high_availability/manifests/extend_pebble_restart_delay.yml",
+        )
+
+        async with ops_test.fast_forward():
+            await ops_test.model.wait_for_idle(
+                apps=[mysql_application_name],
+                status="active",
+                raise_on_blocked=True,
+                timeout=5 * 60,
+                idle_period=30,
+            )
 
     yield
 
-    await update_pebble_plan(
-        ops_test, {"on-failure": "restart", "on-success": "restart"}, mysql_application_name
-    )
+    for unit in ops_test.model.applications[mysql_application_name].units:
+        modify_pebble_restart_delay(
+            ops_test,
+            unit.name,
+            CONTAINER_NAME,
+            MYSQLD_SERVICE,
+            "tests/integration/high_availability/manifests/reduce_pebble_restart_delay.yml",
+        )
+
+        async with ops_test.fast_forward():
+            await ops_test.model.wait_for_idle(
+                apps=[mysql_application_name],
+                status="active",
+                raise_on_blocked=True,
+                timeout=5 * 60,
+                idle_period=30,
+            )
