@@ -380,12 +380,8 @@ async def test_graceful_full_cluster_crash_test(
         assert new_pid > unit_mysqld_pids[unit.name]
 
     cluster_status = await get_cluster_status(ops_test, mysql_units[0])
-    assert all(
-        [
-            member["status"] == "online"
-            for member in cluster_status["defaultreplicaset"]["topology"].values()
-        ]
-    )
+    for member in cluster_status["defaultreplicaset"]["topology"].values():
+        assert member["status"] == "online"
 
     # The full cluster crash causes the continuous writes application to raise an error
     # Thus we reset continuous writes and ensure that they are incrementing on all units
