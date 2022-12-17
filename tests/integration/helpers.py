@@ -62,7 +62,7 @@ async def get_cluster_status(ops_test: OpsTest, unit: Unit) -> Dict:
     """
     get_cluster_status_action = await unit.run_action("get-cluster-status")
     cluster_status_results = await get_cluster_status_action.wait()
-    return cluster_status_results.results
+    return cluster_status_results.results.get("status", {})
 
 
 async def get_primary_unit(

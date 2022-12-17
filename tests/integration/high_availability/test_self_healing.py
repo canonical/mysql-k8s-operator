@@ -157,7 +157,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     async with ops_test.fast_forward():
         for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
             with attempt:
-                assert ensure_all_units_continuous_writes_incrementing(
+                await ensure_all_units_continuous_writes_incrementing(
                     ops_test, remaining_online_units
                 )
 
@@ -257,7 +257,7 @@ async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -
     async with ops_test.fast_forward():
         for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
             with attempt:
-                assert ensure_all_units_continuous_writes_incrementing(ops_test)
+                await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
 @pytest.mark.order(2)

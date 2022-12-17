@@ -44,7 +44,12 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
         config = {"cluster-name": CLUSTER_NAME}
         await ops_test.model.deploy(
-            charm, resources=resources, application_name=APP_NAME, config=config, num_units=3
+            charm,
+            resources=resources,
+            application_name=APP_NAME,
+            config=config,
+            num_units=3,
+            series="jammy",
         )
 
         await ops_test.model.wait_for_idle(
