@@ -14,6 +14,8 @@ from tests.integration.high_availability.high_availability_helpers import (
     clean_up_database_and_table,
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
+    ensure_process_not_running,
+    get_max_written_value_in_database,
     get_process_stat,
     high_availability_test_setup,
     insert_data_into_mysql_and_validate_replication,
@@ -27,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 MYSQL_CONTAINER_NAME = "mysql"
 MYSQLD_PROCESS_NAME = "mysqld"
+TIMEOUT = 30 * 60
 
 
 @pytest.mark.order(1)
@@ -315,3 +318,86 @@ async def test_network_cut_affecting_an_instance(
     assert isolated_primary_memberrole == "secondary"
 
     await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+
+@pytest.mark.order(2)
+@pytest.mark.abort_on_fail
+@pytest.mark.self_healing_tests
+async def test_graceful_full_cluster_crash_test(
+    ops_test: OpsTest, continuous_writes, restart_policy
+) -> None:
+    """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
+    mysql_application_name, application_name = await high_availability_test_setup(ops_test)
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+    assert await ensure_n_online_mysql_members(
+        ops_test, 3
+    ), "The deployed mysql application does not have three online nodes"
+
+    mysql_units = ops_test.model.applications[mysql_application_name].units
+
+    unit_mysqld_pids = {}
+    for unit in mysql_units:
+        pid = await get_process_pid(ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME)
+        assert pid > 1
+
+        unit_mysqld_pids[unit.name] = pid
+
+    written_value = await get_max_written_value_in_database(ops_test, mysql_units[0])
+
+    for unit in mysql_units:
+        await send_signal_to_pod_container_process(
+            ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME, "SIGTERM"
+        )
+
+    for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
+        with attempt:
+            for unit in mysql_units:
+                await ensure_process_not_running(
+                    ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+                )
+
+    async with ops_test.fast_forward():
+        logger.info("Sleeping for 6 minutes to await restart of mysqld processes in units")
+        # The restart delay for pebble is 300s, sleep for 360s to ensure that mysqld is started
+        time.sleep(360)
+
+        # wait for model to stabilize, and all members to recover
+        await ops_test.model.wait_for_idle(
+            apps=[mysql_application_name],
+            status="active",
+            raise_on_blocked=False,
+            timeout=TIMEOUT,
+            idle_period=30,
+        )
+
+    for unit in mysql_units:
+        new_pid = await get_process_pid(
+            ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+        )
+        assert new_pid > 1
+        assert new_pid > unit_mysqld_pids[unit.name]
+
+    cluster_status = await get_cluster_status(ops_test, mysql_units[0])
+    for member in cluster_status["defaultreplicaset"]["topology"].values():
+        assert member["status"] == "online"
+
+    # The full cluster crash causes the continuous writes application to raise an error
+    # Thus we reset continuous writes and ensure that they are incrementing on all units
+    application_unit = ops_test.model.applications[application_name].units[0]
+
+    stop_continuous_writes_action = await application_unit.run_action("stop-continuous-writes")
+    stop_continuous_writes_results = await stop_continuous_writes_action.wait()
+    last_written_value = int(stop_continuous_writes_results.results.get("writes"))
+
+    assert last_written_value >= written_value
+
+    clear_continuous_writes_action = await application_unit.run_action("clear-continuous-writes")
+    await clear_continuous_writes_action.wait()
+
+    start_continuous_write_action = await application_unit.run_action("start-continuous-writes")
+    await start_continuous_write_action.wait()
+
+    async with ops_test.fast_forward():
+        await ensure_all_units_continuous_writes_incrementing(ops_test)

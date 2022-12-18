@@ -182,7 +182,7 @@ class TestMySQL(unittest.TestCase):
         """Test successful execution of create_database."""
         _expected_create_database_commands = (
             "shell.connect('serverconfig:serverconfigpassword@1.1.1.1:3306')",
-            'session.run_sql("CREATE DATABASE IF NOT EXISTS test_database;")',
+            'session.run_sql("CREATE DATABASE IF NOT EXISTS `test_database`;")',
         )
 
         self.mysql.create_database("test_database")
@@ -205,7 +205,7 @@ class TestMySQL(unittest.TestCase):
         _escaped_attributes = json.dumps({"label": "test_label"}).replace('"', r"\"")
         _expected_create_user_commands = (
             "shell.connect('serverconfig:serverconfigpassword@1.1.1.1:3306')",
-            f"session.run_sql(\"CREATE USER 'test_user'@'%' IDENTIFIED BY 'test_password' ATTRIBUTE '{_escaped_attributes}';\")",
+            f"session.run_sql(\"CREATE USER `test_user`@`%` IDENTIFIED BY 'test_password' ATTRIBUTE '{_escaped_attributes}';\")",
         )
 
         self.mysql.create_user("test_user", "test_password", "test_label")
@@ -240,8 +240,8 @@ class TestMySQL(unittest.TestCase):
 
         _expected_escalate_user_privileges_commands = (
             "shell.connect('serverconfig:serverconfigpassword@1.1.1.1:3306')",
-            "session.run_sql(\"GRANT ALL ON *.* TO 'test_user'@'%' WITH GRANT OPTION;\")",
-            f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM 'test_user'@'%';\")",
+            'session.run_sql("GRANT ALL ON *.* TO `test_user`@`%` WITH GRANT OPTION;")',
+            f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM `test_user`@`%`;\")",
             'session.run_sql("FLUSH PRIVILEGES;")',
         )
 

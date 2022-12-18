@@ -96,7 +96,7 @@ class MySQLTLS(Object):
         self.create_tls_config_file()
 
         # set member-state to avoid unwanted health-check actions
-        self.charm.unit_peer_data["member-state"] = "waiting"
+        self.charm.unit_peer_data["member-state"] = "restarting"
         # trigger rolling restart
         self.charm.on[self.charm.restart_manager.name].acquire_lock.emit()
 
