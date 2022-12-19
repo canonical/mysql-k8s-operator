@@ -11,11 +11,16 @@ from charms.mysql.v0.mysql import (
     MySQLCreateApplicationDatabaseAndScopedUserError,
     MySQLDeleteUsersForUnitError,
 )
-from ops.charm import CharmBase, RelationBrokenEvent, RelationCreatedEvent
+from ops.charm import (
+    CharmBase,
+    RelationBrokenEvent,
+    RelationChangedEvent,
+    RelationCreatedEvent,
+)
 from ops.framework import Object
 from ops.model import BlockedStatus
 
-from constants import LEGACY_MYSQL, PASSWORD_LENGTH
+from constants import CONTAINER_NAME, LEGACY_MYSQL, PASSWORD_LENGTH, PEER
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -36,6 +41,10 @@ class MySQLRelation(Object):
         self.framework.observe(
             self.charm.on[LEGACY_MYSQL].relation_broken, self._on_mysql_relation_broken
         )
+        self.framework.observe(
+            self.charm.on[PEER].relation_changed, self._on_peer_relation_changed
+        )
+        self.framework.observe(self.charm.on.update_status, self._update_status)
 
     def _get_or_set_password_in_peer_databag(self, username: str) -> str:
         """Get a user's password from the peer databag if it exists, else populate a password.
@@ -57,32 +66,71 @@ class MySQLRelation(Object):
     def _on_leader_elected(self, _) -> None:
         """Handle the leader elected event.
 
-        Retrieves relation data from the peer relation databag and copies
-        the relation data into the new leader unit's databag.
+        Updates a key in the peer relation databag in order to trigger the peer
+        relation changed event.
         """
         # Skip if the charm is not past the setup phase (config-changed event not executed yet)
         if not self.charm._is_peer_data_set:
             return
 
-        relation_data = json.loads(self.charm.app_peer_data.get("mysql_relation_data", "{}"))
+        # Trigger a peer relation changed event in order to refresh the relation data
+        leader_elected_count = int(self.charm.app_peer_data.get("leader_elected_count", "1"))
+        self.charm.app_peer_data["leader_elected_count"] = str(leader_elected_count + 1)
 
-        for relation in self.charm.model.relations.get(LEGACY_MYSQL, []):
-            relation_databag = relation.data
+    def _update_status(self, _) -> None:
+        """Handle the update status event.
 
-            # Copy relation data into the new leader unit's databag
-            for key, value in relation_data.items():
-                if relation_databag[self.charm.unit].get(key) != value:
-                    relation_databag[self.charm.unit][key] = value
+        Compares the current host (in relation data) with the current primary.
+        If they are different, changes a key in the peer relation databag in order
+        to trigger the peer relation changed event.
+        """
+        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) == "{}":
+            return
 
-            # Assign the cluster primary's address as the database host
-            primary_address = self.charm._mysql.get_cluster_primary_address()
-            if not primary_address:
-                self.charm.unit.status = BlockedStatus(
-                    "Failed to retrieve cluster primary address"
-                )
-                return
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            return
 
-            relation_databag[self.charm.unit]["host"] = primary_address.split(":")[0]
+        host = json.loads(relation_data)["host"]
+
+        primary_address = self.charm._mysql.get_cluster_primary_address()
+        if not primary_address:
+            self.charm.unit.status = BlockedStatus("Failed to retrieve cluster primary address")
+            return
+
+        if host != primary_address.split(":")[0]:
+            # Trigger a peer relation changed event in order to refresh the relation data
+            update_status_count = int(self.charm.app_peer_data.get("update_status_count", "0"))
+            self.charm.app_peer_data["update_status_count"] = str(update_status_count + 1)
+
+    def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
+        """Handle the peer relation changed event.
+
+        Stores and refreshes the relation data on all units (as some consumer
+        applications retrieve the relation data from random units).
+        """
+        if not self.charm._is_peer_data_set or not self.model.get_relation(LEGACY_MYSQL):
+            # Avoid running too early
+            event.defer()
+            return
+
+        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) == "{}":
+            return
+
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            return
+
+        updates = json.loads(relation_data)
+
+        # Update the host (in case it has changed)
+        primary_address = self.charm._mysql.get_cluster_primary_address()
+        if not primary_address:
+            self.charm.unit.status = BlockedStatus("Failed to retrieve cluster primary address")
+            return
+        updates["host"] = primary_address.split(":")[0]
+
+        self.model.get_relation(LEGACY_MYSQL).data[self.charm.unit].update(updates)
 
     def _on_mysql_relation_created(self, event: RelationCreatedEvent) -> None:
         """Handle the legacy 'mysql' relation created event.
@@ -152,9 +200,6 @@ class MySQLRelation(Object):
             "user": username,
         }
 
-        event.relation.data[self.charm.unit].update(updates)
-
-        # Store the relation data into the peer relation databag
         self.charm.app_peer_data["mysql_relation_data"] = json.dumps(updates)
 
     def _on_mysql_relation_broken(self, event: RelationBrokenEvent) -> None:
