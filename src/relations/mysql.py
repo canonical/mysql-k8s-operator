@@ -20,7 +20,7 @@ from ops.charm import (
 from ops.framework import Object
 from ops.model import BlockedStatus
 
-from constants import LEGACY_MYSQL, PASSWORD_LENGTH, PEER
+from constants import CONTAINER_NAME, LEGACY_MYSQL, PASSWORD_LENGTH, PEER
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -87,6 +87,10 @@ class MySQLRelation(Object):
         if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) != "{}":
             return
 
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            return
+
         host = json.loads(relation_data)["host"]
 
         primary_address = self.charm._mysql.get_cluster_primary_address()
@@ -111,6 +115,10 @@ class MySQLRelation(Object):
             return
 
         if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) != "{}":
+            return
+
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
             return
 
         updates = json.loads(relation_data)
