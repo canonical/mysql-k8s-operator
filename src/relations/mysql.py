@@ -84,7 +84,7 @@ class MySQLRelation(Object):
         If they are different, changes a key in the peer relation databag in order
         to trigger the peer relation changed event.
         """
-        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) != "{}":
+        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) == "{}":
             return
 
         container = self.charm.unit.get_container(CONTAINER_NAME)
@@ -114,7 +114,7 @@ class MySQLRelation(Object):
             event.defer()
             return
 
-        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) != "{}":
+        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) == "{}":
             return
 
         container = self.charm.unit.get_container(CONTAINER_NAME)
