@@ -84,10 +84,10 @@ class MySQLRelation(Object):
         If they are different, changes a key in the peer relation databag in order
         to trigger the peer relation changed event.
         """
-        if not (relation_data := json.loads(self.charm.app_peer_data.get("mysql_relation_data"))):
+        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) != "{}":
             return
 
-        host = relation_data["host"]
+        host = json.loads(relation_data)["host"]
 
         primary_address = self.charm._mysql.get_cluster_primary_address()
         if not primary_address:
@@ -110,7 +110,7 @@ class MySQLRelation(Object):
             event.defer()
             return
 
-        if not (relation_data := self.charm.app_peer_data.get("mysql_relation_data")):
+        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) != "{}":
             return
 
         updates = json.loads(relation_data)
