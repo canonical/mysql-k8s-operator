@@ -3,6 +3,7 @@
 
 get-cluster-status:
   description: Get cluster status information without topology
+
 get-password:
   description: Fetch the system user's password, which is used by charm.
     It is for internal charm users and SHOULD NOT be used by applications.
@@ -33,4 +34,3 @@ set-tls-private-key:
       type: string
       description: The content of private key for internal communications with
         clients. Content will be auto-generated if this option is not specified.
-
