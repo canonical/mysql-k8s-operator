@@ -40,53 +40,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
-async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_writes) -> None:
-    """Test to kill the primary under load and ensure re-election of primary."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
-
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
-
-    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
-    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
-    primary_name = primary.name
-
-    # kill the primary pod
-    client = lightkube.Client()
-    client.delete(Pod, primary.name.replace("/", "-"), namespace=ops_test.model.info.name)
-
-    time.sleep(60)
-
-    async with ops_test.fast_forward():
-        # wait for model to stabilize, k8s will re-create the killed pod
-        await ops_test.model.wait_for_idle(
-            apps=[mysql_application_name],
-            status="active",
-            raise_on_blocked=True,
-            timeout=TIMEOUT,
-            idle_period=30,
-        )
-
-        # ensure a new primary was elected
-        mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
-        new_primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
-        new_primary_name = new_primary.name
-
-        assert primary_name != new_primary_name
-
-        # wait (and retry) until the killed pod is back online in the mysql cluster
-        assert await ensure_n_online_mysql_members(
-            ops_test, 3
-        ), "Old primary has not come back online after being killed"
-
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
-
-    database_name, table_name = "test-kill-primary-check-reelection", "data"
-    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
-    await clean_up_database_and_table(ops_test, database_name, table_name)
-
-
-@pytest.mark.abort_on_fail
-@pytest.mark.replication_tests
 async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
     """Test to write to primary, and read the same data back from replicas."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
@@ -234,4 +187,53 @@ async def test_scaling_without_data_loss(ops_test: OpsTest) -> None:
         assert output[0] == value_after_scale_up
 
     # clean up inserted data, and created tables + databases
+    await clean_up_database_and_table(ops_test, database_name, table_name)
+
+
+# TODO: move test immediately after "test_build_and_deploy" once the following issue is resolved
+# https://github.com/canonical/mysql-k8s-operator/issues/102
+@pytest.mark.abort_on_fail
+@pytest.mark.replication_tests
+async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_writes) -> None:
+    """Test to kill the primary under load and ensure re-election of primary."""
+    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
+    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+    primary_name = primary.name
+
+    # kill the primary pod
+    client = lightkube.Client()
+    client.delete(Pod, primary.name.replace("/", "-"), namespace=ops_test.model.info.name)
+
+    time.sleep(60)
+
+    async with ops_test.fast_forward():
+        # wait for model to stabilize, k8s will re-create the killed pod
+        await ops_test.model.wait_for_idle(
+            apps=[mysql_application_name],
+            status="active",
+            raise_on_blocked=True,
+            timeout=TIMEOUT,
+            idle_period=30,
+        )
+
+        # ensure a new primary was elected
+        mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
+        new_primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+        new_primary_name = new_primary.name
+
+        assert primary_name != new_primary_name
+
+        # wait (and retry) until the killed pod is back online in the mysql cluster
+        assert await ensure_n_online_mysql_members(
+            ops_test, 3
+        ), "Old primary has not come back online after being killed"
+
+    await ensure_all_units_continuous_writes_incrementing(ops_test)
+
+    database_name, table_name = "test-kill-primary-check-reelection", "data"
+    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
     await clean_up_database_and_table(ops_test, database_name, table_name)
