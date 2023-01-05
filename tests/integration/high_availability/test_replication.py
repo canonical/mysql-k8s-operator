@@ -32,16 +32,12 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 15 * 60
 
 
-@pytest.mark.order(1)
 @pytest.mark.replication_tests
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
     await high_availability_test_setup(ops_test)
 
 
-# TODO: change test order to '2' after the following issue is resolved
-# https://github.com/canonical/mysql-k8s-operator/issues/102
-@pytest.mark.order(3)
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
 async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_writes) -> None:
@@ -89,7 +85,6 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_write
     await clean_up_database_and_table(ops_test, database_name, table_name)
 
 
-@pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
 async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
@@ -106,7 +101,6 @@ async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
-@pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
 async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writes) -> None:
@@ -164,7 +158,6 @@ async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writ
     await clean_up_database_and_table(ops_test, database_name, table_name)
 
 
-@pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.replication_tests
 async def test_scaling_without_data_loss(ops_test: OpsTest) -> None:
