@@ -467,6 +467,7 @@ class MySQL(MySQLBase):
         Args:
             script: mysql-shell python script string
             verbose: mysqlsh verbosity level
+
         Returns:
             stdout of the script
         """
