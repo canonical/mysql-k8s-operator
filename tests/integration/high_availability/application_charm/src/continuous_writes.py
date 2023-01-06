@@ -7,7 +7,8 @@ import sys
 from typing import Dict
 
 import mysql.connector
-from connector import MySQLConnector
+
+from connector import MySQLConnector  # isort: skip
 
 
 def continuous_writes(database_config: Dict, table_name: str, starting_number: int) -> None:
