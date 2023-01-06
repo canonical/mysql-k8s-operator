@@ -3,7 +3,6 @@
 
 """Library containing the implementation of the tls certificates relation."""
 
-
 import base64
 import logging
 import re

@@ -13,16 +13,6 @@ from typing import List, Optional, Tuple
 
 import kubernetes
 import yaml
-from helpers import (
-    execute_queries_on_unit,
-    generate_random_string,
-    get_cluster_status,
-    get_primary_unit,
-    get_server_config_credentials,
-    get_unit_address,
-    is_relation_joined,
-    scale_application,
-)
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 from tenacity import (
@@ -32,6 +22,17 @@ from tenacity import (
     stop_after_attempt,
     stop_after_delay,
     wait_fixed,
+)
+
+from tests.integration.helpers import (
+    execute_queries_on_unit,
+    generate_random_string,
+    get_cluster_status,
+    get_primary_unit,
+    get_server_config_credentials,
+    get_unit_address,
+    is_relation_joined,
+    scale_application,
 )
 
 # Copied these values from high_availability.application_charm.src.charm

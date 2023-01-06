@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
+
 import asyncio
 import logging
 from pathlib import Path
 
 import pytest
 import yaml
-from helpers import is_relation_broken, is_relation_joined
 from pytest_operator.plugin import OpsTest
+
+from tests.integration.helpers import is_relation_broken, is_relation_joined
 
 logger = logging.getLogger(__name__)
 
