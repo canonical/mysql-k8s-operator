@@ -9,7 +9,6 @@ from typing import Dict, List
 
 import mysql.connector
 import yaml
-from connector import MySQLConnector
 from juju.unit import Unit
 from mysql.connector.errors import (
     DatabaseError,
@@ -21,6 +20,7 @@ from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from constants import SERVER_CONFIG_USERNAME
+from tests.integration.connector import MySQLConnector
 
 
 def generate_random_string(length: int) -> str:

@@ -5,15 +5,15 @@
 import logging
 
 import pytest
-from integration.high_availability.high_availability_helpers import (
+from pytest_operator.plugin import OpsTest
+
+from constants import CONTAINER_NAME, MYSQLD_SERVICE
+from tests.integration.high_availability.high_availability_helpers import (
     deploy_chaos_mesh,
     destroy_chaos_mesh,
     get_application_name,
     modify_pebble_restart_delay,
 )
-from pytest_operator.plugin import OpsTest
-
-from constants import CONTAINER_NAME, MYSQLD_SERVICE
 
 logger = logging.getLogger(__name__)
 

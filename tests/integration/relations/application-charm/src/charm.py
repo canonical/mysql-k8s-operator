@@ -16,11 +16,12 @@ from charms.data_platform_libs.v0.database_requires import (
     DatabaseEndpointsChangedEvent,
     DatabaseRequires,
 )
-from connector import MySQLConnector
 from mysql.connector.errors import DatabaseError
 from ops.charm import CharmBase, RelationChangedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+
+from connector import MySQLConnector  # isort:skip
 
 logger = logging.getLogger(__name__)
 
