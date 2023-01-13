@@ -28,7 +28,6 @@ APPS = [DATABASE_APP_NAME, APPLICATION_APP_NAME]
 ENDPOINT = "database"
 
 
-@pytest.mark.order(1)
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
 @pytest.mark.database_tests
@@ -87,7 +86,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
     assert len(ops_test.model.applications[APPLICATION_APP_NAME].units) == 2
 
 
-@pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.database_tests
 async def test_relation_creation(ops_test: OpsTest):
@@ -102,7 +100,6 @@ async def test_relation_creation(ops_test: OpsTest):
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
 
 
-@pytest.mark.order(3)
 @pytest.mark.abort_on_fail
 @pytest.mark.database_tests
 async def test_relation_broken(ops_test: OpsTest):

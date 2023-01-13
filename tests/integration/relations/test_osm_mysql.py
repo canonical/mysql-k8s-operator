@@ -26,7 +26,6 @@ CLUSTER_NAME = "test_cluster"
 
 
 # TODO: deploy and relate osm-grafana once it can be use with MySQL Group Replication
-@pytest.mark.order(1)
 @pytest.mark.osm_mysql_tests
 async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
     """Test the deployment and relation with osm bundle with mysql replacing mariadb."""
@@ -140,7 +139,6 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         )
 
 
-@pytest.mark.order(2)
 @pytest.mark.osm_mysql_tests
 async def test_osm_pol_operations(ops_test: OpsTest) -> None:
     """Test the existence of databases and tables created by osm-pol's migrations."""
