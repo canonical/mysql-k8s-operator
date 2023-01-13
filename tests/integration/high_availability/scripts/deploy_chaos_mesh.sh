@@ -6,7 +6,7 @@ chaos_mesh_ns=$1
 chaos_mesh_version="2.4.1"
 
 if [ -z "${chaos_mesh_ns}" ]; then
-    echo "Error: missing mandatory argument. Aborting" >&2
+	echo "Error: missing mandatory argument. Aborting" >&2
 	exit 1
 fi
 
