@@ -29,19 +29,19 @@ destroy_chaos_mesh() {
 
 	if kubectl get clusterrolebinding | grep -q 'chaos-mesh'; then
 		echo "deleting clusterrolebindings"
-		read -ra args < <(kubectl get clusterrolebinding | awk '/chaos-mesh/ {print $1}')
+		readarray -t args < <(kubectl get clusterrolebinding | awk '/chaos-mesh/ {print $1}')
 		timeout 30 kubectl delete clusterrolebinding "${args[@]}" || true
 	fi
 
 	if kubectl get clusterrole | grep -q 'chaos-mesh'; then
 		echo "deleting clusterroles"
-		read -ra args < <(kubectl get clusterrole | awk '/chaos-mesh/ {print $1}')
+		readarray -t args < <(kubectl get clusterrole | awk '/chaos-mesh/ {print $1}')
 		timeout 30 kubectl delete clusterrole "${args[@]}" || true
 	fi
 
 	if kubectl get crd | grep -q 'chaos-mesh.org'; then
 		echo "deleting crds"
-		read -ra args < <(kubectl get crd | awk '/chaos-mesh.org/ {print $1}')
+		readarray -t args < <(kubectl get crd | awk '/chaos-mesh.org/ {print $1}')
 		timeout 30 kubectl delete crd "${args[@]}" || true
 	fi
 
