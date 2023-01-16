@@ -33,7 +33,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
+        # Code 6d3f514f validated for 3rd party action
+        uses: ludeeus/action-shellcheck@6d3f514f
 
   integration-test-microk8s-charm:
     name: Charm integration tests (microk8s)
