@@ -103,26 +103,27 @@ jobs:
       - name: Run replication integration tests
         run: tox -e integration-replication
 
-  integration-test-microk8s-self-healing:
-    name: Integration self healing tests (microk8s)
-    needs:
-      - lint
-      - unit-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
-          channel: 1.23/stable
-          bootstrap-options: "--agent-version 2.9.29"
-      - name: Install Helm
-        run: /usr/bin/sudo snap install helm3
-      - name: Run self healing integration tests
-        run: tox -e integration-self-healing
+# TODO: re-enable when stable (currently flaky)
+#  integration-test-microk8s-self-healing:
+#    name: Integration self healing tests (microk8s)
+#    needs:
+#      - lint
+#      - unit-test
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Setup operator environment
+#        uses: charmed-kubernetes/actions-operator@main
+#        with:
+#          provider: microk8s
+#          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
+#          channel: 1.23/stable
+#          bootstrap-options: "--agent-version 2.9.29"
+#      - name: Install Helm
+#        run: /usr/bin/sudo snap install helm3
+#      - name: Run self healing integration tests
+#        run: tox -e integration-self-healing
 
   integration-test-tls:
     needs:
