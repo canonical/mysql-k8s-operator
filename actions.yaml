@@ -34,3 +34,19 @@ set-tls-private-key:
       type: string
       description: The content of private key for internal communications with
         clients. Content will be auto-generated if this option is not specified.
+
+perform-backup:
+  description: Perform a database backup.
+  params:
+    s3-bucket:
+      type: string
+      description: The S3 bucket where to store the backup
+    s3-path:
+      type: string
+      description: The path to store the backup in the S3 bucket
+    s3-access-key:
+      type: string
+      description: The S3 access key
+    s3-secret-key:
+      type: string
+      description: The S3 secret key

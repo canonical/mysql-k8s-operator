@@ -30,6 +30,7 @@ from constants import (
     MYSQLD_CONFIG_FILE,
     MYSQLD_SOCK_FILE,
     MYSQLSH_SCRIPT_FILE,
+    RUN_BACKUP_FILE,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,20 @@ class MySQLForceRemoveUnitFromClusterError(Error):
 
 class MySQLWaitUntilUnitRemovedFromClusterError(Error):
     """Exception raised when there is an issue checking if a unit is removed from the cluster."""
+
+
+class MySQLCopyBackupScriptError(Error):
+    """Exception raised when there is an issue copying the backup script.
+
+    The backup script is copied to the workload container using the pebble API.
+    """
+
+
+class MySQLExecuteBackupScriptError(Error):
+    """Exception raised when there is an error executing the backup script.
+
+    The backup script is executed in the workload container using the pebble API.
+    """
 
 
 class MySQL(MySQLBase):
@@ -252,6 +267,31 @@ class MySQL(MySQLBase):
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
         except Exception:
             raise MySQLCreateCustomConfigFileError()
+
+    def copy_backup_script(self) -> None:
+        """Copy the run_backup.sh script to the workload container."""
+        try:
+            file_directory = os.path.dirname(os.path.realpath(__file__))
+
+            self.container.push_path(f"{file_directory}/scripts/run_backup.sh", "/")
+        except Exception as e:
+            logger.exception("Failed to copy backup script", exc_info=e)
+            raise MySQLCopyBackupScriptError()
+
+    def execute_backup_script(self, *args) -> None:
+        """Executes the run_backup.sh script in the container with the given args."""
+        execute_backup_script_commands = [
+            RUN_BACKUP_FILE,
+            *args,
+        ]
+
+        try:
+            process = self.container.exec(execute_backup_script_commands)
+            stdout, _ = process.wait_output()
+            return stdout
+        except ExecError as e:
+            logger.exception("Failed to execute backup script", exc_info=e)
+            raise MySQLExecuteBackupScriptError(e.stderr)
 
     @retry(
         retry=retry_if_exception_type(MySQLWaitUntilUnitRemovedFromClusterError),
