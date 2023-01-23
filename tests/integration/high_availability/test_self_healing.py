@@ -45,7 +45,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     await high_availability_test_setup(ops_test)
 
 
-@pytest.mark.skip
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
 async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
@@ -104,7 +103,6 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
     await clean_up_database_and_table(ops_test, database_name, table_name)
 
 
-@pytest.mark.skip
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
 async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
@@ -207,7 +205,6 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
-@pytest.mark.skip
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
 async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -> None:
@@ -325,7 +322,6 @@ async def test_network_cut_affecting_an_instance(
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
-@pytest.mark.skip
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
 async def test_graceful_full_cluster_crash_test(
@@ -408,7 +404,6 @@ async def test_graceful_full_cluster_crash_test(
         await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
-@pytest.mark.skip
 @pytest.mark.abort_on_fail
 @pytest.mark.self_healing_tests
 async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
