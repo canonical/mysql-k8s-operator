@@ -39,7 +39,7 @@ async def continuous_writes(ops_test: OpsTest) -> None:
 
 @pytest.fixture()
 async def chaos_mesh(ops_test: OpsTest) -> None:
-    """Deploys choas mesh to the namespace and uninstalls it at the end."""
+    """Deploys chaos mesh to the namespace and uninstalls it at the end."""
     deploy_chaos_mesh(ops_test.model.info.name)
 
     yield
