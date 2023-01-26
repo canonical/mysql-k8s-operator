@@ -100,15 +100,6 @@ class MySQLOperatorCharm(CharmBase):
         self.s3_integrator = MySQLS3Integration(self)
         self.backups = MySQLBackups(self)
 
-        self.RELATION_TO_UNIT_PEER_DATA = {
-            PEER: self.unit_peer_data,
-            DATABASE_BACKUPS_PEER: self.unit_backup_peer_data,
-        }
-        self.RELATION_TO_APP_PEER_DATA = {
-            PEER: self.app_peer_data,
-            DATABASE_BACKUPS_PEER: self.app_backup_peer_data,
-        }
-
     @property
     def peers(self):
         """Retrieve the peer relation (`ops.model.Relation`)."""
@@ -243,17 +234,61 @@ class MySQLOperatorCharm(CharmBase):
         relation: str = PEER,
     ) -> Optional[str]:
         """Get secret from the secret storage."""
-        if relation not in self.RELATION_TO_UNIT_PEER_DATA:
+        if relation not in [PEER, DATABASE_BACKUPS_PEER]:
             raise RuntimeError("Unknown peer relation")
 
         if scope == "unit":
-            unit_peer_data = self.RELATION_TO_UNIT_PEER_DATA[relation]
-            return unit_peer_data.get(key, None)
+            if relation == PEER:
+                return self.unit_peer_data.get(key, None)
+            elif relation == DATABASE_BACKUPS_PEER:
+                return self.unit_backup_peer_data.get(key, None)
         elif scope == "app":
-            app_peer_data = self.RELATION_TO_APP_PEER_DATA[relation]
-            return app_peer_data.get(key, None)
+            if relation == PEER:
+                return self.app_peer_data.get(key, None)
+            elif relation == DATABASE_BACKUPS_PEER:
+                return self.app_backup_peer_data.get(key, None)
         else:
             raise RuntimeError("Unknown secret scope.")
+
+    def _set_secret_in_unit_databag(
+        self,
+        key: str,
+        value: Optional[str],
+        relation: str = PEER,
+    ) -> None:
+        """Set secret in the unit databag."""
+        if not value:
+            if relation == PEER:
+                del self.unit_peer_data[key]
+            elif relation == DATABASE_BACKUPS_PEER:
+                del self.unit_backup_peer_data[key]
+
+            return
+
+        if relation == PEER:
+            self.unit_peer_data.update({key: value})
+        elif relation == DATABASE_BACKUPS_PEER:
+            self.unit_backup_peer_data.update({key: value})
+
+    def _set_secret_in_app_databag(
+        self,
+        key: str,
+        value: Optional[str],
+        relation: str = PEER,
+    ) -> None:
+        """Set secret in the app databag."""
+        if not value:
+            if relation == PEER:
+                del self.app_peer_data[key]
+            elif relation == DATABASE_BACKUPS_PEER:
+                del self.app_backup_peer_data[key]
+
+            return
+
+        if relation == PEER:
+            self.app_peer_data.update({key: value})
+        elif relation == DATABASE_BACKUPS_PEER:
+            self.app_backup_peer_data.update({key: value})
 
     def set_secret(
         self,
@@ -263,25 +298,13 @@ class MySQLOperatorCharm(CharmBase):
         relation: str = PEER,
     ) -> None:
         """Set secret in the secret storage."""
-        if relation not in self.RELATION_TO_UNIT_PEER_DATA:
+        if relation not in [PEER, DATABASE_BACKUPS_PEER]:
             raise RuntimeError("Unknown peer relation")
 
         if scope == "unit":
-            unit_peer_data = self.RELATION_TO_UNIT_PEER_DATA[relation]
-
-            if not value:
-                del unit_peer_data[key]
-                return
-
-            unit_peer_data.update({key: value})
+            self._set_secret_in_unit_databag(key, value, relation)
         elif scope == "app":
-            app_peer_data = self.RELATION_TO_APP_PEER_DATA[relation]
-
-            if not value:
-                del app_peer_data[key]
-                return
-
-            app_peer_data.update({key: value})
+            self._set_secret_in_app_databag(key, value, relation)
         else:
             raise RuntimeError("Unknown secret scope.")
 
