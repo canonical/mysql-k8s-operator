@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 class MySQLProvider(Object):
     """Standard database relation class."""
 
-    def __init__(self, charm):
+    def __init__(self, charm) -> None:
         super().__init__(charm, DB_RELATION_NAME)
 
         self.charm = charm
@@ -333,7 +333,7 @@ class MySQLProvider(Object):
 
         Primarily used to update the endpoints + read_only_endpoints.
         """
-        should_return = self.charm._update_status_cluster_state_checks()
+        should_return = self.charm._is_cluster_blocked()
         if should_return:
             return
 

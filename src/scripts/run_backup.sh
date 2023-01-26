@@ -39,6 +39,7 @@ fi
 MYSQL_SOCKET=/run/mysqld/mysqld.sock
 TMP_DIRECTORY=$(mktemp --tmpdir --directory xtra_backup_XXXX)
 
+# TODO: remove flag --no-server-version-check once all (mysql, xtrabackup) versions in sync
 xtrabackup --defaults-file=/etc/mysql \
             --defaults-group=mysqld \
             --no-version-check \

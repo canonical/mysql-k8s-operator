@@ -7,6 +7,7 @@
 import json
 import logging
 import os
+from typing import Tuple
 
 from charms.mysql.v0.mysql import (
     Error,
@@ -278,7 +279,7 @@ class MySQL(MySQLBase):
             logger.exception("Failed to copy backup script", exc_info=e)
             raise MySQLCopyBackupScriptError()
 
-    def execute_backup_script(self, *args) -> None:
+    def execute_backup_script(self, *args) -> Tuple[str, str]:
         """Executes the run_backup.sh script in the container with the given args."""
         execute_backup_script_commands = [
             RUN_BACKUP_FILE,
@@ -287,10 +288,12 @@ class MySQL(MySQLBase):
 
         try:
             process = self.container.exec(execute_backup_script_commands)
-            stdout, _ = process.wait_output()
-            return stdout
+            stdout, stderr = process.wait_output()
+            return (stdout, stderr)
         except ExecError as e:
             logger.exception("Failed to execute backup script", exc_info=e)
+            logger.error(f"Stdout of script: {e.stdout}")
+            logger.error(f"Stderr of script: {e.stderr}")
             raise MySQLExecuteBackupScriptError(e.stderr)
 
     @retry(

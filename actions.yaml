@@ -36,17 +36,8 @@ set-tls-private-key:
         clients. Content will be auto-generated if this option is not specified.
 
 perform-backup:
-  description: Perform a database backup.
-  params:
-    s3-bucket:
-      type: string
-      description: The S3 bucket where to store the backup
-    s3-path:
-      type: string
-      description: The path to store the backup in the S3 bucket
-    s3-access-key:
-      type: string
-      description: The S3 access key
-    s3-secret-key:
-      type: string
-      description: The S3 secret key
+  description: Perform a database backup using xtrabackup.
+    S3 credentials are retrieved from a relation with the S3 integrator charm.
+
+list-backups:
+  description: List backup_ids that this application has performed.
