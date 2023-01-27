@@ -1102,7 +1102,7 @@ class MySQLBase(ABC):
         """Sets the instance offline_mode.
 
         Args:
-            offline_mode: A boolean indicating whether to set the instance offline_mode
+            offline_mode: Value of offline_mode to set
 
         Raises:
             MySQLSetInstanceOfflineModeError - if issue setting instance offline_mode.

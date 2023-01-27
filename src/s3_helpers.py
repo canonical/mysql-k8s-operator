@@ -6,7 +6,7 @@
 
 import logging
 import tempfile
-from typing import List
+from typing import Set
 
 import boto3
 
@@ -67,7 +67,7 @@ def list_subdirectories_in_path(
     s3_endpoint: str,
     s3_access_key: str,
     s3_secret_key: str,
-) -> List[str]:
+) -> Set[str]:
     """Retrieve subdirectories in an S3 path.
 
     Args:
@@ -96,7 +96,7 @@ def list_subdirectories_in_path(
         for object in bucket.objects.filter(Prefix=s3_path):
             directories.add(object.key.lstrip(s3_path).lstrip("/").split("/")[0])
 
-        return list(directories)
+        return directories
     except Exception as e:
         logger.exception(
             f"Failed to list subdirectories in S3 bucket={s3_bucket}, path={s3_path}", exc_info=e
