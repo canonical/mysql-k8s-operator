@@ -40,4 +40,4 @@ perform-backup:
     S3 credentials are retrieved from a relation with the S3 integrator charm.
 
 list-backups:
-  description: List backup_ids that this application has performed.
+  description: List available backup_ids in the S3 bucket and path provided by the S3 integrator charm.

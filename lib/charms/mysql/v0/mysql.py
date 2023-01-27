@@ -1099,13 +1099,13 @@ class MySQLBase(ABC):
             raise MySQLRebootFromCompleteOutageError(e.message)
 
     def set_instance_offline_mode(self, offline_mode: bool = False) -> None:
-        """Sets the instance status as offline.
+        """Sets the instance offline_mode.
 
         Args:
-            offline_mode: A boolean indicating whether to set the instance offline
+            offline_mode: A boolean indicating whether to set the instance offline_mode
 
         Raises:
-            MySQLSetInstanceOfflineModeError - if issue setting instance as offline.
+            MySQLSetInstanceOfflineModeError - if issue setting instance offline_mode.
         """
         mode = "ON" if offline_mode else "OFF"
         set_instance_offline_mode_commands = (
@@ -1123,7 +1123,7 @@ class MySQLBase(ABC):
             raise MySQLSetInstanceOfflineModeError(e.message)
 
     def set_instance_option(self, option: str, value: Any) -> None:
-        """Sets the instance option.
+        """Sets an instance option.
 
         Args:
             option: The option to set for the instance

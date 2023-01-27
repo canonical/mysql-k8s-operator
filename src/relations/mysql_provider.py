@@ -333,8 +333,7 @@ class MySQLProvider(Object):
 
         Primarily used to update the endpoints + read_only_endpoints.
         """
-        should_return = self.charm._is_cluster_blocked()
-        if should_return:
+        if self.charm._is_cluster_blocked():
             return
 
         container = self.charm.unit.get_container(CONTAINER_NAME)

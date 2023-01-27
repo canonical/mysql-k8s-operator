@@ -7,6 +7,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Tuple
 
 from charms.mysql.v0.mysql import (
@@ -272,7 +273,7 @@ class MySQL(MySQLBase):
     def copy_backup_script(self) -> None:
         """Copy the run_backup.sh script to the workload container."""
         try:
-            file_directory = os.path.dirname(os.path.realpath(__file__))
+            file_directory = Path(__file__).parent
 
             self.container.push_path(f"{file_directory}/scripts/run_backup.sh", "/")
         except Exception as e:

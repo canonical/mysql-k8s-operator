@@ -7,6 +7,7 @@
 import logging
 from typing import Dict, Optional
 
+from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
     MySQLConfigureInstanceError,
@@ -41,7 +42,6 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
-    DATABASE_BACKUPS_PEER,
     MYSQLD_CONFIG_FILE,
     MYSQLD_SERVICE,
     PASSWORD_LENGTH,
@@ -50,6 +50,7 @@ from constants import (
     ROOT_PASSWORD_KEY,
     ROOT_USERNAME,
     RUN_BACKUP_FILE,
+    S3_INTEGRATOR_RELATION_NAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
@@ -64,7 +65,6 @@ from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_tls import MySQLTLS
 from relations.osm_mysql import MySQLOSMRelation
-from relations.s3_integrator import MySQLS3Integration
 from utils import generate_random_hash, generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -97,18 +97,13 @@ class MySQLOperatorCharm(CharmBase):
         self.restart_manager = RollingOpsManager(
             charm=self, relation="restart", callback=self._restart
         )
-        self.s3_integrator = MySQLS3Integration(self)
-        self.backups = MySQLBackups(self)
+        self.s3_integrator = S3Requirer(self, S3_INTEGRATOR_RELATION_NAME)
+        self.backups = MySQLBackups(self, self.s3_integrator)
 
     @property
     def peers(self):
         """Retrieve the peer relation (`ops.model.Relation`)."""
         return self.model.get_relation(PEER)
-
-    @property
-    def backup_peers(self):
-        """Retrieve the peer relation (`ops.model.Relation`)."""
-        return self.model.get_relation(DATABASE_BACKUPS_PEER)
 
     @property
     def app_peer_data(self) -> Dict:
@@ -119,28 +114,12 @@ class MySQLOperatorCharm(CharmBase):
         return self.peers.data[self.app]
 
     @property
-    def app_backup_peer_data(self) -> Dict:
-        """Application backup peer relation data object."""
-        if self.backup_peers is None:
-            return {}
-
-        return self.backup_peers.data[self.app]
-
-    @property
     def unit_peer_data(self) -> Dict:
         """Unit peer relation data object."""
         if self.peers is None:
             return {}
 
         return self.peers.data[self.unit]
-
-    @property
-    def unit_backup_peer_data(self) -> Dict:
-        """Unit backup peer relation data object."""
-        if self.backup_peers is None:
-            return {}
-
-        return self.backup_peers.data[self.unit]
 
     @property
     def _mysql(self):
@@ -227,84 +206,27 @@ class MySQLOperatorCharm(CharmBase):
         """
         return f"{self.get_unit_hostname(unit_name)}.{self.model.name}.svc.cluster.local"
 
-    def get_secret(
-        self,
-        scope: str,
-        key: str,
-        relation: str = PEER,
-    ) -> Optional[str]:
+    def get_secret(self, scope: str, key: str) -> Optional[str]:
         """Get secret from the secret storage."""
-        if relation not in [PEER, DATABASE_BACKUPS_PEER]:
-            raise RuntimeError("Unknown peer relation")
-
         if scope == "unit":
-            if relation == PEER:
-                return self.unit_peer_data.get(key, None)
-            elif relation == DATABASE_BACKUPS_PEER:
-                return self.unit_backup_peer_data.get(key, None)
+            return self.unit_peer_data.get(key, None)
         elif scope == "app":
-            if relation == PEER:
-                return self.app_peer_data.get(key, None)
-            elif relation == DATABASE_BACKUPS_PEER:
-                return self.app_backup_peer_data.get(key, None)
+            return self.app_peer_data.get(key, None)
         else:
             raise RuntimeError("Unknown secret scope.")
 
-    def _set_secret_in_unit_databag(
-        self,
-        key: str,
-        value: Optional[str],
-        relation: str = PEER,
-    ) -> None:
-        """Set secret in the unit databag."""
-        if not value:
-            if relation == PEER:
-                del self.unit_peer_data[key]
-            elif relation == DATABASE_BACKUPS_PEER:
-                del self.unit_backup_peer_data[key]
-
-            return
-
-        if relation == PEER:
-            self.unit_peer_data.update({key: value})
-        elif relation == DATABASE_BACKUPS_PEER:
-            self.unit_backup_peer_data.update({key: value})
-
-    def _set_secret_in_app_databag(
-        self,
-        key: str,
-        value: Optional[str],
-        relation: str = PEER,
-    ) -> None:
-        """Set secret in the app databag."""
-        if not value:
-            if relation == PEER:
-                del self.app_peer_data[key]
-            elif relation == DATABASE_BACKUPS_PEER:
-                del self.app_backup_peer_data[key]
-
-            return
-
-        if relation == PEER:
-            self.app_peer_data.update({key: value})
-        elif relation == DATABASE_BACKUPS_PEER:
-            self.app_backup_peer_data.update({key: value})
-
-    def set_secret(
-        self,
-        scope: str,
-        key: str,
-        value: Optional[str],
-        relation: str = PEER,
-    ) -> None:
+    def set_secret(self, scope: str, key: str, value: Optional[str]) -> None:
         """Set secret in the secret storage."""
-        if relation not in [PEER, DATABASE_BACKUPS_PEER]:
-            raise RuntimeError("Unknown peer relation")
-
         if scope == "unit":
-            self._set_secret_in_unit_databag(key, value, relation)
+            if not value:
+                del self.unit_peer_data[key]
+                return
+            self.unit_peer_data.update({key: value})
         elif scope == "app":
-            self._set_secret_in_app_databag(key, value, relation)
+            if not value:
+                del self.app_peer_data[key]
+                return
+            self.app_peer_data.update({key: value})
         else:
             raise RuntimeError("Unknown secret scope.")
 
@@ -428,8 +350,7 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = event.workload
-        success = self._prepare_configs(container)
-        if not success:
+        if not self._prepare_configs(container):
             return
 
         if self.unit_peer_data.get("unit-configured"):
@@ -543,11 +464,11 @@ class MySQLOperatorCharm(CharmBase):
             return True
 
         cluster_states = set(
-            [self.peers.data[unit].get("cluster-state") for unit in self.peers.units]
+            self.peers.data[unit].get("cluster-state") for unit in self.peers.units
         )
         cluster_states.add(self.unit_peer_data.get("cluster-state"))
 
-        if cluster_states.intersection(set(["backing-up"])):
+        if "backing-up" in cluster_states:
             logger.debug(
                 "Member in cluster is performing backup or restore. Skipping update-status"
             )
@@ -561,8 +482,7 @@ class MySQLOperatorCharm(CharmBase):
         One purpose of this event handler is to ensure that scaled down units are
         removed from the cluster.
         """
-        should_return = self._is_cluster_blocked()
-        if should_return:
+        if self._is_cluster_blocked():
             return
 
         container = self.unit.get_container(CONTAINER_NAME)

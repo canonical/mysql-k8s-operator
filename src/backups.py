@@ -4,10 +4,10 @@
 """Library containing the implementation of backups."""
 
 import datetime
-import json
 import logging
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
+from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
     MySQLGetMemberStateError,
     MySQLSetInstanceOfflineModeError,
@@ -17,19 +17,9 @@ from ops.charm import ActionEvent, CharmBase
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
 
-from constants import (
-    DATABASE_BACKUPS_PEER,
-    S3_ACCESS_KEY,
-    S3_BUCKET_KEY,
-    S3_ENDPOINT_KEY,
-    S3_PATH_KEY,
-    S3_REGION_KEY,
-    S3_SECRET_KEY,
-    SERVER_CONFIG_PASSWORD_KEY,
-    SERVER_CONFIG_USERNAME,
-)
+from constants import SERVER_CONFIG_PASSWORD_KEY, SERVER_CONFIG_USERNAME
 from mysql_k8s_helpers import MySQLExecuteBackupScriptError
-from s3_helpers import upload_content_to_s3
+from s3_helpers import list_subdirectories_in_path, upload_content_to_s3
 
 logger = logging.getLogger(__name__)
 
@@ -41,51 +31,34 @@ UNIT_BACKUPS_KEY = "unit-backups"
 class MySQLBackups(Object):
     """Encapsulation of backups for MySQL."""
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: CharmBase, s3_integrator: S3Requirer) -> None:
         super().__init__(charm, MYSQL_BACKUPS)
 
         self.charm = charm
+        self.s3_integrator = s3_integrator
 
         self.framework.observe(self.charm.on.perform_backup_action, self._on_perform_backup)
         self.framework.observe(self.charm.on.list_backups_action, self._on_list_backups)
 
-        self.framework.observe(
-            self.charm.on[DATABASE_BACKUPS_PEER].relation_changed,
-            self._on_backup_peer_relation_changed,
-        )
-
-    def _on_backup_peer_relation_changed(self, _) -> None:
-        """Handle the backup peer relation changed event.
-
-        Collect backup ids from unit peer databags.
-        """
-        if not self.charm.unit.is_leader():
-            return
-
-        backup_ids = set(json.loads(self.charm.app_backup_peer_data.get(BACKUPS_KEY, "[]")))
-        length_backup_ids = len(backup_ids)
-
-        for unit in self.charm.backup_peers.units:
-            unit_backups = set(
-                json.loads(self.charm.backup_peers.data[unit].get(UNIT_BACKUPS_KEY, "[]"))
-            )
-            backup_ids.update(unit_backups)
-
-        unit_backups = set(
-            json.loads(self.charm.unit_backup_peer_data.get(UNIT_BACKUPS_KEY, "[]"))
-        )
-        backup_ids.update(unit_backups)
-
-        new_length_backup_ids = len(backup_ids)
-        if length_backup_ids != new_length_backup_ids:
-            logger.info(f"Updating list of backup ids: {backup_ids}")
-            self.charm.app_backup_peer_data[BACKUPS_KEY] = json.dumps(list(backup_ids))
-
     def _on_list_backups(self, event: ActionEvent) -> None:
-        """List backups performed by this application."""
-        backup_ids = json.loads(self.charm.app_backup_peer_data.get(BACKUPS_KEY, "[]"))
-        logger.info(f"Returning backup ids performed by this application: {backup_ids}")
-        event.set_results({"backup-ids": backup_ids})
+        """List backups available to restore by this application."""
+        try:
+            s3_parameters, missing_parameters = self._retrieve_s3_parameters()
+            if missing_parameters:
+                event.fail(f"Missing S3 parameters: {missing_parameters}")
+                return
+
+            backup_ids = list_subdirectories_in_path(
+                s3_parameters["bucket"],
+                s3_parameters["path"],
+                s3_parameters["region"],
+                s3_parameters["endpoint"],
+                s3_parameters["access-key"],
+                s3_parameters["secret-key"],
+            )
+            event.set_results({"backup-ids": backup_ids})
+        except Exception:
+            event.fail("Failed to retrieve backup ids from S3")
 
     def _on_perform_backup(self, event: ActionEvent) -> None:
         """Perform backup action."""
@@ -94,21 +67,19 @@ class MySQLBackups(Object):
         datetime_backup_requested = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
 
         # Retrieve and validate missing S3 parameters
-        s3_parameters = self._retrieve_s3_parameters()
-        missing_parameters = [key for key, param in s3_parameters.items() if not param]
+        s3_parameters, missing_parameters = self._retrieve_s3_parameters()
         if missing_parameters:
-            logger.warning(
-                f"Missing S3 parameters while trying to perform a backup: {missing_parameters}"
-            )
-            event.set_results(
-                {
-                    "success": False,
-                    "message": f"Missing S3 parameters: {missing_parameters}",
-                }
-            )
+            event.fail(f"Missing S3 parameters: {missing_parameters}")
             return
 
         s3_directory = f"{s3_parameters['path']}/{datetime_backup_requested}"
+
+        # Check if this unit can perform backup
+        can_unit_perform_backup, validation_message = self._can_unit_perform_backup()
+        if not can_unit_perform_backup:
+            logger.warning(validation_message)
+            event.fail(validation_message)
+            return
 
         # Test uploading metadata to S3 to test credentials before backup
         juju_version = JujuVersion.from_environ()
@@ -124,40 +95,19 @@ Juju Version: {str(juju_version)}
             f"{s3_directory}/metadata",
             s3_parameters["region"],
             s3_parameters["endpoint"],
-            s3_parameters["access_key"],
-            s3_parameters["secret_key"],
+            s3_parameters["access-key"],
+            s3_parameters["secret-key"],
         )
         if not success:
-            event.set_results(
-                {
-                    "success": False,
-                    "message": "Failed to upload metadata provided S3",
-                }
-            )
-            return
-
-        # Check if this unit can perform backup
-        can_unit_perform_backup, validation_message = self._can_unit_perform_backup()
-        if not can_unit_perform_backup:
-            logger.warning(validation_message)
-            event.set_results(
-                {
-                    "success": False,
-                    "message": validation_message,
-                }
-            )
+            event.fail("Failed to upload metadata to provided S3")
             return
 
         # Run operations to prepare for the backup
         success, error_message = self._pre_backup()
         if not success:
             logger.warning(error_message)
-            event.set_results(
-                {
-                    "success": False,
-                    "message": error_message,
-                }
-            )
+            event.fail(error_message)
+            return
 
         # Perform the backup
         success, error_message = self._backup(
@@ -165,12 +115,12 @@ Juju Version: {str(juju_version)}
             s3_directory,
             s3_parameters["endpoint"],
             s3_parameters["region"],
-            s3_parameters["access_key"],
-            s3_parameters["secret_key"],
+            s3_parameters["access-key"],
+            s3_parameters["secret-key"],
         )
         if not success:
             logger.warning(error_message)
-            event.set_results({"success": False, "message": error_message})
+            event.fail(error_message)
 
             success, error_message = self._post_backup()
             if not success:
@@ -182,49 +132,34 @@ Juju Version: {str(juju_version)}
         success, error_message = self._post_backup()
         if not success:
             logger.warning(error_message)
-            event.set_results(
-                {
-                    "success": False,
-                    "message": error_message,
-                }
-            )
+            event.fail(error_message)
             return
-
-        unit_backups = set(
-            json.loads(self.charm.unit_backup_peer_data.get(UNIT_BACKUPS_KEY, "[]"))
-        )
-        unit_backups.add(datetime_backup_requested)
-        self.charm.unit_backup_peer_data[UNIT_BACKUPS_KEY] = json.dumps(list(unit_backups))
 
         event.set_results(
             {
-                "success": True,
                 "backup-id": datetime_backup_requested,
             }
         )
 
-    def _retrieve_s3_parameters(self) -> Dict:
-        """Retrieve S3 parameters from the backups peer relation databag."""
-        logger.info(
-            "Retrieving S3 parameters from backups peer relation"
-            "(populated from relation with S3 integrator)"
-        )
-        return {
-            "bucket": self.charm.app_backup_peer_data.get(S3_BUCKET_KEY),
-            "endpoint": self.charm.app_backup_peer_data.get(S3_ENDPOINT_KEY),
-            "region": self.charm.app_backup_peer_data.get(S3_REGION_KEY),
-            "path": self.charm.app_backup_peer_data.get(S3_PATH_KEY),
-            "access_key": self.charm.get_secret(
-                "app",
-                S3_ACCESS_KEY,
-                DATABASE_BACKUPS_PEER,
-            ),
-            "secret_key": self.charm.get_secret(
-                "app",
-                S3_SECRET_KEY,
-                DATABASE_BACKUPS_PEER,
-            ),
-        }
+    def _retrieve_s3_parameters(self) -> Tuple[Dict, List[str]]:
+        """Retrieve S3 parameters from the S3 integrator relation."""
+        s3_parameters = self.s3_integrator.get_s3_connection_info()
+
+        required_parameters = [
+            "bucket",
+            "endpoint",
+            "region",
+            "path",
+            "access-key",
+            "secret-key",
+        ]
+        missing_parameters = [param for param in required_parameters if param not in s3_parameters]
+        if missing_parameters:
+            logger.warning(
+                f"Missing required S3 parameters in relation with S3 integrator: {missing_parameters}"
+            )
+
+        return s3_parameters, missing_parameters
 
     def _can_unit_perform_backup(self) -> Tuple[bool, str]:
         """Validates whether this unit can perform a backup."""
@@ -251,17 +186,17 @@ Juju Version: {str(juju_version)}
         try:
             logger.info("Setting unit option tag:_hidden")
             self.charm._mysql.set_instance_option("tag:_hidden", "true")
+        except MySQLSetInstanceOptionError:
+            self.charm.unit_peer_data["cluster-state"] = "active"
+            return False, "Error setting instance option tag:_hidden"
 
+        try:
             logger.info("Setting unit as offline before performing backup")
             self.charm._mysql.set_instance_offline_mode(True)
         except MySQLSetInstanceOfflineModeError:
             self.charm.unit_peer_data["cluster-state"] = "active"
-
+            self.charm._mysql.set_instance_option("tag:_hidden", "false")
             return False, "Error setting instance as offline before performing backup"
-        except MySQLSetInstanceOptionError:
-            self.charm.unit_peer_data["cluster-state"] = "active"
-
-            return False, "Error setting instance option tag:_hidden"
 
         return True, None
 
@@ -318,11 +253,12 @@ Stderr:
         try:
             logger.info("Unsetting unit as offline after performing backup")
             self.charm._mysql.set_instance_offline_mode(False)
-
-            logger.info("Setting unit option tag:_hidden as false")
-            self.charm._mysql.set_instance_option("tag:_hidden", "false")
         except MySQLSetInstanceOfflineModeError:
             return False, "Error unsetting instance as offline before performing backup"
+
+        try:
+            logger.info("Setting unit option tag:_hidden as false")
+            self.charm._mysql.set_instance_option("tag:_hidden", "false")
         except MySQLSetInstanceOptionError:
             return False, "Error setting instance option tag:_hidden"
 
