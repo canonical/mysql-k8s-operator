@@ -32,9 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run ShellCheck
-        # Code 6d3f514f validated for 3rd party action
-        uses: ludeeus/action-shellcheck@6d3f514f44620b9d4488e380339edc0d9bbe2fba
+      - name: Shellcheck tests
+        run: tox -e shellcheck
 
   integration-test-microk8s-charm:
     name: Charm integration tests (microk8s)
