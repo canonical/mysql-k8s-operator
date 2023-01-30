@@ -31,7 +31,9 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: python -m pip install tox
       - name: Shellcheck tests
         run: tox -e shellcheck
 
