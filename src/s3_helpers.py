@@ -60,7 +60,7 @@ def upload_content_to_s3(
     return True
 
 
-def list_subdirectories_in_path(
+def list_backups_in_s3_path(
     s3_bucket: str,
     s3_path: str,
     s3_region: str,

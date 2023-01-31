@@ -18,7 +18,7 @@ from ops.framework import Object
 from ops.jujuversion import JujuVersion
 
 from mysql_k8s_helpers import MySQLExecuteBackupCommandsError
-from s3_helpers import list_subdirectories_in_path, upload_content_to_s3
+from s3_helpers import list_backups_in_s3_path, upload_content_to_s3
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class MySQLBackups(Object):
                 event.fail(f"Missing S3 parameters: {missing_parameters}")
                 return
 
-            backup_ids = list_subdirectories_in_path(
+            backup_ids = list_backups_in_s3_path(
                 s3_parameters["bucket"],
                 s3_parameters["path"],
                 s3_parameters["region"],
