@@ -32,8 +32,6 @@ peers:
     interface: mysql-peers
   restart:
     interface: rolling_op
-  database-backups:
-    interface: database-backups
 storage:
   database:
     type: filesystem
@@ -49,7 +47,7 @@ requires:
   certificates:
     interface: tls-certificates
     limit: 1
-  s3-credentials:
-    interface: s3-credentials
+  s3-parameters:
+    interface: s3
 assumes:
   - k8s-api

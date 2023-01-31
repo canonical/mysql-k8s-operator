@@ -6,7 +6,7 @@
 
 import logging
 import tempfile
-from typing import Set
+from typing import List
 
 import boto3
 
@@ -67,7 +67,7 @@ def list_subdirectories_in_path(
     s3_endpoint: str,
     s3_access_key: str,
     s3_secret_key: str,
-) -> Set[str]:
+) -> List[str]:
     """Retrieve subdirectories in an S3 path.
 
     Args:
@@ -83,18 +83,31 @@ def list_subdirectories_in_path(
     """
     try:
         logger.info(f"Listing subdirectories from S3 bucket={s3_bucket}, path={s3_path}")
-        session = boto3.session.Session(
+        s3_client = boto3.client(
+            "s3",
             aws_access_key_id=s3_access_key,
             aws_secret_access_key=s3_secret_key,
+            endpoint_url=s3_endpoint,
             region_name=s3_region,
         )
+        list_objects_v2_paginator = s3_client.get_paginator("list_objects_v2")
+        s3_path_directory = s3_path if s3_path[-1] == "/" else f"{s3_path}/"
 
-        s3 = session.resource("s3", endpoint_url=s3_endpoint)
-        bucket = s3.Bucket(s3_bucket)
-
-        directories = set()
-        for object in bucket.objects.filter(Prefix=s3_path):
-            directories.add(object.key.lstrip(s3_path).lstrip("/").split("/")[0])
+        directories = []
+        for page in list_objects_v2_paginator.paginate(
+            Bucket=s3_bucket,
+            Prefix=s3_path_directory,
+            Delimiter="/",
+        ):
+            for common_prefix in page.get("CommonPrefixes", []):
+                # Confirm that the directory has a valid backup
+                response = s3_client.list_objects_v2(
+                    Bucket=s3_bucket, Prefix=f"{common_prefix['Prefix']}backup", Delimiter="/"
+                )
+                if response.get("KeyCount", 0) > 0:
+                    directories.append(
+                        common_prefix["Prefix"].lstrip(s3_path_directory).split("/")[0]
+                    )
 
         return directories
     except Exception as e:

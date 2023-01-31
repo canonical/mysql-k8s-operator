@@ -49,14 +49,12 @@ from constants import (
     REQUIRED_USERNAMES,
     ROOT_PASSWORD_KEY,
     ROOT_USERNAME,
-    RUN_BACKUP_FILE,
     S3_INTEGRATOR_RELATION_NAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
 from mysql_k8s_helpers import (
     MySQL,
-    MySQLCopyBackupScriptError,
     MySQLCreateCustomConfigFileError,
     MySQLForceRemoveUnitFromClusterError,
     MySQLInitialiseMySQLDError,
@@ -329,13 +327,6 @@ class MySQLOperatorCharm(CharmBase):
                 self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
                 return False
 
-        if not container.exists(RUN_BACKUP_FILE):
-            try:
-                self._mysql.copy_backup_script()
-            except MySQLCopyBackupScriptError:
-                self.unit.status = BlockedStatus("Failed to copy backup script")
-                return False
-
         return True
 
     def _on_mysql_pebble_ready(self, event) -> None:
@@ -460,7 +451,7 @@ class MySQLOperatorCharm(CharmBase):
         unit_member_state = self.unit_peer_data.get("member-state")
         if unit_member_state in ["waiting", "restarting"]:
             # avoid changing status while tls is being set up or charm is being initialized
-            logger.debug(f"Unit state is {unit_member_state}. Skipping update-status")
+            logger.info(f"Unit state is {unit_member_state}")
             return True
 
         cluster_states = set(
@@ -469,9 +460,7 @@ class MySQLOperatorCharm(CharmBase):
         cluster_states.add(self.unit_peer_data.get("cluster-state"))
 
         if "backing-up" in cluster_states:
-            logger.debug(
-                "Member in cluster is performing backup or restore. Skipping update-status"
-            )
+            logger.info("Member in cluster is performing backup or restore")
             return True
 
         return False

@@ -17,8 +17,7 @@ from ops.charm import ActionEvent, CharmBase
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
 
-from constants import SERVER_CONFIG_PASSWORD_KEY, SERVER_CONFIG_USERNAME
-from mysql_k8s_helpers import MySQLExecuteBackupScriptError
+from mysql_k8s_helpers import MySQLExecuteBackupCommandsError
 from s3_helpers import list_subdirectories_in_path, upload_content_to_s3
 
 logger = logging.getLogger(__name__)
@@ -37,11 +36,14 @@ class MySQLBackups(Object):
         self.charm = charm
         self.s3_integrator = s3_integrator
 
-        self.framework.observe(self.charm.on.perform_backup_action, self._on_perform_backup)
+        self.framework.observe(self.charm.on.create_backup_action, self._on_create_backup)
         self.framework.observe(self.charm.on.list_backups_action, self._on_list_backups)
 
     def _on_list_backups(self, event: ActionEvent) -> None:
-        """List backups available to restore by this application."""
+        """Handle the list backups action.
+
+        List backups available to restore by this application.
+        """
         try:
             s3_parameters, missing_parameters = self._retrieve_s3_parameters()
             if missing_parameters:
@@ -60,8 +62,8 @@ class MySQLBackups(Object):
         except Exception:
             event.fail("Failed to retrieve backup ids from S3")
 
-    def _on_perform_backup(self, event: ActionEvent) -> None:
-        """Perform backup action."""
+    def _on_create_backup(self, event: ActionEvent) -> None:
+        """Handle the create backup action."""
         logger.info("A backup has been requested on unit")
 
         datetime_backup_requested = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
@@ -163,6 +165,10 @@ Juju Version: {str(juju_version)}
 
     def _can_unit_perform_backup(self) -> Tuple[bool, str]:
         """Validates whether this unit can perform a backup."""
+        logger.info("Checking if cluster is in blocked state")
+        if self.charm._is_cluster_blocked():
+            return False, "Cluster or unit is in a blocking state"
+
         logger.info("Checking state and role of unit")
 
         try:
@@ -170,7 +176,7 @@ Juju Version: {str(juju_version)}
         except MySQLGetMemberStateError:
             return False, "Error obtaining member state"
 
-        if role == "primary":
+        if role == "primary" and self.charm.app.planned_units() > 1:
             return False, "Unit cannot perform backups as it is the cluster primary"
 
         if state in ["recovering", "offline", "error"]:
@@ -200,6 +206,36 @@ Juju Version: {str(juju_version)}
 
         return True, None
 
+    def _upload_logs_to_s3(
+        self: str,
+        stdout: str,
+        stderr: str,
+        s3_bucket: str,
+        log_filename: str,
+        s3_region: str,
+        s3_endpoint: str,
+        s3_access_key: str,
+        s3_secret_key: str,
+    ) -> bool:
+        logs = f"""Stdout:
+{stdout}
+
+Stderr:
+{stderr}
+        """
+        logger.debug(f"Output of xtrabackup: {logs}")
+
+        logger.info("Uploading output of xtrabackup to S3")
+        return upload_content_to_s3(
+            logs,
+            s3_bucket,
+            log_filename,
+            s3_region,
+            s3_endpoint,
+            s3_access_key,
+            s3_secret_key,
+        )
+
     def _backup(
         self,
         s3_bucket: str,
@@ -212,25 +248,16 @@ Juju Version: {str(juju_version)}
         """Runs the backup operations."""
         try:
             logger.info("Running the xtrabackup commands")
-            stdout, stderr = self.charm._mysql.execute_backup_script(
+            stdout, stderr = self.charm._mysql.execute_backup_commands(
                 s3_bucket,
                 f"{s3_directory}/backup",
                 s3_access_key,
                 s3_secret_key,
-                SERVER_CONFIG_USERNAME,
-                self.charm.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
             )
-            logs = f"""Stdout:
-{stdout}
-
-Stderr:
-{stderr}
-            """
-            logger.debug(f"Output of xtrabackup: {logs}")
-
-            logger.info("Uploading output of xtrabackup to S3")
-            success = upload_content_to_s3(
-                logs,
+        except MySQLExecuteBackupCommandsError as e:
+            self._upload_logs_to_s3(
+                "",
+                e.message,
                 s3_bucket,
                 f"{s3_directory}/xtrabackup.log",
                 s3_region,
@@ -238,10 +265,19 @@ Stderr:
                 s3_access_key,
                 s3_secret_key,
             )
-            if not success:
-                return False, "Error uploading logs to S3"
-        except MySQLExecuteBackupScriptError:
             return False, "Error backing up the database"
+
+        if not self._upload_logs_to_s3(
+            stdout,
+            stderr,
+            s3_bucket,
+            f"{s3_directory}/xtrabackup.log",
+            s3_region,
+            s3_endpoint,
+            s3_access_key,
+            s3_secret_key,
+        ):
+            return False, "Error uploading logs to S3"
 
         return True, None
 

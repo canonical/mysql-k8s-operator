@@ -35,8 +35,8 @@ set-tls-private-key:
       description: The content of private key for internal communications with
         clients. Content will be auto-generated if this option is not specified.
 
-perform-backup:
-  description: Perform a database backup using xtrabackup.
+create-backup:
+  description: Create a database backup using xtrabackup.
     S3 credentials are retrieved from a relation with the S3 integrator charm.
 
 list-backups:

@@ -7,7 +7,6 @@
 import json
 import logging
 import os
-from pathlib import Path
 from typing import Tuple
 
 from charms.mysql.v0.mysql import (
@@ -18,7 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureMySQLUsersError,
 )
 from ops.model import Container
-from ops.pebble import ExecError
+from ops.pebble import APIError, ExecError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -32,7 +31,6 @@ from constants import (
     MYSQLD_CONFIG_FILE,
     MYSQLD_SOCK_FILE,
     MYSQLSH_SCRIPT_FILE,
-    RUN_BACKUP_FILE,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,17 +72,10 @@ class MySQLWaitUntilUnitRemovedFromClusterError(Error):
     """Exception raised when there is an issue checking if a unit is removed from the cluster."""
 
 
-class MySQLCopyBackupScriptError(Error):
-    """Exception raised when there is an issue copying the backup script.
+class MySQLExecuteBackupCommandsError(Error):
+    """Exception raised when there is an error executing the backup commands.
 
-    The backup script is copied to the workload container using the pebble API.
-    """
-
-
-class MySQLExecuteBackupScriptError(Error):
-    """Exception raised when there is an error executing the backup script.
-
-    The backup script is executed in the workload container using the pebble API.
+    The backup commands are executed in the workload container using the pebble API.
     """
 
 
@@ -270,32 +261,82 @@ class MySQL(MySQLBase):
         except Exception:
             raise MySQLCreateCustomConfigFileError()
 
-    def copy_backup_script(self) -> None:
-        """Copy the run_backup.sh script to the workload container."""
-        try:
-            file_directory = Path(__file__).parent
-
-            self.container.push_path(f"{file_directory}/scripts/run_backup.sh", "/")
-        except Exception as e:
-            logger.exception("Failed to copy backup script", exc_info=e)
-            raise MySQLCopyBackupScriptError()
-
-    def execute_backup_script(self, *args) -> Tuple[str, str]:
+    def execute_backup_commands(
+        self,
+        s3_bucket: str,
+        s3_directory: str,
+        s3_access_key: str,
+        s3_secret_key: str,
+    ) -> Tuple[str, str]:
         """Executes the run_backup.sh script in the container with the given args."""
-        execute_backup_script_commands = [
-            RUN_BACKUP_FILE,
-            *args,
-        ]
+        nproc_commands = "nproc".split()
+
+        make_temp_dir_commands = "mktemp --tmpdir --directory xtra_backup_XXXX".split()
 
         try:
-            process = self.container.exec(execute_backup_script_commands)
+            process = self.container.exec(nproc_commands)
+            nproc, _ = process.wait_output()
+
+            process = self.container.exec(make_temp_dir_commands)
+            tmp_dir, _ = process.wait_output()
+        except ExecError as e:
+            logger.exception("Failed to execute commands prior to running backup", exc_info=e)
+            raise MySQLExecuteBackupCommandsError(e.stderr)
+
+        # TODO: remove flags --no-version-check and --no-server-version-check
+        # when MySQL and XtraBackup versions are in sync
+        xtrabackup_commands = " ".join("""
+xtrabackup --defaults-file=/etc/mysql
+            --defaults-group=mysqld
+            --no-version-check
+            --parallel="$NPROC"
+            --user="$MYSQL_USER"
+            --password="$MYSQL_PASSWORD"
+            --socket=/run/mysqld/mysqld.sock
+            --lock-ddl
+            --backup
+            --stream=xbstream
+            --xtrabackup-plugin-dir=/usr/lib64/xtrabackup/plugin
+            --target-dir="$TMP_DIRECTORY"
+            --no-server-version-check
+    | xbcloud put
+            --curl-retriable-errors=7
+            --insecure
+            --storage=s3
+            --parallel=10
+            --md5
+            --s3-bucket="$S3_BUCKET"
+            --s3-access-key="$S3_ACCESS_KEY"
+            --s3-secret-key="$S3_SECRET_KEY"
+            "$S3_PATH"
+""".strip().split())
+        # TODO: run xtrabackup_commands directly when pebble supports
+        # env var expansion (https://github.com/canonical/pebble/issues/187)
+        backup_commands = ["sh", "-c", f"{xtrabackup_commands}"]
+
+        try:
+            process = self.container.exec(
+                backup_commands,
+                environment={
+                    "MYSQL_USER": self.server_config_user,
+                    "MYSQL_PASSWORD": self.server_config_password,
+                    "TMP_DIRECTORY": tmp_dir.strip(),
+                    "S3_BUCKET": s3_bucket,
+                    "S3_ACCESS_KEY": s3_access_key,
+                    "S3_SECRET_KEY": s3_secret_key,
+                    "S3_PATH": s3_directory,
+                    "NPROC": nproc.strip(),
+                },
+                user="mysql",
+                group="mysql",
+            )
             stdout, stderr = process.wait_output()
             return (stdout, stderr)
-        except ExecError as e:
+        except (APIError, ExecError) as e:
             logger.exception("Failed to execute backup script", exc_info=e)
             logger.error(f"Stdout of script: {e.stdout}")
             logger.error(f"Stderr of script: {e.stderr}")
-            raise MySQLExecuteBackupScriptError(e.stderr)
+            raise MySQLExecuteBackupCommandsError(e.stderr)
 
     @retry(
         retry=retry_if_exception_type(MySQLWaitUntilUnitRemovedFromClusterError),
