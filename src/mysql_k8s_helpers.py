@@ -285,7 +285,8 @@ class MySQL(MySQLBase):
 
         # TODO: remove flags --no-version-check and --no-server-version-check
         # when MySQL and XtraBackup versions are in sync
-        xtrabackup_commands = " ".join("""
+        xtrabackup_commands = " ".join(
+            """
 xtrabackup --defaults-file=/etc/mysql
             --defaults-group=mysqld
             --no-version-check
@@ -309,7 +310,8 @@ xtrabackup --defaults-file=/etc/mysql
             --s3-access-key="$S3_ACCESS_KEY"
             --s3-secret-key="$S3_SECRET_KEY"
             "$S3_PATH"
-""".strip().split())
+""".strip().split()
+        )
         # TODO: run xtrabackup_commands directly when pebble supports
         # env var expansion (https://github.com/canonical/pebble/issues/187)
         backup_commands = ["sh", "-c", f"{xtrabackup_commands}"]
