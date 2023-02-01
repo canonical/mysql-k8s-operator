@@ -356,12 +356,18 @@ class MySQLOperatorCharm(CharmBase):
             # Create control file in data directory
             self.app_peer_data["units-added-to-cluster"] = "1"
             self.unit_peer_data["unit-initialized"] = "True"
-            self.unit_peer_data["member-role"] = "primary"
+
+            state, role = self._mysql.get_member_state()
+
+            self.unit_peer_data["member-role"] = role
+            self.unit_peer_data["member_state"] = state
 
             self.unit.status = ActiveStatus(self.active_status_message)
         except MySQLCreateClusterError as e:
             self.unit.status = BlockedStatus("Unable to create cluster")
             logger.debug("Unable to create cluster: {}".format(e))
+        except MySQLGetMemberStateError:
+            self.unit.status = BlockedStatus("Unable to query member state and role")
 
     def _handle_potential_cluster_crash_scenario(self) -> bool:
         """Handle potential full cluster crash scenarios.

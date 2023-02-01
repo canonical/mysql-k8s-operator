@@ -425,7 +425,11 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlcli_script("; ".join(get_unit_user_commands))
+            output = self._run_mysqlcli_script(
+                "; ".join(get_unit_user_commands),
+                user=self.server_config_user,
+                password=self.server_config_password,
+            )
             users = [line.strip() for line in output.split("\n") if line.strip()][1:]
             users = [f"'{user.split('@')[0]}'@'{user.split('@')[1]}'" for user in users]
 
@@ -434,6 +438,8 @@ class MySQLBase(ABC):
                 return
 
             primary_address = self.get_cluster_primary_address()
+            if not primary_address:
+                raise MySQLDeleteUsersForUnitError("Unable to query cluster primary address")
 
             # Using server_config_user as we are sure it has drop user grants
             drop_users_command = (

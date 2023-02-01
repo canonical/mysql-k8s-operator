@@ -143,9 +143,12 @@ class MySQLRelation(Object):
         if not self.charm.unit.is_leader():
             return
 
-        # Wait until on-config-changed event is executed
-        # (wait for root password to have been set)
-        if not self.charm._is_peer_data_set:
+        # Wait until on-config-changed event is executed (for root password to have been set)
+        # and for the member to be online
+        if (
+            not self.charm._is_peer_data_set
+            or self.charm.unit_peer_data.get("member-state") != "online"
+        ):
             event.defer()
             return
 

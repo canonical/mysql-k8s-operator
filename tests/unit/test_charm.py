@@ -64,8 +64,10 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.create_custom_config_file")
     @patch("mysql_k8s_helpers.MySQL.initialise_mysqld")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster")
+    @patch("mysql_k8s_helpers.MySQL.get_member_state", return_value=("online", "primary"))
     def test_mysql_pebble_ready(
         self,
+        _get_member_state,
         _is_instance_in_cluster,
         _initialise_mysqld,
         _create_custom_config_file,
