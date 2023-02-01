@@ -69,9 +69,15 @@ import json
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Optional, Tuple
+from typing import Any, Iterable, List, Optional, Tuple
 
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_fixed,
+    wait_random,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +89,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 9
+LIBPATCH = 11
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -191,8 +197,20 @@ class MySQLGetMemberStateError(Error):
     """Exception raised when there is an issue getting member state."""
 
 
+class MySQLGetClusterEndpointsError(Error):
+    """Exception raised when there is an issue getting cluster endpoints."""
+
+
 class MySQLRebootFromCompleteOutageError(Error):
     """Exception raised when there is an issue rebooting from complete outage."""
+
+
+class MySQLSetInstanceOfflineModeError(Error):
+    """Exception raised when there is an issue setting instance as offline."""
+
+
+class MySQLSetInstanceOptionError(Error):
+    """Exception raised when there is an issue setting instance option."""
 
 
 class MySQLBase(ABC):
@@ -712,6 +730,24 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.exception(f"Failed to get cluster status for {self.cluster_name}", exc_info=e)
 
+    def get_cluster_endpoints(self) -> Tuple[str, str]:
+        """Use get_cluster_status to return endpoints tuple.
+
+        Returns:
+            A tuple with endpoints and read-only-endpoints strings.
+        """
+        status = self.get_cluster_status()
+
+        if not status:
+            raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+
+        topology = status["defaultreplicaset"]["topology"]
+
+        ro_endpoints = {v["address"] for v in topology.values() if v["mode"] == "r/o"}
+        rw_endpoints = {v["address"] for v in topology.values() if v["mode"] == "r/w"}
+
+        return ",".join(rw_endpoints), ",".join(ro_endpoints)
+
     @retry(
         retry=retry_if_exception_type(MySQLRemoveInstanceRetryError),
         stop=stop_after_attempt(15),
@@ -986,9 +1022,13 @@ class MySQLBase(ABC):
         Raises:
             MySQLUpgradeUserForMySQLRouterError if there is an issue upgrading user for mysqlrouter
         """
+        cluster_primary = self.get_cluster_primary_address()
+        if not cluster_primary:
+            raise MySQLUpgradeUserForMySQLRouterError("Failed to retrieve cluster primary")
+
         options = {"update": "true"}
         upgrade_user_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{cluster_primary}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
             f"cluster.setup_router_account('{username}@{hostname}', {json.dumps(options)})",
         )
@@ -1015,8 +1055,12 @@ class MySQLBase(ABC):
         Raises:
             MySQLGrantPrivilegesToUserError if there is an issue granting privileges to a user
         """
+        cluster_primary = self.get_cluster_primary_address()
+        if not cluster_primary:
+            raise MySQLGrantPrivilegesToUserError("Failed to get cluster primary address")
+
         grant_privileges_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{cluster_primary}')",
             f"session.run_sql(\"GRANT {', '.join(privileges)} ON *.* TO '{username}'@'{hostname}'{' WITH GRANT OPTION' if with_grant_option else ''}\")",
         )
 
@@ -1053,6 +1097,7 @@ class MySQLBase(ABC):
             )
             raise MySQLCheckUserExistenceError(e.message)
 
+    @retry(reraise=True, stop=stop_after_attempt(6), wait=wait_fixed(10))
     def get_member_state(self) -> Tuple[str, str]:
         """Get member status in cluster.
 
@@ -1070,15 +1115,15 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(member_state_commands))
+            output = self._run_mysqlsh_script("\n".join(member_state_commands), timeout=10)
         except MySQLClientError as e:
             logger.error(
-                "Failed to get member state: mysqld daemon is down or unaccessible",
+                "Failed to get member state: mysqld daemon is down",
             )
             raise MySQLGetMemberStateError(e.message)
 
         results = output.lower().split()
-        # MEMBER_ROLE is empty if member is not in a group
+        # MEMBER_ROLE is empty if member is not in a group/offline
         return results[0], results[1] if len(results) == 2 else "unknown"
 
     def reboot_from_complete_outage(self) -> None:
@@ -1097,6 +1142,50 @@ class MySQLBase(ABC):
             )
             raise MySQLRebootFromCompleteOutageError(e.message)
 
+    def set_instance_offline_mode(self, offline_mode: bool = False) -> None:
+        """Sets the instance offline_mode.
+
+        Args:
+            offline_mode: Value of offline_mode to set
+
+        Raises:
+            MySQLSetInstanceOfflineModeError - if issue setting instance offline_mode.
+        """
+        mode = "ON" if offline_mode else "OFF"
+        set_instance_offline_mode_commands = (f"SET @@GLOBAL.offline_mode = {mode}",)
+
+        try:
+            self._run_mysqlcli_script(
+                "; ".join(set_instance_offline_mode_commands),
+                user=self.cluster_admin_user,
+                password=self.cluster_admin_password,
+            )
+        except MySQLClientError as e:
+            logger.exception(f"Failed to set instance state to offline_mode {mode}", exc_info=e)
+            raise MySQLSetInstanceOfflineModeError(e.message)
+
+    def set_instance_option(self, option: str, value: Any) -> None:
+        """Sets an instance option.
+
+        Args:
+            option: The option to set for the instance
+            value: The option value to set
+
+        Raises:
+            MySQLSetInstanceOptionError - if there is an error setting instance option
+        """
+        set_instance_option_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            f"cluster.set_instance_option('{self.instance_address}', '{option}', '{value}')",
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(set_instance_option_commands))
+        except MySQLClientError as e:
+            logger.exception(f"Failed to set option {option} with value {value}", exc_info=e)
+            raise MySQLSetInstanceOptionError(e.message)
+
     @abstractmethod
     def wait_until_mysql_connection(self) -> None:
         """Wait until a connection to MySQL has been obtained.
@@ -1106,13 +1195,14 @@ class MySQLBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _run_mysqlsh_script(self, script: str) -> str:
+    def _run_mysqlsh_script(self, script: str, timeout: Optional[int] = None) -> str:
         """Execute a MySQL shell script.
 
         Raises MySQLClientError if script execution fails.
 
         Args:
             script: Mysqlsh script string
+            timeout: Optional timeout for script execution
 
         Returns:
             String representing the output of the mysqlsh command
