@@ -7,6 +7,7 @@
 import json
 import logging
 import os
+from typing import Optional
 
 from charms.mysql.v0.mysql import (
     Error,
@@ -459,7 +460,9 @@ class MySQL(MySQLBase):
             )
             raise MySQLDeleteUsersWithLabelError(e.message)
 
-    def _run_mysqlsh_script(self, script: str, verbose: int = 1) -> str:
+    def _run_mysqlsh_script(
+        self, script: str, verbose: int = 1, timeout: Optional[int] = None
+    ) -> str:
         """Execute a MySQL shell script.
 
         Raises ExecError if the script gets a non-zero return code.
@@ -471,6 +474,7 @@ class MySQL(MySQLBase):
         Returns:
             stdout of the script
         """
+        # TODO: remove timeout from _run_mysqlsh_script contract/signature in the mysql lib
         self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
 
         # render command with remove file after run
