@@ -360,7 +360,7 @@ class MySQLOperatorCharm(CharmBase):
             state, role = self._mysql.get_member_state()
 
             self.unit_peer_data["member-role"] = role
-            self.unit_peer_data["member_state"] = state
+            self.unit_peer_data["member-state"] = state
 
             self.unit.status = ActiveStatus(self.active_status_message)
         except MySQLCreateClusterError as e:
