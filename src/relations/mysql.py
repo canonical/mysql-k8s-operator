@@ -111,7 +111,7 @@ class MySQLRelation(Object):
         """
         if not self.charm._is_peer_data_set or not self.model.get_relation(LEGACY_MYSQL):
             # Avoid running too early
-            logger.info("Unit not ready to set `mysql` relation data. Deferring")
+            logger.debug("Unit not ready to set `mysql` relation data. Deferring")
             event.defer()
             return
 
@@ -154,7 +154,7 @@ class MySQLRelation(Object):
             not self.charm._is_peer_data_set
             or self.charm.unit_peer_data.get("member-state") != "online"
         ):
-            logger.info("Unit not ready to execute `mysql` relation created. Deferring")
+            logger.debug("Unit not ready to execute `mysql` relation created. Deferring")
             event.defer()
             return
 
