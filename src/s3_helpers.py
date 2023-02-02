@@ -99,14 +99,11 @@ def list_backups_in_s3_path(
             Prefix=s3_path_directory,
             Delimiter="/",
         ):
-            for common_prefix in page.get("CommonPrefixes", []):
-                # Confirm that the directory has a valid backup
-                response = s3_client.list_objects_v2(
-                    Bucket=s3_bucket, Prefix=f"{common_prefix['Prefix']}backup", Delimiter="/"
-                )
-                if response.get("KeyCount", 0) > 0:
+            for content in page.get("Contents", []):
+                key = content["Key"]
+                if ".md5" in key:
                     directories.append(
-                        common_prefix["Prefix"].lstrip(s3_path_directory).split("/")[0]
+                        key.lstrip(s3_path_directory).split("/")[0].split(".md5")[0]
                     )
 
         return directories

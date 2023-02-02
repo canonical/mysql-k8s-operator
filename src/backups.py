@@ -45,11 +45,13 @@ class MySQLBackups(Object):
         List backups available to restore by this application.
         """
         try:
+            logger.info("Retrieving s3 parameters from the s3-integrator relation")
             s3_parameters, missing_parameters = self._retrieve_s3_parameters()
             if missing_parameters:
                 event.fail(f"Missing S3 parameters: {missing_parameters}")
                 return
 
+            logger.info("Listing backups in the specified s3 path")
             backup_ids = list_backups_in_s3_path(
                 s3_parameters["bucket"],
                 s3_parameters["path"],
@@ -94,7 +96,7 @@ Juju Version: {str(juju_version)}
         success = upload_content_to_s3(
             metadata,
             s3_parameters["bucket"],
-            f"{s3_directory}/metadata",
+            f"{s3_directory}.metadata",
             s3_parameters["region"],
             s3_parameters["endpoint"],
             s3_parameters["access-key"],
@@ -149,9 +151,6 @@ Juju Version: {str(juju_version)}
 
         required_parameters = [
             "bucket",
-            "endpoint",
-            "region",
-            "path",
             "access-key",
             "secret-key",
         ]
@@ -160,6 +159,16 @@ Juju Version: {str(juju_version)}
             logger.warning(
                 f"Missing required S3 parameters in relation with S3 integrator: {missing_parameters}"
             )
+
+        # Add some sensible defaults (as expected by the code) for missing optional parameters
+        if "endpoint" not in s3_parameters:
+            s3_parameters["endpoint"] = None
+
+        if "region" not in s3_parameters:
+            s3_parameters["region"] = None
+
+        if "path" not in s3_parameters:
+            s3_parameters["path"] = ""
 
         return s3_parameters, missing_parameters
 
@@ -250,16 +259,17 @@ Stderr:
             logger.info("Running the xtrabackup commands")
             stdout, stderr = self.charm._mysql.execute_backup_commands(
                 s3_bucket,
-                f"{s3_directory}/backup",
+                s3_directory,
                 s3_access_key,
                 s3_secret_key,
+                s3_endpoint,
             )
         except MySQLExecuteBackupCommandsError as e:
             self._upload_logs_to_s3(
                 "",
                 e.message,
                 s3_bucket,
-                f"{s3_directory}/xtrabackup.log",
+                f"{s3_directory}.xtrabackup.log",
                 s3_region,
                 s3_endpoint,
                 s3_access_key,
@@ -271,7 +281,7 @@ Stderr:
             stdout,
             stderr,
             s3_bucket,
-            f"{s3_directory}/xtrabackup.log",
+            f"{s3_directory}.xtrabackup.log",
             s3_region,
             s3_endpoint,
             s3_access_key,

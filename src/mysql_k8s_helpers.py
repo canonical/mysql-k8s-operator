@@ -17,7 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureMySQLUsersError,
 )
 from ops.model import Container
-from ops.pebble import APIError, ExecError
+from ops.pebble import ExecError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -267,6 +267,7 @@ class MySQL(MySQLBase):
         s3_directory: str,
         s3_access_key: str,
         s3_secret_key: str,
+        s3_endpoint: str,
     ) -> Tuple[str, str]:
         """Executes the run_backup.sh script in the container with the given args."""
         nproc_commands = "nproc".split()
@@ -283,22 +284,22 @@ class MySQL(MySQLBase):
             logger.exception("Failed to execute commands prior to running backup", exc_info=e)
             raise MySQLExecuteBackupCommandsError(e.stderr)
 
-        # TODO: remove flags --no-version-check and --no-server-version-check
+        # TODO: remove flags --no-server-version-check
         # when MySQL and XtraBackup versions are in sync
         xtrabackup_commands = " ".join(
-            """
+            f"""
 xtrabackup --defaults-file=/etc/mysql
             --defaults-group=mysqld
             --no-version-check
-            --parallel="$NPROC"
-            --user="$MYSQL_USER"
+            --parallel={nproc.strip()}
+            --user="{self.server_config_user}"
             --password="$MYSQL_PASSWORD"
             --socket=/run/mysqld/mysqld.sock
             --lock-ddl
             --backup
             --stream=xbstream
             --xtrabackup-plugin-dir=/usr/lib64/xtrabackup/plugin
-            --target-dir="$TMP_DIRECTORY"
+            --target-dir="{tmp_dir.strip()}"
             --no-server-version-check
     | xbcloud put
             --curl-retriable-errors=7
@@ -306,39 +307,36 @@ xtrabackup --defaults-file=/etc/mysql
             --storage=s3
             --parallel=10
             --md5
-            --s3-bucket="$S3_BUCKET"
-            --s3-access-key="$S3_ACCESS_KEY"
-            --s3-secret-key="$S3_SECRET_KEY"
-            "$S3_PATH"
+            --s3-bucket="{s3_bucket}"
+            --s3-endpoint="{s3_endpoint}"
+            "{s3_directory}"
 """.strip().split()
         )
-        # TODO: run xtrabackup_commands directly when pebble supports
-        # env var expansion (https://github.com/canonical/pebble/issues/187)
-        backup_commands = ["sh", "-c", f"{xtrabackup_commands}"]
+        # Use sh to be able to use the pipe in above commands
+        backup_commands = ["sh", "-c", f"{{ read -r ''MYSQL_PASSWORD; {xtrabackup_commands}; }}"]
 
         try:
+            # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
             process = self.container.exec(
                 backup_commands,
                 environment={
-                    "MYSQL_USER": self.server_config_user,
-                    "MYSQL_PASSWORD": self.server_config_password,
-                    "TMP_DIRECTORY": tmp_dir.strip(),
-                    "S3_BUCKET": s3_bucket,
-                    "S3_ACCESS_KEY": s3_access_key,
-                    "S3_SECRET_KEY": s3_secret_key,
-                    "S3_PATH": s3_directory,
-                    "NPROC": nproc.strip(),
+                    "ACCESS_KEY_ID": s3_access_key,
+                    "SECRET_ACCESS_KEY": s3_secret_key,
                 },
+                stdin=self.server_config_password,
                 user="mysql",
                 group="mysql",
             )
             stdout, stderr = process.wait_output()
             return (stdout, stderr)
-        except (APIError, ExecError) as e:
+        except ExecError as e:
             logger.exception("Failed to execute backup script", exc_info=e)
             logger.error(f"Stdout of script: {e.stdout}")
             logger.error(f"Stderr of script: {e.stderr}")
             raise MySQLExecuteBackupCommandsError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to execute backup script", exc_info=e)
+            raise MySQLExecuteBackupCommandsError(e)
 
     @retry(
         retry=retry_if_exception_type(MySQLWaitUntilUnitRemovedFromClusterError),
