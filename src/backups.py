@@ -152,19 +152,21 @@ Juju Version: {str(juju_version)}
             "access-key",
             "secret-key",
         ]
-        missing_parameters = [param for param in required_parameters if param not in s3_parameters]
-        if missing_parameters:
+        missing_required_parameters = [
+            param for param in required_parameters if param not in s3_parameters
+        ]
+        if missing_required_parameters:
             logger.warning(
-                f"Missing required S3 parameters in relation with S3 integrator: {missing_parameters}"
+                f"Missing required S3 parameters in relation with S3 integrator: {missing_required_parameters}"
             )
-            return {}, missing_parameters
+            return {}, missing_required_parameters
 
         # Add some sensible defaults (as expected by the code) for missing optional parameters
         s3_parameters.setdefault("endpoint", "https://s3.amazonaws.com")
         s3_parameters.setdefault("region")
         s3_parameters.setdefault("path", "")
 
-        return s3_parameters, missing_parameters
+        return s3_parameters, []
 
     def _can_unit_perform_backup(self) -> Tuple[bool, str]:
         """Validates whether this unit can perform a backup."""
