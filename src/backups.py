@@ -161,14 +161,9 @@ Juju Version: {str(juju_version)}
             )
 
         # Add some sensible defaults (as expected by the code) for missing optional parameters
-        if "endpoint" not in s3_parameters:
-            s3_parameters["endpoint"] = None
-
-        if "region" not in s3_parameters:
-            s3_parameters["region"] = None
-
-        if "path" not in s3_parameters:
-            s3_parameters["path"] = ""
+        s3_parameters.setdefault("endpoint")
+        s3_parameters.setdefault("region")
+        s3_parameters.setdefault("path", "")
 
         return s3_parameters, missing_parameters
 

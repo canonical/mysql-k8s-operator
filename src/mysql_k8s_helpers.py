@@ -270,15 +270,15 @@ class MySQL(MySQLBase):
         s3_endpoint: str,
     ) -> Tuple[str, str]:
         """Executes the run_backup.sh script in the container with the given args."""
-        nproc_commands = "nproc".split()
+        nproc_command = "nproc".split()
 
-        make_temp_dir_commands = "mktemp --tmpdir --directory xtra_backup_XXXX".split()
+        make_temp_dir_command = "mktemp --tmpdir --directory xtra_backup_XXXX".split()
 
         try:
-            process = self.container.exec(nproc_commands)
+            process = self.container.exec(nproc_command)
             nproc, _ = process.wait_output()
 
-            process = self.container.exec(make_temp_dir_commands)
+            process = self.container.exec(make_temp_dir_command)
             tmp_dir, _ = process.wait_output()
         except ExecError as e:
             logger.exception("Failed to execute commands prior to running backup", exc_info=e)
@@ -310,7 +310,7 @@ xtrabackup --defaults-file=/etc/mysql
             --s3-bucket="{s3_bucket}"
             --s3-endpoint="{s3_endpoint}"
             "{s3_directory}"
-""".strip().split()
+""".split()
         )
         # Use sh to be able to use the pipe in above commands
         backup_commands = ["sh", "-c", f"{{ read ''MYSQL_PASSWORD; {xtrabackup_commands}; }}"]
