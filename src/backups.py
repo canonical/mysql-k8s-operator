@@ -157,9 +157,10 @@ Juju Version: {str(juju_version)}
             logger.warning(
                 f"Missing required S3 parameters in relation with S3 integrator: {missing_parameters}"
             )
+            return {}, missing_parameters
 
         # Add some sensible defaults (as expected by the code) for missing optional parameters
-        s3_parameters.setdefault("endpoint")
+        s3_parameters.setdefault("endpoint", "https://s3.amazonaws.com")
         s3_parameters.setdefault("region")
         s3_parameters.setdefault("path", "")
 

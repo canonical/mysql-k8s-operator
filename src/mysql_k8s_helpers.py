@@ -298,7 +298,6 @@ xtrabackup --defaults-file=/etc/mysql
             --no-version-check
             --parallel={nproc.strip()}
             --user="{self.server_config_user}"
-            --password="$MYSQL_PASSWORD"
             --socket=/run/mysqld/mysqld.sock
             --lock-ddl
             --backup
@@ -306,6 +305,7 @@ xtrabackup --defaults-file=/etc/mysql
             --xtrabackup-plugin-dir=/usr/lib64/xtrabackup/plugin
             --target-dir="{tmp_dir.strip()}"
             --no-server-version-check
+            --password
     | xbcloud put
             --curl-retriable-errors=7
             --insecure
@@ -318,7 +318,7 @@ xtrabackup --defaults-file=/etc/mysql
 """.split()
         )
         # Use sh to be able to use the pipe in above commands
-        backup_commands = ["sh", "-c", f"{{ read ''MYSQL_PASSWORD; {xtrabackup_commands}; }}"]
+        backup_commands = ["sh", "-c", f"{xtrabackup_commands}"]
 
         try:
             # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud

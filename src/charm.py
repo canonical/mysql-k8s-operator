@@ -460,9 +460,7 @@ class MySQLOperatorCharm(CharmBase):
             logger.info(f"Unit state is {unit_member_state}")
             return True
 
-        cluster_states = set(
-            self.peers.data[unit].get("cluster-state") for unit in self.peers.units
-        )
+        cluster_states = {self.peers.data[unit].get("cluster-state") for unit in self.peers.units}
         cluster_states.add(self.unit_peer_data.get("cluster-state"))
 
         if "backing-up" in cluster_states:
