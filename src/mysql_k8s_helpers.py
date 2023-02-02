@@ -313,7 +313,7 @@ xtrabackup --defaults-file=/etc/mysql
 """.strip().split()
         )
         # Use sh to be able to use the pipe in above commands
-        backup_commands = ["sh", "-c", f"{{ read -r ''MYSQL_PASSWORD; {xtrabackup_commands}; }}"]
+        backup_commands = ["sh", "-c", f"{{ read ''MYSQL_PASSWORD; {xtrabackup_commands}; }}"]
 
         try:
             # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
