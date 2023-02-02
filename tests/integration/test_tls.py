@@ -28,7 +28,6 @@ APP_NAME = METADATA["name"]
 TLS_APP_NAME = "tls-certificates-operator"
 
 
-@pytest.mark.order(1)
 @pytest.mark.abort_on_fail
 @pytest.mark.tls_tests
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
@@ -50,7 +49,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
     # Reduce the update_status frequency until the cluster is deployed
     async with ops_test.fast_forward():
-
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[APP_NAME].units) == 3
         )
@@ -62,7 +60,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         )
 
 
-@pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.tls_tests
 async def test_connection_before_tls(ops_test: OpsTest) -> None:
@@ -93,7 +90,6 @@ async def test_connection_before_tls(ops_test: OpsTest) -> None:
         ), f"❌ Unencrypted connection not possible to unit {unit.name} with disabled TLS"
 
 
-@pytest.mark.order(3)
 @pytest.mark.abort_on_fail
 @pytest.mark.tls_tests
 async def test_enable_tls(ops_test: OpsTest) -> None:
@@ -137,7 +133,6 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     assert await get_tls_ca(ops_test, all_units[0].name), "❌ No CA found after TLS relation"
 
 
-@pytest.mark.order(4)
 @pytest.mark.abort_on_fail
 @pytest.mark.tls_tests
 async def test_rotate_tls_key(ops_test: OpsTest) -> None:
@@ -199,7 +194,6 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
         ), f"❌ Unencrypted connection possible to unit {unit.name} with enabled TLS"
 
 
-@pytest.mark.order(5)
 @pytest.mark.abort_on_fail
 @pytest.mark.tls_tests
 async def test_disable_tls(ops_test: OpsTest) -> None:

@@ -32,7 +32,6 @@ CLUSTER_NAME = "test_cluster"
 TIMEOUT = 15 * 60
 
 
-@pytest.mark.order(1)
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
 @pytest.mark.charm_tests
@@ -80,7 +79,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             assert output[0] == 3
 
 
-@pytest.mark.order(2)
 @pytest.mark.abort_on_fail
 @pytest.mark.charm_tests
 async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> None:
@@ -134,7 +132,6 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
         assert False
 
 
-@pytest.mark.order(3)
 @pytest.mark.abort_on_fail
 @pytest.mark.charm_tests
 async def test_scale_up_and_down(ops_test: OpsTest) -> None:
@@ -188,7 +185,6 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         assert len(not_online_member_addresses) == 0
 
 
-@pytest.mark.order(4)
 @pytest.mark.abort_on_fail
 @pytest.mark.charm_tests
 async def test_password_rotation(ops_test: OpsTest):
@@ -223,7 +219,6 @@ async def test_password_rotation(ops_test: OpsTest):
     )
 
 
-@pytest.mark.order(5)
 @pytest.mark.abort_on_fail
 @pytest.mark.charm_tests
 async def test_password_rotation_silent(ops_test: OpsTest):
@@ -253,7 +248,6 @@ async def test_password_rotation_silent(ops_test: OpsTest):
     )
 
 
-@pytest.mark.order(6)
 @pytest.mark.abort_on_fail
 @pytest.mark.charm_tests
 async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
