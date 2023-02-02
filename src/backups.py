@@ -23,8 +23,6 @@ from s3_helpers import list_backups_in_s3_path, upload_content_to_s3
 logger = logging.getLogger(__name__)
 
 MYSQL_BACKUPS = "mysql-backups"
-BACKUPS_KEY = "backups"
-UNIT_BACKUPS_KEY = "unit-backups"
 
 
 class MySQLBackups(Object):
@@ -93,7 +91,8 @@ Application Name: {self.model.app.name}
 Unit Name: {self.charm.unit.name}
 Juju Version: {str(juju_version)}
 """
-        success = upload_content_to_s3(
+
+        if not upload_content_to_s3(
             metadata,
             s3_parameters["bucket"],
             f"{s3_directory}.metadata",
@@ -101,8 +100,7 @@ Juju Version: {str(juju_version)}
             s3_parameters["endpoint"],
             s3_parameters["access-key"],
             s3_parameters["secret-key"],
-        )
-        if not success:
+        ):
             event.fail("Failed to upload metadata to provided S3")
             return
 

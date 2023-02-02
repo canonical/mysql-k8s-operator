@@ -283,6 +283,11 @@ class MySQL(MySQLBase):
         except ExecError as e:
             logger.exception("Failed to execute commands prior to running backup", exc_info=e)
             raise MySQLExecuteBackupCommandsError(e.stderr)
+        except Exception as e:
+            # Catch all other exceptions to prevent the database being stuck in
+            # a bad state due to pre-backup operations
+            logger.exception("Failed to execute commands prior to running backup", exc_info=e)
+            raise MySQLExecuteBackupCommandsError(e)
 
         # TODO: remove flags --no-server-version-check
         # when MySQL and XtraBackup versions are in sync
@@ -335,6 +340,8 @@ xtrabackup --defaults-file=/etc/mysql
             logger.error(f"Stderr of script: {e.stderr}")
             raise MySQLExecuteBackupCommandsError(e.stderr)
         except Exception as e:
+            # Catch all other exceptions to prevent the database being stuck in
+            # a bad state due to pre-backup operations
             logger.exception("Failed to execute backup script", exc_info=e)
             raise MySQLExecuteBackupCommandsError(e)
 
