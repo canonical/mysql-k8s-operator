@@ -111,14 +111,17 @@ class MySQLRelation(Object):
         """
         if not self.charm._is_peer_data_set or not self.model.get_relation(LEGACY_MYSQL):
             # Avoid running too early
+            logger.info("Unit not ready to set `mysql` relation data. Deferring")
             event.defer()
             return
 
         if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) == "{}":
+            logger.debug("No `mysql` relation data present")
             return
 
         container = self.charm.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
+            logger.info("Cannot connect to the workload container")
             return
 
         updates = json.loads(relation_data)
@@ -126,6 +129,7 @@ class MySQLRelation(Object):
         # Update the host (in case it has changed)
         primary_address = self.charm._mysql.get_cluster_primary_address()
         if not primary_address:
+            logger.error("Unable to query the cluster primary address")
             self.charm.unit.status = BlockedStatus("Failed to retrieve cluster primary address")
             return
         updates["host"] = primary_address.split(":")[0]
@@ -141,11 +145,16 @@ class MySQLRelation(Object):
         being elected).
         """
         if not self.charm.unit.is_leader():
+            logger.info("Unit is not leader, nooping `mysql` relation created")
             return
 
-        # Wait until on-config-changed event is executed
-        # (wait for root password to have been set)
-        if not self.charm._is_peer_data_set:
+        # Wait until on-config-changed event is executed (for root password to have been set)
+        # and for the member to be online
+        if (
+            not self.charm._is_peer_data_set
+            or self.charm.unit_peer_data.get("member-state") != "online"
+        ):
+            logger.info("Unit not ready to execute `mysql` relation created. Deferring")
             event.defer()
             return
 
@@ -157,11 +166,13 @@ class MySQLRelation(Object):
         # Only execute handler if config values are set
         # else we'd be unable to create database and user
         if not username or not database:
+            logger.warning("mysql-interface-user or mysql-interface-database not set")
             self.charm.unit.status = BlockedStatus("Missing `mysql` relation data")
             return
 
         user_exists = False
         try:
+            logger.info(f"Checking if mysql user {username} exists")
             user_exists = self.charm._mysql.does_mysql_user_exist(username, "%")
         except MySQLCheckUserExistenceError:
             self.charm.unit.status = BlockedStatus("Failed to check user existence")
@@ -169,11 +180,13 @@ class MySQLRelation(Object):
 
         # Only execute if the application user does not exist
         if user_exists:
+            logger.info(f"mysql user {username} exists. nooping")
             return
 
         password = self._get_or_set_password_in_peer_databag(username)
 
         try:
+            logger.info("Creating application database and scoped user")
             self.charm._mysql.create_application_database_and_scoped_user(
                 database,
                 username,
@@ -189,6 +202,7 @@ class MySQLRelation(Object):
 
         primary_address = self.charm._mysql.get_cluster_primary_address()
         if not primary_address:
+            logger.error("Unable to get cluster primary address")
             self.charm.unit.status = BlockedStatus("Failed to retrieve cluster primary address")
 
         updates = {
@@ -209,16 +223,21 @@ class MySQLRelation(Object):
         event handler.
         """
         if not self.charm.unit.is_leader():
+            logger.info("Unit is not leader, nooping `mysql` relation broken")
             return
 
-        # Only execute if the last `osm-mysql` relation is broken
+        # Only execute if the last `mysql` relation is broken
         # as there can be multiple applications using the same relation interface
         if len(self.charm.model.relations[LEGACY_MYSQL]) > 1:
+            logger.info("More than one `mysql` relations present. Not deleting user for unit")
             return
 
         logger.warning("DEPRECATION WARNING - `mysql` is a legacy interface")
 
         try:
+            logger.info("Deleting users for unit (`mysql` relation)")
             self.charm._mysql.delete_users_for_unit("mysql-legacy-relation")
         except MySQLDeleteUsersForUnitError:
             self.charm.unit.status = BlockedStatus("Failed to delete users for unit")
+
+        del self.charm.app_peer_data["mysql_relation_data"]
