@@ -212,10 +212,7 @@ class MySQLSetInstanceOfflineModeError(Error):
 class MySQLSetInstanceOptionError(Error):
     """Exception raised when there is an issue setting instance option."""
 
-<<<<<<< HEAD
-=======
 
->>>>>>> main
 class MySQLBase(ABC):
     """Abstract class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -1155,13 +1152,7 @@ class MySQLBase(ABC):
             MySQLSetInstanceOfflineModeError - if issue setting instance offline_mode.
         """
         mode = "ON" if offline_mode else "OFF"
-<<<<<<< HEAD
-        set_instance_offline_mode_commands = (
-            f"SET @@GLOBAL.offline_mode = {mode}",
-        )
-=======
         set_instance_offline_mode_commands = (f"SET @@GLOBAL.offline_mode = {mode}",)
->>>>>>> main
 
         try:
             self._run_mysqlcli_script(
