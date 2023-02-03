@@ -194,6 +194,11 @@ Juju Version: {str(juju_version)}
         logger.info("Setting cluster state as 'backing-up'")
         self.charm.unit_peer_data["cluster-state"] = "backing-up"
 
+        # Do not set instance offline_mode and do not hide/show instance from mysqlrouter
+        # if there is only one instance in the cluster
+        if self.charm.app.planned_units() == 1:
+            return True, None
+
         try:
             logger.info("Setting unit option tag:_hidden")
             self.charm._mysql.set_instance_option("tag:_hidden", "true")
@@ -291,6 +296,11 @@ Stderr:
         """Runs operations required after performing a backup."""
         logger.info("Setting cluster state as 'active'")
         self.charm.unit_peer_data["cluster-state"] = "active"
+
+        # Do not set instance offline_mode and do not hide/show instance from mysqlrouter
+        # if there is only one instance in the cluster
+        if self.charm.app.planned_units() == 1:
+            return True, None
 
         try:
             logger.info("Unsetting unit as offline after performing backup")
