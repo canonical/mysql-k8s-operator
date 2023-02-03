@@ -79,6 +79,10 @@ class MySQLExecuteBackupCommandsError(Error):
     """
 
 
+class MySQLGetInnoDBBufferPoolParametersError(Error):
+    """Exception raised when there is an error computing the innodb buffer pool parameters."""
+
+
 class MySQL(MySQLBase):
     """Class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -248,13 +252,26 @@ class MySQL(MySQLBase):
             "; ".join(commands), self.cluster_admin_password, self.cluster_admin_user
         )
 
-    def create_custom_config_file(self, report_host: str) -> None:
+    def create_custom_config_file(
+        self,
+        report_host: str,
+        innodb_buffer_pool_size: int,
+        innodb_buffer_pool_chunk_size: int,
+    ) -> None:
         """Create custom configuration file.
 
         Necessary for k8s deployments.
         Raises MySQLCreateCustomConfigFileError if the script gets a non-zero return code.
         """
-        content = ("[mysqld]", f"report_host = {report_host}", "")
+        content = [
+            "[mysqld]",
+            f"report_host = {report_host}",
+            f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
+        ]
+
+        if innodb_buffer_pool_chunk_size:
+            content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
+        content.append("")
 
         try:
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
@@ -344,6 +361,73 @@ xtrabackup --defaults-file=/etc/mysql
             # a bad state due to pre-backup operations
             logger.exception("Failed to execute backup script", exc_info=e)
             raise MySQLExecuteBackupCommandsError(e)
+
+    def _get_total_memory(self) -> int:
+        """Retrieves the total memory of the mysql container."""
+        try:
+            logger.info("Retrieving the total memory of the mysql container")
+
+            """Below is an example output of `free --bytes`:
+               total        used        free      shared  buff/cache   available
+Mem:     16484458496 11890454528   265670656  2906722304  4328333312  1321193472
+Swap:     1027600384  1027600384           0
+            """
+            # need to use sh -c to be able to use pipes
+            get_total_memory_command = [
+                "sh",
+                "-c",
+                "free --bytes | sed -n '2p' | awk '{print $2}'",
+            ]
+
+            process = self.container.exec(
+                get_total_memory_command,
+                user="mysql",
+                group="mysql",
+            )
+            stdout, _ = process.wait_output()
+            return int(stdout.strip())
+        except ExecError as e:
+            logger.exception("Failed to execute commands to query total memory", exc_info=e)
+            raise
+
+    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int]]:
+        """Get innodb buffer pool parameters for the instance.
+
+        Returns: a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size))
+        """
+        # Reference: based off xtradb-cluster-operator
+        # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
+
+        chunk_size_min = 1048576  # 1 mebibyte
+        chunk_size_default = 134217728  # 128 mebibytes
+
+        try:
+            innodb_buffer_pool_chunk_size = None
+            total_memory = self._get_total_memory()
+
+            pool_size = int(total_memory * 0.75)
+            # 1000000000 = 1 gigabyte
+            if total_memory - pool_size < 1000000000:
+                pool_size = int(total_memory * 0.5)
+
+            if pool_size % chunk_size_default != 0:
+                # round pool_size to be a multiple of chunk_size_default
+                pool_size += chunk_size_default - (pool_size % chunk_size_default)
+
+            # 1073741824 = 1 gibibyte
+            if pool_size > 1073741824:
+                chunk_size = pool_size / 8
+                # round chunk_size to a multiple of chunk_size_min
+                chunk_size = chunk_size + chunk_size_min - (chunk_size % chunk_size_min)
+
+                pool_size = chunk_size * 8
+
+                innodb_buffer_pool_chunk_size = chunk_size
+
+            return (int(pool_size), int(innodb_buffer_pool_chunk_size))
+        except Exception as e:
+            logger.exception("Failed to compute innodb buffer pool parameters", exc_info=e)
+            raise MySQLGetInnoDBBufferPoolParametersError("Error retrieving total free memory")
 
     @retry(
         retry=retry_if_exception_type(MySQLWaitUntilUnitRemovedFromClusterError),

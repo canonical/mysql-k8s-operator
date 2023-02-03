@@ -57,6 +57,7 @@ from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
     MySQLForceRemoveUnitFromClusterError,
+    MySQLGetInnoDBBufferPoolParametersError,
     MySQLInitialiseMySQLDError,
 )
 from relations.mysql import MySQLRelation
@@ -320,8 +321,19 @@ class MySQLOperatorCharm(CharmBase):
         """
         if not container.exists(MYSQLD_CONFIG_FILE):
             try:
+                (
+                    innodb_buffer_pool_size,
+                    innodb_buffer_pool_chunk_size,
+                ) = self._mysql.get_innodb_buffer_pool_parameters()
+            except MySQLGetInnoDBBufferPoolParametersError:
+                self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
+                return False
+
+            try:
                 self._mysql.create_custom_config_file(
-                    report_host=self.get_unit_hostname(self.unit.name)
+                    report_host=self.get_unit_hostname(self.unit.name),
+                    innodb_buffer_pool_size=innodb_buffer_pool_size,
+                    innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
                 )
             except MySQLCreateCustomConfigFileError:
                 self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
