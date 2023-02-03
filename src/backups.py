@@ -127,7 +127,9 @@ Juju Version: {str(juju_version)}
             success, error_message = self._post_backup()
             if not success:
                 logger.error(error_message)
-                self.charm.unit.status = BlockedStatus("Failed to create backup; instance in bad state")
+                self.charm.unit.status = BlockedStatus(
+                    "Failed to create backup; instance in bad state"
+                )
 
             event.fail(error_message)
             return
@@ -136,7 +138,9 @@ Juju Version: {str(juju_version)}
         success, error_message = self._post_backup()
         if not success:
             logger.error(error_message)
-            self.charm.unit.status = BlockedStatus("Failed to create backup; instance in bad state")
+            self.charm.unit.status = BlockedStatus(
+                "Failed to create backup; instance in bad state"
+            )
             event.fail(error_message)
             return
 
