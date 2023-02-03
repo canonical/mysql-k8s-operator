@@ -16,6 +16,7 @@ from charms.mysql.v0.mysql import (
 from ops.charm import ActionEvent, CharmBase
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
+from ops.model import BlockedStatus
 
 from mysql_k8s_helpers import MySQLExecuteBackupCommandsError
 from s3_helpers import list_backups_in_s3_path, upload_content_to_s3
@@ -122,18 +123,20 @@ Juju Version: {str(juju_version)}
         )
         if not success:
             logger.warning(error_message)
-            event.fail(error_message)
 
             success, error_message = self._post_backup()
             if not success:
-                logger.warning(error_message)
+                logger.error(error_message)
+                self.charm.unit.status = BlockedStatus("Failed to create backup; instance in bad state")
 
+            event.fail(error_message)
             return
 
         # Run operations to clean up after the backup
         success, error_message = self._post_backup()
         if not success:
-            logger.warning(error_message)
+            logger.error(error_message)
+            self.charm.unit.status = BlockedStatus("Failed to create backup; instance in bad state")
             event.fail(error_message)
             return
 
