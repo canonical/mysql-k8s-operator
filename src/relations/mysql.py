@@ -157,7 +157,7 @@ class MySQLRelation(Object):
             not self.charm._is_peer_data_set
             or self.charm.unit_peer_data.get("member-state") != "online"
         ):
-            logger.debug("Unit not ready to execute `mysql` relation created. Deferring")
+            logger.info("Unit not ready to execute `mysql` relation created. Deferring")
             event.defer()
             return
 
