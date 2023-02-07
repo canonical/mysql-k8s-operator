@@ -109,7 +109,10 @@ class MySQLRelation(Object):
         Stores and refreshes the relation data on all units (as some consumer
         applications retrieve the relation data from random units).
         """
-        if not self.charm._is_peer_data_set or not self.model.get_relation(LEGACY_MYSQL):
+        if not self.model.get_relation(LEGACY_MYSQL):
+            return
+
+        if not self.charm._is_peer_data_set:
             # Avoid running too early
             logger.info("Unit not ready to set `mysql` relation data. Deferring")
             event.defer()
