@@ -49,7 +49,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
     # Reduce the update_status frequency until the cluster is deployed
     async with ops_test.fast_forward():
-
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[APP_NAME].units) == 3
         )
