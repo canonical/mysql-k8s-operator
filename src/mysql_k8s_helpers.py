@@ -83,6 +83,26 @@ class MySQLGetInnoDBBufferPoolParametersError(Error):
     """Exception raised when there is an error computing the innodb buffer pool parameters."""
 
 
+class MySQLRetrieveBackupWithXBCloudError(Error):
+    """Exception raised when there is an error retrieving a backup from S3 with xbcloud."""
+
+
+class MySQLPrepareBackupForRestoreError(Error):
+    """Exception raised when there is an error preparing a backup for restore."""
+
+
+class MySQLEmptyDataDirectoryError(Error):
+    """Exception raised when there is an error emptying the mysql data directory."""
+
+
+class MySQLRestoreBackupError(Error):
+    """Exception raised when there is an error restoring a backup."""
+
+
+class MySQLReconfigureInstanceError(Error):
+    """Exception raised when there is an error reconfiguring an instance for InnoDB cluster."""
+
+
 class MySQL(MySQLBase):
     """Class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -193,6 +213,39 @@ class MySQL(MySQLBase):
             )
             raise MySQLConfigureInstanceError(e.message)
 
+    def reconfigure_instance(self) -> None:
+        """Reconfigure the instance to be used in an InnoDB cluster.
+
+        Assumes that the instance was previously configured, and that the cluster
+        admin user already exists.
+        """
+        options = {
+            "restart": "false",
+        }
+
+        configure_instance_command = (
+            f"dba.configure_instance('{self.server_config_user}:{self.server_config_password}@{self.instance_address}', {json.dumps(options)})",
+        )
+
+        try:
+            logger.info(f"Reonfiguring instance for InnoDB on {self.instance_address}")
+            self._run_mysqlsh_script("\n".join(configure_instance_command))
+
+            # TODO: use the constant for the service name
+            logger.info("Restarting the mysqld pebble service")
+            self.container.restart("mysqld")
+            logger.info("Waiting for MySQL to restart")
+            self.wait_until_mysql_connection()
+        except (
+            MySQLClientError,
+            MySQLServiceNotRunningError,
+        ) as e:
+            logger.exception(
+                f"Failed to reconfigure instance: {self.instance_address} with error {e.message}",
+                exc_info=e,
+            )
+            raise MySQLReconfigureInstanceError(e.message)
+
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
 
@@ -295,7 +348,11 @@ class MySQL(MySQLBase):
             process = self.container.exec(nproc_command)
             nproc, _ = process.wait_output()
 
-            process = self.container.exec(make_temp_dir_command)
+            process = self.container.exec(
+                make_temp_dir_command,
+                user="mysql",
+                group="mysql",
+            )
             tmp_dir, _ = process.wait_output()
         except ExecError as e:
             logger.exception("Failed to execute commands prior to running backup", exc_info=e)
@@ -352,15 +409,153 @@ xtrabackup --defaults-file=/etc/mysql
             stdout, stderr = process.wait_output()
             return (stdout, stderr)
         except ExecError as e:
-            logger.exception("Failed to execute backup script", exc_info=e)
-            logger.error(f"Stdout of script: {e.stdout}")
-            logger.error(f"Stderr of script: {e.stderr}")
+            logger.exception("Failed to execute backup commands", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
             raise MySQLExecuteBackupCommandsError(e.stderr)
         except Exception as e:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
-            logger.exception("Failed to execute backup script", exc_info=e)
+            logger.exception("Failed to execute backup commands", exc_info=e)
             raise MySQLExecuteBackupCommandsError(e)
+
+    def retrieve_backup_with_xbcloud(
+        self,
+        s3_bucket: str,
+        s3_path: str,
+        s3_access_key: str,
+        s3_secret_key: str,
+        backup_id: str,
+    ) -> Tuple[str, str, str]:
+        """Retrieve the specified backup from S3.
+
+        The backup is retrieved using xbcloud and stored in a temp dir in the
+        mysql container.
+        """
+        nproc_command = "nproc".split()
+        make_temp_dir_command = "mktemp --directory /tmp/mysql_sst_XXXX".split()
+
+        try:
+            process = self.container.exec(nproc_command)
+            nproc, _ = process.wait_output()
+
+            process = self.container.exec(
+                make_temp_dir_command,
+                user="mysql",
+                group="mysql",
+            )
+            tmp_dir, _ = process.wait_output()
+        except ExecError as e:
+            logger.exception("Failed to execute commands prior to running xbcloud get", exc_info=e)
+            raise MySQLRetrieveBackupWithXBCloudError(e.stderr)
+
+        xbcloud_command = " ".join(
+            f"""
+xbcloud get
+        --curl-retriable-errors=7
+        --parallel=10
+        s3://{s3_bucket.rstrip("/")}/{s3_path.rstrip("/")}/{backup_id}
+    | xbstream
+        --decompress
+        -x
+        -C {tmp_dir.strip()}
+        --parallel={nproc.strip()}
+""".split()
+        )
+        # Use sh to be able to use the pipe in above command
+        retrieve_backup_command = ["sh", "-c", f"{xbcloud_command}"]
+
+        try:
+            # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picket by xbcloud
+            process = self.container.exec(
+                retrieve_backup_command,
+                environment={
+                    "ACCESS_KEY_ID": s3_access_key,
+                    "SECRET_ACCESS_KEY": s3_secret_key,
+                },
+                user="mysql",
+                group="mysql",
+            )
+            stdout, stderr = process.wait_output()
+            return (stdout, stderr, tmp_dir)
+        except ExecError as e:
+            logger.exception("Failed to retrieve backup", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLRetrieveBackupWithXBCloudError(e.stderr)
+
+    def prepare_backup_for_restore(self, backup_location: str) -> Tuple[str, str]:
+        """Prepare the backup in the provided dir for restore."""
+        try:
+            innodb_buffer_pool_size, _ = self.get_innodb_buffer_pool_parameters()
+        except MySQLGetInnoDBBufferPoolParametersError as e:
+            raise MySQLPrepareBackupForRestoreError(e)
+
+        prepare_backup_command = f"""
+xtrabackup --prepare
+        --use-memory={innodb_buffer_pool_size}
+        --no-version-check
+        --rollback-prepared-trx
+        --xtrabackup-plugin-dir=/usr/lib64/xtrabackup/plugin
+        --target-dir={backup_location}
+""".split()
+
+        try:
+            process = self.container.exec(
+                prepare_backup_command,
+                user="mysql",
+                group="mysql",
+            )
+            stdout, stderr = process.wait_output()
+            return (stdout, stderr)
+        except ExecError as e:
+            logger.exception("Failed to prepare backup for restore", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLPrepareBackupForRestoreError(e.stderr)
+
+    def empty_data_directory(self) -> None:
+        """Empty the mysql data directory in preparation of backup restore."""
+        # TODO: Find out why we need to use sh to remove the data directory
+        empty_data_directory_command = ["sh", "-c", "rm -rf /var/lib/mysql/*"]
+
+        try:
+            process = self.container.exec(empty_data_directory_command)
+            process.wait_output()
+        except ExecError as e:
+            logger.exception(
+                "Failed to empty data directory in prep for backup restore", exc_info=e
+            )
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLEmptyDataDirectoryError(e.stderr)
+
+    def restore_backup(self, backup_location: str) -> Tuple[str, str]:
+        """Restore the provided prepared backup."""
+        restore_backup_command = f"""
+xtrabackup --defaults-file=/etc/mysql
+        --defaults-group=mysqld
+        --datadir=/var/lib/mysql
+        --no-version-check
+        --move-back
+        --force-non-empty-directories
+        --xtrabackup-plugin-dir=/usr/lib64/xtrabackup/plugin
+        --target-dir={backup_location}
+""".split()
+
+        try:
+            process = self.container.exec(
+                restore_backup_command,
+                user="mysql",
+                group="mysql",
+            )
+            stdout, stderr = process.wait_output()
+            return (stdout, stderr)
+        except ExecError as e:
+            logger.exception("Failed to restore backup", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLRestoreBackupError(e.stderr)
 
     def _get_total_memory(self) -> int:
         """Retrieves the total memory of the mysql container."""
