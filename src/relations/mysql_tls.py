@@ -65,22 +65,30 @@ class MySQLTLS(Object):
         """Action for setting a TLS private key."""
         self._request_certificate(event.params.get("internal-key", None))
 
-    def _on_tls_relation_joined(self, _) -> None:
+    def _on_tls_relation_joined(self, event) -> None:
         """Request certificate when TLS relation joined."""
+        if self.charm.unit_peer_data.get("unit-initialized") != "True":
+            event.defer()
+            return
         self._request_certificate(None)
 
     def _on_certificate_available(self, event: CertificateAvailableEvent) -> None:
         """Enable TLS when TLS certificate available."""
-        if not self.charm.unit_initialized:
-            logger.debug("Wait unit initialise before request certificate.")
-            event.defer()
-            return
-
         if (
             event.certificate_signing_request.strip()
             != self.charm.get_secret(SCOPE, "csr").strip()
         ):
             logger.error("An unknown certificate expiring.")
+            return
+
+        if self.charm.unit_peer_data.get("tls") == "enabled":
+            logger.debug("TLS already enabled.")
+            return
+
+        state, _ = self.charm._mysql.get_member_state()
+        if state != "online":
+            logger.debug("Unit not initialized yet, deferring TLS configuration.")
+            event.defer()
             return
 
         self.charm.unit.status = MaintenanceStatus("Setting up TLS")
@@ -95,7 +103,7 @@ class MySQLTLS(Object):
         self.create_tls_config_file()
 
         # set member-state to avoid unwanted health-check actions
-        self.charm.unit_peer_data["member-state"] = "restarting"
+        self.charm.unit_peer_data.update({"member-state": "waiting", "tls": "enabled"})
         # trigger rolling restart
         self.charm.on[self.charm.restart_manager.name].acquire_lock.emit()
 
@@ -121,12 +129,17 @@ class MySQLTLS(Object):
 
     def _on_tls_relation_broken(self, _) -> None:
         """Disable TLS when TLS relation broken."""
-        self.charm.set_secret(SCOPE, "ca", None)
-        self.charm.set_secret(SCOPE, "cert", None)
-        self.charm.set_secret(SCOPE, "chain", None)
+        try:
+            self.charm.set_secret(SCOPE, "ca", None)
+            self.charm.set_secret(SCOPE, "cert", None)
+            self.charm.set_secret(SCOPE, "chain", None)
+        except KeyError:
+            # ignore key error for unit teardown
+            pass
         self.remove_tls_config_file()
         # set member-state to avoid unwanted health-check actions
-        self.charm.unit_peer_data["member-state"] = "waiting"
+        # and unset control flag
+        self.charm.unit_peer_data.update({"member-state": "waiting", "tls": ""})
         # trigger rolling restart
         self.charm.on[self.charm.restart_manager.name].acquire_lock.emit()
 
@@ -151,6 +164,8 @@ class MySQLTLS(Object):
         self.charm.set_secret(SCOPE, "key", key.decode("utf-8"))
         self.charm.set_secret(SCOPE, "csr", csr.decode("utf-8"))
 
+        # set control flag
+        self.charm.unit_peer_data.update({"tls": "requested"})
         if self.charm.model.get_relation(TLS_RELATION):
             self.certs.request_certificate_creation(certificate_signing_request=csr)
 
