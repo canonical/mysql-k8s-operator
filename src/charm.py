@@ -7,6 +7,7 @@
 import logging
 from typing import Dict, Optional
 
+from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
     MySQLConfigureInstanceError,
@@ -26,10 +27,17 @@ from ops.charm import (
     UpdateStatusEvent,
 )
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
+from ops.model import (
+    ActiveStatus,
+    BlockedStatus,
+    Container,
+    MaintenanceStatus,
+    WaitingStatus,
+)
 from ops.pebble import Layer
 from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
 
+from backups import MySQLBackups
 from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
@@ -41,6 +49,7 @@ from constants import (
     REQUIRED_USERNAMES,
     ROOT_PASSWORD_KEY,
     ROOT_USERNAME,
+    S3_INTEGRATOR_RELATION_NAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
@@ -86,6 +95,8 @@ class MySQLOperatorCharm(CharmBase):
         self.restart_manager = RollingOpsManager(
             charm=self, relation="restart", callback=self._restart
         )
+        self.s3_integrator = S3Requirer(self, S3_INTEGRATOR_RELATION_NAME)
+        self.backups = MySQLBackups(self, self.s3_integrator)
 
     @property
     def peers(self):
@@ -300,6 +311,24 @@ class MySQLOperatorCharm(CharmBase):
 
         return True
 
+    def _prepare_configs(self, container: Container) -> bool:
+        """Copies files to the workload container.
+
+        Meant to be called from the pebble-ready handler.
+
+        Returns: a boolean indicating if the method was successful.
+        """
+        if not container.exists(MYSQLD_CONFIG_FILE):
+            try:
+                self._mysql.create_custom_config_file(
+                    report_host=self.get_unit_hostname(self.unit.name)
+                )
+            except MySQLCreateCustomConfigFileError:
+                self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
+                return False
+
+        return True
+
     def _on_mysql_pebble_ready(self, event) -> None:
         """Pebble ready handler.
 
@@ -312,11 +341,8 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = event.workload
-
-        if not container.exists(MYSQLD_CONFIG_FILE):
-            self._mysql.create_custom_config_file(
-                report_host=self.get_unit_hostname(self.unit.name)
-            )
+        if not self._prepare_configs(container):
+            return
 
         if self.unit_peer_data.get("unit-configured"):
             # Only update pebble layer if unit is already configured for GR
@@ -422,14 +448,34 @@ class MySQLOperatorCharm(CharmBase):
 
         return False
 
+    def _is_cluster_blocked(self) -> bool:
+        """Performs cluster state checks for the update-status handler.
+
+        Returns: a boolean indicating whether the update-status (caller) should
+            no-op and return.
+        """
+        unit_member_state = self.unit_peer_data.get("member-state")
+        if unit_member_state in ["waiting", "restarting"]:
+            # avoid changing status while tls is being set up or charm is being initialized
+            logger.info(f"Unit state is {unit_member_state}")
+            return True
+
+        cluster_states = {self.peers.data[unit].get("cluster-state") for unit in self.peers.units}
+        cluster_states.add(self.unit_peer_data.get("cluster-state"))
+
+        if "backing-up" in cluster_states:
+            logger.info("Member in cluster is performing backup or restore")
+            return True
+
+        return False
+
     def _on_update_status(self, event: UpdateStatusEvent) -> None:
         """Handle the update status event.
 
         One purpose of this event handler is to ensure that scaled down units are
         removed from the cluster.
         """
-        if self.unit_peer_data.get("member-state") in ["waiting", "restarting"]:
-            # avoid changing status while tls is being set up or charm is being initialized
+        if self._is_cluster_blocked():
             return
 
         container = self.unit.get_container(CONTAINER_NAME)

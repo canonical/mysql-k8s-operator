@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 class MySQLProvider(Object):
     """Standard database relation class."""
 
-    def __init__(self, charm):
+    def __init__(self, charm) -> None:
         super().__init__(charm, DB_RELATION_NAME)
 
         self.charm = charm
@@ -333,6 +333,9 @@ class MySQLProvider(Object):
 
         Primarily used to update the endpoints + read_only_endpoints.
         """
+        if self.charm._is_cluster_blocked():
+            return
+
         container = self.charm.unit.get_container(CONTAINER_NAME)
         if (
             not container.can_connect()
