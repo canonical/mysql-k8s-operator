@@ -497,7 +497,9 @@ class MySQL(MySQLBase):
         except ExecError as e:
             raise MySQLClientError(e.stderr)
 
-    def _run_mysqlcli_script(self, script: str, password: str = None, user: str = "root") -> str:
+    def _run_mysqlcli_script(
+        self, script: str, password: Optional[str] = None, user: str = "root"
+    ) -> str:
         """Execute a MySQL CLI script.
 
         Execute SQL script as instance root user.
