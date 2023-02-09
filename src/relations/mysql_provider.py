@@ -5,6 +5,7 @@
 
 import logging
 import socket
+from typing import List
 
 from charms.data_platform_libs.v0.database_provides import (
     DatabaseProvides,
@@ -92,24 +93,20 @@ class MySQLProvider(Object):
             relation_id: The id of the relation for which to update the endpoints
         """
 
-        def _ip_to_pod_name(ip: str) -> str:
-            _, host, _ = socket.gethostbyaddr(ip)
-            return host[0]
-
-        def _label_endpoints(endpoints: str, role: str) -> None:
-            for endpoint in endpoints.split(","):
-                pod_ip = endpoint.split(":")[0]
-                pod_name = _ip_to_pod_name(pod_ip)
-                self.k8s_helpers.label_pod(role, pod_name)
+        def _endpoints_to_pod_list(endpoints: str) -> List[str]:
+            """Converts a comma separated list of endpoints to a list of pods."""
+            return [p.split(".")[0] for p in endpoints.split(",")]
 
         logger.debug("Updating pod labels")
         try:
             rw_endpoints, ro_endpoints = self.charm._mysql.get_cluster_endpoints()
 
             # rw pod labels
-            _label_endpoints(rw_endpoints, "primary")
+            for pod in _endpoints_to_pod_list(rw_endpoints):
+                self.k8s_helpers.label_pod("primary", pod)
             # ro pod labels
-            _label_endpoints(ro_endpoints, "replicas")
+            for pod in _endpoints_to_pod_list(ro_endpoints):
+                self.k8s_helpers.label_pod("replicas", pod)
         except MySQLGetClusterEndpointsError as e:
             logger.exception("Failed to get cluster members", exc_info=e)
         except KubernetesClientError:
