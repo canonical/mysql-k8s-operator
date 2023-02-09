@@ -35,7 +35,7 @@ SAMPLE_CLUSTER_STATUS = {
 }
 
 
-class TestDatase(unittest.TestCase):
+class TestDatabase(unittest.TestCase):
     def setUp(self):
         self.patcher = patch("lightkube.core.client.GenericSyncClient")
         self.patcher.start()
