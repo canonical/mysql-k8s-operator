@@ -7,7 +7,7 @@
 import json
 import logging
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
 from charms.mysql.v0.mysql import (
     Error,
@@ -70,6 +70,13 @@ class MySQLForceRemoveUnitFromClusterError(Error):
 
 class MySQLWaitUntilUnitRemovedFromClusterError(Error):
     """Exception raised when there is an issue checking if a unit is removed from the cluster."""
+
+
+class MySQLExecuteBackupCommandsError(Error):
+    """Exception raised when there is an error executing the backup commands.
+
+    The backup commands are executed in the workload container using the pebble API.
+    """
 
 
 class MySQL(MySQLBase):
@@ -253,6 +260,90 @@ class MySQL(MySQLBase):
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
         except Exception:
             raise MySQLCreateCustomConfigFileError()
+
+    def execute_backup_commands(
+        self,
+        s3_bucket: str,
+        s3_directory: str,
+        s3_access_key: str,
+        s3_secret_key: str,
+        s3_endpoint: str,
+    ) -> Tuple[str, str]:
+        """Executes the run_backup.sh script in the container with the given args."""
+        nproc_command = "nproc".split()
+
+        make_temp_dir_command = "mktemp --tmpdir --directory xtra_backup_XXXX".split()
+
+        try:
+            process = self.container.exec(nproc_command)
+            nproc, _ = process.wait_output()
+
+            process = self.container.exec(make_temp_dir_command)
+            tmp_dir, _ = process.wait_output()
+        except ExecError as e:
+            logger.exception("Failed to execute commands prior to running backup", exc_info=e)
+            raise MySQLExecuteBackupCommandsError(e.stderr)
+        except Exception as e:
+            # Catch all other exceptions to prevent the database being stuck in
+            # a bad state due to pre-backup operations
+            logger.exception("Failed to execute commands prior to running backup", exc_info=e)
+            raise MySQLExecuteBackupCommandsError(e)
+
+        # TODO: remove flags --no-server-version-check
+        # when MySQL and XtraBackup versions are in sync
+        xtrabackup_commands = " ".join(
+            f"""
+xtrabackup --defaults-file=/etc/mysql
+            --defaults-group=mysqld
+            --no-version-check
+            --parallel={nproc.strip()}
+            --user="{self.server_config_user}"
+            --socket=/run/mysqld/mysqld.sock
+            --lock-ddl
+            --backup
+            --stream=xbstream
+            --xtrabackup-plugin-dir=/usr/lib64/xtrabackup/plugin
+            --target-dir="{tmp_dir.strip()}"
+            --no-server-version-check
+            --password
+    | xbcloud put
+            --curl-retriable-errors=7
+            --insecure
+            --storage=s3
+            --parallel=10
+            --md5
+            --s3-bucket="{s3_bucket}"
+            --s3-endpoint="{s3_endpoint}"
+            "{s3_directory}"
+""".split()
+        )
+        # Use sh to be able to use the pipe in above commands
+        backup_commands = ["sh", "-c", f"{xtrabackup_commands}"]
+
+        try:
+            # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
+            process = self.container.exec(
+                backup_commands,
+                environment={
+                    "ACCESS_KEY_ID": s3_access_key,
+                    "SECRET_ACCESS_KEY": s3_secret_key,
+                },
+                stdin=self.server_config_password,
+                user="mysql",
+                group="mysql",
+            )
+            stdout, stderr = process.wait_output()
+            return (stdout, stderr)
+        except ExecError as e:
+            logger.exception("Failed to execute backup script", exc_info=e)
+            logger.error(f"Stdout of script: {e.stdout}")
+            logger.error(f"Stderr of script: {e.stderr}")
+            raise MySQLExecuteBackupCommandsError(e.stderr)
+        except Exception as e:
+            # Catch all other exceptions to prevent the database being stuck in
+            # a bad state due to pre-backup operations
+            logger.exception("Failed to execute backup script", exc_info=e)
+            raise MySQLExecuteBackupCommandsError(e)
 
     @retry(
         retry=retry_if_exception_type(MySQLWaitUntilUnitRemovedFromClusterError),
