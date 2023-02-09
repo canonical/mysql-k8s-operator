@@ -31,7 +31,7 @@ class KubernetesHelpers(Object):
             charm: a `CharmBase` parent object
         """
         super().__init__(charm, "kubernetes-helpers")
-        self.cluster_name = charm._mysql.cluster_name
+        self.charm = charm
         self.pod_name = charm.unit.name.replace("/", "-", -1)
         self.namespace = self.model.name
         self.client = Client()
@@ -43,7 +43,7 @@ class KubernetesHelpers(Object):
             roles: List of roles to append on the service name
         """
         for role in roles:
-            selector = {"cluster-name": self.cluster_name, "role": role}
+            selector = {"cluster-name": self.charm.app_peer_data.get("cluster-name"), "role": role}
             service_name = f"{self.model.app.name}-{role}"
 
             service = Service(
@@ -83,11 +83,11 @@ class KubernetesHelpers(Object):
         if not pod.metadata.labels:
             pod.metadata.labels = {}
 
-        pod.metadata.labels["cluster-name"] = self.cluster_name
+        pod.metadata.labels["cluster-name"] = self.charm.app_peer_data.get("cluster-name")
         pod.metadata.labels["role"] = role
 
         try:
-            self.client.patch(pod)
+            self.client.patch(Pod, pod_name or self.pod_name, pod)
         except ApiError as e:
             if e.status.code == 403:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
