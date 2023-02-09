@@ -65,11 +65,32 @@ class KubernetesHelpers(Object):
             except ApiError as e:
                 if e.status.code == 403:
                     logger.error("Kubernetes service creation failed: `juju trust` needed")
+                if e.status.code == 409:
+                    logger.warning("Kubernetes service already exists")
                 else:
                     logger.error("Kubernetes service creation failed: %s", e)
                 raise KubernetesClientError()
             else:
                 logger.info(f"Kubernetes service {service_name} created")
+
+    def delete_endpoint_services(self, roles: List[str]) -> None:
+        """Delete kubernetes service for endpoints.
+
+        Args:
+            roles: List of roles to append on the service name
+        """
+        for role in roles:
+            service_name = f"{self.model.app.name}-{role}"
+
+            try:
+                self.client.delete(Service, service_name, namespace=self.namespace)
+            except ApiError as e:
+                if e.status.code == 403:
+                    logger.warning("Kubernetes service deletion failed: `juju trust` needed")
+                else:
+                    logger.warning("Kubernetes service deletion failed: %s", e)
+            else:
+                logger.info(f"Kubernetes service {service_name} deleted")
 
     def label_pod(self, role: str, pod_name: Optional[str] = None) -> None:
         """Create or update pod labels.

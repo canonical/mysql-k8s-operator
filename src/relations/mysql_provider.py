@@ -165,8 +165,8 @@ class MySQLProvider(Object):
                 )
 
             logger.info(f"Created user for app {remote_app}")
+            return
         except (
-            KubernetesClientError,
             MySQLCreateApplicationDatabaseAndScopedUserError,
             MySQLGetMySQLVersionError,
             MySQLUpgradeUserForMySQLRouterError,
@@ -174,6 +174,11 @@ class MySQLProvider(Object):
         ) as e:
             logger.exception("Failed to set up database relation", exc_info=e)
             self.charm.unit.status = BlockedStatus("Failed to create scoped user")
+        except KubernetesClientError:
+            logger.exception("Failed to create k8s services for endpoints")
+            self.charm.unit.status = BlockedStatus("Permission to create k8s services denied. `juju trust`")
+            event.defer()
+
 
     def _on_mysql_pebble_ready(self, event: PebbleReadyEvent) -> None:
         """Handle the mysql pebble ready event.
@@ -296,6 +301,10 @@ class MySQLProvider(Object):
         if not self.charm.unit.is_leader():
             # run once by the leader
             return
+
+        if len(self.model.relations[DB_RELATION_NAME]) == 1:
+            # remove kubernetes service when last relation is removed
+            self.k8s_helpers.delete_endpoint_services(["primary","replicas"])
 
         relation_id = event.relation.id
         try:
