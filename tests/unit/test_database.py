@@ -37,6 +37,8 @@ SAMPLE_CLUSTER_STATUS = {
 
 class TestDatase(unittest.TestCase):
     def setUp(self):
+        self.patcher = patch("lightkube.core.client.GenericSyncClient")
+        self.patcher.start()
         self.harness = Harness(MySQLOperatorCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
@@ -45,6 +47,9 @@ class TestDatase(unittest.TestCase):
         self.database_relation_id = self.harness.add_relation(DB_RELATION_NAME, "app")
         self.harness.add_relation_unit(self.database_relation_id, "app/0")
         self.charm = self.harness.charm
+
+    def tearDown(self) -> None:
+        self.patcher.stop()
 
     @patch("k8s_helpers.KubernetesHelpers.create_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
@@ -99,6 +104,7 @@ class TestDatase(unittest.TestCase):
         _generate_random_password.assert_called_once()
         _create_application_database_and_scoped_user.assert_called_once()
         _get_mysql_version.assert_called_once()
+        _create_endpoint_services.assert_called_once()
 
     @patch("k8s_helpers.KubernetesHelpers.delete_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.delete_user_for_relation")
