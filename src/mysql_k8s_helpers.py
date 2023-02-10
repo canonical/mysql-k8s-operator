@@ -223,9 +223,7 @@ class MySQL(MySQLBase):
             "restart": "false",
         }
 
-        configure_instance_command = (
-            f"dba.configure_instance('{self.server_config_user}:{self.server_config_password}@{self.instance_address}', {json.dumps(options)})",
-        )
+        configure_instance_command = f"dba.configure_instance('{self.server_config_user}:{self.server_config_password}@{self.instance_address}', {json.dumps(options)})"
 
         try:
             logger.info(f"Reconfiguring instance for InnoDB on {self.instance_address}")

@@ -160,7 +160,7 @@ Stderr:
             event.fail(f"Missing S3 parameters: {missing_parameters}")
             return
 
-        backup_path = str(pathlib.Path(s3_parameters["path"] / datetime_backup_requested))
+        backup_path = str(pathlib.Path(s3_parameters["path"]) / datetime_backup_requested)
 
         # Check if this unit can perform backup
         can_unit_perform_backup, validation_message = self._can_unit_perform_backup()
@@ -197,14 +197,20 @@ Juju Version: {str(juju_version)}
 
             success, error_message = self._post_backup()
             if not success:
-                logger.warning(error_message)
+                logger.error(error_message)
+                self.charm.unit.status = BlockedStatus(
+                    "Failed to create backup; instance in bad state"
+                )
 
             return
 
         # Run operations to clean up after the backup
         success, error_message = self._post_backup()
         if not success:
-            logger.warning(error_message)
+            logger.error(error_message)
+            self.charm.unit.status = BlockedStatus(
+                "Failed to create backup; instance in bad state"
+            )
             event.fail(error_message)
             return
 
@@ -245,6 +251,11 @@ Juju Version: {str(juju_version)}
         """
         logger.info("Setting cluster state as 'backing-up'")
         self.charm.unit_peer_data["cluster-state"] = "backing-up"
+
+        # Do not set instance offline_mode and do not hide instance from mysqlrouter
+        # if there is only one instance in the cluster
+        if self.charm.app.planned_units() == 1:
+            return True, None
 
         try:
             logger.info("Setting unit option tag:_hidden")
