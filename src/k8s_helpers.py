@@ -68,9 +68,10 @@ class KubernetesHelpers(Object):
                     logger.error("Kubernetes service creation failed: `juju trust` needed")
                 if e.status.code == 409:
                     logger.warning("Kubernetes service already exists")
+                    return
                 else:
-                    logger.error("Kubernetes service creation failed: %s", e)
-                raise KubernetesClientError()
+                    logger.exception("Kubernetes service creation failed: %s", e)
+                raise KubernetesClientError
 
     def delete_endpoint_services(self, roles: List[str]) -> None:
         """Delete kubernetes service for endpoints.
@@ -112,5 +113,5 @@ class KubernetesHelpers(Object):
             if e.status.code == 403:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
             else:
-                logger.error("Kubernetes pod label creation failed: %s", e)
-            raise KubernetesClientError()
+                logger.exception("Kubernetes pod label creation failed: %s", e)
+            raise KubernetesClientError
