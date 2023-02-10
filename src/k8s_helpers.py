@@ -32,7 +32,7 @@ class KubernetesHelpers(Object):
         """
         super().__init__(charm, "kubernetes-helpers")
         self.charm = charm
-        self.pod_name = charm.unit.name.replace("/", "-", -1)
+        self.pod_name = charm.unit.name.replace("/", "-")
         self.namespace = self.model.name
         self.client = Client()
 

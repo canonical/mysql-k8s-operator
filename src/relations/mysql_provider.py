@@ -111,7 +111,7 @@ class MySQLProvider(Object):
             logger.exception("Failed to get cluster members", exc_info=e)
         except KubernetesClientError:
             logger.debug("Can't update pod labels")
-            # TODO: Block?
+            self.charm.unit.status = BlockedStatus("Can't update pod labels")
 
     # =============
     # Handlers
