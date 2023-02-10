@@ -12,7 +12,6 @@ from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.core_v1 import Pod, Service
 from ops.charm import CharmBase
-from ops.framework import Object
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class KubernetesClientError(Exception):
     """Exception raised when client can't execute."""
 
 
-class KubernetesHelpers(Object):
+class KubernetesHelpers:
     """Kubernetes helpers for service exposure."""
 
     def __init__(self, charm: CharmBase):
@@ -30,10 +29,10 @@ class KubernetesHelpers(Object):
         Args:
             charm: a `CharmBase` parent object
         """
-        super().__init__(charm, "kubernetes-helpers")
-        self.charm = charm
         self.pod_name = charm.unit.name.replace("/", "-")
-        self.namespace = self.model.name
+        self.namespace = charm.model.name
+        self.app_name = charm.model.app.name
+        self.cluster_name = charm.app_peer_data.get("cluster-name")
         self.client = Client()
 
     def create_endpoint_services(self, roles: List[str]) -> None:
@@ -43,8 +42,8 @@ class KubernetesHelpers(Object):
             roles: List of roles to append on the service name
         """
         for role in roles:
-            selector = {"cluster-name": self.charm.app_peer_data.get("cluster-name"), "role": role}
-            service_name = f"{self.model.app.name}-{role}"
+            selector = {"cluster-name": self.cluster_name, "role": role}
+            service_name = f"{self.app_name}-{role}"
 
             service = Service(
                 apiVersion="v1",
@@ -80,7 +79,7 @@ class KubernetesHelpers(Object):
             roles: List of roles to append on the service name
         """
         for role in roles:
-            service_name = f"{self.model.app.name}-{role}"
+            service_name = f"{self.app_name}-{role}"
 
             try:
                 self.client.delete(Service, service_name, namespace=self.namespace)
@@ -103,7 +102,7 @@ class KubernetesHelpers(Object):
         if not pod.metadata.labels:
             pod.metadata.labels = {}
 
-        pod.metadata.labels["cluster-name"] = self.charm.app_peer_data.get("cluster-name")
+        pod.metadata.labels["cluster-name"] = self.cluster_name
         pod.metadata.labels["role"] = role
 
         try:
