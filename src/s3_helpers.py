@@ -60,6 +60,8 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[str]:
             region, endpoint, access-key and secret-key
 
     Returns: a list of subdirectories directly after the S3 path.
+
+    Raises: any exception raised by boto3
     """
     try:
         logger.info(
@@ -101,31 +103,35 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[str]:
         raise
 
 
-def check_existence_of_s3_path(s3_parameters: Dict, path: str) -> bool:
-    """Checks the existence of a provided S3 path.
+def fetch_and_check_existence_of_s3_path(s3_parameters: Dict, path: str) -> bool:
+    """Checks the existence of a provided S3 path by fetching the object.
 
     Args:
         s3_parameters: A dictionary containing the S3 parameters
             The following are expected keys in the dictionary: bucket, region,
             endpoint, access-key and secret-key
         path: The path to check the existence of
-    """
-    try:
-        s3_client = boto3.client(
-            "s3",
-            aws_access_key_id=s3_parameters["access-key"],
-            aws_secret_access_key=s3_parameters["secret-key"],
-            endpoint_url=s3_parameters["endpoint"],
-            region_name=s3_parameters["region"],
-        )
 
-        response = s3_client.list_objects_v2(
-            Bucket=s3_parameters["bucket"], Prefix=path, Delimiter="/"
-        )
-        return response.get("KeyCount", 0) > 0
+    Returns: a boolean indicating the existence of the s3 path
+
+    Raises: any exceptions raised by boto3
+    """
+    s3_client = boto3.client(
+        "s3",
+        aws_access_key_id=s3_parameters["access-key"],
+        aws_secret_access_key=s3_parameters["secret-key"],
+        endpoint_url=s3_parameters["endpoint"],
+        region_name=s3_parameters["region"],
+    )
+
+    try:
+        response = s3_client.get_object(Bucket=s3_parameters["bucket"], Key=path)
+        return "ContentLength" in response  # return True even if object is empty
+    except s3_client.exceptions.NoSuchKey:
+        return False
     except Exception as e:
         logger.exception(
-            f"Failed to check existence of path {path} in S3 bucket {s3_parameters['bucket']}",
+            f"Failed to fetch and check existence of path {path} in S3 bucket {s3_parameters['bucket']}",
             exc_info=e,
         )
         raise

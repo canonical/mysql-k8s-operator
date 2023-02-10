@@ -228,8 +228,8 @@ class MySQL(MySQLBase):
         )
 
         try:
-            logger.info(f"Reonfiguring instance for InnoDB on {self.instance_address}")
-            self._run_mysqlsh_script("\n".join(configure_instance_command))
+            logger.info(f"Reconfiguring instance for InnoDB on {self.instance_address}")
+            self._run_mysqlsh_script(configure_instance_command)
 
             # TODO: use the constant for the service name
             logger.info("Restarting the mysqld pebble service")
@@ -466,7 +466,7 @@ xbcloud get
         retrieve_backup_command = ["sh", "-c", f"{xbcloud_command}"]
 
         try:
-            # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picket by xbcloud
+            # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
             process = self.container.exec(
                 retrieve_backup_command,
                 environment={
@@ -611,15 +611,17 @@ Swap:     1027600384  1027600384           0
 
             # 1073741824 = 1 gibibyte
             if pool_size > 1073741824:
-                chunk_size = pool_size / 8
-                # round chunk_size to a multiple of chunk_size_min
-                chunk_size = chunk_size + chunk_size_min - (chunk_size % chunk_size_min)
+                chunk_size = int(pool_size / 8)
+
+                if chunk_size % chunk_size_min != 0:
+                    # round chunk_size to a multiple of chunk_size_min
+                    chunk_size += chunk_size_min - (chunk_size % chunk_size_min)
 
                 pool_size = chunk_size * 8
 
                 innodb_buffer_pool_chunk_size = chunk_size
 
-            return (int(pool_size), int(innodb_buffer_pool_chunk_size))
+            return (pool_size, innodb_buffer_pool_chunk_size)
         except Exception as e:
             logger.exception("Failed to compute innodb buffer pool parameters", exc_info=e)
             raise MySQLGetInnoDBBufferPoolParametersError("Error retrieving total free memory")

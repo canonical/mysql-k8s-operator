@@ -476,7 +476,7 @@ class MySQLOperatorCharm(CharmBase):
         cluster_states.add(self.unit_peer_data.get("cluster-state"))
 
         if "backing-up" in cluster_states:
-            logger.info("Member in cluster is creating a restore")
+            logger.info("Member in cluster is creating a backup")
             return True
 
         if "restoring" in cluster_states:

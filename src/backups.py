@@ -5,6 +5,7 @@
 
 import datetime
 import logging
+import pathlib
 from typing import Dict, List, Tuple
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
@@ -20,7 +21,7 @@ from ops.jujuversion import JujuVersion
 from ops.model import BlockedStatus
 from ops.pebble import ChangeError
 
-from constants import CONTAINER_NAME, MYSQLD_SERVICE
+from constants import CONTAINER_NAME, MYSQLD_SERVICE, S3_INTEGRATOR_RELATION_NAME
 from mysql_k8s_helpers import (
     MySQLEmptyDataDirectoryError,
     MySQLExecuteBackupCommandsError,
@@ -31,7 +32,7 @@ from mysql_k8s_helpers import (
     MySQLServiceNotRunningError,
 )
 from s3_helpers import (
-    check_existence_of_s3_path,
+    fetch_and_check_existence_of_s3_path,
     list_backups_in_s3_path,
     upload_content_to_s3,
 )
@@ -52,12 +53,15 @@ class MySQLBackups(Object):
 
         self.framework.observe(self.charm.on.create_backup_action, self._on_create_backup)
         self.framework.observe(self.charm.on.list_backups_action, self._on_list_backups)
-        self.framework.observe(self.charm.on.restore_backup_action, self._on_restore_backup)
+        self.framework.observe(self.charm.on.restore_action, self._on_restore)
 
     # ------------------ Helpers ------------------
 
     def _retrieve_s3_parameters(self) -> Tuple[Dict, List[str]]:
-        """Retrieve S3 parameters from the S3 integrator relation."""
+        """Retrieve S3 parameters from the S3 integrator relation.
+
+        Returns: tuple of (s3_parameters, missing_required_parameters)
+        """
         s3_parameters = self.s3_integrator.get_s3_connection_info()
 
         required_parameters = [
@@ -66,7 +70,9 @@ class MySQLBackups(Object):
             "secret-key",
         ]
         missing_required_parameters = [
-            param for param in required_parameters if param not in s3_parameters
+            param
+            for param in required_parameters
+            if param not in s3_parameters or not s3_parameters[param]
         ]
         if missing_required_parameters:
             logger.warning(
@@ -88,12 +94,21 @@ class MySQLBackups(Object):
         log_filename: str,
         s3_parameters: Dict,
     ) -> bool:
+        """Upload logs to S3 at the specified location.
+
+        Args:
+            stdout: The stdout logs
+            stderr: The stderr logs
+            log_filename: The name of the object to upload in S3
+            s3_parameters: A dictionary of S3 parameters to use to upload to S3
+
+        Returns: bool indicating success
+        """
         logs = f"""Stdout:
 {stdout}
 
 Stderr:
-{stderr}
-        """
+{stderr}"""
         logger.debug(f"Logs to upload to S3 at location {log_filename}:\n{logs}")
 
         logger.info(
@@ -127,13 +142,17 @@ Stderr:
         """Handle the create backup action."""
         logger.info("A backup has been requested on unit")
 
+        if not self.charm.model.get_relation(S3_INTEGRATOR_RELATION_NAME):
+            event.fail("Missing relation with S3 integrator charm")
+            return
+
         if not self.charm.unit.get_container(CONTAINER_NAME).can_connect():
             error_message = f"Container {CONTAINER_NAME} not ready yet!"
             logger.warning(error_message)
             event.fail(error_message)
             return
 
-        datetime_backup_requested = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
+        datetime_backup_requested = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # Retrieve and validate missing S3 parameters
         s3_parameters, missing_parameters = self._retrieve_s3_parameters()
@@ -141,7 +160,7 @@ Stderr:
             event.fail(f"Missing S3 parameters: {missing_parameters}")
             return
 
-        backup_path = f"{s3_parameters['path']}/{datetime_backup_requested}"
+        backup_path = str(pathlib.Path(s3_parameters["path"] / datetime_backup_requested))
 
         # Check if this unit can perform backup
         can_unit_perform_backup, validation_message = self._can_unit_perform_backup()
@@ -196,7 +215,10 @@ Juju Version: {str(juju_version)}
         )
 
     def _can_unit_perform_backup(self) -> Tuple[bool, str]:
-        """Validates whether this unit can perform a backup."""
+        """Validates whether this unit can perform a backup.
+
+        Returns: tuple of (success, error_message)
+        """
         logger.info("Checking if cluster is in blocked state")
         if self.charm._is_cluster_blocked():
             return False, "Cluster or unit is in a blocking state"
@@ -217,7 +239,10 @@ Juju Version: {str(juju_version)}
         return True, None
 
     def _pre_backup(self) -> Tuple[bool, str]:
-        """Runs operations required before performing a backup."""
+        """Runs operations required before performing a backup.
+
+        Returns: tuple of (success, error_message)
+        """
         logger.info("Setting cluster state as 'backing-up'")
         self.charm.unit_peer_data["cluster-state"] = "backing-up"
 
@@ -239,7 +264,14 @@ Juju Version: {str(juju_version)}
         return True, None
 
     def _backup(self, backup_path: str, s3_parameters: Dict) -> Tuple[bool, str]:
-        """Runs the backup operations."""
+        """Runs the backup operations.
+
+        Args:
+            backup_path: The location to upload the backup to
+            s3_parameters: Dictionary containing S3 parameters to upload the backup with
+
+        Returns: tuple of (success, error_message)
+        """
         try:
             logger.info("Running the xtrabackup commands")
             stdout, stderr = self.charm._mysql.execute_backup_commands(
@@ -269,7 +301,10 @@ Juju Version: {str(juju_version)}
         return True, None
 
     def _post_backup(self) -> Tuple[bool, str]:
-        """Runs operations required after performing a backup."""
+        """Runs operations required after performing a backup.
+
+        Returns: tuple of (success, error_message)
+        """
         logger.info("Setting cluster state as 'active'")
         self.charm.unit_peer_data["cluster-state"] = "active"
 
@@ -289,24 +324,38 @@ Juju Version: {str(juju_version)}
 
     # ------------------ Perform Restore ------------------
 
-    def _on_restore_backup(self, event: ActionEvent) -> None:
-        """Handle the restore backup action event.
+    def _pre_restore_checks(self, event: ActionEvent) -> bool:
+        """Run some checks before starting the restore.
 
-        Restore a backup from S3 (parameters for which can retrieved from the
-        relation with S3 integrator).
+        Returns: a boolean indicating whether restore should be run
         """
-        backup_id = event.params.get("backup-id")
-        if not backup_id:
-            event.fail("Missing backup-id to restore")
-            return
+        if not self.charm.model.get_relation(S3_INTEGRATOR_RELATION_NAME):
+            event.fail("Missing relation with S3 integrator charm")
+            return False
 
-        logger.info(f"A restore with backup-id {backup_id} has been requested on unit")
+        if not event.params.get("backup-id"):
+            event.fail("Missing backup-id to restore")
+            return False
 
         if not self.charm.unit.get_container(CONTAINER_NAME).can_connect():
             error_message = f"Container {CONTAINER_NAME} not ready yet!"
             logger.warning(error_message)
             event.fail(error_message)
+            return False
+
+        return True
+
+    def _on_restore(self, event: ActionEvent) -> None:
+        """Handle the restore backup action event.
+
+        Restore a backup from S3 (parameters for which can retrieved from the
+        relation with S3 integrator).
+        """
+        if not self._pre_restore_checks(event):
             return
+
+        backup_id = event.params.get("backup-id")
+        logger.info(f"A restore with backup-id {backup_id} has been requested on unit")
 
         # Retrieve and validate missing S3 parameters
         s3_parameters, missing_parameters = self._retrieve_s3_parameters()
@@ -316,13 +365,8 @@ Juju Version: {str(juju_version)}
 
         # Validate the provided backup id
         logger.info("Validating provided backup-id in the specified s3 path")
-        s3_directory = (
-            s3_parameters["path"]
-            if s3_parameters["path"][-1] == "/"
-            else f"{s3_parameters['path']}/"
-        )
-        s3_backup_md5 = f"{s3_directory}{backup_id}.md5"
-        if not check_existence_of_s3_path(s3_parameters, s3_backup_md5):
+        s3_backup_md5 = str(pathlib.Path(s3_parameters["path"]) / f"{backup_id}.md5")
+        if not fetch_and_check_existence_of_s3_path(s3_parameters, s3_backup_md5):
             event.fail(f"Invalid backup-id: {backup_id}")
             return
 
@@ -369,7 +413,10 @@ Juju Version: {str(juju_version)}
         )
 
     def _can_unit_restore_backup(self) -> Tuple[bool, str]:
-        """Validates whether this unit can restore a backup."""
+        """Validates whether this unit can restore a backup.
+
+        Returns: tuple of (success, error_message)
+        """
         logger.info("Checking if cluster is in blocked state")
         if self.charm._is_cluster_blocked():
             return False, "Cluster or unit is in a blocking state"
@@ -386,7 +433,10 @@ Juju Version: {str(juju_version)}
         return True, None
 
     def _pre_restore(self) -> Tuple[bool, str]:
-        """Perform operations that need to be done before performing a restore."""
+        """Perform operations that need to be done before performing a restore.
+
+        Returns: tuple of (success, error_message)
+        """
         logger.info("Setting cluster state as 'restoring'")
         self.charm.unit_peer_data["cluster-state"] = "restoring"
 
@@ -407,9 +457,14 @@ Juju Version: {str(juju_version)}
         return True, None
 
     def _restore(self, backup_id: str, s3_parameters: Dict) -> Tuple[bool, bool, str]:
-        """Run the restore operations."""
-        datetime_restore_requested = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
+        """Run the restore operations.
 
+        Args:
+            backup_id: ID of backup to restore
+            s3_parameters: Dictionary of S3 parameters to use to restore the backup
+
+        Returns: tuple of (success, recoverable_error, error_message)
+        """
         # TODO: more robustly handle raised errors
         try:
             logger.info("Running xbcloud get commands to retrieve the backup")
@@ -420,19 +475,16 @@ Juju Version: {str(juju_version)}
                 s3_parameters["secret-key"],
                 backup_id,
             )
-
-            # TODO: come up with naming schema for log files
-            logfile_path = f"{s3_parameters['path'].rstrip('/')}/{datetime_restore_requested}.retrieve-{backup_id}.log"
-            self._upload_logs_to_s3(stdout, stderr, logfile_path, s3_parameters)
+            logger.debug(f"Stdout of xbcloud get commands: {stdout}")
+            logger.debug(f"Stderr of xbcloud get commands: {stderr}")
         except MySQLRetrieveBackupWithXBCloudError:
             return False, True, f"Failed to retrieve backup {backup_id}"
 
         try:
             logger.info("Preparing retrieved backup using xtrabackup prepare")
             stdout, stderr = self.charm._mysql.prepare_backup_for_restore(backup_location)
-
-            logfile_path = f"{s3_parameters['path'].rstrip('/')}/{datetime_restore_requested}.prepare-{backup_id}.log"
-            self._upload_logs_to_s3(stdout, stderr, logfile_path, s3_parameters)
+            logger.debug(f"Stdout of xtrabackup prepare command: {stdout}")
+            logger.debug(f"Stderr of xtrabackup prepare command: {stderr}")
         except MySQLPrepareBackupForRestoreError:
             return False, True, f"Failed to prepare backup {backup_id}"
 
@@ -445,16 +497,18 @@ Juju Version: {str(juju_version)}
         try:
             logger.info("Restoring the backup")
             stdout, stderr = self.charm._mysql.restore_backup(backup_location)
-
-            logfile_path = f"{s3_parameters['path'].rstrip('/')}/{datetime_restore_requested}.restore-{backup_id}.log"
-            self._upload_logs_to_s3(stdout, stderr, logfile_path, s3_parameters)
+            logger.debug(f"Stdout of xtrabackup move-back command: {stdout}")
+            logger.debug(f"Stderr of xtrabackup move-back command: {stderr}")
         except MySQLRestoreBackupError:
             return False, False, f"Failed to restore backup {backup_id}"
 
         return True, True, None
 
     def _post_restore(self) -> Tuple[bool, str]:
-        """Run operations required after restoring a backup."""
+        """Run operations required after restoring a backup.
+
+        Returns: tuple of (success, error_message)
+        """
         logger.info(f"Starting service {MYSQLD_SERVICE} in container {CONTAINER_NAME}")
         # TODO: wrap around try/except for ops.model.ModelError
         container = self.charm.unit.get_container(CONTAINER_NAME)
