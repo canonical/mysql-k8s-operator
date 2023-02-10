@@ -62,6 +62,7 @@ class KubernetesHelpers(Object):
 
             try:
                 self.client.create(service)
+                logger.info(f"Kubernetes service {service_name} created")
             except ApiError as e:
                 if e.status.code == 403:
                     logger.error("Kubernetes service creation failed: `juju trust` needed")
@@ -70,8 +71,6 @@ class KubernetesHelpers(Object):
                 else:
                     logger.error("Kubernetes service creation failed: %s", e)
                 raise KubernetesClientError()
-            else:
-                logger.info(f"Kubernetes service {service_name} created")
 
     def delete_endpoint_services(self, roles: List[str]) -> None:
         """Delete kubernetes service for endpoints.
@@ -84,13 +83,12 @@ class KubernetesHelpers(Object):
 
             try:
                 self.client.delete(Service, service_name, namespace=self.namespace)
+                logger.info(f"Kubernetes service {service_name} deleted")
             except ApiError as e:
                 if e.status.code == 403:
                     logger.warning("Kubernetes service deletion failed: `juju trust` needed")
                 else:
                     logger.warning("Kubernetes service deletion failed: %s", e)
-            else:
-                logger.info(f"Kubernetes service {service_name} deleted")
 
     def label_pod(self, role: str, pod_name: Optional[str] = None) -> None:
         """Create or update pod labels.
@@ -109,11 +107,10 @@ class KubernetesHelpers(Object):
 
         try:
             self.client.patch(Pod, pod_name or self.pod_name, pod)
+            logger.info(f"Kubernetes pod label {role} created")
         except ApiError as e:
             if e.status.code == 403:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
             else:
                 logger.error("Kubernetes pod label creation failed: %s", e)
             raise KubernetesClientError()
-        else:
-            logger.info(f"Kubernetes pod label {role} created")
