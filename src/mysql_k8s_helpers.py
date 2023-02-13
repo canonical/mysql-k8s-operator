@@ -103,6 +103,10 @@ class MySQLReconfigureInstanceError(Error):
     """Exception raised when there is an error reconfiguring an instance for InnoDB cluster."""
 
 
+class MySQLDeleteTempBackupDirectoryError(Error):
+    """Exception raised when there is an error deleting temp backup directories."""
+
+
 class MySQL(MySQLBase):
     """Class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -431,7 +435,7 @@ xtrabackup --defaults-file=/etc/mysql
         mysql container.
         """
         nproc_command = "nproc".split()
-        make_temp_dir_command = "mktemp --directory /tmp/mysql_sst_XXXX".split()
+        make_temp_dir_command = "mktemp --directory /var/lib/mysql/mysql_sst_XXXX".split()
 
         try:
             process = self.container.exec(nproc_command)
@@ -512,13 +516,17 @@ xtrabackup --prepare
             logger.error(f"Stderr: {e.stderr}")
             raise MySQLPrepareBackupForRestoreError(e.stderr)
 
-    def empty_data_directory(self) -> None:
+    def empty_data_files(self) -> None:
         """Empty the mysql data directory in preparation of backup restore."""
         # TODO: Find out why we need to use sh to remove the data directory
-        empty_data_directory_command = ["sh", "-c", "rm -rf /var/lib/mysql/*"]
+        empty_data_files_command = "find /var/lib/mysql/ -not -path /var/lib/mysql/mysql_sst_* -not -path /var/lib/mysql/ -delete".split()
 
         try:
-            process = self.container.exec(empty_data_directory_command)
+            process = self.container.exec(
+                empty_data_files_command,
+                user="mysql",
+                group="mysql",
+            )
             process.wait_output()
         except ExecError as e:
             logger.exception(
@@ -582,6 +590,26 @@ Swap:     1027600384  1027600384           0
         except ExecError as e:
             logger.exception("Failed to execute commands to query total memory", exc_info=e)
             raise
+
+    def delete_temp_backup_directory(self) -> None:
+        """Delete the temp backup directory from /var/lib/mysql."""
+        logger.info("Deleting temp backup directory in /var/lib/mysql")
+        delete_temp_backup_directory_command = (
+            "find /var/lib/mysql -wholename /var/lib/mysql/mysql_sst_* -delete".split()
+        )
+
+        try:
+            process = self.container.exec(
+                delete_temp_backup_directory_command,
+                user="mysql",
+                group="mysql",
+            )
+            process.wait_output()
+        except ExecError as e:
+            logger.exception("Failed to remove temp backup directory", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLDeleteTempBackupDirectoryError(e.stderr)
 
     def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int]]:
         """Get innodb buffer pool parameters for the instance.

@@ -23,6 +23,7 @@ from ops.pebble import ChangeError
 
 from constants import CONTAINER_NAME, MYSQLD_SERVICE, S3_INTEGRATOR_RELATION_NAME
 from mysql_k8s_helpers import (
+    MySQLDeleteTempBackupDirectoryError,
     MySQLEmptyDataDirectoryError,
     MySQLExecuteBackupCommandsError,
     MySQLPrepareBackupForRestoreError,
@@ -501,7 +502,7 @@ Juju Version: {str(juju_version)}
 
         try:
             logger.info("Removing the contents of the data directory")
-            self.charm._mysql.empty_data_directory()
+            self.charm._mysql.empty_data_files()
         except MySQLEmptyDataDirectoryError:
             return False, False, "Failed to empty the data directory"
 
@@ -520,6 +521,11 @@ Juju Version: {str(juju_version)}
 
         Returns: tuple of (success, error_message)
         """
+        try:
+            self.charm._mysql.delete_temp_backup_directory()
+        except MySQLDeleteTempBackupDirectoryError:
+            return False, "Failed to delete the temp backup directory"
+
         logger.info(f"Starting service {MYSQLD_SERVICE} in container {CONTAINER_NAME}")
         # TODO: wrap around try/except for ops.model.ModelError
         container = self.charm.unit.get_container(CONTAINER_NAME)
