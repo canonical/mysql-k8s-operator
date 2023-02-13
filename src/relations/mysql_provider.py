@@ -3,18 +3,18 @@
 
 """Library containing the implementation of the standard relation."""
 
-import json
 import logging
-import time
+import socket
+from typing import List
 
 from charms.data_platform_libs.v0.database_provides import (
     DatabaseProvides,
     DatabaseRequestedEvent,
 )
 from charms.mysql.v0.mysql import (
-    MySQLClientError,
     MySQLCreateApplicationDatabaseAndScopedUserError,
     MySQLDeleteUserForRelationError,
+    MySQLGetClusterEndpointsError,
     MySQLGetMySQLVersionError,
     MySQLGrantPrivilegesToUserError,
     MySQLUpgradeUserForMySQLRouterError,
@@ -34,8 +34,8 @@ from constants import (
     DB_RELATION_NAME,
     PASSWORD_LENGTH,
     PEER,
-    UNIT_ENDPOINTS_KEY,
 )
+from k8s_helpers import KubernetesClientError, KubernetesHelpers
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,8 @@ class MySQLProvider(Object):
         self.framework.observe(self.charm.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
         self.framework.observe(self.charm.on.update_status, self._on_update_status)
 
+        self.k8s_helpers = KubernetesHelpers(self.charm)
+
     # =============
     # Helpers
     # =============
@@ -84,82 +86,32 @@ class MySQLProvider(Object):
         relation.data[self.charm.app]["password"] = password
         return password
 
-    def _update_endpoints_from_unit_peer_data(self, relation_id: int) -> None:
-        """Updates the endpoints + read-only-endpoints in the relation from unit peer databag.
+    def _update_endpoints(self) -> None:
+        """Updates pod labels to reflect role of the unit.
 
         Args:
             relation_id: The id of the relation for which to update the endpoints
         """
-        logger.debug("Updating endpoints from unit peer data")
 
-        primary_endpoint, read_only_endpoints, latest_timestamp = None, None, -1
+        def _endpoints_to_pod_list(endpoints: str) -> List[str]:
+            """Converts a comma separated list of endpoints to a list of pods."""
+            return [p.split(".")[0] for p in endpoints.split(",")]
 
-        mysql_units = self.charm.model.relations[PEER][0].units
-        mysql_units.add(self.charm.unit)
-
-        # get the primary endpoint and read_only_endpoints from the latest timestamped
-        # unit peer databag
-        for unit in mysql_units:
-            unit_endpoints = self.charm.peers.data[unit].get(UNIT_ENDPOINTS_KEY)
-
-            if not unit_endpoints or unit_endpoints == "error":
-                continue
-
-            unit_endpoints = json.loads(unit_endpoints)
-
-            if unit_endpoints["timestamp"] > latest_timestamp:
-                primary_endpoint = unit_endpoints["endpoint"]
-                read_only_endpoints = unit_endpoints["read-only-endpoints"]
-                latest_timestamp = unit_endpoints["timestamp"]
-
-        # no-op if no endpoints exist in unit peer databag
-        if not primary_endpoint or not read_only_endpoints:
-            return
-
-        self.database.set_endpoints(relation_id, primary_endpoint)
-        self.database.set_read_only_endpoints(relation_id, read_only_endpoints)
-
-    def _update_endpoints(self, relation_id: int) -> None:
-        """Updates the endpoints + read-only-endpoints in the relation.
-
-        Args:
-            relation_id: The id of the relation for which to update the endpoints
-        """
+        logger.debug("Updating pod labels")
         try:
-            # update endpoints from unit peer databag if mysqld stopped on this unit
-            if self.charm._mysql.check_if_mysqld_process_stopped():
-                self._update_endpoints_from_unit_peer_data(relation_id)
-                return
+            rw_endpoints, ro_endpoints = self.charm._mysql.get_cluster_endpoints()
 
-            cluster_status = self.charm._mysql.get_cluster_status()
-            if not cluster_status:
-                self._update_endpoints_from_unit_peer_data(relation_id)
-                return
-
-            logger.debug(f"Updating the endpoints for relation {relation_id}")
-            primary_endpoints = [
-                member["address"]
-                for member in cluster_status["defaultreplicaset"]["topology"].values()
-                if member["mode"] == "r/w" and member["status"] == "online"
-            ]
-            if not primary_endpoints:
-                self._update_endpoints_from_unit_peer_data(relation_id)
-                return
-
-            self.database.set_endpoints(relation_id, primary_endpoints[0])
-
-            logger.debug(f"Updating the read_only_endpoints for relation {relation_id}")
-            read_only_endpoints = ",".join(
-                [
-                    member["address"]
-                    for member in cluster_status["defaultreplicaset"]["topology"].values()
-                    if member["status"] == "online"
-                ]
-            )
-            self.database.set_read_only_endpoints(relation_id, read_only_endpoints)
-        except MySQLClientError as e:
-            logger.exception("Failed to get primary", exc_info=e)
-            self._update_endpoints_from_unit_peer_data(relation_id)
+            # rw pod labels
+            for pod in _endpoints_to_pod_list(rw_endpoints):
+                self.k8s_helpers.label_pod("primary", pod)
+            # ro pod labels
+            for pod in _endpoints_to_pod_list(ro_endpoints):
+                self.k8s_helpers.label_pod("replicas", pod)
+        except MySQLGetClusterEndpointsError as e:
+            logger.exception("Failed to get cluster members", exc_info=e)
+        except KubernetesClientError:
+            logger.debug("Can't update pod labels")
+            self.charm.unit.status = BlockedStatus("Can't update pod labels")
 
     # =============
     # Handlers
@@ -188,36 +140,17 @@ class MySQLProvider(Object):
         remote_app = event.app.name
 
         try:
-            cluster_status = self.charm._mysql.get_cluster_status()
-            if not cluster_status:
-                self.unit.status = BlockedStatus("Failed to get cluster status")
-                return
-
-            primary_endpoints = [
-                member["address"]
-                for member in cluster_status["defaultreplicaset"]["topology"].values()
-                if member["mode"] == "r/w" and member["status"] == "online"
-            ]
-            if not primary_endpoints:
-                logger.exception("Unable to retrieve primary endpoint address")
-                self.unit.status = BlockedStatus("Failed to get primary endpoint")
-                return
-
             db_version = self.charm._mysql.get_mysql_version()
             self.database.set_credentials(relation_id, db_user, db_pass)
             self.database.set_version(relation_id, db_version)
 
-            self.database.set_endpoints(relation_id, primary_endpoints[0])
+            # create k8s services for endpoints
+            self.k8s_helpers.create_endpoint_services(["primary", "replicas"])
 
-            read_only_endpoints = ",".join(
-                [
-                    member["address"]
-                    for member in cluster_status["defaultreplicaset"]["topology"].values()
-                    if member["status"] == "online"
-                ]
-            )
-
-            self.database.set_read_only_endpoints(relation_id, read_only_endpoints)
+            primary_endpoint = socket.getfqdn(f"{self.charm.app.name}-primary")
+            self.database.set_endpoints(relation_id, f"{primary_endpoint}:3306")
+            replicas_endpoint = socket.getfqdn(f"{self.charm.app.name}-replicas")
+            self.database.set_read_only_endpoints(relation_id, f"{replicas_endpoint}:3306")
             # TODO:
             # add setup of tls, tls_ca and status
             # add extra roles parsing from relation data
@@ -232,15 +165,21 @@ class MySQLProvider(Object):
                 )
 
             logger.info(f"Created user for app {remote_app}")
+            return
         except (
             MySQLCreateApplicationDatabaseAndScopedUserError,
             MySQLGetMySQLVersionError,
-            MySQLClientError,
             MySQLUpgradeUserForMySQLRouterError,
             MySQLGrantPrivilegesToUserError,
         ) as e:
             logger.exception("Failed to set up database relation", exc_info=e)
             self.charm.unit.status = BlockedStatus("Failed to create scoped user")
+        except KubernetesClientError:
+            logger.exception("Failed to create k8s services for endpoints")
+            self.charm.unit.status = BlockedStatus(
+                "Permission to create k8s services denied. `juju trust`"
+            )
+            event.defer()
 
     def _on_mysql_pebble_ready(self, event: PebbleReadyEvent) -> None:
         """Handle the mysql pebble ready event.
@@ -288,7 +227,7 @@ class MySQLProvider(Object):
             if relation.id not in relation_data:
                 continue
 
-            self._update_endpoints(relation.id)
+            self._update_endpoints()
 
     def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
         """Handle the peer relation departed event.
@@ -312,7 +251,7 @@ class MySQLProvider(Object):
             if relation.id not in relation_data:
                 continue
 
-            self._update_endpoints(relation.id)
+            self._update_endpoints()
 
     def _configure_endpoints(self, _) -> None:
         """Update the endpoints + read_only_endpoints."""
@@ -326,7 +265,7 @@ class MySQLProvider(Object):
             if relation.id not in relation_data:
                 continue
 
-            self._update_endpoints(relation.id)
+            self._update_endpoints()
 
     def _on_update_status(self, _) -> None:
         """Handle the update status event.
@@ -353,39 +292,7 @@ class MySQLProvider(Object):
         if self.charm._mysql.check_if_mysqld_process_stopped():
             return
 
-        cluster_status = self.charm._mysql.get_cluster_status()
-        if not cluster_status:
-            return
-
-        primary_endpoints = [
-            member["address"]
-            for member in cluster_status["defaultreplicaset"]["topology"].values()
-            if member["mode"] == "r/w" and member["status"] == "online"
-        ]
-        if not primary_endpoints:
-            return
-
-        read_only_endpoints = ",".join(
-            [
-                member["address"]
-                for member in cluster_status["defaultreplicaset"]["topology"].values()
-                if member["status"] == "online"
-            ]
-        )
-
-        unit_endpoints = json.loads(self.charm.unit_peer_data.get(UNIT_ENDPOINTS_KEY, "{}"))
-
-        if (
-            unit_endpoints.get("endpoint") != primary_endpoints[0]
-            or unit_endpoints.get("read-only-endpoints") != read_only_endpoints
-        ):
-            self.charm.unit_peer_data[UNIT_ENDPOINTS_KEY] = json.dumps(
-                {
-                    "endpoint": primary_endpoints[0],
-                    "read-only-endpoints": read_only_endpoints,
-                    "timestamp": int(time.time()),
-                }
-            )
+        self._update_endpoints()
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.
@@ -396,8 +303,12 @@ class MySQLProvider(Object):
             # run once by the leader
             return
 
+        if len(self.model.relations[DB_RELATION_NAME]) == 1:
+            # remove kubernetes service when last relation is removed
+            self.k8s_helpers.delete_endpoint_services(["primary", "replicas"])
+
+        relation_id = event.relation.id
         try:
-            relation_id = event.relation.id
             self.charm._mysql.delete_user_for_relation(relation_id)
             logger.info(f"Removed user for relation {relation_id}")
         except MySQLDeleteUserForRelationError:

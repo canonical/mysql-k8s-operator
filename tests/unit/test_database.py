@@ -35,8 +35,10 @@ SAMPLE_CLUSTER_STATUS = {
 }
 
 
-class TestDatase(unittest.TestCase):
+class TestDatabase(unittest.TestCase):
     def setUp(self):
+        self.patcher = patch("lightkube.core.client.GenericSyncClient")
+        self.patcher.start()
         self.harness = Harness(MySQLOperatorCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
@@ -46,21 +48,22 @@ class TestDatase(unittest.TestCase):
         self.harness.add_relation_unit(self.database_relation_id, "app/0")
         self.charm = self.harness.charm
 
+    def tearDown(self) -> None:
+        self.patcher.stop()
+
+    @patch("k8s_helpers.KubernetesHelpers.create_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
     @patch("mysql_k8s_helpers.MySQL.create_application_database_and_scoped_user")
-    @patch("mysql_k8s_helpers.MySQL.get_cluster_status")
     @patch(
         "relations.mysql_provider.generate_random_password", return_value="super_secure_password"
     )
     def test_database_requested(
         self,
         _generate_random_password,
-        _get_cluster_status,
         _create_application_database_and_scoped_user,
         _get_mysql_version,
+        _create_endpoint_services,
     ):
-        _get_cluster_status.return_value = SAMPLE_CLUSTER_STATUS
-
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
         self.charm.on.config_changed.emit()
@@ -92,19 +95,20 @@ class TestDatase(unittest.TestCase):
                 "data": '{"database": "test_db"}',
                 "password": "super_secure_password",
                 "username": f"relation-{self.database_relation_id}",
-                "endpoints": "2.2.2.2:3306",
+                "endpoints": "mysql-k8s-primary:3306",
                 "version": "8.0.29-0ubuntu0.20.04.3",
-                "read-only-endpoints": "2.2.2.2:3306,2.2.2.3:3306",
+                "read-only-endpoints": "mysql-k8s-replicas:3306",
             },
         )
 
         _generate_random_password.assert_called_once()
         _create_application_database_and_scoped_user.assert_called_once()
-        _get_cluster_status.assert_called_once()
         _get_mysql_version.assert_called_once()
+        _create_endpoint_services.assert_called_once()
 
+    @patch("k8s_helpers.KubernetesHelpers.delete_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.delete_user_for_relation")
-    def test_database_broken(self, _delete_user_for_relation):
+    def test_database_broken(self, _delete_user_for_relation, _delete_endpoint_services):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
         self.charm.on.config_changed.emit()
@@ -112,9 +116,11 @@ class TestDatase(unittest.TestCase):
         self.harness.remove_relation(self.database_relation_id)
 
         _delete_user_for_relation.assert_called_once_with(self.database_relation_id)
+        _delete_endpoint_services.assert_called_once()
 
+    @patch("k8s_helpers.KubernetesHelpers.delete_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.delete_user_for_relation")
-    def test_database_broken_failure(self, _delete_user_for_relation):
+    def test_database_broken_failure(self, _delete_user_for_relation, _delete_endpoint_services):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
         self.charm.on.config_changed.emit()

@@ -161,6 +161,7 @@ async def deploy_and_scale_mysql(
             resources=resources,
             num_units=3,
             series="jammy",
+            trust=True,
         )
 
         await ops_test.model.wait_for_idle(

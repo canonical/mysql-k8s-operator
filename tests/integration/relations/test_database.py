@@ -48,6 +48,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             num_units=3,
             resources=resources,
             series="jammy",
+            trust=True,
         ),
         ops_test.model.deploy(app_charm, application_name=APPLICATION_APP_NAME, num_units=2),
     )

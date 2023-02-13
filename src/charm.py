@@ -269,7 +269,7 @@ class MySQLOperatorCharm(CharmBase):
                     "app", required_password, generate_random_password(PASSWORD_LENGTH)
                 )
 
-    def _configure_instance(self, container) -> None:
+    def _configure_instance(self, container) -> bool:
         """Configure the instance for use in Group Replication."""
         try:
             # Run mysqld for the first time to
@@ -369,8 +369,7 @@ class MySQLOperatorCharm(CharmBase):
         if not self.unit.is_leader():
             # Non-leader units should wait for leader to add them to the cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
-            self.unit_peer_data["member-role"] = "secondary"
-            self.unit_peer_data["member-state"] = "waiting"
+            self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
             return
 
         try:
@@ -381,12 +380,12 @@ class MySQLOperatorCharm(CharmBase):
 
             # Create control file in data directory
             self.app_peer_data["units-added-to-cluster"] = "1"
-            self.unit_peer_data["unit-initialized"] = "True"
 
             state, role = self._mysql.get_member_state()
 
-            self.unit_peer_data["member-role"] = role
-            self.unit_peer_data["member-state"] = state
+            self.unit_peer_data.update(
+                {"member-state": state, "member-role": role, "unit-initialized": "True"}
+            )
 
             self.unit.status = ActiveStatus(self.active_status_message)
         except MySQLCreateClusterError as e:

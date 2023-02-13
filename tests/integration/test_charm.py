@@ -48,6 +48,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             config=config,
             num_units=3,
             series="jammy",
+            trust=True,
         )
 
         await ops_test.model.wait_for_idle(
