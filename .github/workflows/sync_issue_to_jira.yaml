@@ -1,5 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
+name: Sync issue to Jira
+
 on:
   issues:
     types: [opened, reopened, closed]
