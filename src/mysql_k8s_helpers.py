@@ -173,6 +173,10 @@ class MySQL(MySQLBase):
         try:
             super(MySQL, self).configure_instance(restart=False)
 
+            # ensure clean shutdown
+            # TODO: remove when pebble allow more time for shutdown
+            #       https://github.com/canonical/pebble/pull/190
+            self.container.exec(["pkill", "-15", "mysqld"])
             # restart the pebble layer service
             self.container.restart("mysqld")
             logger.debug("Waiting until MySQL to restart")
