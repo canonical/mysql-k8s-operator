@@ -2,8 +2,9 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import mysql.connector
 import signal
+
+import mysql.connector
 
 
 def timeout_handler(signum, frame):
