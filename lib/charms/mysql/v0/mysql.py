@@ -68,6 +68,7 @@ error handling on the subclass and in the charm code.
 import json
 import logging
 import re
+import socket
 from abc import ABC, abstractmethod
 from typing import Any, Iterable, List, Optional, Tuple
 
@@ -89,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 11
+LIBPATCH = 12
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -743,8 +744,22 @@ class MySQLBase(ABC):
 
         topology = status["defaultreplicaset"]["topology"]
 
-        ro_endpoints = {v["address"] for v in topology.values() if v["mode"] == "r/o"}
-        rw_endpoints = {v["address"] for v in topology.values() if v["mode"] == "r/w"}
+        def _get_host_ip(host: str) -> str:
+            try:
+                if ":" in host:
+                    host, port = host.split(":")
+
+                host_ip = socket.gethostbyname(host)
+                return f"{host_ip}:{port}" if port else host_ip
+            except socket.gaierror:
+                raise MySQLGetClusterEndpointsError(f"Failed to query IP for host {host}")
+
+        ro_endpoints = {
+            _get_host_ip(v["address"]) for v in topology.values() if v["mode"] == "r/o"
+        }
+        rw_endpoints = {
+            _get_host_ip(v["address"]) for v in topology.values() if v["mode"] == "r/w"
+        }
 
         return ",".join(rw_endpoints), ",".join(ro_endpoints)
 

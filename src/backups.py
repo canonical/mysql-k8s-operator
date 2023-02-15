@@ -18,14 +18,16 @@ from charms.mysql.v0.mysql import (
 from ops.charm import ActionEvent, CharmBase
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
-from ops.model import BlockedStatus
+from ops.model import ActiveStatus, BlockedStatus
 from ops.pebble import ChangeError
 
 from constants import CONTAINER_NAME, MYSQLD_SERVICE, S3_INTEGRATOR_RELATION_NAME
 from mysql_k8s_helpers import (
     MySQLDeleteTempBackupDirectoryError,
+    MySQLDeleteTempRestoreDirectory,
     MySQLEmptyDataDirectoryError,
     MySQLExecuteBackupCommandsError,
+    MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLPrepareBackupForRestoreError,
     MySQLReconfigureInstanceError,
     MySQLRestoreBackupError,
@@ -230,6 +232,13 @@ Juju Version: {str(juju_version)}
         if self.charm._is_cluster_blocked():
             return False, "Cluster or unit is in a blocking state"
 
+        logger.info("Checking if backup already in progress")
+        try:
+            if self.charm._mysql.offline_mode_and_hidden_instance_exists():
+                return False, "Backup already in progress on another unit"
+        except MySQLOfflineModeAndHiddenInstanceExistsError:
+            return False, "Failed to check if a backup is already in progress"
+
         logger.info("Checking state and role of unit")
 
         try:
@@ -250,9 +259,6 @@ Juju Version: {str(juju_version)}
 
         Returns: tuple of (success, error_message)
         """
-        logger.info("Setting cluster state as 'backing-up'")
-        self.charm.unit_peer_data["cluster-state"] = "backing-up"
-
         # Do not set instance offline_mode and do not hide instance from mysqlrouter
         # if there is only one instance in the cluster
         if self.charm.app.planned_units() == 1:
@@ -262,14 +268,12 @@ Juju Version: {str(juju_version)}
             logger.info("Setting unit option tag:_hidden")
             self.charm._mysql.set_instance_option("tag:_hidden", "true")
         except MySQLSetInstanceOptionError:
-            self.charm.unit_peer_data["cluster-state"] = "active"
             return False, "Error setting instance option tag:_hidden"
 
         try:
             logger.info("Setting unit as offline before performing backup")
             self.charm._mysql.set_instance_offline_mode(True)
         except MySQLSetInstanceOfflineModeError:
-            self.charm.unit_peer_data["cluster-state"] = "active"
             self.charm._mysql.set_instance_option("tag:_hidden", "false")
             return False, "Error setting instance as offline before performing backup"
 
@@ -317,8 +321,11 @@ Juju Version: {str(juju_version)}
 
         Returns: tuple of (success, error_message)
         """
-        logger.info("Setting cluster state as 'active'")
-        self.charm.unit_peer_data["cluster-state"] = "active"
+        try:
+            logger.info("Deleting temp backup directory")
+            self.charm._mysql.delete_temp_backup_directory()
+        except MySQLDeleteTempBackupDirectoryError:
+            return False, "Error deleting temp backup directory"
 
         try:
             logger.info("Unsetting unit as offline after performing backup")
@@ -403,8 +410,7 @@ Juju Version: {str(juju_version)}
             event.fail(error_message)
 
             if recoverable:
-                logger.info("Setting cluster state as 'active'")
-                self.charm.unit_peer_data["cluster-state"] = "active"
+                self._clean_data_dir_and_start_mysqld()
             else:
                 self.charm.unit.status = BlockedStatus(error_message)
 
@@ -433,8 +439,6 @@ Juju Version: {str(juju_version)}
         if self.charm._is_cluster_blocked():
             return False, "Cluster or unit is in a blocking state"
 
-        # TODO: Consider what happens if planned_units = 1,
-        # but there are more than 1 units in the cluster still
         logger.info("Checking that the cluster does not have more than one unit")
         if self.charm.app.planned_units() > 1:
             return (
@@ -449,19 +453,12 @@ Juju Version: {str(juju_version)}
 
         Returns: tuple of (success, error_message)
         """
-        logger.info("Setting cluster state as 'restoring'")
-        self.charm.unit_peer_data["cluster-state"] = "restoring"
-
         logger.info(f"Stopping service {MYSQLD_SERVICE} in container {CONTAINER_NAME}")
-        # TODO: wrap around try/except for ops.model.ModelError?
         container = self.charm.unit.get_container(CONTAINER_NAME)
 
         try:
             container.stop(MYSQLD_SERVICE)
         except ChangeError as e:
-            logger.info("Setting cluster state as 'active'")
-            self.charm.unit_peer_data["cluster-state"] = "active"
-
             error_message = f"Failed to stop service {MYSQLD_SERVICE}"
             logger.exception(error_message, exc_info=e)
             return False, error_message
@@ -477,7 +474,6 @@ Juju Version: {str(juju_version)}
 
         Returns: tuple of (success, recoverable_error, error_message)
         """
-        # TODO: more robustly handle raised errors
         try:
             logger.info("Running xbcloud get commands to retrieve the backup")
             stdout, stderr, backup_location = self.charm._mysql.retrieve_backup_with_xbcloud(
@@ -516,18 +512,17 @@ Juju Version: {str(juju_version)}
 
         return True, True, None
 
-    def _post_restore(self) -> Tuple[bool, str]:
-        """Run operations required after restoring a backup.
+    def _clean_data_dir_and_start_mysqld(self) -> Tuple[bool, str]:
+        """Run idempotent operations run after restoring a backup.
 
-        Returns: tuple of (success, error_message)
+        Returns tuple of (success, error_message)
         """
         try:
-            self.charm._mysql.delete_temp_backup_directory()
-        except MySQLDeleteTempBackupDirectoryError:
-            return False, "Failed to delete the temp backup directory"
+            self.charm._mysql.delete_temp_restore_directory()
+        except MySQLDeleteTempRestoreDirectory:
+            return False, "Failed to delete the temp restore directory"
 
         logger.info(f"Starting service {MYSQLD_SERVICE} in container {CONTAINER_NAME}")
-        # TODO: wrap around try/except for ops.model.ModelError
         container = self.charm.unit.get_container(CONTAINER_NAME)
 
         try:
@@ -540,6 +535,17 @@ Juju Version: {str(juju_version)}
             error_message = f"Failed to start service {MYSQLD_SERVICE}"
             logger.exception(error_message, exc_info=e)
             return False, error_message
+
+        return True, None
+
+    def _post_restore(self) -> Tuple[bool, str]:
+        """Run operations required after restoring a backup.
+
+        Returns: tuple of (success, error_message)
+        """
+        success, error_message = self._clean_data_dir_and_start_mysqld()
+        if not success:
+            return success, error_message
 
         try:
             logger.info("Configuring instance to be part of an InnoDB cluster")
@@ -564,7 +570,6 @@ Juju Version: {str(juju_version)}
         self.charm.unit_peer_data["member-role"] = role
         self.charm.unit_peer_data["member-state"] = state
 
-        logger.info("Setting cluster state as 'active'")
-        self.charm.unit_peer_data["cluster-state"] = "active"
+        self.charm.unit.status = ActiveStatus()
 
         return True, None

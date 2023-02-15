@@ -7,6 +7,7 @@
 import json
 import logging
 import os
+import re
 from typing import Optional, Tuple
 
 from charms.mysql.v0.mysql import (
@@ -29,6 +30,7 @@ from tenacity import (
 from constants import (
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
+    MYSQLD_SERVICE,
     MYSQLD_SOCK_FILE,
     MYSQLSH_SCRIPT_FILE,
 )
@@ -104,7 +106,19 @@ class MySQLReconfigureInstanceError(Error):
 
 
 class MySQLDeleteTempBackupDirectoryError(Error):
-    """Exception raised when there is an error deleting temp backup directories."""
+    """Exception raised when there is an error deleting the temp backup directory."""
+
+
+class MySQLDeleteTempRestoreDirectory(Error):
+    """Exception raised when there is an error deleting the temp restore directory."""
+
+
+class MySQLOfflineModeAndHiddenInstanceExistsError(Error):
+    """Exception raised when there is an error checking if an instance is backing up.
+
+    We check if an instance is in offline_mode and hidden from mysql-router to determine
+    this.
+    """
 
 
 class MySQL(MySQLBase):
@@ -233,9 +247,8 @@ class MySQL(MySQLBase):
             logger.info(f"Reconfiguring instance for InnoDB on {self.instance_address}")
             self._run_mysqlsh_script(configure_instance_command)
 
-            # TODO: use the constant for the service name
             logger.info("Restarting the mysqld pebble service")
-            self.container.restart("mysqld")
+            self.container.restart(MYSQLD_SERVICE)
             logger.info("Waiting for MySQL to restart")
             self.wait_until_mysql_connection()
         except (
@@ -333,6 +346,33 @@ class MySQL(MySQLBase):
         except Exception:
             raise MySQLCreateCustomConfigFileError()
 
+    def offline_mode_and_hidden_instance_exists(self) -> bool:
+        """Indicates whether an instance exists in offline_mode and hidden from router.
+
+        The pre_backup operations switch an instance to offline_mode and hide it
+        from the mysql-router.
+        """
+        offline_mode_message = "Instance has offline_mode enabled"
+        commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster_topology = dba.get_cluster('{self.cluster_name}').status()['defaultReplicaSet']['topology']",
+            f"selected_instances = [label for label, member in cluster_topology.items() if '{offline_mode_message}' in member.get('instanceErrors', '') and member.get('hiddenFromRouter')]",
+            "print(f'<OFFLINE_MODE_INSTANCES>{len(selected_instances)}</OFFLINE_MODE_INSTANCES>')",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError as e:
+            logger.exception("Failed to query offline mode instances", exc_info=e)
+            raise MySQLOfflineModeAndHiddenInstanceExistsError(e)
+
+        matches = re.search(r"<OFFLINE_MODE_INSTANCES>(.*)</OFFLINE_MODE_INSTANCES>", output)
+
+        if not matches:
+            raise MySQLOfflineModeAndHiddenInstanceExistsError("Failed to parse command output")
+
+        return matches.group(1) != "0"
+
     def execute_backup_commands(
         self,
         s3_bucket: str,
@@ -421,6 +461,26 @@ xtrabackup --defaults-file=/etc/mysql
             logger.exception("Failed to execute backup commands", exc_info=e)
             raise MySQLExecuteBackupCommandsError(e)
 
+    def delete_temp_backup_directory(self) -> None:
+        """Delete the temp backup directory in /tmp."""
+        delete_temp_dir_command = "find /tmp -wholename /tmp/xtra_backup_* -delete".split()
+
+        try:
+            process = self.container.exec(
+                delete_temp_dir_command,
+                user="mysql",
+                group="mysql",
+            )
+            process.wait_output()
+        except ExecError as e:
+            logger.exception("Failed to delete temp backup directory", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLDeleteTempBackupDirectoryError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to delete temp backup directory", exc_info=e)
+            raise MySQLDeleteTempBackupDirectoryError(e)
+
     def retrieve_backup_with_xbcloud(
         self,
         s3_bucket: str,
@@ -438,7 +498,11 @@ xtrabackup --defaults-file=/etc/mysql
         make_temp_dir_command = "mktemp --directory /var/lib/mysql/mysql_sst_XXXX".split()
 
         try:
-            process = self.container.exec(nproc_command)
+            process = self.container.exec(
+                nproc_command,
+                user="mysql",
+                group="mysql",
+            )
             nproc, _ = process.wait_output()
 
             process = self.container.exec(
@@ -485,6 +549,9 @@ xbcloud get
             logger.error(f"Stdout: {e.stdout}")
             logger.error(f"Stderr: {e.stderr}")
             raise MySQLRetrieveBackupWithXBCloudError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to retrieve backup", exc_info=e)
+            raise MySQLRetrieveBackupWithXBCloudError(e)
 
     def prepare_backup_for_restore(self, backup_location: str) -> Tuple[str, str]:
         """Prepare the backup in the provided dir for restore."""
@@ -515,10 +582,12 @@ xtrabackup --prepare
             logger.error(f"Stdout: {e.stdout}")
             logger.error(f"Stderr: {e.stderr}")
             raise MySQLPrepareBackupForRestoreError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to prepare backup for restore", exc_info=e)
+            raise MySQLPrepareBackupForRestoreError(e)
 
     def empty_data_files(self) -> None:
         """Empty the mysql data directory in preparation of backup restore."""
-        # TODO: Find out why we need to use sh to remove the data directory
         empty_data_files_command = "find /var/lib/mysql/ -not -path /var/lib/mysql/mysql_sst_* -not -path /var/lib/mysql/ -delete".split()
 
         try:
@@ -535,6 +604,11 @@ xtrabackup --prepare
             logger.error(f"Stdout: {e.stdout}")
             logger.error(f"Stderr: {e.stderr}")
             raise MySQLEmptyDataDirectoryError(e.stderr)
+        except Exception as e:
+            logger.exception(
+                "Failed to empty data directory in prep for backup restore", exc_info=e
+            )
+            raise MySQLEmptyDataDirectoryError(e)
 
     def restore_backup(self, backup_location: str) -> Tuple[str, str]:
         """Restore the provided prepared backup."""
@@ -562,6 +636,9 @@ xtrabackup --defaults-file=/etc/mysql
             logger.error(f"Stdout: {e.stdout}")
             logger.error(f"Stderr: {e.stderr}")
             raise MySQLRestoreBackupError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to restore backup", exc_info=e)
+            raise MySQLRestoreBackupError(e)
 
     def _get_total_memory(self) -> int:
         """Retrieves the total memory of the mysql container."""
@@ -591,16 +668,16 @@ Swap:     1027600384  1027600384           0
             logger.exception("Failed to execute commands to query total memory", exc_info=e)
             raise
 
-    def delete_temp_backup_directory(self) -> None:
-        """Delete the temp backup directory from /var/lib/mysql."""
-        logger.info("Deleting temp backup directory in /var/lib/mysql")
-        delete_temp_backup_directory_command = (
+    def delete_temp_restore_directory(self) -> None:
+        """Delete the temp restore directory from /var/lib/mysql."""
+        logger.info("Deleting temp restore directory in /var/lib/mysql")
+        delete_temp_restore_directory_command = (
             "find /var/lib/mysql -wholename /var/lib/mysql/mysql_sst_* -delete".split()
         )
 
         try:
             process = self.container.exec(
-                delete_temp_backup_directory_command,
+                delete_temp_restore_directory_command,
                 user="mysql",
                 group="mysql",
             )
@@ -609,7 +686,7 @@ Swap:     1027600384  1027600384           0
             logger.exception("Failed to remove temp backup directory", exc_info=e)
             logger.error(f"Stdout: {e.stdout}")
             logger.error(f"Stderr: {e.stderr}")
-            raise MySQLDeleteTempBackupDirectoryError(e.stderr)
+            raise MySQLDeleteTempRestoreDirectory(e.stderr)
 
     def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int]]:
         """Get innodb buffer pool parameters for the instance.
