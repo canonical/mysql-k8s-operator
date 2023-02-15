@@ -409,7 +409,7 @@ class MySQL(MySQLBase):
         # when MySQL and XtraBackup versions are in sync
         xtrabackup_commands = " ".join(
             f"""
-xtrabackup --defaults-file=/etc/mysql
+xtrabackup --defaults-file=/etc/mysql/my.cnf
             --defaults-group=mysqld
             --no-version-check
             --parallel={nproc.strip()}
