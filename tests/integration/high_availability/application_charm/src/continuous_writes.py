@@ -58,6 +58,8 @@ def main():
         "host": host,
         "port": port,
         "database": database,
+        "use_pure": True,
+        "connection_timeout": 5,
     }
 
     continuous_writes(database_config, table_name, int(starting_number))
