@@ -86,32 +86,30 @@ class MySQLProvider(Object):
         relation.data[self.charm.app]["password"] = password
         return password
 
+    @staticmethod
+    def _endpoints_to_pod_list(endpoints: str) -> List[str]:
+        """Converts a comma separated list of endpoints to a list of pods."""
+        return [p.split(".")[0] for p in endpoints.split(",")]
+
     def _update_endpoints(self) -> None:
-        """Updates pod labels to reflect role of the unit.
-
-        Args:
-            relation_id: The id of the relation for which to update the endpoints
-        """
-
-        def _endpoints_to_pod_list(endpoints: str) -> List[str]:
-            """Converts a comma separated list of endpoints to a list of pods."""
-            return [p.split(".")[0] for p in endpoints.split(",")]
-
+        """Updates pod labels to reflect role of the unit."""
         logger.debug("Updating pod labels")
         try:
-            rw_endpoints, ro_endpoints, offline = self.charm._mysql.get_cluster_endpoints(get_ips=False)
+            rw_endpoints, ro_endpoints, offline = self.charm._mysql.get_cluster_endpoints(
+                get_ips=False
+            )
 
             # rw pod labels
             if rw_endpoints:
-                for pod in _endpoints_to_pod_list(rw_endpoints):
+                for pod in self._endpoints_to_pod_list(rw_endpoints):
                     self.k8s_helpers.label_pod("primary", pod)
             # ro pod labels
             if ro_endpoints:
-                for pod in _endpoints_to_pod_list(ro_endpoints):
+                for pod in self._endpoints_to_pod_list(ro_endpoints):
                     self.k8s_helpers.label_pod("replicas", pod)
             # offline pod labels
             if offline:
-                for pod in _endpoints_to_pod_list(offline):
+                for pod in self._endpoints_to_pod_list(offline):
                     self.k8s_helpers.label_pod("offline", pod)
         except MySQLGetClusterEndpointsError as e:
             logger.exception("Failed to get cluster members", exc_info=e)
