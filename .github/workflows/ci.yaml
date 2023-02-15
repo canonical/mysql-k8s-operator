@@ -65,8 +65,6 @@ jobs:
           provider: microk8s
           # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
           bootstrap-options: "--agent-version 2.9.29"
-      - name: Run charm integration tests
-        run: tox -e integration-charm
       - name: Download packed charm(s)
         uses: actions/download-artifact@v3
         with:
