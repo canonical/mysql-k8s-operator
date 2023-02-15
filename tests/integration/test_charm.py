@@ -11,7 +11,9 @@ from pytest_operator.plugin import OpsTest
 from tenacity import AsyncRetrying, RetryError, stop_after_delay, wait_fixed
 
 from constants import CLUSTER_ADMIN_USERNAME, PASSWORD_LENGTH, ROOT_USERNAME
-from tests.integration.helpers import (
+from utils import generate_random_password
+
+from .helpers import (
     execute_queries_on_unit,
     fetch_credentials,
     generate_random_string,
@@ -22,7 +24,6 @@ from tests.integration.helpers import (
     rotate_credentials,
     scale_application,
 )
-from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,6 @@ TIMEOUT = 15 * 60
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-@pytest.mark.charm_tests
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Build the mysql charm and deploy it."""
     async with ops_test.fast_forward():
@@ -81,7 +81,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.charm_tests
 async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> None:
     """Confirm that data is replicated from the primary node to all the replicas."""
     # Insert values into a table on the primary unit
@@ -134,7 +133,6 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.charm_tests
 async def test_scale_up_and_down(ops_test: OpsTest) -> None:
     """Confirm that a new primary is elected when the current primary is torn down."""
     async with ops_test.fast_forward():
@@ -187,7 +185,6 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.charm_tests
 async def test_password_rotation(ops_test: OpsTest):
     """Rotate password and confirm changes."""
     random_unit = ops_test.model.applications[APP_NAME].units[-1]
@@ -221,7 +218,6 @@ async def test_password_rotation(ops_test: OpsTest):
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.charm_tests
 async def test_password_rotation_silent(ops_test: OpsTest):
     """Rotate password and confirm changes."""
     random_unit = ops_test.model.applications[APP_NAME].units[-1]
@@ -250,7 +246,6 @@ async def test_password_rotation_silent(ops_test: OpsTest):
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.charm_tests
 async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
     """Rotate password and confirm changes."""
     random_unit = ops_test.model.applications[APP_NAME].units[-1]

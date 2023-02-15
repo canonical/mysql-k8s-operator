@@ -20,7 +20,8 @@ from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from constants import SERVER_CONFIG_USERNAME
-from tests.integration.connector import MySQLConnector
+
+from .connector import MySQLConnector
 
 
 def generate_random_string(length: int) -> str:

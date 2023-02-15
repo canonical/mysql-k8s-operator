@@ -6,12 +6,11 @@ import asyncio
 import logging
 from pathlib import Path
 
-import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 from tenacity import AsyncRetrying, RetryError, stop_after_attempt, wait_fixed
 
-from tests.integration.helpers import (
+from ..helpers import (
     execute_queries_on_unit,
     get_server_config_credentials,
     get_unit_address,
@@ -26,7 +25,6 @@ CLUSTER_NAME = "test_cluster"
 
 
 # TODO: deploy and relate osm-grafana once it can be use with MySQL Group Replication
-@pytest.mark.osm_mysql_tests
 async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
     """Test the deployment and relation with osm bundle with mysql replacing mariadb."""
     async with ops_test.fast_forward():
@@ -139,7 +137,6 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         )
 
 
-@pytest.mark.osm_mysql_tests
 async def test_osm_pol_operations(ops_test: OpsTest) -> None:
     """Test the existence of databases and tables created by osm-pol's migrations."""
     show_databases_sql = [
