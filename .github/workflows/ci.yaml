@@ -27,8 +27,18 @@ jobs:
       - name: Run tests
         run: tox -e unit
 
-  integration-test-microk8s-charm:
-    name: Charm integration tests (microk8s)
+  integration-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        tox-environments:
+          - integration-charm
+          - integration-database-relation
+          - integration-osm-mysql
+          - integration-replication
+#          - integration-self-healing
+          - integration-tls
+    name: ${{ matrix.tox-environments }}
     needs:
       - lint
       - unit-test
@@ -44,94 +54,3 @@ jobs:
           bootstrap-options: "--agent-version 2.9.29"
       - name: Run charm integration tests
         run: tox -e integration-charm
-
-  integration-test-database-relation:
-    name: Integration tests for database relation
-    needs:
-      - lint
-      - unit-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
-          bootstrap-options: "--agent-version 2.9.29"
-      - name: Run integration database tests
-        run: tox -e integration-database-relation
-
-  integration-test-microk8s-osm-mysql:
-    name: Integration osm-msyql relation tests (microk8s)
-    needs:
-      - lint
-      - unit-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
-          bootstrap-options: "--agent-version 2.9.29"
-      - name: Run osm-mysql relation integration tests
-        run: tox -e integration-osm-mysql
-
-  integration-test-microk8s-replication:
-    name: Integration replication tests (microk8s)
-    needs:
-      - lint
-      - unit-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
-          bootstrap-options: "--agent-version 2.9.29"
-      - name: Run replication integration tests
-        run: tox -e integration-replication
-
-# TODO: re-enable when stable (currently flaky)
-#  integration-test-microk8s-self-healing:
-#    name: Integration self healing tests (microk8s)
-#    needs:
-#      - lint
-#      - unit-test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v3
-#      - name: Setup operator environment
-#        uses: charmed-kubernetes/actions-operator@main
-#        with:
-#          provider: microk8s
-#          microk8s-group: microk8s
-#          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
-#          bootstrap-options: "--agent-version 2.9.29"
-#      - name: Run self healing integration tests
-#        run: tox -e integration-self-healing
-
-  integration-test-tls:
-    needs:
-      - lint
-      - unit-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          # This is needed until https://bugs.launchpad.net/juju/+bug/1977582 is fixed
-          bootstrap-options: "--agent-version 2.9.29"
-      - name: Integration tls relation tests
-        run: tox -e integration-tls
