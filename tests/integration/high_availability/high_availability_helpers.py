@@ -24,7 +24,7 @@ from tenacity import (
     wait_fixed,
 )
 
-from tests.integration.helpers import (
+from ..helpers import (
     execute_queries_on_unit,
     generate_random_string,
     get_cluster_status,
@@ -161,6 +161,7 @@ async def deploy_and_scale_mysql(
             resources=resources,
             num_units=3,
             series="jammy",
+            trust=True,
         )
 
         await ops_test.model.wait_for_idle(

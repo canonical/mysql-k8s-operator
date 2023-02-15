@@ -17,7 +17,7 @@ def generate_random_password(length: int) -> str:
         A randomly generated string intended to be used as a password.
     """
     choices = string.ascii_letters + string.digits
-    return "".join([secrets.choice(choices) for i in range(length)])
+    return "".join([secrets.choice(choices) for _ in range(length)])
 
 
 def generate_random_hash() -> str:

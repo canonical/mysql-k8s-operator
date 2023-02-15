@@ -12,8 +12,10 @@ To deploy this charm using Juju 2.9.0 or later, run:
 
 ```shell
 juju add-model mysql-k8s
-juju deploy mysql-k8s
+juju deploy mysql-k8s --trust
 ```
+
+**Note**: the `--trust` flag is required when relating using `mysql_client` interface.
 
 To confirm the deployment, you can run:
 

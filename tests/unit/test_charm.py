@@ -18,6 +18,8 @@ APP_NAME = "mysql-k8s"
 
 class TestCharm(unittest.TestCase):
     def setUp(self) -> None:
+        self.patcher = patch("lightkube.core.client.GenericSyncClient")
+        self.patcher.start()
         self.harness = Harness(MySQLOperatorCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
@@ -38,6 +40,9 @@ class TestCharm(unittest.TestCase):
                 }
             },
         }
+
+    def tearDown(self) -> None:
+        self.patcher.stop()
 
     def test_mysqld_layer(self):
         # Test layer property

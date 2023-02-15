@@ -10,7 +10,7 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
-from tests.integration.helpers import is_relation_broken, is_relation_joined
+from ..helpers import is_relation_broken, is_relation_joined
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,6 @@ ENDPOINT = "database"
 
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
-@pytest.mark.database_tests
 async def test_build_and_deploy(ops_test: OpsTest):
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
     # Build and deploy charm from local source folder
@@ -48,6 +47,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             num_units=3,
             resources=resources,
             series="jammy",
+            trust=True,
         ),
         ops_test.model.deploy(app_charm, application_name=APPLICATION_APP_NAME, num_units=2),
     )
@@ -86,7 +86,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.database_tests
 async def test_relation_creation(ops_test: OpsTest):
     """Relate charms and wait for the expected changes in status."""
     await ops_test.model.relate(APPLICATION_APP_NAME, f"{DATABASE_APP_NAME}:{ENDPOINT}")
@@ -100,7 +99,6 @@ async def test_relation_creation(ops_test: OpsTest):
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.database_tests
 async def test_relation_broken(ops_test: OpsTest):
     """Remove relation and wait for the expected changes in status."""
     await ops_test.model.applications[DATABASE_APP_NAME].remove_relation(
