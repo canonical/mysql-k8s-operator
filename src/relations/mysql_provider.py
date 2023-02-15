@@ -99,14 +99,20 @@ class MySQLProvider(Object):
 
         logger.debug("Updating pod labels")
         try:
-            rw_endpoints, ro_endpoints = self.charm._mysql.get_cluster_endpoints()
+            rw_endpoints, ro_endpoints, offline = self.charm._mysql.get_cluster_endpoints(get_ips=False)
 
             # rw pod labels
-            for pod in _endpoints_to_pod_list(rw_endpoints):
-                self.k8s_helpers.label_pod("primary", pod)
+            if rw_endpoints:
+                for pod in _endpoints_to_pod_list(rw_endpoints):
+                    self.k8s_helpers.label_pod("primary", pod)
             # ro pod labels
-            for pod in _endpoints_to_pod_list(ro_endpoints):
-                self.k8s_helpers.label_pod("replicas", pod)
+            if ro_endpoints:
+                for pod in _endpoints_to_pod_list(ro_endpoints):
+                    self.k8s_helpers.label_pod("replicas", pod)
+            # offline pod labels
+            if offline:
+                for pod in _endpoints_to_pod_list(offline):
+                    self.k8s_helpers.label_pod("offline", pod)
         except MySQLGetClusterEndpointsError as e:
             logger.exception("Failed to get cluster members", exc_info=e)
         except KubernetesClientError:
@@ -286,13 +292,6 @@ class MySQLProvider(Object):
         if self.charm.unit.is_leader():
             # pass in None as the event as it is not being utilized in _configure_endpoints
             self._configure_endpoints(None)
-
-        # do not set endpoints in unit peer databag if mysqld stopped on this unit
-        # (as mysqlsh commands will hang instead of failing due to the stopped process)
-        if self.charm._mysql.check_if_mysqld_process_stopped():
-            return
-
-        self._update_endpoints()
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.
