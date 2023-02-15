@@ -73,9 +73,7 @@ class MySQLBackups(Object):
             "secret-key",
         ]
         missing_required_parameters = [
-            param
-            for param in required_parameters
-            if param not in s3_parameters or not s3_parameters[param]
+            param for param in required_parameters if not s3_parameters.get(param)
         ]
         if missing_required_parameters:
             logger.warning(

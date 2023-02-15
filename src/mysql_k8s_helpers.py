@@ -613,7 +613,7 @@ xtrabackup --prepare
     def restore_backup(self, backup_location: str) -> Tuple[str, str]:
         """Restore the provided prepared backup."""
         restore_backup_command = f"""
-xtrabackup --defaults-file=/etc/mysql
+xtrabackup --defaults-file=/etc/mysql/my.cnf
         --defaults-group=mysqld
         --datadir=/var/lib/mysql
         --no-version-check
