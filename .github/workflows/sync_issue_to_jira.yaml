@@ -9,7 +9,7 @@ on:
 jobs:
   sync:
     name: Sync GitHub issue to Jira
-    uses: canonical/data-platform-workflows/.github/workflows/sync_issue_to_jira.yaml@main
+    uses: canonical/data-platform-workflows/.github/workflows/sync_issue_to_jira.yaml@v1
     with:
       jira-component-name: mysql-k8s
     secrets:
