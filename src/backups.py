@@ -10,8 +10,10 @@ from typing import Dict, List, Tuple
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
+    MySQLConfigureInstanceError,
     MySQLCreateClusterError,
     MySQLGetMemberStateError,
+    MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLSetInstanceOfflineModeError,
     MySQLSetInstanceOptionError,
 )
@@ -22,10 +24,6 @@ from ops.model import ActiveStatus, BlockedStatus
 from ops.pebble import ChangeError
 
 from constants import CONTAINER_NAME, MYSQLD_SERVICE, S3_INTEGRATOR_RELATION_NAME
-from charms.mysql.v0.mysql import (
-    MySQLConfigureInstanceError,
-    MySQLOfflineModeAndHiddenInstanceExistsError,
-)
 from mysql_k8s_helpers import (
     MySQLDeleteTempBackupDirectoryError,
     MySQLDeleteTempRestoreDirectory,
@@ -371,7 +369,9 @@ Juju Version: {str(juju_version)}
 
         logger.info("Checking that the cluster does not have more than one unit")
         if self.charm.app.planned_units() > 1:
-            error_message = "Unit cannot restore backup as there are more than one units in the cluster"
+            error_message = (
+                "Unit cannot restore backup as there are more than one units in the cluster"
+            )
             logger.warning(error_message)
             event.fail(error_message)
             return False

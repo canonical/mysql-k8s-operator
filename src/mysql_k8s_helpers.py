@@ -29,8 +29,8 @@ from tenacity import (
 from constants import (
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
-    MYSQLD_SOCK_FILE,
     MYSQLD_SERVICE,
+    MYSQLD_SOCK_FILE,
     MYSQLSH_SCRIPT_FILE,
 )
 

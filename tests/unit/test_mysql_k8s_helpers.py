@@ -96,7 +96,7 @@ class TestMySQL(unittest.TestCase):
     ):
         """Test a successful execution of configure_instance."""
         configure_instance_commands = (
-            'dba.configure_instance(\'serverconfig:serverconfigpassword@127.0.0.1\', {"clusterAdmin": "clusteradmin", "clusterAdminPassword": "clusteradminpassword", "restart": "false"})',
+            'dba.configure_instance(\'serverconfig:serverconfigpassword@127.0.0.1\', {"restart": "false", "clusterAdmin": "clusteradmin", "clusterAdminPassword": "clusteradminpassword"})',
         )
         self.mysql.container = _container
 
