@@ -7,7 +7,6 @@
 import json
 import logging
 import os
-import re
 from typing import Optional, Tuple
 
 from charms.mysql.v0.mysql import (
@@ -30,8 +29,8 @@ from tenacity import (
 from constants import (
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
-    MYSQLD_SERVICE,
     MYSQLD_SOCK_FILE,
+    MYSQLD_SERVICE,
     MYSQLSH_SCRIPT_FILE,
 )
 
@@ -101,24 +100,12 @@ class MySQLRestoreBackupError(Error):
     """Exception raised when there is an error restoring a backup."""
 
 
-class MySQLReconfigureInstanceError(Error):
-    """Exception raised when there is an error reconfiguring an instance for InnoDB cluster."""
-
-
 class MySQLDeleteTempBackupDirectoryError(Error):
     """Exception raised when there is an error deleting the temp backup directory."""
 
 
 class MySQLDeleteTempRestoreDirectory(Error):
     """Exception raised when there is an error deleting the temp restore directory."""
-
-
-class MySQLOfflineModeAndHiddenInstanceExistsError(Error):
-    """Exception raised when there is an error checking if an instance is backing up.
-
-    We check if an instance is in offline_mode and hidden from mysql-router to determine
-    this.
-    """
 
 
 class MySQL(MySQLBase):
@@ -207,16 +194,19 @@ class MySQL(MySQLBase):
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
 
-    def configure_instance(self) -> None:
+    def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
 
         Raises MySQLConfigureInstanceError if the instance configuration fails.
         """
         try:
-            super(MySQL, self).configure_instance(restart=False)
+            super(MySQL, self).configure_instance(
+                restart=False,
+                create_cluster_admin=create_cluster_admin,
+            )
 
             # restart the pebble layer service
-            self.container.restart("mysqld")
+            self.container.restart(MYSQLD_SERVICE)
             logger.debug("Waiting until MySQL to restart")
             self.wait_until_mysql_connection()
 
@@ -230,36 +220,6 @@ class MySQL(MySQLBase):
                 "Failed to configure instance for use in an InnoDB cluster", exc_info=e
             )
             raise MySQLConfigureInstanceError(e.message)
-
-    def reconfigure_instance(self) -> None:
-        """Reconfigure the instance to be used in an InnoDB cluster.
-
-        Assumes that the instance was previously configured, and that the cluster
-        admin user already exists.
-        """
-        options = {
-            "restart": "false",
-        }
-
-        configure_instance_command = f"dba.configure_instance('{self.server_config_user}:{self.server_config_password}@{self.instance_address}', {json.dumps(options)})"
-
-        try:
-            logger.info(f"Reconfiguring instance for InnoDB on {self.instance_address}")
-            self._run_mysqlsh_script(configure_instance_command)
-
-            logger.info("Restarting the mysqld pebble service")
-            self.container.restart(MYSQLD_SERVICE)
-            logger.info("Waiting for MySQL to restart")
-            self.wait_until_mysql_connection()
-        except (
-            MySQLClientError,
-            MySQLServiceNotRunningError,
-        ) as e:
-            logger.exception(
-                f"Failed to reconfigure instance: {self.instance_address} with error {e.message}",
-                exc_info=e,
-            )
-            raise MySQLReconfigureInstanceError(e.message)
 
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
@@ -345,33 +305,6 @@ class MySQL(MySQLBase):
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
         except Exception:
             raise MySQLCreateCustomConfigFileError()
-
-    def offline_mode_and_hidden_instance_exists(self) -> bool:
-        """Indicates whether an instance exists in offline_mode and hidden from router.
-
-        The pre_backup operations switch an instance to offline_mode and hide it
-        from the mysql-router.
-        """
-        offline_mode_message = "Instance has offline_mode enabled"
-        commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
-            f"cluster_topology = dba.get_cluster('{self.cluster_name}').status()['defaultReplicaSet']['topology']",
-            f"selected_instances = [label for label, member in cluster_topology.items() if '{offline_mode_message}' in member.get('instanceErrors', '') and member.get('hiddenFromRouter')]",
-            "print(f'<OFFLINE_MODE_INSTANCES>{len(selected_instances)}</OFFLINE_MODE_INSTANCES>')",
-        )
-
-        try:
-            output = self._run_mysqlsh_script("\n".join(commands))
-        except MySQLClientError as e:
-            logger.exception("Failed to query offline mode instances", exc_info=e)
-            raise MySQLOfflineModeAndHiddenInstanceExistsError(e)
-
-        matches = re.search(r"<OFFLINE_MODE_INSTANCES>(.*)</OFFLINE_MODE_INSTANCES>", output)
-
-        if not matches:
-            raise MySQLOfflineModeAndHiddenInstanceExistsError("Failed to parse command output")
-
-        return matches.group(1) != "0"
 
     def execute_backup_commands(
         self,

@@ -22,14 +22,16 @@ from ops.model import ActiveStatus, BlockedStatus
 from ops.pebble import ChangeError
 
 from constants import CONTAINER_NAME, MYSQLD_SERVICE, S3_INTEGRATOR_RELATION_NAME
+from charms.mysql.v0.mysql import (
+    MySQLConfigureInstanceError,
+    MySQLOfflineModeAndHiddenInstanceExistsError,
+)
 from mysql_k8s_helpers import (
     MySQLDeleteTempBackupDirectoryError,
     MySQLDeleteTempRestoreDirectory,
     MySQLEmptyDataDirectoryError,
     MySQLExecuteBackupCommandsError,
-    MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLPrepareBackupForRestoreError,
-    MySQLReconfigureInstanceError,
     MySQLRestoreBackupError,
     MySQLRetrieveBackupWithXBCloudError,
     MySQLServiceNotRunningError,
@@ -360,6 +362,20 @@ Juju Version: {str(juju_version)}
             event.fail(error_message)
             return False
 
+        logger.info("Checking if cluster is in blocked state")
+        if self.charm._is_cluster_blocked():
+            error_message = "Cluster or unit is in a blocking state"
+            logger.warning(error_message)
+            event.fail(error_message)
+            return False
+
+        logger.info("Checking that the cluster does not have more than one unit")
+        if self.charm.app.planned_units() > 1:
+            error_message = "Unit cannot restore backup as there are more than one units in the cluster"
+            logger.warning(error_message)
+            event.fail(error_message)
+            return False
+
         return True
 
     def _on_restore(self, event: ActionEvent) -> None:
@@ -385,13 +401,6 @@ Juju Version: {str(juju_version)}
         s3_backup_md5 = str(pathlib.Path(s3_parameters["path"]) / f"{backup_id}.md5")
         if not fetch_and_check_existence_of_s3_path(s3_parameters, s3_backup_md5):
             event.fail(f"Invalid backup-id: {backup_id}")
-            return
-
-        # Check if this unit can restore backup
-        can_unit_restore_backup, validation_message = self._can_unit_restore_backup()
-        if not can_unit_restore_backup:
-            logger.warning(validation_message)
-            event.fail(validation_message)
             return
 
         # Run operations to prepare for the restore
@@ -427,24 +436,6 @@ Juju Version: {str(juju_version)}
                 "completed": "ok",
             }
         )
-
-    def _can_unit_restore_backup(self) -> Tuple[bool, str]:
-        """Validates whether this unit can restore a backup.
-
-        Returns: tuple of (success, error_message)
-        """
-        logger.info("Checking if cluster is in blocked state")
-        if self.charm._is_cluster_blocked():
-            return False, "Cluster or unit is in a blocking state"
-
-        logger.info("Checking that the cluster does not have more than one unit")
-        if self.charm.app.planned_units() > 1:
-            return (
-                False,
-                "Unit cannot restore backup as there are more than one units in the cluster",
-            )
-
-        return True, None
 
     def _pre_restore(self) -> Tuple[bool, str]:
         """Perform operations that need to be done before performing a restore.
@@ -547,8 +538,8 @@ Juju Version: {str(juju_version)}
 
         try:
             logger.info("Configuring instance to be part of an InnoDB cluster")
-            self.charm._mysql.reconfigure_instance()
-        except MySQLReconfigureInstanceError:
+            self.charm._mysql.configure_instance(create_cluster_admin=False)
+        except MySQLConfigureInstanceError:
             return False, "Failed to configure restored instance for InnoDB cluster"
 
         self.charm.unit_peer_data["unit-configured"] = "True"
