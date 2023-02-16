@@ -148,6 +148,9 @@ class MySQLProvider(Object):
             self.database.set_credentials(relation_id, db_user, db_pass)
             self.database.set_version(relation_id, db_version)
 
+            # make sure pods are labeled before adding service
+            self._update_endpoints()
+
             # create k8s services for endpoints
             self.k8s_helpers.create_endpoint_services(["primary", "replicas"])
 
