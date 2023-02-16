@@ -51,6 +51,7 @@ class TestDatabase(unittest.TestCase):
     def tearDown(self) -> None:
         self.patcher.stop()
 
+    @patch("relations.mysql_provider.MySQLProvider._update_endpoints")
     @patch("k8s_helpers.KubernetesHelpers.create_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
     @patch("mysql_k8s_helpers.MySQL.create_application_database_and_scoped_user")
@@ -63,6 +64,7 @@ class TestDatabase(unittest.TestCase):
         _create_application_database_and_scoped_user,
         _get_mysql_version,
         _create_endpoint_services,
+        _update_endpoints,
     ):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
@@ -105,6 +107,7 @@ class TestDatabase(unittest.TestCase):
         _create_application_database_and_scoped_user.assert_called_once()
         _get_mysql_version.assert_called_once()
         _create_endpoint_services.assert_called_once()
+        _update_endpoints.assert_called_once()
 
     @patch("k8s_helpers.KubernetesHelpers.delete_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.delete_user_for_relation")
