@@ -12,14 +12,7 @@ show_missing = true
 minversion = "6.0"
 log_cli_level = "INFO"
 asyncio_mode = "auto"
-markers = [
-    "charm_tests",
-    "database_tests",
-    "osm_mysql_tests",
-    "replication_tests",
-    "self_healing_tests",
-    "tls_tests",
-]
+markers = ["unstable"]
 
 # Formatting tools configuration
 [tool.black]

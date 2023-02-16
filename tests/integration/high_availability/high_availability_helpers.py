@@ -24,7 +24,7 @@ from tenacity import (
     wait_fixed,
 )
 
-from tests.integration.helpers import (
+from ..helpers import (
     execute_queries_on_unit,
     generate_random_string,
     get_cluster_status,
