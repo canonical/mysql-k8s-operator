@@ -97,18 +97,19 @@ class KubernetesHelpers:
             role: role of a given pod (primary or replica)
             pod_name: (optional) name of the pod to label, defaults to the current pod
         """
-        pod = self.client.get(Pod, pod_name or self.pod_name, namespace=self.namespace)
-
-        if not pod.metadata.labels:
-            pod.metadata.labels = {}
-
-        pod.metadata.labels["cluster-name"] = self.cluster_name
-        pod.metadata.labels["role"] = role
-
         try:
+            pod = self.client.get(Pod, pod_name or self.pod_name, namespace=self.namespace)
+
+            if not pod.metadata.labels:
+                pod.metadata.labels = {}
+
+            pod.metadata.labels["cluster-name"] = self.cluster_name
+            pod.metadata.labels["role"] = role
             self.client.patch(Pod, pod_name or self.pod_name, pod)
             logger.info(f"Kubernetes pod label {role} created")
         except ApiError as e:
+            if e.status.code == 404:
+                logger.warning(f"Kubernetes pod {pod_name} not found. Scaling in?")
             if e.status.code == 403:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
             else:
