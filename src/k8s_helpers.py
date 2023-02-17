@@ -110,6 +110,7 @@ class KubernetesHelpers:
         except ApiError as e:
             if e.status.code == 404:
                 logger.warning(f"Kubernetes pod {pod_name} not found. Scaling in?")
+                return
             if e.status.code == 403:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
             else:
