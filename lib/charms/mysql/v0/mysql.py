@@ -90,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 12
+LIBPATCH = 14
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -745,11 +745,14 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.exception(f"Failed to get cluster status for {self.cluster_name}", exc_info=e)
 
-    def get_cluster_endpoints(self) -> Tuple[str, str]:
+    def get_cluster_endpoints(self, get_ips: bool = True) -> Tuple[str, str, str]:
         """Use get_cluster_status to return endpoints tuple.
 
+        Args:
+            get_ips: Whether to return IP addresses or hostnames, default to IP
+
         Returns:
-            A tuple with endpoints and read-only-endpoints strings.
+            A tuple of strings with endpoints, read-only-endpoints and offline endpoints
         """
         status = self.get_cluster_status()
 
@@ -769,13 +772,19 @@ class MySQLBase(ABC):
                 raise MySQLGetClusterEndpointsError(f"Failed to query IP for host {host}")
 
         ro_endpoints = {
-            _get_host_ip(v["address"]) for v in topology.values() if v["mode"] == "r/o"
+            _get_host_ip(v["address"]) if get_ips else v["address"]
+            for v in topology.values()
+            if v["memberrole"] == "secondary" and v["status"] == "online"
         }
         rw_endpoints = {
-            _get_host_ip(v["address"]) for v in topology.values() if v["mode"] == "r/w"
+            _get_host_ip(v["address"]) if get_ips else v["address"]
+            for v in topology.values()
+            if v["memberrole"] == "primary" and v["status"] == "online"
         }
+        # won't get offline endpoints to IP as they maybe unreachable
+        no_endpoints = {v["address"] for v in topology.values() if v["status"] != "online"}
 
-        return ",".join(rw_endpoints), ",".join(ro_endpoints)
+        return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
     @retry(
         retry=retry_if_exception_type(MySQLRemoveInstanceRetryError),
