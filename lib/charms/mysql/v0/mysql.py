@@ -68,6 +68,7 @@ error handling on the subclass and in the charm code.
 import json
 import logging
 import re
+import socket
 from abc import ABC, abstractmethod
 from typing import Any, Iterable, List, Optional, Tuple
 
@@ -89,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 11
+LIBPATCH = 13
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -730,11 +731,14 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.exception(f"Failed to get cluster status for {self.cluster_name}", exc_info=e)
 
-    def get_cluster_endpoints(self) -> Tuple[str, str]:
+    def get_cluster_endpoints(self, get_ips: bool = True) -> Tuple[str, str, str]:
         """Use get_cluster_status to return endpoints tuple.
 
+        Args:
+            get_ips: Whether to return IP addresses or hostnames, default to IP
+
         Returns:
-            A tuple with endpoints and read-only-endpoints strings.
+            A tuple of strings with endpoints, read-only-endpoints and offline endpoints
         """
         status = self.get_cluster_status()
 
@@ -743,10 +747,30 @@ class MySQLBase(ABC):
 
         topology = status["defaultreplicaset"]["topology"]
 
-        ro_endpoints = {v["address"] for v in topology.values() if v["mode"] == "r/o"}
-        rw_endpoints = {v["address"] for v in topology.values() if v["mode"] == "r/w"}
+        def _get_host_ip(host: str) -> str:
+            try:
+                if ":" in host:
+                    host, port = host.split(":")
 
-        return ",".join(rw_endpoints), ",".join(ro_endpoints)
+                host_ip = socket.gethostbyname(host)
+                return f"{host_ip}:{port}" if port else host_ip
+            except socket.gaierror:
+                raise MySQLGetClusterEndpointsError(f"Failed to query IP for host {host}")
+
+        ro_endpoints = {
+            _get_host_ip(v["address"]) if get_ips else v["address"]
+            for v in topology.values()
+            if v["memberrole"] == "secondary" and v["status"] == "online"
+        }
+        rw_endpoints = {
+            _get_host_ip(v["address"]) if get_ips else v["address"]
+            for v in topology.values()
+            if v["memberrole"] == "primary" and v["status"] == "online"
+        }
+        # won't get offline endpoints to IP as they maybe unreachable
+        no_endpoints = {v["address"] for v in topology.values() if v["status"] != "online"}
+
+        return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
     @retry(
         retry=retry_if_exception_type(MySQLRemoveInstanceRetryError),
