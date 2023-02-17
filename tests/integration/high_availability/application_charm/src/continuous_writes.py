@@ -37,13 +37,14 @@ def continuous_writes(database_config: Dict, table_name: str, starting_number: i
                     f"INSERT INTO `{table_name}`(number) VALUES ({next_value_to_insert})"
                 )
         except mysql.connector.errors.DatabaseError as e:
-            # errno 2003: can't connect to mysql database
-            if e.errno != 2003:
-                raise
+            if e.errno == 1062:
+                with MySQLConnector(database_config) as cursor:
+                    cursor.execute(f"SELECT max(number) FROM `{table_name}`")
+                    result = cursor.fetchall()
+                    next_value_to_insert = result[0][0] + 1
+                continue
             continue
-        except Exception as e:
-            if e.errno != 2013 or e.msg != "Lost connection to MySQL server during query":
-                raise
+        except Exception:
             continue
 
         next_value_to_insert += 1
@@ -57,6 +58,8 @@ def main():
         "host": host,
         "port": port,
         "database": database,
+        "use_pure": True,
+        "connection_timeout": 5,
     }
 
     continuous_writes(database_config, table_name, int(starting_number))
