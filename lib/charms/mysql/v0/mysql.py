@@ -90,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 13
+LIBPATCH = 14
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -212,6 +212,14 @@ class MySQLSetInstanceOfflineModeError(Error):
 
 class MySQLSetInstanceOptionError(Error):
     """Exception raised when there is an issue setting instance option."""
+
+
+class MySQLOfflineModeAndHiddenInstanceExistsError(Error):
+    """Exception raised when there is an error checking if an instance is backing up.
+
+    We check if an instance is in offline_mode and hidden from mysql-router to determine
+    this.
+    """
 
 
 class MySQLBase(ABC):
@@ -491,17 +499,23 @@ class MySQLBase(ABC):
             logger.exception(f"Failed to delete users for relation {relation_id}", exc_info=e)
             raise MySQLDeleteUserForRelationError(e.message)
 
-    def configure_instance(self, restart: bool = True) -> None:
+    def configure_instance(self, restart: bool = True, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
 
         Raises MySQLConfigureInstanceError
             if the was an error configuring the instance for use in an InnoDB cluster.
         """
         options = {
-            "clusterAdmin": self.cluster_admin_user,
-            "clusterAdminPassword": self.cluster_admin_password,
             "restart": "true" if restart else "false",
         }
+
+        if create_cluster_admin:
+            options.update(
+                {
+                    "clusterAdmin": self.cluster_admin_user,
+                    "clusterAdminPassword": self.cluster_admin_password,
+                }
+            )
 
         configure_instance_command = (
             f"dba.configure_instance('{self.server_config_user}:{self.server_config_password}@{self.instance_address}', {json.dumps(options)})",
@@ -1209,6 +1223,33 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.exception(f"Failed to set option {option} with value {value}", exc_info=e)
             raise MySQLSetInstanceOptionError(e.message)
+
+    def offline_mode_and_hidden_instance_exists(self) -> bool:
+        """Indicates whether an instance exists in offline_mode and hidden from router.
+
+        The pre_backup operations switch an instance to offline_mode and hide it
+        from the mysql-router.
+        """
+        offline_mode_message = "Instance has offline_mode enabled"
+        commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cluster_topology = dba.get_cluster('{self.cluster_name}').status()['defaultReplicaSet']['topology']",
+            f"selected_instances = [label for label, member in cluster_topology.items() if '{offline_mode_message}' in member.get('instanceErrors', '') and member.get('hiddenFromRouter')]",
+            "print(f'<OFFLINE_MODE_INSTANCES>{len(selected_instances)}</OFFLINE_MODE_INSTANCES>')",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError as e:
+            logger.exception("Failed to query offline mode instances", exc_info=e)
+            raise MySQLOfflineModeAndHiddenInstanceExistsError(e)
+
+        matches = re.search(r"<OFFLINE_MODE_INSTANCES>(.*)</OFFLINE_MODE_INSTANCES>", output)
+
+        if not matches:
+            raise MySQLOfflineModeAndHiddenInstanceExistsError("Failed to parse command output")
+
+        return matches.group(1) != "0"
 
     @abstractmethod
     def wait_until_mysql_connection(self) -> None:

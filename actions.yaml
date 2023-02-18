@@ -41,3 +41,11 @@ create-backup:
 
 list-backups:
   description: List available backup_ids in the S3 bucket and path provided by the S3 integrator charm.
+
+restore:
+  description: Restore a database backup using xtrabackup.
+    S3 credentials are retrieved from a relation with the S3 integrator charm.
+  params:
+    backup-id:
+      type: string
+      description: A backup-id to identify the backup to restore (format = %Y-%m-%dT%H:%M:%SZ)

@@ -29,6 +29,7 @@ from tenacity import (
 from constants import (
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
+    MYSQLD_SERVICE,
     MYSQLD_SOCK_FILE,
     MYSQLSH_SCRIPT_FILE,
 )
@@ -77,6 +78,34 @@ class MySQLExecuteBackupCommandsError(Error):
 
     The backup commands are executed in the workload container using the pebble API.
     """
+
+
+class MySQLGetInnoDBBufferPoolParametersError(Error):
+    """Exception raised when there is an error computing the innodb buffer pool parameters."""
+
+
+class MySQLRetrieveBackupWithXBCloudError(Error):
+    """Exception raised when there is an error retrieving a backup from S3 with xbcloud."""
+
+
+class MySQLPrepareBackupForRestoreError(Error):
+    """Exception raised when there is an error preparing a backup for restore."""
+
+
+class MySQLEmptyDataDirectoryError(Error):
+    """Exception raised when there is an error emptying the mysql data directory."""
+
+
+class MySQLRestoreBackupError(Error):
+    """Exception raised when there is an error restoring a backup."""
+
+
+class MySQLDeleteTempBackupDirectoryError(Error):
+    """Exception raised when there is an error deleting the temp backup directory."""
+
+
+class MySQLDeleteTempRestoreDirectory(Error):
+    """Exception raised when there is an error deleting the temp restore directory."""
 
 
 class MySQL(MySQLBase):
@@ -165,16 +194,19 @@ class MySQL(MySQLBase):
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
 
-    def configure_instance(self) -> None:
+    def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
 
         Raises MySQLConfigureInstanceError if the instance configuration fails.
         """
         try:
-            super(MySQL, self).configure_instance(restart=False)
+            super(MySQL, self).configure_instance(
+                restart=False,
+                create_cluster_admin=create_cluster_admin,
+            )
 
             # restart the pebble layer service
-            self.container.restart("mysqld")
+            self.container.restart(MYSQLD_SERVICE)
             logger.debug("Waiting until MySQL to restart")
             self.wait_until_mysql_connection()
 
@@ -248,13 +280,26 @@ class MySQL(MySQLBase):
             "; ".join(commands), self.cluster_admin_password, self.cluster_admin_user
         )
 
-    def create_custom_config_file(self, report_host: str) -> None:
+    def create_custom_config_file(
+        self,
+        report_host: str,
+        innodb_buffer_pool_size: int,
+        innodb_buffer_pool_chunk_size: int,
+    ) -> None:
         """Create custom configuration file.
 
         Necessary for k8s deployments.
         Raises MySQLCreateCustomConfigFileError if the script gets a non-zero return code.
         """
-        content = ("[mysqld]", f"report_host = {report_host}", "")
+        content = [
+            "[mysqld]",
+            f"report_host = {report_host}",
+            f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
+        ]
+
+        if innodb_buffer_pool_chunk_size:
+            content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
+        content.append("")
 
         try:
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
@@ -278,7 +323,11 @@ class MySQL(MySQLBase):
             process = self.container.exec(nproc_command)
             nproc, _ = process.wait_output()
 
-            process = self.container.exec(make_temp_dir_command)
+            process = self.container.exec(
+                make_temp_dir_command,
+                user="mysql",
+                group="mysql",
+            )
             tmp_dir, _ = process.wait_output()
         except ExecError as e:
             logger.exception("Failed to execute commands prior to running backup", exc_info=e)
@@ -293,7 +342,7 @@ class MySQL(MySQLBase):
         # when MySQL and XtraBackup versions are in sync
         xtrabackup_commands = " ".join(
             f"""
-xtrabackup --defaults-file=/etc/mysql
+xtrabackup --defaults-file=/etc/mysql/my.cnf
             --defaults-group=mysqld
             --no-version-check
             --parallel={nproc.strip()}
@@ -335,15 +384,283 @@ xtrabackup --defaults-file=/etc/mysql
             stdout, stderr = process.wait_output()
             return (stdout, stderr)
         except ExecError as e:
-            logger.exception("Failed to execute backup script", exc_info=e)
-            logger.error(f"Stdout of script: {e.stdout}")
-            logger.error(f"Stderr of script: {e.stderr}")
+            logger.exception("Failed to execute backup commands", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
             raise MySQLExecuteBackupCommandsError(e.stderr)
         except Exception as e:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
-            logger.exception("Failed to execute backup script", exc_info=e)
+            logger.exception("Failed to execute backup commands", exc_info=e)
             raise MySQLExecuteBackupCommandsError(e)
+
+    def delete_temp_backup_directory(self) -> None:
+        """Delete the temp backup directory in /tmp."""
+        delete_temp_dir_command = "find /tmp -wholename /tmp/xtra_backup_* -delete".split()
+
+        try:
+            process = self.container.exec(
+                delete_temp_dir_command,
+                user="mysql",
+                group="mysql",
+            )
+            process.wait_output()
+        except ExecError as e:
+            logger.exception("Failed to delete temp backup directory", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLDeleteTempBackupDirectoryError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to delete temp backup directory", exc_info=e)
+            raise MySQLDeleteTempBackupDirectoryError(e)
+
+    def retrieve_backup_with_xbcloud(
+        self,
+        s3_bucket: str,
+        s3_path: str,
+        s3_access_key: str,
+        s3_secret_key: str,
+        backup_id: str,
+    ) -> Tuple[str, str, str]:
+        """Retrieve the specified backup from S3.
+
+        The backup is retrieved using xbcloud and stored in a temp dir in the
+        mysql container.
+        """
+        nproc_command = "nproc".split()
+        make_temp_dir_command = "mktemp --directory /var/lib/mysql/mysql_sst_XXXX".split()
+
+        try:
+            process = self.container.exec(
+                nproc_command,
+                user="mysql",
+                group="mysql",
+            )
+            nproc, _ = process.wait_output()
+
+            process = self.container.exec(
+                make_temp_dir_command,
+                user="mysql",
+                group="mysql",
+            )
+            tmp_dir, _ = process.wait_output()
+        except ExecError as e:
+            logger.exception("Failed to execute commands prior to running xbcloud get", exc_info=e)
+            raise MySQLRetrieveBackupWithXBCloudError(e.stderr)
+
+        xbcloud_command = " ".join(
+            f"""
+xbcloud get
+        --curl-retriable-errors=7
+        --parallel=10
+        s3://{s3_bucket.rstrip("/")}/{s3_path.rstrip("/")}/{backup_id}
+    | xbstream
+        --decompress
+        -x
+        -C {tmp_dir.strip()}
+        --parallel={nproc.strip()}
+""".split()
+        )
+        # Use sh to be able to use the pipe in above command
+        retrieve_backup_command = ["sh", "-c", f"{xbcloud_command}"]
+
+        try:
+            # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
+            process = self.container.exec(
+                retrieve_backup_command,
+                environment={
+                    "ACCESS_KEY_ID": s3_access_key,
+                    "SECRET_ACCESS_KEY": s3_secret_key,
+                },
+                user="mysql",
+                group="mysql",
+            )
+            stdout, stderr = process.wait_output()
+            return (stdout, stderr, tmp_dir)
+        except ExecError as e:
+            logger.exception("Failed to retrieve backup", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLRetrieveBackupWithXBCloudError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to retrieve backup", exc_info=e)
+            raise MySQLRetrieveBackupWithXBCloudError(e)
+
+    def prepare_backup_for_restore(self, backup_location: str) -> Tuple[str, str]:
+        """Prepare the backup in the provided dir for restore."""
+        try:
+            innodb_buffer_pool_size, _ = self.get_innodb_buffer_pool_parameters()
+        except MySQLGetInnoDBBufferPoolParametersError as e:
+            raise MySQLPrepareBackupForRestoreError(e)
+
+        prepare_backup_command = f"""
+xtrabackup --prepare
+        --use-memory={innodb_buffer_pool_size}
+        --no-version-check
+        --rollback-prepared-trx
+        --xtrabackup-plugin-dir=/usr/lib64/xtrabackup/plugin
+        --target-dir={backup_location}
+""".split()
+
+        try:
+            process = self.container.exec(
+                prepare_backup_command,
+                user="mysql",
+                group="mysql",
+            )
+            stdout, stderr = process.wait_output()
+            return (stdout, stderr)
+        except ExecError as e:
+            logger.exception("Failed to prepare backup for restore", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLPrepareBackupForRestoreError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to prepare backup for restore", exc_info=e)
+            raise MySQLPrepareBackupForRestoreError(e)
+
+    def empty_data_files(self) -> None:
+        """Empty the mysql data directory in preparation of backup restore."""
+        empty_data_files_command = "find /var/lib/mysql/ -not -path /var/lib/mysql/mysql_sst_* -not -path /var/lib/mysql/ -delete".split()
+
+        try:
+            process = self.container.exec(
+                empty_data_files_command,
+                user="mysql",
+                group="mysql",
+            )
+            process.wait_output()
+        except ExecError as e:
+            logger.exception(
+                "Failed to empty data directory in prep for backup restore", exc_info=e
+            )
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLEmptyDataDirectoryError(e.stderr)
+        except Exception as e:
+            logger.exception(
+                "Failed to empty data directory in prep for backup restore", exc_info=e
+            )
+            raise MySQLEmptyDataDirectoryError(e)
+
+    def restore_backup(self, backup_location: str) -> Tuple[str, str]:
+        """Restore the provided prepared backup."""
+        restore_backup_command = f"""
+xtrabackup --defaults-file=/etc/mysql/my.cnf
+        --defaults-group=mysqld
+        --datadir=/var/lib/mysql
+        --no-version-check
+        --move-back
+        --force-non-empty-directories
+        --xtrabackup-plugin-dir=/usr/lib64/xtrabackup/plugin
+        --target-dir={backup_location}
+""".split()
+
+        try:
+            process = self.container.exec(
+                restore_backup_command,
+                user="mysql",
+                group="mysql",
+            )
+            stdout, stderr = process.wait_output()
+            return (stdout, stderr)
+        except ExecError as e:
+            logger.exception("Failed to restore backup", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLRestoreBackupError(e.stderr)
+        except Exception as e:
+            logger.exception("Failed to restore backup", exc_info=e)
+            raise MySQLRestoreBackupError(e)
+
+    def _get_total_memory(self) -> int:
+        """Retrieves the total memory of the mysql container."""
+        try:
+            logger.info("Retrieving the total memory of the mysql container")
+
+            """Below is an example output of `free --bytes`:
+               total        used        free      shared  buff/cache   available
+Mem:     16484458496 11890454528   265670656  2906722304  4328333312  1321193472
+Swap:     1027600384  1027600384           0
+            """
+            # need to use sh -c to be able to use pipes
+            get_total_memory_command = [
+                "sh",
+                "-c",
+                "free --bytes | sed -n '2p' | awk '{print $2}'",
+            ]
+
+            process = self.container.exec(
+                get_total_memory_command,
+                user="mysql",
+                group="mysql",
+            )
+            stdout, _ = process.wait_output()
+            return int(stdout.strip())
+        except ExecError as e:
+            logger.exception("Failed to execute commands to query total memory", exc_info=e)
+            raise
+
+    def delete_temp_restore_directory(self) -> None:
+        """Delete the temp restore directory from /var/lib/mysql."""
+        logger.info("Deleting temp restore directory in /var/lib/mysql")
+        delete_temp_restore_directory_command = (
+            "find /var/lib/mysql -wholename /var/lib/mysql/mysql_sst_* -delete".split()
+        )
+
+        try:
+            process = self.container.exec(
+                delete_temp_restore_directory_command,
+                user="mysql",
+                group="mysql",
+            )
+            process.wait_output()
+        except ExecError as e:
+            logger.exception("Failed to remove temp backup directory", exc_info=e)
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise MySQLDeleteTempRestoreDirectory(e.stderr)
+
+    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int]]:
+        """Get innodb buffer pool parameters for the instance.
+
+        Returns: a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size))
+        """
+        # Reference: based off xtradb-cluster-operator
+        # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
+
+        chunk_size_min = 1048576  # 1 mebibyte
+        chunk_size_default = 134217728  # 128 mebibytes
+
+        try:
+            innodb_buffer_pool_chunk_size = None
+            total_memory = self._get_total_memory()
+
+            pool_size = int(total_memory * 0.75)
+            # 1000000000 = 1 gigabyte
+            if total_memory - pool_size < 1000000000:
+                pool_size = int(total_memory * 0.5)
+
+            if pool_size % chunk_size_default != 0:
+                # round pool_size to be a multiple of chunk_size_default
+                pool_size += chunk_size_default - (pool_size % chunk_size_default)
+
+            # 1073741824 = 1 gibibyte
+            if pool_size > 1073741824:
+                chunk_size = int(pool_size / 8)
+
+                if chunk_size % chunk_size_min != 0:
+                    # round chunk_size to a multiple of chunk_size_min
+                    chunk_size += chunk_size_min - (chunk_size % chunk_size_min)
+
+                pool_size = chunk_size * 8
+
+                innodb_buffer_pool_chunk_size = chunk_size
+
+            return (pool_size, innodb_buffer_pool_chunk_size)
+        except Exception as e:
+            logger.exception("Failed to compute innodb buffer pool parameters", exc_info=e)
+            raise MySQLGetInnoDBBufferPoolParametersError("Error retrieving total free memory")
 
     @retry(
         retry=retry_if_exception_type(MySQLWaitUntilUnitRemovedFromClusterError),
