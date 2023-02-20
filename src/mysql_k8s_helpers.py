@@ -986,7 +986,8 @@ Swap:     1027600384  1027600384           0
             raise MySQLClientError(e.stderr)
 
     def safe_stop_mysqld(self):
-        """Safely stop mysqld"""
+        """Safely stop mysqld."""
+
         def get_mysqld_pid(self):
             try:
                 process = self.container.exec(["pgrep", "mysqld"])
@@ -1005,4 +1006,3 @@ Swap:     1027600384  1027600384           0
         while initial_pid == pid:
             pid = get_mysqld_pid(self)
             sleep(0.1)
-

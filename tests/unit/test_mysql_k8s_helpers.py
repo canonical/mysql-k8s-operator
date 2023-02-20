@@ -87,12 +87,18 @@ class TestMySQL(unittest.TestCase):
         with self.assertRaises(MySQLInitialiseMySQLDError):
             self.mysql.initialise_mysqld()
 
+    @patch("mysql_k8s_helpers.MySQL.safe_stop_mysqld")
     @patch("ops.model.Container")
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
     @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
     def test_configure_instance(
-        self, _wait_until_mysql_connection, _run_mysqlcli_script, _run_mysqlsh_script, _container
+        self,
+        _wait_until_mysql_connection,
+        _run_mysqlcli_script,
+        _run_mysqlsh_script,
+        _container,
+        _safe_stop_mysqld,
     ):
         """Test a successful execution of configure_instance."""
         configure_instance_commands = (
@@ -104,6 +110,7 @@ class TestMySQL(unittest.TestCase):
 
         _run_mysqlsh_script.assert_called_once_with("\n".join(configure_instance_commands))
         _wait_until_mysql_connection.assert_called_once()
+        _safe_stop_mysqld.assert_called_once()
 
     @patch("ops.model.Container")
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
@@ -465,3 +472,16 @@ class TestMySQL(unittest.TestCase):
         self.assertEqual(_get_cluster_status.call_count, 1)
         self.assertEqual(_run_mysqlsh_script.call_count, 2)
         self.assertEqual(_wait_until_unit_removed_from_cluster.call_count, 1)
+
+    @patch("ops.model.Container")
+    def test_safe_stop_mysqld(self, _container):
+        """Test the successful execution of safe_stop_mysqld."""
+        _container.exec.return_value = MagicMock()
+        _container.exec.return_value.wait_output.return_value = (
+            0,
+            b"stderr",
+        )
+        self.mysql.container = _container
+        self.mysql.safe_stop_mysqld()
+
+        _container.exec.assert_called_once()
