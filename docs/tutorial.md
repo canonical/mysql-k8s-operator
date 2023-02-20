@@ -1,6 +1,6 @@
 # Charmed MySQL K8s tutorial
 The Charmed MySQL K8s Operator delivers automated operations management from [day 0 to day 2](https://codilime.com/blog/day-0-day-1-day-2-the-software-lifecycle-in-the-cloud-age/) on the [MySQL Community Edition](https://www.mysql.com/products/community/) relational database. It is an open source, end-to-end, production-ready data platform [on top of Juju](https://juju.is/). As a first step this tutorial shows you how to get Charmed MySQL K8s up and running, but the tutorial does not stop there. Through this tutorial you will learn a variety of operations, everything from adding replicas to advanced operations such as enabling Transport Layer Security (TLS). In this tutorial we will walk through how to:
-- Set up your environment using [Microk8s](https://microk8s.io/) and Juju.
+- Set up an environment using [Multipass](https://multipass.run/) with [Microk8s](https://microk8s.io/) and [Juju](https://juju.is/).
 - Deploy MySQL using a single command.
 - Access the admin database directly.
 - Add high availability with MySQL InnoDB Cluster, Group Replication.
@@ -20,80 +20,31 @@ Before we start, make sure your machine meets the following requirements:
 - At least 20GB of available storage.
 - Access to the internet for downloading the required snaps and charms.
 
+## Multipass environment
+[Multipass](https://multipass.run/) is a quick and easy way to launch virtual machines running Ubuntu. It uses "[cloud-init](https://cloud-init.io/)" standard to install and configure all the necessary parts automatically.
 
-## Prepare Microk8s
-The fastest, simplest way to get started with Charmed MySQL K8s is to set up a local Microk8s lightweight Kubernetes. Microk8s is the best Kubernetes experience for developers, DevOps, cloud and edge; Charmed MySQL K8s will be run in Microk8s Kubernetes and managed by Juju. While this tutorial covers the basics of Microk8s, you can [explore more Microk8s here](https://microk8s.io/). To install Microk8s on Ubuntu 22.04 execute:
+Let's install Multipass from [Snap](https://snapcraft.io/multipass) and launch a new VM using "[charm-dev](https://github.com/canonical/multipass-blueprints/blob/main/v1/charm-dev.yaml)" cloud-init config:
 ```shell
-sudo snap install microk8s --classic
+sudo snap install multipass && \
+multipass launch -c 4 -m 8G -d 10G -n my-vm charm-dev # tune CPU/RAM/HDD accordingly to your needs 
 ```
+*Note: all 'multipass launch' params are [described here](https://multipass.run/docs/launch-command)*.
 
-Verify that Microk8s is installed by entering the command `microk8s status` into the command line, this will output:
-```
-microk8s is running
-...
-```
-
-Although Microk8s is already installed, we need to enable necessary Microk8s addons and allow the current user to use microk8s:
+Multipass [list of commands](https://multipass.run/docs/multipass-cli-commands) is short and self-explanatory, e.g. show all running VMs:
 ```shell
-sudo microk8s enable dns storage ha-cluster
-sudo usermod -a -G microk8s $(whoami) && newgrp microk8s
+multipass list
 ```
 
-Verify that new Microk8s addons are installed by entering the command `microk8s status` into the command line, this will output:
-```
-microk8s is running
-high-availability: no
-  datastore master nodes: 127.0.0.1:19001
-  datastore standby nodes: none
-addons:
-  enabled:
-    dns                  # (core) CoreDNS
-    ha-cluster           # (core) Configure high availability on the current node
-    storage              # (core) Alias to hostpath-storage add-on, deprecated
-...
-```
-
-You can list all Microk8s Kubernetes pods by entering the command `microk8s kubectl get pods -A` into the command line. Although at this point in the tutorial some internal pods should exist only:
-```
-NAMESPACE              NAME                                       READY   STATUS    RESTARTS      AGE
-kube-system            calico-node-pswwh                          1/1     Running   4 (29h ago)   6d8h
-kube-system            coredns-6f5f9b5d74-r47bm                   1/1     Running   3 (29h ago)   6d8h
-...
-```
-
-
-## Install and prepare Juju
-[Juju](https://juju.is/) is an Operator Lifecycle Manager (OLM) for clouds, bare metal, LXD or Kubernetes. We will be using it to deploy and manage Charmed MySQL. As with LXD, Juju is installed from a snap package:
+As soon as new VM started, enter inside using:
 ```shell
-sudo snap install juju --classic
+multipass shell my-vm
 ```
+*Note: if at any point you'd like to leave Multipass VM, enter `Ctrl+d` or type `exit`*.
 
-Juju already has a built-in knowledge of LXD and how it works, so there is no additional setup or configuration needed. A controller will be used to deploy and control Charmed MySQL. All we need to do is run the following command to bootstrap a Juju controller named ‘overlord’ to LXD. This bootstrapping processes can take several minutes depending on how provisioned (RAM, CPU, etc.) your machine is:
-```shell
-juju bootstrap microk8s overlord
-```
-
-The Juju controller should exist within an Microk8s container. You can verify this by entering the command `microk8s kubectl get pod --namespace controller-overlord` and you should see the following:
-```
-NAME                             READY   STATUS    RESTARTS      AGE
-controller-0                     2/2     Running   2 (67s ago)   74s
-modeloperator-<id>               1/1     Running   0             33s
-```
-where `<id>` is a unique combination of numbers and letters such as `86f586464f-gsnxq`.
-
-The controller can work with different models; models host applications such as Charmed MySQL K8s. Set up a specific model for Charmed MySQL K8s named ‘tutorial’:
+All the parts have been pre-installed inside VM already, like Microk8s and Juju (the file '/var/log/cloud-init.log' contains all low-level installation details). Juju uses models to isolate applications, let's add a new model for Charmed MySQL K8s application named ‘tutorial’:
 ```shell
 juju add-model tutorial
 ```
-
-You can now view the model you created above by entering the command `juju status` into the command line. You should see the following:
-```
-Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:31:47+01:00
-
-Model "admin/tutorial" is empty.
-```
-
 
 ## Deploy Charmed MySQL K8s
 To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=edge) and deploy it to your model:
@@ -160,7 +111,7 @@ To access the units hosting Charmed MySQL K8s use:
 ```shell
 mysql -h 10.1.84.74 -uroot -p<password>
 ```
-*Note: if at any point you'd like to leave the unit hosting Charmed MySQL, enter* `Ctrl+d` or type `exit`*.
+*Note: if at any point you'd like to leave the unit hosting Charmed MySQL, enter `Ctrl+d` or type `exit`*.
 
 Inside MySQL list DBs available on the host `show databases`:
 ```
@@ -560,23 +511,11 @@ In this tutorial we've successfully deployed MySQL, added/removed cluster member
 - [Give us your feedback](https://chat.charmhub.io/charmhub/channels/data-platform).
 - [Contribute to the code base](https://github.com/canonical/mysql-k8s-operator)
 
-## Remove Charmed MySQL K8s and Juju
-If you're done using Charmed MySQL K8s and Juju and would like to free up resources on your machine, you can remove Charmed MySQL K8s and Juju. *Warning: when you remove Charmed MySQL K8s as shown below you will lose all the data in MySQL. Further, when you remove Juju as shown below you will lose access to any other applications you have hosted on Juju.*
-
-To remove Charmed MySQL K8s and the model it is hosted on run the command:
+## Remove Multipass VM
+If you're done with testing and would like to free up resources on your machine, just remove Multipass VM.
+*Warning: when you remove VM as shown below you will lose all the data in MySQL and any other applications inside Multipass VM!*
 ```shell
-juju destroy-model tutorial --destroy-storage --force
-```
-
-Next step is to remove the Juju controller. You can see all of the available controllers by entering `juju controllers`. To remove the controller enter:
-```shell
-juju destroy-controller overlord --destroy-all-models
-```
-
-Finally to remove Microk8s and Juju altogether, enter:
-```shell
-sudo snap remove microk8s --purge
-sudo snap remove juju --purge
+multipass delete --purge my-vm
 ```
 
 # License:
