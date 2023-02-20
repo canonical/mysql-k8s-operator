@@ -998,6 +998,9 @@ Swap:     1027600384  1027600384           0
 
         # Wait for mysqld to stop
         while initial_pid == pid:
-            pid = get_mysqld_pid(self)
-            sleep(0.1)
+            try:
+                pid = get_mysqld_pid(self)
+                sleep(0.1)
+            except ExecError:
+                break
 
