@@ -100,22 +100,25 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             timeout=1000,
         )
 
+        # osm-zookeeper is never `active` long enough (15 seconds is necessary),
+        # it constantly changes state `active`<>`maintenance`:
+        # > osm-zookeeper/0 [idle] maintenance: Sending Zookeeper configuration
         await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, "osm-kafka", "osm-zookeeper", "osm-mongodb"],
+            apps=[APP_NAME, "osm-kafka", "osm-mongodb"],
             status="active",
             raise_on_blocked=True,
             timeout=1000,
         )
+        ops_test.model.block_until(ops_test.model.applications["osm-zookeeper"].status == "active")
 
         await ops_test.model.relate("osm-keystone:db", f"{APP_NAME}:osm-mysql")
         await ops_test.model.block_until(
             lambda: is_relation_joined(ops_test, "db", "osm-mysql"), timeout=1000
         )
-
-        # osm-keystone is initially in blocked status
         await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, "osm-keystone", "osm-kafka", "osm-zookeeper", "osm-mongodb"],
+            apps=[APP_NAME, "osm-keystone"],
             status="active",
+            # osm-keystone is initially in blocked status
             raise_on_blocked=False,
             timeout=1000,
         )
