@@ -109,7 +109,9 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             raise_on_blocked=True,
             timeout=1000,
         )
-        await ops_test.model.block_until(ops_test.model.applications["osm-zookeeper"].status == "active")
+        await ops_test.model.block_until(
+            ops_test.model.applications["osm-zookeeper"].status == "active"
+        )
 
         await ops_test.model.relate("osm-keystone:db", f"{APP_NAME}:osm-mysql")
         await ops_test.model.block_until(
