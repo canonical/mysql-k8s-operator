@@ -986,7 +986,10 @@ Swap:     1027600384  1027600384           0
             raise MySQLClientError(e.stderr)
 
     def safe_stop_mysqld(self):
-        """Safely stop mysqld."""
+        """Safely stop mysqld.
+
+        TODO: remove when https://github.com/canonical/pebble/pull/190 is merged/released
+        """
 
         def get_mysqld_pid(self):
             try:
