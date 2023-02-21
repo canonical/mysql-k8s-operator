@@ -383,7 +383,6 @@ async def insert_data_into_mysql_and_validate_replication(
     primary_address = await get_unit_address(ops_test, primary.name)
 
     value = generate_random_string(255)
-    table_name = "data"
     insert_value_sql = [
         f"CREATE DATABASE IF NOT EXISTS `{database_name}`",
         f"CREATE TABLE IF NOT EXISTS `{database_name}`.`{table_name}` (id varchar(255), primary key (id))",

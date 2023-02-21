@@ -539,7 +539,10 @@ Juju Version: {str(juju_version)}
 
         try:
             logger.info("Configuring instance to be part of an InnoDB cluster")
-            self.charm._mysql.configure_instance(create_cluster_admin=False)
+            self.charm._mysql.configure_instance(
+                create_cluster_admin=False,
+                set_group_replication_initial_variables=False,
+            )
         except MySQLConfigureInstanceError:
             return False, "Failed to configure restored instance for InnoDB cluster"
 

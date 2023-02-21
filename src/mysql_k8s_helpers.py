@@ -194,7 +194,11 @@ class MySQL(MySQLBase):
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
 
-    def configure_instance(self, create_cluster_admin: bool = True) -> None:
+    def configure_instance(
+        self,
+        create_cluster_admin: bool = True,
+        set_group_replication_initial_variables: bool = True,
+    ) -> None:
         """Configure the instance to be used in an InnoDB cluster.
 
         Raises MySQLConfigureInstanceError if the instance configuration fails.
@@ -211,7 +215,8 @@ class MySQL(MySQLBase):
             self.wait_until_mysql_connection()
 
             # set global variables to enable group replication in k8s
-            self._set_group_replication_initial_variables()
+            if set_group_replication_initial_variables:
+                self._set_group_replication_initial_variables()
         except (
             MySQLClientError,
             MySQLServiceNotRunningError,
