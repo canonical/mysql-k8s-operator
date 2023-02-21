@@ -2,9 +2,11 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import boto3
 import json
 import logging
 import os
+from pathlib import Path
 
 import pytest
 from pytest_operator.plugin import OpsTest
@@ -293,3 +295,27 @@ async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
             select_values_sql,
         )
         assert values == [value_before_backup]
+
+
+async def test_clean_backups_from_buckets(ops_test: OpsTest) -> None:
+    """Teardown to clean up created backups from clouds."""
+    global backups_by_cloud
+
+    for cloud_name, config in CLOUD_CONFIGS.items():
+        backup = backups_by_cloud.get(cloud_name)
+
+        if not backup:
+            continue
+
+        session = boto3.session.Session(
+            aws_access_key_id=CLOUD_CREDENTIALS[cloud_name]["access-key"],
+            aws_secret_access_key=CLOUD_CREDENTIALS[cloud_name]["secret-key"],
+            region_name=config["region"],
+        )
+        s3 = session.resource("s3", endpoint_url=config["endpoint"])
+        bucket = s3.Bucket(config["bucket"])
+
+        # GCS doesn't support batch delete operation, so delete the objects one by one
+        backup_path = str(Path(config["path"]) / backups_by_cloud[cloud_name])
+        for bucket_object in bucket.objects.filter(Prefix=backup_path):
+            bucket_object.delete()
