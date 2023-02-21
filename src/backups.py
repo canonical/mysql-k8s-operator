@@ -4,6 +4,7 @@
 """Library containing the implementation of backups."""
 
 import datetime
+import json
 import logging
 import pathlib
 from typing import Dict, List, Tuple
@@ -133,7 +134,7 @@ Stderr:
 
             logger.info("Listing backups in the specified s3 path")
             backup_ids = list_backups_in_s3_path(s3_parameters)
-            event.set_results({"backup-ids": backup_ids})
+            event.set_results({"backup-ids": json.dumps(backup_ids)})
         except Exception:
             event.fail("Failed to retrieve backup ids from S3")
 

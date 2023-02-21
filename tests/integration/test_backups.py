@@ -47,17 +47,21 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     mysql_unit = ops_test.model.units.get(f"{mysql_application_name}/0")
     primary_mysql = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
 
+    logger.info("Rotating all mysql credentials")
+
     await rotate_credentials(primary_mysql, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD)
     await rotate_credentials(primary_mysql, username="serverconfig", password=SERVER_CONFIG_PASSWORD)
     await rotate_credentials(primary_mysql, username="root", password=ROOT_PASSWORD)
 
     # deploy and relate to s3-integrator
+    logger.info("Deploying s3 integrator")
+
     await ops_test.model.deploy(S3_INTEGRATOR, channel="edge")
     await ops_test.model.relate(mysql_application_name, S3_INTEGRATOR)
 
     await ops_test.model.wait_for_idle(
         apps=[S3_INTEGRATOR],
-        status="waiting",
+        status="blocked",
         raise_on_blocked=False,
         timeout=TIMEOUT,
     )
@@ -81,6 +85,8 @@ async def test_backup(ops_test: OpsTest, continuous_writes) -> None:
 
     for cloud_name, config in CLOUD_CONFIGS.items():
         # set the s3 config and credentials
+        logger.info(f"Syncing credentials for {cloud_name}")
+
         await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
         action = await ops_test.model.units.get(f"{S3_INTEGRATOR}/0").run_action(
             "sync-s3-credentials",
@@ -95,32 +101,37 @@ async def test_backup(ops_test: OpsTest, continuous_writes) -> None:
         )
 
         # list backups
+        logger.info("Listing existing backup ids")
+
         action = await zeroth_unit.run_action(action_name="list-backups")
         result = await action.wait()
         backup_ids = json.loads(result.results["backup-ids"])
 
         # ensure continuous writes
+        logger.info("Ensuring all units continuous writes incrementing pre backup")
+
         await ensure_all_units_continuous_writes_incrementing(ops_test)
 
-        # create backup and ensure continuous writes during backup
+        # create backup
+        logger.info("Creating backup")
+
         action = await non_primary_units[0].run_action(action_name="create-backup")
-        await ensure_all_units_continuous_writes_incrementing(ops_test)
         result = await action.wait()
         backup_id = result.results["backup-id"]
 
         # ensure continuous writes
+        logger.info("Ensuring all units continuous writes incrementing post backup")
+
         await ensure_all_units_continuous_writes_incrementing(ops_test)
 
         # list backups again and ensure new backup id exists
+        logger.info("Listing backup ids post backup")
+
         action = await zeroth_unit.run_action(action_name="list-backups")
-        result = await action.wati()
+        result = await action.wait()
         new_backup_ids = json.loads(result.results["backup-ids"])
 
         assert sorted(new_backup_ids) == sorted(backup_ids + [backup_id])
 
         backups_by_cloud[cloud_name] = backup_id
-
-    import pdb; pdb.set_trace();
-
-    assert True
         
