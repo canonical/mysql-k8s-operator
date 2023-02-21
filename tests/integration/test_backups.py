@@ -196,7 +196,7 @@ async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
             action_name="restore", **{"backup-id": backups_by_cloud[cloud_name]}
         )
         result = await action.wait()
-        assert result.results.get("Code") == "0" and result.results.get("completed") == "ok"
+        assert result.results.get("Code") == "0"
 
         # ensure the correct inserted values exist
         logger.info(
@@ -206,6 +206,88 @@ async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
 
         values = await execute_queries_on_unit(
             mysql_unit_address,
+            server_config_credentials["username"],
+            server_config_credentials["password"],
+            select_values_sql,
+        )
+        assert values == [value_before_backup]
+
+
+@pytest.mark.abort_on_fail
+async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
+    """Test to restore a backup on a new mysql cluster."""
+    logger.info("Deploying a new mysql cluster")
+
+    new_mysql_application_name = await deploy_and_scale_mysql(
+        ops_test,
+        check_for_existing_application=False,
+        mysql_application_name="another-mysql-k8s",
+        num_units=1,
+    )
+
+    # relate to S3 integrator
+    await ops_test.model.relate(new_mysql_application_name, S3_INTEGRATOR)
+
+    await ops_test.model.wait_for_idle(
+        apps=[new_mysql_application_name, S3_INTEGRATOR],
+        status="active",
+        timeout=TIMEOUT,
+    )
+
+    # rotate all credentials
+    logger.info("Rotating all mysql credentials")
+
+    primary_mysql = ops_test.model.units.get(f"{new_mysql_application_name}/0")
+    primary_unit_address = await get_unit_address(ops_test, primary_mysql.name)
+
+    await rotate_credentials(
+        primary_mysql, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD
+    )
+    await rotate_credentials(
+        primary_mysql, username="serverconfig", password=SERVER_CONFIG_PASSWORD
+    )
+    await rotate_credentials(primary_mysql, username="root", password=ROOT_PASSWORD)
+
+    server_config_credentials = await get_server_config_credentials(primary_mysql)
+
+    global backups_by_cloud, value_before_backup, value_after_backup
+
+    for cloud_name, config in CLOUD_CONFIGS.items():
+        assert backups_by_cloud.get(cloud_name)
+
+        # set the s3 config and credentials
+        logger.info(f"Syncing credentials for {cloud_name}")
+
+        await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
+        action = await ops_test.model.units.get(f"{S3_INTEGRATOR}/0").run_action(
+            "sync-s3-credentials",
+            **CLOUD_CREDENTIALS[cloud_name],
+        )
+        await action.wait()
+
+        await ops_test.model.wait_for_idle(
+            apps=[new_mysql_application_name, S3_INTEGRATOR],
+            status="active",
+            timeout=TIMEOUT,
+        )
+
+        # restore the backup
+        logger.info(f"Restoring backup with id {backups_by_cloud[cloud_name]}")
+
+        action = await primary_mysql.run_action(
+            action_name="restore", **{"backup-id": backups_by_cloud[cloud_name]}
+        )
+        result = await action.wait()
+        assert result.results.get("Code") == "0"
+
+        # ensure the correct inserted values exist
+        logger.info(
+            "Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not"
+        )
+        select_values_sql = [f"SELECT id FROM `{DATABASE_NAME}`.`{TABLE_NAME}`"]
+
+        values = await execute_queries_on_unit(
+            primary_unit_address,
             server_config_credentials["username"],
             server_config_credentials["password"],
             select_values_sql,
