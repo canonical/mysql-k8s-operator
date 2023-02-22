@@ -11,7 +11,7 @@ if [ -z "${chaos_mesh_ns}" ]; then
 fi
 
 deploy_chaos_mesh() {
-	if sg microk8s -c 'microk8s.helm3 repo list' | grep -q 'chaos-mesh'; then
+	if ! sg microk8s -c 'microk8s.helm3 repo list' | grep -q 'chaos-mesh'; then
 		echo "adding chaos-mesh helm repo"
 		sg microk8s -c "microk8s.helm3 repo add chaos-mesh https://charts.chaos-mesh.org"
 	fi
