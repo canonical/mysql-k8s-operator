@@ -263,7 +263,6 @@ async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_network_cut_affecting_an_instance(
     ops_test: OpsTest, continuous_writes, chaos_mesh
 ) -> None:
