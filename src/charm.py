@@ -5,6 +5,7 @@
 """Charm for MySQL."""
 
 import logging
+import subprocess
 from socket import getfqdn
 from typing import Optional
 
@@ -465,6 +466,12 @@ class MySQLOperatorCharm(MySQLCharmBase):
         ) as e:
             logger.debug("Unable to configure instance: {}".format(e))
             return False
+
+        try:
+            subprocess.check_call(["open-port", "3306/tcp"])
+            subprocess.check_call(["open-port", "33060/tcp"])
+        except subprocess.CalledProcessError:
+            logger.exception("failed to open port")
 
         try:
             # Set workload version
