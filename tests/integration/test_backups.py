@@ -2,12 +2,12 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import boto3
 import json
 import logging
 import os
 from pathlib import Path
 
+import boto3
 import pytest
 from pytest_operator.plugin import OpsTest
 
@@ -29,15 +29,25 @@ logger = logging.getLogger(__name__)
 CLOUD_CONFIGS = {
     "aws": {
         "endpoint": "https://s3.amazonaws.com",
-        "bucket": "mysql-backups-development",
+        "bucket": "canonical-mysql",
         "path": "test",
         "region": "us-east-1",
+    },
+    "gcp": {
+        "endpoint": "https://storage.googleapis.com",
+        "bucket": "data-charms-testing",
+        "path": "mysql-k8s",
+        "region": "",
     },
 }
 CLOUD_CREDENTIALS = {
     "aws": {
-        "access-key": os.environ.get("AWS_ACCESS_KEY"),
-        "secret-key": os.environ.get("AWS_SECRET_KEY"),
+        "access-key": os.environ["AWS_ACCESS_KEY"],
+        "secret-key": os.environ["AWS_SECRET_KEY"],
+    },
+    "gcp": {
+        "access-key": os.environ["GCP_ACCESS_KEY"],
+        "secret-key": os.environ["GCP_SECRET_KEY"],
     },
 }
 S3_INTEGRATOR = "s3-integrator"
@@ -52,11 +62,37 @@ backups_by_cloud = {}
 value_before_backup, value_after_backup = None, None
 
 
+@pytest.fixture(scope="session", autouse=True)
+def clean_backups_from_buckets() -> None:
+    """Teardown to clean up created backups from clouds."""
+    yield
+
+    logger.info("Cleaning backups from cloud buckets")
+    for cloud_name, config in CLOUD_CONFIGS.items():
+        backup = backups_by_cloud[cloud_name]
+
+        if not backup:
+            continue
+
+        session = boto3.session.Session(
+            aws_access_key_id=CLOUD_CREDENTIALS[cloud_name]["access-key"],
+            aws_secret_access_key=CLOUD_CREDENTIALS[cloud_name]["secret-key"],
+            region_name=config["region"],
+        )
+        s3 = session.resource("s3", endpoint_url=config["endpoint"])
+        bucket = s3.Bucket(config["bucket"])
+
+        # GCS doesn't support batch delete operation, so delete the objects one by one
+        backup_path = str(Path(config["path"]) / backups_by_cloud[cloud_name])
+        for bucket_object in bucket.objects.filter(Prefix=backup_path):
+            bucket_object.delete()
+
+
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
     mysql_application_name = await deploy_and_scale_mysql(ops_test)
 
-    mysql_unit = ops_test.model.units.get(f"{mysql_application_name}/0")
+    mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     primary_mysql = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
 
     logger.info("Rotating all mysql credentials")
@@ -84,13 +120,13 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-async def test_backup(ops_test: OpsTest) -> None:
+async def test_backup(ops_test: OpsTest, clean_backups_from_buckets) -> None:
     """Test to create a backup and list backups."""
     mysql_application_name = await deploy_and_scale_mysql(ops_test)
 
     global backups_by_cloud, value_before_backup, value_after_backup
 
-    zeroth_unit = ops_test.model.units.get(f"{mysql_application_name}/0")
+    zeroth_unit = ops_test.model.units[f"{mysql_application_name}/0"]
 
     primary_unit = await get_primary_unit(ops_test, zeroth_unit, mysql_application_name)
     non_primary_units = [
@@ -112,7 +148,7 @@ async def test_backup(ops_test: OpsTest) -> None:
         logger.info(f"Syncing credentials for {cloud_name}")
 
         await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
-        action = await ops_test.model.units.get(f"{S3_INTEGRATOR}/0").run_action(
+        action = await ops_test.model.units[f"{S3_INTEGRATOR}/0"].run_action(
             "sync-s3-credentials", **CLOUD_CREDENTIALS[cloud_name]
         )
         await action.wait()
@@ -158,28 +194,26 @@ async def test_backup(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
+async def test_restore_on_same_cluster(ops_test: OpsTest, clean_backups_from_buckets) -> None:
     """Test to restore a backup to the same mysql cluster."""
     mysql_application_name = await deploy_and_scale_mysql(ops_test)
-
-    global backups_by_cloud, value_before_backup, value_after_backup
 
     logger.info("Scaling mysql application to 1 unit")
     async with ops_test.fast_forward():
         await scale_application(ops_test, mysql_application_name, 1)
 
-    mysql_unit = ops_test.model.units.get(f"{mysql_application_name}/0")
+    mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     mysql_unit_address = await get_unit_address(ops_test, mysql_unit.name)
     server_config_credentials = await get_server_config_credentials(mysql_unit)
 
     for cloud_name, config in CLOUD_CONFIGS.items():
-        assert backups_by_cloud.get(cloud_name)
+        assert backups_by_cloud[cloud_name]
 
         # set the s3 config and credentials
         logger.info(f"Syncing credentials for {cloud_name}")
 
         await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
-        action = await ops_test.model.units.get(f"{S3_INTEGRATOR}/0").run_action(
+        action = await ops_test.model.units[f"{S3_INTEGRATOR}/0"].run_action(
             "sync-s3-credentials",
             **CLOUD_CREDENTIALS[cloud_name],
         )
@@ -216,7 +250,7 @@ async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
+async def test_restore_on_new_cluster(ops_test: OpsTest, clean_backups_from_buckets) -> None:
     """Test to restore a backup on a new mysql cluster."""
     logger.info("Deploying a new mysql cluster")
 
@@ -239,7 +273,7 @@ async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
     # rotate all credentials
     logger.info("Rotating all mysql credentials")
 
-    primary_mysql = ops_test.model.units.get(f"{new_mysql_application_name}/0")
+    primary_mysql = ops_test.model.units[f"{new_mysql_application_name}/0"]
     primary_unit_address = await get_unit_address(ops_test, primary_mysql.name)
 
     await rotate_credentials(
@@ -252,16 +286,14 @@ async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
 
     server_config_credentials = await get_server_config_credentials(primary_mysql)
 
-    global backups_by_cloud, value_before_backup, value_after_backup
-
     for cloud_name, config in CLOUD_CONFIGS.items():
-        assert backups_by_cloud.get(cloud_name)
+        assert backups_by_cloud[cloud_name]
 
         # set the s3 config and credentials
         logger.info(f"Syncing credentials for {cloud_name}")
 
         await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
-        action = await ops_test.model.units.get(f"{S3_INTEGRATOR}/0").run_action(
+        action = await ops_test.model.units[f"{S3_INTEGRATOR}/0"].run_action(
             "sync-s3-credentials",
             **CLOUD_CREDENTIALS[cloud_name],
         )
@@ -295,27 +327,3 @@ async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
             select_values_sql,
         )
         assert values == [value_before_backup]
-
-
-async def test_clean_backups_from_buckets(ops_test: OpsTest) -> None:
-    """Teardown to clean up created backups from clouds."""
-    global backups_by_cloud
-
-    for cloud_name, config in CLOUD_CONFIGS.items():
-        backup = backups_by_cloud.get(cloud_name)
-
-        if not backup:
-            continue
-
-        session = boto3.session.Session(
-            aws_access_key_id=CLOUD_CREDENTIALS[cloud_name]["access-key"],
-            aws_secret_access_key=CLOUD_CREDENTIALS[cloud_name]["secret-key"],
-            region_name=config["region"],
-        )
-        s3 = session.resource("s3", endpoint_url=config["endpoint"])
-        bucket = s3.Bucket(config["bucket"])
-
-        # GCS doesn't support batch delete operation, so delete the objects one by one
-        backup_path = str(Path(config["path"]) / backups_by_cloud[cloud_name])
-        for bucket_object in bucket.objects.filter(Prefix=backup_path):
-            bucket_object.delete()
