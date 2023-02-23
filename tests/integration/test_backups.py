@@ -120,7 +120,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-async def test_backup(ops_test: OpsTest, clean_backups_from_buckets) -> None:
+async def test_backup(ops_test: OpsTest) -> None:
     """Test to create a backup and list backups."""
     mysql_application_name = await deploy_and_scale_mysql(ops_test)
 
@@ -194,7 +194,7 @@ async def test_backup(ops_test: OpsTest, clean_backups_from_buckets) -> None:
 
 
 @pytest.mark.abort_on_fail
-async def test_restore_on_same_cluster(ops_test: OpsTest, clean_backups_from_buckets) -> None:
+async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
     """Test to restore a backup to the same mysql cluster."""
     mysql_application_name = await deploy_and_scale_mysql(ops_test)
 
@@ -250,7 +250,7 @@ async def test_restore_on_same_cluster(ops_test: OpsTest, clean_backups_from_buc
 
 
 @pytest.mark.abort_on_fail
-async def test_restore_on_new_cluster(ops_test: OpsTest, clean_backups_from_buckets) -> None:
+async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
     """Test to restore a backup on a new mysql cluster."""
     logger.info("Deploying a new mysql cluster")
 
