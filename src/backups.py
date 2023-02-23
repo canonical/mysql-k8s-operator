@@ -4,6 +4,7 @@
 """Library containing the implementation of backups."""
 
 import datetime
+import json
 import logging
 import pathlib
 from typing import Dict, List, Tuple
@@ -133,7 +134,7 @@ Stderr:
 
             logger.info("Listing backups in the specified s3 path")
             backup_ids = list_backups_in_s3_path(s3_parameters)
-            event.set_results({"backup-ids": backup_ids})
+            event.set_results({"backup-ids": json.dumps(backup_ids)})
         except Exception:
             event.fail("Failed to retrieve backup ids from S3")
 
@@ -538,7 +539,10 @@ Juju Version: {str(juju_version)}
 
         try:
             logger.info("Configuring instance to be part of an InnoDB cluster")
-            self.charm._mysql.configure_instance(create_cluster_admin=False)
+            self.charm._mysql.configure_instance(
+                create_cluster_admin=False,
+                set_group_replication_initial_variables=False,
+            )
         except MySQLConfigureInstanceError:
             return False, "Failed to configure restored instance for InnoDB cluster"
 
