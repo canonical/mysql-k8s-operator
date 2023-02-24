@@ -69,7 +69,7 @@ def clean_backups_from_buckets() -> None:
 
     logger.info("Cleaning backups from cloud buckets")
     for cloud_name, config in CLOUD_CONFIGS.items():
-        backup = backups_by_cloud[cloud_name]
+        backup = backups_by_cloud.get(cloud_name)
 
         if not backup:
             continue
