@@ -13,4 +13,4 @@ bases:
 parts:
   charm:
     charm-binary-python-packages:
-      - mysql-connector-python==8.0.30
+      - mysql-connector-python ~= 8.0.32
