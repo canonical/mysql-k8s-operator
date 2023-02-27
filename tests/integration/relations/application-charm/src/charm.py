@@ -11,7 +11,7 @@ the database requires-provides relation.
 import logging
 from typing import List, Tuple
 
-from charms.data_platform_libs.v0.database_requires import (
+from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
     DatabaseEndpointsChangedEvent,
     DatabaseRequires,

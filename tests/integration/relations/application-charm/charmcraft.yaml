@@ -15,4 +15,4 @@ parts:
     prime:
       - venv/
     charm-binary-python-packages:
-      - mysql-connector-python
+      - mysql-connector-python ~= 8.0.32
