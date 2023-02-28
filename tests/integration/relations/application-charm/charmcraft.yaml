@@ -5,14 +5,14 @@ type: charm
 bases:
   - build-on:
       - name: "ubuntu"
-        channel: "20.04"
+        channel: "22.04"
     run-on:
       - name: "ubuntu"
-        channel: "20.04"
+        channel: "22.04"
 
 parts:
   charm:
     prime:
       - venv/
     charm-binary-python-packages:
-      - mysql-connector-python
+      - mysql-connector-python ~= 8.0.32

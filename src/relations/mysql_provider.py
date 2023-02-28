@@ -7,7 +7,7 @@ import logging
 import socket
 from typing import List
 
-from charms.data_platform_libs.v0.database_provides import (
+from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseProvides,
     DatabaseRequestedEvent,
 )
