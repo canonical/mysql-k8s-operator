@@ -281,6 +281,7 @@ class MySQLOperatorCharm(CharmBase):
             # Add the pebble layer
             logger.debug("Adding pebble layer")
             container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
+            self._mysql.safe_stop_mysqld()
             container.restart(MYSQLD_SERVICE)
 
             logger.debug("Waiting for instance to be ready")
@@ -671,6 +672,7 @@ class MySQLOperatorCharm(CharmBase):
         logger.debug("Restarting mysqld daemon")
 
         container = self.unit.get_container(CONTAINER_NAME)
+        self._mysql.safe_stop_mysqld()
         container.restart(MYSQLD_SERVICE)
 
         # when restart done right after cluster creation (e.g bundles)

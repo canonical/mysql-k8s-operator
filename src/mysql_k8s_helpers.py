@@ -7,6 +7,7 @@
 import json
 import logging
 import os
+from time import sleep
 from typing import Optional, Tuple
 
 from charms.mysql.v0.mysql import (
@@ -210,6 +211,7 @@ class MySQL(MySQLBase):
             )
 
             # restart the pebble layer service
+            self.safe_stop_mysqld()
             self.container.restart(MYSQLD_SERVICE)
             logger.debug("Waiting until MySQL to restart")
             self.wait_until_mysql_connection()
@@ -987,3 +989,28 @@ Swap:     1027600384  1027600384           0
             return True
         except ExecError as e:
             raise MySQLClientError(e.stderr)
+
+    def safe_stop_mysqld(self):
+        """Safely stop mysqld.
+
+        TODO: remove when https://github.com/canonical/pebble/pull/190 is merged/released
+        """
+
+        def get_mysqld_pid(self):
+            try:
+                process = self.container.exec(["pgrep", "mysqld"])
+                pid, _ = process.wait_output()
+                return pid
+            except ExecError:
+                return 0
+
+        logger.debug("Safe stopping mysqld")
+        pid = initial_pid = get_mysqld_pid(self)
+        if pid == 0:
+            return
+        self.container.exec(["pkill", "-15", "mysqld"])
+
+        # Wait for mysqld to stop
+        while initial_pid == pid:
+            pid = get_mysqld_pid(self)
+            sleep(0.1)
