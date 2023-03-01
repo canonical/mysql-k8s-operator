@@ -90,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 14
+LIBPATCH = 15
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -589,7 +589,7 @@ class MySQLBase(ABC):
             raise MySQLInitializeJujuOperationsTableError(e.message)
 
     def add_instance_to_cluster(
-        self, instance_address: str, instance_unit_label: str, from_instance: Optional[str] = None
+        self, instance_address: str, instance_unit_label: str, from_instance: Optional[str] = None, local_address: Optional[str] = None
     ) -> None:
         """Add an instance to the InnoDB cluster.
 
@@ -603,11 +603,14 @@ class MySQLBase(ABC):
             instance_address: address of the instance to add to the cluster
             instance_unit_label: the label/name of the unit
             from_instance: address of the adding instance, e.g. primary
+            local_address: Group Replication local address to be used instead of the automatically generated one
         """
         options = {
             "password": self.cluster_admin_password,
             "label": instance_unit_label,
         }
+        if local_address:
+            options["localAddress"] = local_address
 
         connect_commands = (
             (
