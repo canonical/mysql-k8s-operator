@@ -279,7 +279,7 @@ class MySQL(MySQLBase):
         """
         commands = (
             "INSTALL PLUGIN group_replication SONAME 'group_replication.so'",
-            f"SET PERSIST group_replication_local_address='{self.instance_address}:33061'",
+            f"SET PERSIST group_replication_local_address='{self.instance_address}:3306'",
             "SET PERSIST group_replication_ip_allowlist='0.0.0.0/0,::/0'",
         )
 
