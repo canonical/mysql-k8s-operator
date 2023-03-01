@@ -569,7 +569,7 @@ class MySQLOperatorCharm(CharmBase):
                 new_instance_fqdn,
                 new_instance_label,
                 from_instance=cluster_primary,
-                local_address=f"{self.get_unit_hostname(self.unit.name)}:33061",
+                local_address=f"{self.get_unit_hostname(self.unit.name)}:3306",
             )
             logger.debug(f"Added instance {new_instance_fqdn} to cluster")
 
