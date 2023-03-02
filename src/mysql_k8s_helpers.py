@@ -215,10 +215,6 @@ class MySQL(MySQLBase):
             self.container.restart(MYSQLD_SERVICE)
             logger.debug("Waiting until MySQL to restart")
             self.wait_until_mysql_connection()
-
-            # set global variables to enable group replication in k8s
-            if set_group_replication_initial_variables:
-                self._set_group_replication_initial_variables()
         except (
             MySQLClientError,
             MySQLServiceNotRunningError,
@@ -270,22 +266,6 @@ class MySQL(MySQLBase):
         except MySQLClientError as e:
             logger.exception("Error configuring MySQL users", exc_info=e)
             raise MySQLConfigureMySQLUsersError(e.message)
-
-    def _set_group_replication_initial_variables(self) -> None:
-        """Install the group replication plugin and set initial variables.
-
-        Necessary for k8s deployments.
-        Raises MySQLClientError if the script gets a non-zero return code.
-        """
-        commands = (
-            "INSTALL PLUGIN group_replication SONAME 'group_replication.so'",
-            f"SET PERSIST group_replication_local_address='{self.instance_address}:33061'",
-            "SET PERSIST group_replication_ip_allowlist='0.0.0.0/0,::/0'",
-        )
-
-        self._run_mysqlcli_script(
-            "; ".join(commands), self.cluster_admin_password, self.cluster_admin_user
-        )
 
     def create_custom_config_file(
         self,
