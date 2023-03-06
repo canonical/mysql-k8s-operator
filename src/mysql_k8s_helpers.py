@@ -945,12 +945,13 @@ Swap:     1027600384  1027600384           0
         self.container.push(path, content, permissions=permission, user=owner, group=group)
 
     def remove_file(self, path: str) -> None:
-        """Remove a file from container workload.
+        """Remove a file (if it exists) from container workload.
 
         Args:
             path: Full filesystem path to remove
         """
-        self.container.remove_path(path)
+        if self.container.exists(path):
+            self.container.remove_path(path)
 
     def check_if_mysqld_process_stopped(self) -> bool:
         """Checks if the mysqld process is stopped on the container."""
