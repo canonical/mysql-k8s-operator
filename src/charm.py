@@ -176,9 +176,10 @@ class MySQLOperatorCharm(CharmBase):
 
     @property
     def active_status_message(self) -> str:
-        """The active status message."""
-        role = self.unit_peer_data.get("member-role")
-        return f"Unit is ready: Mode: {'RW' if role == 'primary' else 'RO'}"
+        """Active status message."""
+        if self.unit_peer_data.get("member-role") == "primary":
+            return "Primary"
+        return ""
 
     def get_unit_hostname(self, unit_name: str) -> str:
         """Get the hostname.localdomain for a unit.
