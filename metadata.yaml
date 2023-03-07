@@ -29,7 +29,7 @@ resources:
     upstream-source: dataplatformoci/mysql-and-shell:latest
 peers:
   database-peers:
-    interface: mysql-peers
+    interface: mysql_peers
   restart:
     interface: rolling_op
 storage:
