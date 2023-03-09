@@ -252,3 +252,31 @@ class MySQLTLS(Object):
     def remove_tls_config_file(self) -> None:
         """Remove TLS configuration file."""
         self.charm._mysql.remove_file(f"{MYSQLD_CONFIG_DIRECTORY}/z-custom-tls.cnf")
+
+    def tls_enable_commands(self) -> List[str]:
+        """Return a list of commands to enable TLS.
+
+        Returns:
+            A list of commands to enable TLS.
+        """
+        return [
+            f"set global ssl_ca='{MYSQL_DATA_DIR}/{TLS_SSL_CA_FILE}';",
+            f"set global ssl_key='{MYSQL_DATA_DIR}/{TLS_SSL_KEY_FILE}';",
+            f"set global ssl_cert='{MYSQL_DATA_DIR}/{TLS_SSL_CERT_FILE}';",
+            "set global require_secure_transport=on;",
+            "ALTER INSTANCE RELOAD TLS;"
+        ]
+
+    def tls_disable_commands(self) -> List[str]:
+        """Return a list of commands to disable TLS.
+
+        Returns:
+            A list of commands to disable TLS.
+        """
+        return [
+            "set global ssl_ca='';",
+            "set global ssl_key='';",
+            "set global ssl_cert='';",
+            "set global require_secure_transport=off;",
+            "ALTER INSTANCE RELOAD TLS;"
+        ]
