@@ -30,8 +30,6 @@ resources:
 peers:
   database-peers:
     interface: mysql_peers
-  restart:
-    interface: rolling_op
 storage:
   database:
     type: filesystem

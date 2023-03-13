@@ -3,6 +3,7 @@
 
 import logging
 from pathlib import Path
+from time import sleep
 
 import pytest
 import yaml
@@ -13,7 +14,6 @@ from constants import CLUSTER_ADMIN_USERNAME, TLS_SSL_CERT_FILE
 from .helpers import (
     app_name,
     fetch_credentials,
-    get_process_pid,
     get_tls_ca,
     get_unit_address,
     is_connection_possible,
@@ -44,7 +44,12 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     charm = await ops_test.build_charm(".")
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
     await ops_test.model.deploy(
-        charm, resources=resources, application_name=APP_NAME, num_units=3, series="jammy"
+        charm,
+        resources=resources,
+        application_name=APP_NAME,
+        num_units=3,
+        series="jammy",
+        trust=True,
     )
 
     # Reduce the update_status frequency until the cluster is deployed
@@ -139,17 +144,13 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
     """
     app = await app_name(ops_test)
     all_units = ops_test.model.applications[app].units
-    # dict of values for cert file md5sum and mysql service PID. After resetting the
-    # private keys these certificates should be updated and the mysql service should be
-    # restarted
+    # dict of values for cert file md5sum. After resetting the
+    # private keys these certificates should be updated.
     original_tls = {}
     for unit in all_units:
         original_tls[unit.name] = {}
         original_tls[unit.name]["cert"] = await unit_file_md5(
             ops_test, unit.name, f"/var/lib/mysql/{TLS_SSL_CERT_FILE}"
-        )
-        original_tls[unit.name]["mysql_pid"] = await get_process_pid(
-            ops_test, unit.name, "mysql", "mysqld"
         )
 
     # set key using auto-generated key for each unit
@@ -170,12 +171,10 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
         new_cert_md5 = await unit_file_md5(
             ops_test, unit.name, f"/var/lib/mysql/{TLS_SSL_CERT_FILE}"
         )
-        new_mysql_pid = await get_process_pid(ops_test, unit.name, "mysql", "mysqld")
 
         assert (
             new_cert_md5 != original_tls[unit.name]["cert"]
         ), f"cert for {unit.name} was not updated."
-        assert new_mysql_pid > original_tls[unit.name]["mysql_pid"], "❌ mysqld was not restarted"
 
     # Asserting only encrypted connection should be possible
     logger.info("Asserting connections after relation")
@@ -202,11 +201,8 @@ async def test_disable_tls(ops_test: OpsTest) -> None:
         f"{app}:certificates", f"{TLS_APP_NAME}:certificates"
     )
 
-    # Wait for hooks start reconfiguring app
-    await ops_test.model.block_until(
-        lambda: ops_test.model.applications[app].status != "active", timeout=4 * 60
-    )
-    await ops_test.model.wait_for_idle(apps=[app], status="active", timeout=15 * 60)
+    # Allow time for reconfigure
+    sleep(30)
 
     # After relation removal both encrypted and unencrypted connection should be possible
     for unit in all_units:

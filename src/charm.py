@@ -17,7 +17,6 @@ from charms.mysql.v0.mysql import (
     MySQLGetMySQLVersionError,
     MySQLRebootFromCompleteOutageError,
 )
-from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops.charm import (
     ActionEvent,
     CharmBase,
@@ -35,7 +34,6 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.pebble import Layer
-from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
 
 from backups import MySQLBackups
 from constants import (
@@ -93,9 +91,6 @@ class MySQLOperatorCharm(CharmBase):
         self.database_relation = MySQLProvider(self)
         self.osm_mysql_relation = MySQLOSMRelation(self)
         self.tls = MySQLTLS(self)
-        self.restart_manager = RollingOpsManager(
-            charm=self, relation="restart", callback=self._restart
-        )
         self.s3_integrator = S3Requirer(self, S3_INTEGRATOR_RELATION_NAME)
         self.backups = MySQLBackups(self, self.s3_integrator)
 
@@ -250,7 +245,7 @@ class MySQLOperatorCharm(CharmBase):
         if not self.app_peer_data.get("allowlist"):
             self.app_peer_data["allowlist"] = f"{self._get_unit_fqdn(self.unit.name)}"
 
-    def _on_leader_elected(self, event: LeaderElectedEvent) -> None:
+    def _on_leader_elected(self, _: LeaderElectedEvent) -> None:
         """Handle the leader elected event.
 
         Set config values in the peer relation databag if not already set.
@@ -663,43 +658,6 @@ class MySQLOperatorCharm(CharmBase):
                     "message": "Failed to read cluster status.  See logs for more information.",
                 }
             )
-
-    def _restart(self, _) -> None:
-        """Restart server rolling ops callback function.
-
-        Hold execution until server is back in the cluster.
-        Used exclusively for rolling restarts.
-        """
-        logger.debug("Restarting mysqld daemon")
-
-        container = self.unit.get_container(CONTAINER_NAME)
-        self._mysql.safe_stop_mysqld()
-        container.restart(MYSQLD_SERVICE)
-
-        # when restart done right after cluster creation (e.g bundles)
-        # or for single unit deployments, it's necessary reboot the
-        # cluster from outage to restore unit as primary
-        if self.app_peer_data["units-added-to-cluster"] == "1":
-            try:
-                self._mysql.reboot_from_complete_outage()
-            except MySQLRebootFromCompleteOutageError:
-                logger.error("Failed to restart single node cluster")
-                self.unit.status = BlockedStatus("Failed to restart primary")
-                return
-
-        unit_label = self.unit.name.replace("/", "-")
-
-        try:
-            for attempt in Retrying(stop=stop_after_attempt(24), wait=wait_fixed(5)):
-                with attempt:
-                    if self._mysql.is_instance_in_cluster(unit_label):
-                        self.unit.status = ActiveStatus(self.active_status_message)
-                        return
-                    logger.debug("Restarted instance not yet in cluster")
-                    raise Exception
-        except RetryError:
-            logger.error("Unable to rejoin mysqld instance to the cluster.")
-            self.unit.status = BlockedStatus("Restarted instance unable to rejoin the cluster")
 
 
 if __name__ == "__main__":
