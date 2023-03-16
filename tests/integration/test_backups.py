@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 CLOUD_CONFIGS = {
     "aws": {
         "endpoint": "https://s3.amazonaws.com",
-        "bucket": "canonical-mysql",
-        "path": "test",
+        "bucket": "data-charms-testing",
+        "path": "mysql-k8s",
         "region": "us-east-1",
     },
     "gcp": {
