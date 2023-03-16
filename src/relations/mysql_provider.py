@@ -148,7 +148,7 @@ class MySQLProvider(Object):
             self.database.set_credentials(relation_id, db_user, db_pass)
             self.database.set_version(relation_id, db_version)
             self.database.set_database(relation_id, db_name)
-            
+
             # make sure pods are labeled before adding service
             self._update_endpoints()
 
