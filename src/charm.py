@@ -333,7 +333,7 @@ class MySQLOperatorCharm(CharmBase):
 
             try:
                 self._mysql.create_custom_config_file(
-                    report_host=self.get_unit_hostname(self.unit.name),
+                    report_host=self._get_unit_fqdn(self.unit.name),
                     innodb_buffer_pool_size=innodb_buffer_pool_size,
                     innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
                 )
