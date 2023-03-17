@@ -176,7 +176,7 @@ class MySQLOperatorCharm(CharmBase):
             return "Primary"
         return ""
 
-    def get_unit_hostname(self, unit_name: str) -> str:
+    def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
 
         Translate juju unit name to hostname.localdomain, necessary
@@ -187,7 +187,9 @@ class MySQLOperatorCharm(CharmBase):
         Returns:
             A string representing the hostname.localdomain of the unit.
         """
-        return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
+        if unit_name:
+            return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
+        return f"{self.unit.name.replace('/', '-')}.{self.app.name}-endpoints"
 
     def _get_unit_fqdn(self, unit_name: str) -> str:
         """Create a fqdn for a unit.
