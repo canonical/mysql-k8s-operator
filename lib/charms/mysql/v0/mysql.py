@@ -222,12 +222,8 @@ class MySQLOfflineModeAndHiddenInstanceExistsError(Error):
     """
 
 
-class MySQLTLSSetCustomConfigError(Error):
+class MySQLTLSSetupError(Error):
     """Exception raised when there is an issue setting custom TLS config."""
-
-
-class MySQLTLSRestoreDefaultConfigError(Error):
-    """Exception raised when there is an issue restoring default TLS config."""
 
 
 class MySQLKillSessionError(Error):
@@ -1261,19 +1257,28 @@ class MySQLBase(ABC):
 
         return matches.group(1) != "0"
 
-    def tls_set_custom(self, ca_path: str, key_path: str, cert_path: str) -> None:
-        """Execute a list of commands to enable TLS.
+    def tls_setup(
+        self,
+        ca_path: str = "ca.pem",
+        key_path: str = "server-key.pem",
+        cert_path: str = "server-cert.pem",
+        require_tls: bool = False,
+    ) -> None:
+        """Setup TLS files and requirement mode.
+
+        When no arguments, restore to default configuration, i.e. SSL not required.
 
         Args:
             ca_path: Path to the CA certificate
             key_path: Path to the server key_path
             cert_path: Path to the server certificate
+            require_tls: Require encryption
         """
         enable_commands = (
             f"SET PERSIST ssl_ca='{ca_path}';"
             f"SET PERSIST ssl_key='{key_path}';"
             f"SET PERSIST ssl_cert='{cert_path}';"
-            "SET PERSIST require_secure_transport=on;"
+            f"SET PERSIST require_secure_transport={'on' if require_tls else 'off'};"
             "ALTER INSTANCE RELOAD TLS;"
         )
 
@@ -1284,26 +1289,7 @@ class MySQLBase(ABC):
                 password=self.server_config_password,
             )
         except MySQLClientError:
-            raise MySQLTLSSetCustomConfigError("Failed to set custom TLS configuration")
-
-    def tls_restore_default(self) -> None:
-        """Restore TLS configuration to default."""
-        restore_commands = (
-            "SET PERSIST ssl_ca='ca.pem';"
-            "SET PERSIST ssl_key='server-key.pem';"
-            "SET PERSIST ssl_cert='server-cert.pem';"
-            "SET PERSIST require_secure_transport=off;"
-            "ALTER INSTANCE RELOAD TLS;"
-        )
-
-        try:
-            self._run_mysqlcli_script(
-                restore_commands,
-                user=self.server_config_user,
-                password=self.server_config_password,
-            )
-        except MySQLClientError:
-            raise MySQLTLSRestoreDefaultConfigError
+            raise MySQLTLSSetupError("Failed to set custom TLS configuration")
 
     def kill_unencrypted_sessions(self) -> None:
         """Kill non local, non system open unencrypted connections."""

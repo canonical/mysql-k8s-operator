@@ -17,6 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLGetMySQLVersionError,
     MySQLRebootFromCompleteOutageError,
 )
+from charms.mysql.v0.tls import MySQLTLS
 from ops.charm import (
     ActionEvent,
     CharmBase,
@@ -60,7 +61,6 @@ from mysql_k8s_helpers import (
 )
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
-from relations.mysql_tls import MySQLTLS
 from relations.osm_mysql import MySQLOSMRelation
 from utils import generate_random_hash, generate_random_password
 
