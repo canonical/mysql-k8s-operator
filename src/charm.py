@@ -187,9 +187,8 @@ class MySQLOperatorCharm(CharmBase):
         Returns:
             A string representing the hostname.localdomain of the unit.
         """
-        if unit_name:
-            return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
-        return f"{self.unit.name.replace('/', '-')}.{self.app.name}-endpoints"
+        unit_name = unit_name or self.unit.name
+        return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
 
     def _get_unit_fqdn(self, unit_name: str) -> str:
         """Create a fqdn for a unit.
