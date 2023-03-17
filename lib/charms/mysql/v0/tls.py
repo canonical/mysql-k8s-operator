@@ -1,15 +1,32 @@
-# Copyright 2022 Canonical Ltd.
-# See LICENSE file for licensing details.
+# Copyright 2023 Canonical Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""Library containing the implementation of the tls certificates relation."""
+"""Library containing the implementation of the tls certificates relation for mysql charm.
+
+This library is used by the mysql charm to provide the TLS certificates relation.
+It requires the TLS certificates library and the MySQL library.
+
+"""
+
 
 import base64
 import logging
 import re
 import socket
-from string import Template
 from typing import List, Optional, Tuple
 
+from charms.mysql.v0.mysql import MySQLKillSessionError, MySQLTLSSetupError
 from charms.tls_certificates_interface.v1.tls_certificates import (
     CertificateAvailableEvent,
     CertificateExpiringEvent,
@@ -19,11 +36,10 @@ from charms.tls_certificates_interface.v1.tls_certificates import (
 )
 from ops.charm import ActionEvent, CharmBase
 from ops.framework import Object
-from ops.model import MaintenanceStatus
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 
 from constants import (
     MYSQL_DATA_DIR,
-    MYSQLD_CONFIG_DIRECTORY,
     TLS_RELATION,
     TLS_SSL_CA_FILE,
     TLS_SSL_CERT_FILE,
@@ -31,6 +47,12 @@ from constants import (
 )
 
 logger = logging.getLogger(__name__)
+
+LIBID = "eb73947deedd4380a3a90d527e0878eb"
+
+LIBAPI = 0
+
+LIBPATCH = 1
 
 SCOPE = "unit"
 
@@ -82,7 +104,7 @@ class MySQLTLS(Object):
             return
 
         if self.charm.unit_peer_data.get("tls") == "enabled":
-            logger.debug("TLS already enabled.")
+            logger.debug("TLS is already enabled.")
             return
 
         state, _ = self.charm._mysql.get_member_state()
@@ -100,12 +122,25 @@ class MySQLTLS(Object):
         self.charm.set_secret(SCOPE, "ca", event.ca)
 
         self.push_tls_files_to_workload()
-        self.create_tls_config_file()
+        try:
+            self.charm._mysql.tls_setup(
+                ca_path=f"{MYSQL_DATA_DIR}/{TLS_SSL_CA_FILE}",
+                key_path=f"{MYSQL_DATA_DIR}/{TLS_SSL_KEY_FILE}",
+                cert_path=f"{MYSQL_DATA_DIR}/{TLS_SSL_CERT_FILE}",
+                require_tls=True,
+            )
 
-        # set member-state to avoid unwanted health-check actions
-        self.charm.unit_peer_data.update({"member-state": "waiting", "tls": "enabled"})
-        # trigger rolling restart
-        self.charm.on[self.charm.restart_manager.name].acquire_lock.emit()
+            # kill any unencrypted sessions to force clients to reconnect
+            self.charm._mysql.kill_unencrypted_sessions()
+        except MySQLTLSSetupError:
+            logger.error("Failed to set custom TLS configuration.")
+            self.charm.unit.status = BlockedStatus("Failed to set TLS configuration.")
+            return
+        except MySQLKillSessionError:
+            logger.warning("Failed to kill unencrypted sessions.")
+        # set tls flag for unit
+        self.charm.unit_peer_data.update({"tls": "enabled"})
+        self.charm.unit.status = ActiveStatus()
 
     def _on_certificate_expiring(self, event: CertificateExpiringEvent) -> None:
         """Request the new certificate when old certificate is expiring."""
@@ -117,7 +152,7 @@ class MySQLTLS(Object):
         old_csr = self.charm.get_secret(SCOPE, "csr").encode("utf-8")
         new_csr = generate_csr(
             private_key=key,
-            subject=self.charm.get_unit_hostname(self.charm.unit.name),
+            subject=self.charm.get_unit_hostname(),
             organization=self.charm.app.name,
             sans=self._get_sans(),
         )
@@ -136,12 +171,12 @@ class MySQLTLS(Object):
         except KeyError:
             # ignore key error for unit teardown
             pass
-        self.remove_tls_config_file()
-        # set member-state to avoid unwanted health-check actions
-        # and unset control flag
-        self.charm.unit_peer_data.update({"member-state": "waiting", "tls": ""})
-        # trigger rolling restart
-        self.charm.on[self.charm.restart_manager.name].acquire_lock.emit()
+        try:
+            self.charm._mysql.tls_setup()
+            self.charm.unit_peer_data.pop("tls")
+        except MySQLTLSSetupError:
+            logger.error("Failed to restore default TLS configuration.")
+            self.charm.unit.status = BlockedStatus("Failed to restore default TLS configuration.")
 
     # =======================
     #  Helpers
@@ -155,7 +190,7 @@ class MySQLTLS(Object):
 
         csr = generate_csr(
             private_key=key,
-            subject=self.charm.get_unit_hostname(self.charm.unit.name),
+            subject=self.charm.get_unit_hostname(),
             organization=self.charm.app.name,
             sans=self._get_sans(),
         )
@@ -163,7 +198,6 @@ class MySQLTLS(Object):
         # store secrets
         self.charm.set_secret(SCOPE, "key", key.decode("utf-8"))
         self.charm.set_secret(SCOPE, "csr", csr.decode("utf-8"))
-
         # set control flag
         self.charm.unit_peer_data.update({"tls": "requested"})
         if self.charm.model.get_relation(TLS_RELATION):
@@ -227,28 +261,3 @@ class MySQLTLS(Object):
             self.charm._mysql.write_content_to_file(
                 f"{MYSQL_DATA_DIR}/{TLS_SSL_CERT_FILE}", ssl_cert, permission=0o400
             )
-
-    def create_tls_config_file(self) -> None:
-        """Render TLS template directly to file.
-
-        Render and write TLS enabling config file from template.
-        """
-        with open("templates/tls.cnf", "r") as template_file:
-            template = Template(template_file.read())
-            config_string = template.substitute(
-                tls_ssl_ca_file=TLS_SSL_CA_FILE,
-                tls_ssl_key_file=TLS_SSL_KEY_FILE,
-                tls_ssl_cert_file=TLS_SSL_CERT_FILE,
-            )
-
-        self.charm._mysql.write_content_to_file(
-            f"{MYSQLD_CONFIG_DIRECTORY}/z-custom-tls.cnf",
-            config_string,
-            owner="root",
-            group="root",
-            permission=0o644,
-        )
-
-    def remove_tls_config_file(self) -> None:
-        """Remove TLS configuration file."""
-        self.charm._mysql.remove_file(f"{MYSQLD_CONFIG_DIRECTORY}/z-custom-tls.cnf")

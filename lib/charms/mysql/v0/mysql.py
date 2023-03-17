@@ -90,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 14
+LIBPATCH = 16
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -222,6 +222,14 @@ class MySQLOfflineModeAndHiddenInstanceExistsError(Error):
     """
 
 
+class MySQLTLSSetupError(Error):
+    """Exception raised when there is an issue setting custom TLS config."""
+
+
+class MySQLKillSessionError(Error):
+    """Exception raised when there is an issue killing a connection."""
+
+
 class MySQLBase(ABC):
     """Abstract class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -302,7 +310,9 @@ class MySQLBase(ABC):
 
         try:
             logger.debug(f"Configuring MySQL users for {self.instance_address}")
-            self._run_mysqlcli_script("; ".join(create_root_user_commands))
+            self._run_mysqlcli_script(
+                "; ".join(create_root_user_commands), password=self.root_password
+            )
             # run configure users commands with newly created root user
             self._run_mysqlcli_script(
                 "; ".join(configure_users_commands), password=self.root_password
@@ -973,10 +983,9 @@ class MySQLBase(ABC):
         Returns:
             The address of the cluster's primary
         """
-        logger.debug(f"Getting cluster primary member's address from {connect_instance_address}")
-
         if not connect_instance_address:
             connect_instance_address = self.instance_address
+        logger.debug(f"Getting cluster primary member's address from {connect_instance_address}")
 
         get_cluster_primary_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
@@ -1166,18 +1175,15 @@ class MySQLBase(ABC):
 
     def reboot_from_complete_outage(self) -> None:
         """Wrapper for reboot_cluster_from_complete_outage command."""
-        rejoin_command = (
+        reboot_from_outage_command = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
             f"dba.reboot_cluster_from_complete_outage('{self.cluster_name}')",
         )
 
         try:
-            self._run_mysqlsh_script("\n".join(rejoin_command))
+            self._run_mysqlsh_script("\n".join(reboot_from_outage_command))
         except MySQLClientError as e:
-            logger.exception(
-                "Failed to reboot cluster",
-                exc_info=e,
-            )
+            logger.exception("Failed to reboot cluster")
             raise MySQLRebootFromCompleteOutageError(e.message)
 
     def set_instance_offline_mode(self, offline_mode: bool = False) -> None:
@@ -1250,6 +1256,60 @@ class MySQLBase(ABC):
             raise MySQLOfflineModeAndHiddenInstanceExistsError("Failed to parse command output")
 
         return matches.group(1) != "0"
+
+    def tls_setup(
+        self,
+        ca_path: str = "ca.pem",
+        key_path: str = "server-key.pem",
+        cert_path: str = "server-cert.pem",
+        require_tls: bool = False,
+    ) -> None:
+        """Setup TLS files and requirement mode.
+
+        When no arguments, restore to default configuration, i.e. SSL not required.
+
+        Args:
+            ca_path: Path to the CA certificate
+            key_path: Path to the server key_path
+            cert_path: Path to the server certificate
+            require_tls: Require encryption
+        """
+        enable_commands = (
+            f"SET PERSIST ssl_ca='{ca_path}';"
+            f"SET PERSIST ssl_key='{key_path}';"
+            f"SET PERSIST ssl_cert='{cert_path}';"
+            f"SET PERSIST require_secure_transport={'on' if require_tls else 'off'};"
+            "ALTER INSTANCE RELOAD TLS;"
+        )
+
+        try:
+            self._run_mysqlcli_script(
+                enable_commands,
+                user=self.server_config_user,
+                password=self.server_config_password,
+            )
+        except MySQLClientError:
+            raise MySQLTLSSetupError("Failed to set custom TLS configuration")
+
+    def kill_unencrypted_sessions(self) -> None:
+        """Kill non local, non system open unencrypted connections."""
+        kill_connections_command = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            (
+                'processes = session.run_sql("'
+                "SELECT processlist_id FROM performance_schema.threads WHERE "
+                "connection_type = 'TCP/IP' AND type = 'FOREGROUND';"
+                '")'
+            ),
+            "process_id_list = [id[0] for id in processes.fetch_all()]",
+            'for process_id in process_id_list:\n  session.run_sql(f"KILL CONNECTION {process_id}")',
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(kill_connections_command))
+        except MySQLClientError:
+            logger.exception("Failed to kill external sessions")
+            raise MySQLKillSessionError
 
     @abstractmethod
     def wait_until_mysql_connection(self) -> None:
