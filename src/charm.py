@@ -374,7 +374,6 @@ class MySQLOperatorCharm(CharmBase):
 
             return
 
-
         # First run setup
         if not self._configure_instance(container):
             self.unit.status = BlockedStatus("Unable to configure instance")
