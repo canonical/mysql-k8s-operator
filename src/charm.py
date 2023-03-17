@@ -358,6 +358,7 @@ class MySQLOperatorCharm(CharmBase):
         if not self._prepare_configs(container):
             return
 
+        self.unit.status = MaintenanceStatus("Initialising mysqld")
         if self.unit_peer_data.get("unit-configured"):
             # Only update pebble layer if unit is already configured for GR
             current_layer = container.get_plan()
@@ -369,11 +370,10 @@ class MySQLOperatorCharm(CharmBase):
                 container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
                 container.restart(MYSQLD_SERVICE)
                 self._mysql.wait_until_mysql_connection()
+                self._on_update_status(None)
 
-            self.unit.status = ActiveStatus(self.active_status_message)
             return
 
-        self.unit.status = MaintenanceStatus("Initialising mysqld")
 
         # First run setup
         if not self._configure_instance(container):
@@ -496,7 +496,7 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = self.unit.get_container(CONTAINER_NAME)
-        if not container.can_connect():
+        if not container.can_connect() and event:
             event.defer()
             return
 
@@ -537,6 +537,10 @@ class MySQLOperatorCharm(CharmBase):
         """Handle the peer relation joined event."""
         # Only leader unit add instances to the cluster
         if not self.unit.is_leader():
+            return
+
+        # only add other units
+        if event.unit.name == self.unit.name:
             return
 
         # Defer run when leader is not active
