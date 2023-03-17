@@ -27,11 +27,15 @@ logger = logging.getLogger(__name__)
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 TLS_APP_NAME = "tls-certificates-operator"
+MODEL_CONFIG = {"logging-config": "<root>=INFO;unit=DEBUG"}
+TLS_SETUP_SLEEP_TIME = 30
 
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
+    # Set model configuration
+    await ops_test.model.set_config(MODEL_CONFIG)
     if app := await app_name(ops_test):
         if len(ops_test.model.applications[app].units) == 3:
             return
@@ -111,12 +115,8 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     logger.info("Relate to TLS operator")
     await ops_test.model.relate(app, TLS_APP_NAME)
 
-    # Wait for hooks start reconfiguring app
-    await ops_test.model.block_until(
-        lambda: ops_test.model.applications[app].status != "active", timeout=4 * 60
-    )
-
-    await ops_test.model.wait_for_idle(status="active", timeout=15 * 60)
+    # allow time for TLS enablement
+    sleep(TLS_SETUP_SLEEP_TIME)
 
     # After relating to only encrypted connection should be possible
     logger.info("Asserting connections after relation")
@@ -159,11 +159,8 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
         action = await action.wait()
         assert action.status == "completed", "❌ setting key failed"
 
-    # Wait for hooks start reconfiguring app
-    await ops_test.model.block_until(
-        lambda: ops_test.model.applications[app].status != "active", timeout=4 * 60
-    )
-    await ops_test.model.wait_for_idle(apps=[app], status="active", timeout=15 * 60)
+    # allow time for reconfiguration
+    sleep(TLS_SETUP_SLEEP_TIME)
 
     # After updating both the external key and the internal key a new certificate request will be
     # made; then the certificates should be available and updated.
@@ -202,7 +199,7 @@ async def test_disable_tls(ops_test: OpsTest) -> None:
     )
 
     # Allow time for reconfigure
-    sleep(30)
+    sleep(TLS_SETUP_SLEEP_TIME)
 
     # After relation removal both encrypted and unencrypted connection should be possible
     for unit in all_units:
