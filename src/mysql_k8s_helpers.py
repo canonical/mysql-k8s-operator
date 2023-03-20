@@ -979,7 +979,7 @@ Swap:     1027600384  1027600384           0
 
         def get_mysqld_pid(self):
             try:
-                process = self.container.exec(["pgrep", "mysqld"])
+                process = self.container.exec(["pgrep", "-x", "mysqld"])
                 pid, _ = process.wait_output()
                 return pid
             except ExecError:
