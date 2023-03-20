@@ -564,7 +564,7 @@ async def ensure_process_not_running(
         container_name: The name of the container to ensure the process is not running
         process: The name of the process to ensure is not running
     """
-    get_pid_commands = ["ssh", "--container", container_name, unit_name, "pgrep", process]
+    get_pid_commands = ["ssh", "--container", container_name, unit_name, "pgrep", "-x", process]
     return_code, pid, _ = await ops_test.juju(*get_pid_commands)
 
     assert (
