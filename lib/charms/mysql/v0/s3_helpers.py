@@ -1,8 +1,18 @@
-#!/usr/bin/env python3
 # Copyright 2022 Canonical Ltd.
-# See LICENSE file for licensing details.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""Helpers to manage interactions with S3."""
+"""S3 helper functions for the MySQL charms."""
 
 import logging
 import tempfile
@@ -11,6 +21,16 @@ from typing import Dict, List
 import boto3
 
 logger = logging.getLogger(__name__)
+
+# The unique Charmhub library identifier, never change it
+LIBID = "bb85c0c01b454bd48898d680e3f3ce4d"
+
+# Increment this major API version when introducing breaking changes
+LIBAPI = 0
+
+# Increment this PATCH version before using `charmcraft publish-lib` or reset
+# to 0 if you are raising the major API version
+LIBPATCH = 1
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -125,7 +145,7 @@ def fetch_and_check_existence_of_s3_path(s3_parameters: Dict, path: str) -> bool
     )
 
     try:
-        response = s3_client.get_object(Bucket=s3_parameters["bucket"], Key=path)
+        response = s3_client.get_object(Bucket=s3_parameters["bucket"], Key=path, Range="0-1")
         return "ContentLength" in response  # return True even if object is empty
     except s3_client.exceptions.NoSuchKey:
         return False
