@@ -8,6 +8,7 @@ import logging
 from typing import Dict, Optional
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
+from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
     MySQLConfigureInstanceError,
@@ -36,7 +37,6 @@ from ops.model import (
 )
 from ops.pebble import Layer
 
-from backups import MySQLBackups
 from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
@@ -225,6 +225,14 @@ class MySQLOperatorCharm(CharmBase):
             self.app_peer_data.update({key: value})
         else:
             raise RuntimeError("Unknown secret scope.")
+
+    def s3_integrator_relation_exists(self) -> bool:
+        """Returns whether a relation with the s3-integrator exists."""
+        return bool(self.model.get_relation(S3_INTEGRATOR_RELATION_NAME))
+
+    def is_unit_busy(self) -> bool:
+        """Returns whether the unit is busy."""
+        return self._is_cluster_blocked()
 
     # =========================================================================
     # Charm event handlers
@@ -466,17 +474,6 @@ class MySQLOperatorCharm(CharmBase):
         if unit_member_state in ["waiting", "restarting"]:
             # avoid changing status while tls is being set up or charm is being initialized
             logger.info(f"Unit state is {unit_member_state}")
-            return True
-
-        cluster_states = {self.peers.data[unit].get("cluster-state") for unit in self.peers.units}
-        cluster_states.add(self.unit_peer_data.get("cluster-state"))
-
-        if "backing-up" in cluster_states:
-            logger.info("Member in cluster is creating a backup")
-            return True
-
-        if "restoring" in cluster_states:
-            logger.info("Member in cluster is restoring a backup")
             return True
 
         return False
