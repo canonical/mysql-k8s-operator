@@ -90,7 +90,8 @@ def clean_backups_from_buckets() -> None:
 
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
-    mysql_application_name = await deploy_and_scale_mysql(ops_test)
+    # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
 
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     primary_mysql = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
@@ -122,7 +123,8 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 @pytest.mark.abort_on_fail
 async def test_backup(ops_test: OpsTest) -> None:
     """Test to create a backup and list backups."""
-    mysql_application_name = await deploy_and_scale_mysql(ops_test)
+    # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
 
     global backups_by_cloud, value_before_backup, value_after_backup
 
@@ -196,7 +198,8 @@ async def test_backup(ops_test: OpsTest) -> None:
 @pytest.mark.abort_on_fail
 async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
     """Test to restore a backup to the same mysql cluster."""
-    mysql_application_name = await deploy_and_scale_mysql(ops_test)
+    # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
 
     logger.info("Scaling mysql application to 1 unit")
     async with ops_test.fast_forward():
@@ -281,9 +284,6 @@ async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
         )
 
         assert sorted(values) == sorted([value_before_backup, value_after_restore])
-
-    # scale down the cluster to preserve resources for the following tests
-    await scale_application(ops_test, mysql_application_name, 0)
 
 
 @pytest.mark.abort_on_fail
