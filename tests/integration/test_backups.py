@@ -13,7 +13,6 @@ from pytest_operator.plugin import OpsTest
 
 from .helpers import (
     execute_queries_on_unit,
-    get_primary_unit,
     get_server_config_credentials,
     get_unit_address,
     rotate_credentials,
@@ -96,12 +95,8 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
 
     logger.info("Rotating all mysql credentials")
-    await rotate_credentials(
-        mysql_unit, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD
-    )
-    await rotate_credentials(
-        mysql_unit, username="serverconfig", password=SERVER_CONFIG_PASSWORD
-    )
+    await rotate_credentials(mysql_unit, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD)
+    await rotate_credentials(mysql_unit, username="serverconfig", password=SERVER_CONFIG_PASSWORD)
     await rotate_credentials(mysql_unit, username="root", password=ROOT_PASSWORD)
 
     # deploy and relate to s3-integrator
