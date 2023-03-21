@@ -94,17 +94,15 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
 
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
-    primary_mysql = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
 
     logger.info("Rotating all mysql credentials")
-
     await rotate_credentials(
-        primary_mysql, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD
+        mysql_unit, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD
     )
     await rotate_credentials(
-        primary_mysql, username="serverconfig", password=SERVER_CONFIG_PASSWORD
+        mysql_unit, username="serverconfig", password=SERVER_CONFIG_PASSWORD
     )
-    await rotate_credentials(primary_mysql, username="root", password=ROOT_PASSWORD)
+    await rotate_credentials(mysql_unit, username="root", password=ROOT_PASSWORD)
 
     # deploy and relate to s3-integrator
     logger.info("Deploying s3 integrator")
@@ -129,13 +127,6 @@ async def test_backup(ops_test: OpsTest) -> None:
     global backups_by_cloud, value_before_backup, value_after_backup
 
     zeroth_unit = ops_test.model.units[f"{mysql_application_name}/0"]
-
-    primary_unit = await get_primary_unit(ops_test, zeroth_unit, mysql_application_name)
-    non_primary_units = [
-        unit
-        for unit in ops_test.model.applications[mysql_application_name].units
-        if unit.name != primary_unit.name
-    ]
 
     # insert data into cluster before
     logger.info("Inserting value before backup")
@@ -171,7 +162,7 @@ async def test_backup(ops_test: OpsTest) -> None:
         # create backup
         logger.info("Creating backup")
 
-        action = await non_primary_units[0].run_action(action_name="create-backup")
+        action = await zeroth_unit.run_action(action_name="create-backup")
         result = await action.wait()
         backup_id = result.results["backup-id"]
 
@@ -200,10 +191,6 @@ async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
     """Test to restore a backup to the same mysql cluster."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
     mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
-
-    logger.info("Scaling mysql application to 1 unit")
-    async with ops_test.fast_forward():
-        await scale_application(ops_test, mysql_application_name, 1)
 
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     mysql_unit_address = await get_unit_address(ops_test, mysql_unit.name)
