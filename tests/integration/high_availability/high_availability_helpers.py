@@ -198,7 +198,7 @@ async def deploy_and_scale_application(ops_test: OpsTest) -> str:
             APPLICATION_DEFAULT_APP_NAME,
             application_name=APPLICATION_DEFAULT_APP_NAME,
             num_units=1,
-            channel="latest/edge"
+            channel="latest/edge",
         )
 
         await ops_test.model.wait_for_idle(
