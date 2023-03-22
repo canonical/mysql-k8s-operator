@@ -27,13 +27,13 @@ class TestCharm(unittest.TestCase):
         self.harness.add_relation_unit(self.peer_relation_id, f"{APP_NAME}/1")
         self.charm = self.harness.charm
         self.layer_dict = {
-            "summary": "mysqld layer",
-            "description": "pebble config layer for mysqld",
+            "summary": "mysqld safe layer",
+            "description": "pebble config layer for mysqld safe",
             "services": {
-                "mysqld": {
+                "mysqld_safe": {
                     "override": "replace",
-                    "summary": "mysqld",
-                    "command": "mysqld",
+                    "summary": "mysqld safe",
+                    "command": "mysqld_safe",
                     "startup": "enabled",
                     "user": "mysql",
                     "group": "mysql",

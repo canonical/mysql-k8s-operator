@@ -6,11 +6,7 @@ import unittest
 from unittest.mock import MagicMock, call, patch
 
 import tenacity
-from charms.mysql.v0.mysql import (
-    MySQLClientError,
-    MySQLConfigureInstanceError,
-    MySQLConfigureMySQLUsersError,
-)
+from charms.mysql.v0.mysql import MySQLClientError, MySQLConfigureMySQLUsersError
 from ops.pebble import ExecError
 
 from mysql_k8s_helpers import (
@@ -23,7 +19,6 @@ from mysql_k8s_helpers import (
     MySQLEscalateUserPrivilegesError,
     MySQLForceRemoveUnitFromClusterError,
     MySQLInitialiseMySQLDError,
-    MySQLServiceNotRunningError,
     MySQLWaitUntilUnitRemovedFromClusterError,
 )
 
@@ -71,7 +66,9 @@ class TestMySQL(unittest.TestCase):
         self.mysql.initialise_mysqld()
 
         _container.exec.assert_called_once_with(
-            command=["mysqld", "--initialize-insecure", "-u", "mysql"]
+            command=["mysqld", "--initialize-insecure", "-u", "mysql"],
+            user="mysql",
+            group="mysql",
         )
 
         _process.wait_output.assert_called_once()
@@ -86,60 +83,6 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLInitialiseMySQLDError):
             self.mysql.initialise_mysqld()
-
-    @patch("mysql_k8s_helpers.MySQL.safe_stop_mysqld")
-    @patch("ops.model.Container")
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
-    @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
-    def test_configure_instance(
-        self,
-        _wait_until_mysql_connection,
-        _run_mysqlcli_script,
-        _run_mysqlsh_script,
-        _container,
-        _safe_stop_mysqld,
-    ):
-        """Test a successful execution of configure_instance."""
-        configure_instance_commands = (
-            'dba.configure_instance(\'serverconfig:serverconfigpassword@127.0.0.1\', {"restart": "false", "clusterAdmin": "clusteradmin", "clusterAdminPassword": "clusteradminpassword"})',
-        )
-        self.mysql.container = _container
-
-        self.mysql.configure_instance()
-
-        _run_mysqlsh_script.assert_called_once_with("\n".join(configure_instance_commands))
-        _wait_until_mysql_connection.assert_called_once()
-        _safe_stop_mysqld.assert_called_once()
-
-    @patch("ops.model.Container")
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
-    def test_configure_instance_exceptions(
-        self, _wait_until_mysql_connection, _run_mysqlsh_script, _container
-    ):
-        """Test exceptions raise while running configure_instance."""
-        # Test an issue with _run_mysqlsh_script
-        _run_mysqlsh_script.side_effect = MySQLClientError("Error running mysqlsh")
-
-        self.mysql.container = _container
-
-        with self.assertRaises(MySQLConfigureInstanceError):
-            self.mysql.configure_instance()
-
-        _wait_until_mysql_connection.assert_not_called()
-
-        # Reset mocks
-        _run_mysqlsh_script.reset_mock()
-        _wait_until_mysql_connection.reset_mock()
-
-        # Test an issue with _wait_until_mysql_connection
-        _wait_until_mysql_connection.side_effect = MySQLServiceNotRunningError()
-
-        with self.assertRaises(MySQLConfigureInstanceError):
-            self.mysql.configure_instance()
-
-        _run_mysqlsh_script.assert_called_once()
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
     def test_configure_mysql_users(self, _run_mysqlcli_script):
