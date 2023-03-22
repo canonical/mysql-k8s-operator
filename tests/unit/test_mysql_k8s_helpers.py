@@ -341,7 +341,7 @@ class TestMySQL(unittest.TestCase):
                 "rm",
                 MYSQLSH_SCRIPT_FILE,
             ],
-            timeout=None
+            timeout=None,
         )
 
     @patch("ops.model.Container")
