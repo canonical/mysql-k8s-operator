@@ -50,7 +50,7 @@ async def chaos_mesh(ops_test: OpsTest) -> None:
 @pytest.fixture()
 async def restart_policy(ops_test: OpsTest) -> None:
     """Sets and resets service pebble restart policy on all units."""
-    mysql_application_name = await get_application_name(ops_test, "mysql")
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     for unit in ops_test.model.applications[mysql_application_name].units:
         modify_pebble_restart_delay(

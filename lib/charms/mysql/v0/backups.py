@@ -1,7 +1,49 @@
 # Copyright 2022 Canonical Ltd.
-# See LICENSE file for licensing details.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""Library containing the implementation of backups."""
+"""MySQL helper class for backups and restores.
+
+The `MySQLBackups` class can be instantiated by a MySQL charm , and contains
+event handlers for `list-backups`, `create-backup` and `restore` backup actions.
+These actions must be added to the actions.yaml file.
+
+An example of instantiating the `MySQLBackups`:
+
+```python
+from charms.data_platform_libs.v0.s3 import S3Requirer
+from charms.mysql.v0.backups import MySQLBackups
+from charms.mysql.v0.backups import MySQLBase
+
+
+class MySQL(MySQLBase):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+        self.s3_integrator = S3Requirer(self, "s3-integrator")
+        self.backups = MySQLBackups(self, self.s3_integrator)
+
+    @property
+    def s3_integrator_relation_exists(self) -> bool:
+        # Returns whether a relation with the s3-integrator exists
+        return bool(self.model.get_relation(S3_INTEGRATOR_RELATION_NAME))
+
+    def is_unit_blocked(self) -> bool:
+        # Returns whether the unit is in blocked state and should run any operations
+        return False
+```
+
+"""
 
 import datetime
 import json
@@ -13,37 +55,45 @@ from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLCreateClusterError,
+    MySQLDeleteTempBackupDirectoryError,
+    MySQLDeleteTempRestoreDirectoryError,
+    MySQLEmptyDataDirectoryError,
+    MySQLExecuteBackupCommandsError,
     MySQLGetMemberStateError,
+    MySQLInitializeJujuOperationsTableError,
     MySQLOfflineModeAndHiddenInstanceExistsError,
+    MySQLPrepareBackupForRestoreError,
+    MySQLRestoreBackupError,
+    MySQLRetrieveBackupWithXBCloudError,
+    MySQLServiceNotRunningError,
     MySQLSetInstanceOfflineModeError,
     MySQLSetInstanceOptionError,
+    MySQLStartMySQLDError,
+    MySQLStopMySQLDError,
+)
+from charms.mysql.v0.s3_helpers import (
+    fetch_and_check_existence_of_s3_path,
+    list_backups_in_s3_path,
+    upload_content_to_s3,
 )
 from ops.charm import ActionEvent, CharmBase
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
 from ops.model import ActiveStatus, BlockedStatus
-from ops.pebble import ChangeError
-
-from constants import CONTAINER_NAME, MYSQLD_SERVICE, S3_INTEGRATOR_RELATION_NAME
-from mysql_k8s_helpers import (
-    MySQLDeleteTempBackupDirectoryError,
-    MySQLDeleteTempRestoreDirectory,
-    MySQLEmptyDataDirectoryError,
-    MySQLExecuteBackupCommandsError,
-    MySQLPrepareBackupForRestoreError,
-    MySQLRestoreBackupError,
-    MySQLRetrieveBackupWithXBCloudError,
-    MySQLServiceNotRunningError,
-)
-from s3_helpers import (
-    fetch_and_check_existence_of_s3_path,
-    list_backups_in_s3_path,
-    upload_content_to_s3,
-)
 
 logger = logging.getLogger(__name__)
 
 MYSQL_BACKUPS = "mysql-backups"
+
+# The unique Charmhub library identifier, never change it
+LIBID = "183844304be247129572309a5fb1e47c"
+
+# Increment this major API version when introducing breaking changes
+LIBAPI = 0
+
+# Increment this PATCH version before using `charmcraft publish-lib` or reset
+# to 0 if you are raising the major API version
+LIBPATCH = 2
 
 
 class MySQLBackups(Object):
@@ -125,6 +175,10 @@ Stderr:
 
         List backups available to restore by this application.
         """
+        if not self.charm.s3_integrator_relation_exists:
+            event.fail("Missing relation with S3 integrator charm")
+            return
+
         try:
             logger.info("Retrieving s3 parameters from the s3-integrator relation")
             s3_parameters, missing_parameters = self._retrieve_s3_parameters()
@@ -144,14 +198,12 @@ Stderr:
         """Handle the create backup action."""
         logger.info("A backup has been requested on unit")
 
-        if not self.charm.model.get_relation(S3_INTEGRATOR_RELATION_NAME):
+        if not self.charm.s3_integrator_relation_exists:
             event.fail("Missing relation with S3 integrator charm")
             return
 
-        if not self.charm.unit.get_container(CONTAINER_NAME).can_connect():
-            error_message = f"Container {CONTAINER_NAME} not ready yet!"
-            logger.warning(error_message)
-            event.fail(error_message)
+        if not self.charm._mysql.is_mysqld_running():
+            event.fail("Process mysqld not running")
             return
 
         datetime_backup_requested = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -227,9 +279,9 @@ Juju Version: {str(juju_version)}
 
         Returns: tuple of (success, error_message)
         """
-        logger.info("Checking if cluster is in blocked state")
-        if self.charm._is_cluster_blocked():
-            return False, "Cluster or unit is in a blocking state"
+        logger.info("Checking if the unit is waiting to start or restart")
+        if self.charm.is_unit_busy():
+            return False, "Unit is waiting to start or restart"
 
         logger.info("Checking if backup already in progress")
         try:
@@ -289,7 +341,7 @@ Juju Version: {str(juju_version)}
         """
         try:
             logger.info("Running the xtrabackup commands")
-            stdout, stderr = self.charm._mysql.execute_backup_commands(
+            stdout = self.charm._mysql.execute_backup_commands(
                 s3_parameters["bucket"],
                 backup_path,
                 s3_parameters["access-key"],
@@ -307,7 +359,7 @@ Juju Version: {str(juju_version)}
 
         if not self._upload_logs_to_s3(
             stdout,
-            stderr,
+            "",
             f"{backup_path}.backup.log",
             s3_parameters,
         ):
@@ -347,23 +399,27 @@ Juju Version: {str(juju_version)}
 
         Returns: a boolean indicating whether restore should be run
         """
-        if not self.charm.model.get_relation(S3_INTEGRATOR_RELATION_NAME):
-            event.fail("Missing relation with S3 integrator charm")
-            return False
-
-        if not event.params.get("backup-id"):
-            event.fail("Missing backup-id to restore")
-            return False
-
-        if not self.charm.unit.get_container(CONTAINER_NAME).can_connect():
-            error_message = f"Container {CONTAINER_NAME} not ready yet!"
+        if not self.charm.s3_integrator_relation_exists:
+            error_message = "Missing relation with S3 integrator charm"
             logger.warning(error_message)
             event.fail(error_message)
             return False
 
-        logger.info("Checking if cluster is in blocked state")
-        if self.charm._is_cluster_blocked():
-            error_message = "Cluster or unit is in a blocking state"
+        if not event.params.get("backup-id"):
+            error_message = "Missing backup-id to restore"
+            logger.warning(error_message)
+            event.fail(error_message)
+            return False
+
+        if not self.charm._mysql.is_server_connectable():
+            error_message = "Server running mysqld is not connectable"
+            logger.warning(error_message)
+            event.fail(error_message)
+            return False
+
+        logger.info("Checking if the unit is waiting to start or restart")
+        if self.charm.is_unit_busy():
+            error_message = "Unit is waiting to start or restart"
             logger.warning(error_message)
             event.fail(error_message)
             return False
@@ -443,15 +499,10 @@ Juju Version: {str(juju_version)}
 
         Returns: tuple of (success, error_message)
         """
-        logger.info(f"Stopping service {MYSQLD_SERVICE} in container {CONTAINER_NAME}")
-        container = self.charm.unit.get_container(CONTAINER_NAME)
-
         try:
-            container.stop(MYSQLD_SERVICE)
-        except ChangeError as e:
-            error_message = f"Failed to stop service {MYSQLD_SERVICE}"
-            logger.exception(error_message, exc_info=e)
-            return False, error_message
+            self.charm._mysql.stop_mysqld()
+        except MySQLStopMySQLDError:
+            return False, "Failed to stop mysqld"
 
         return True, None
 
@@ -471,6 +522,7 @@ Juju Version: {str(juju_version)}
                 s3_parameters["path"],
                 s3_parameters["access-key"],
                 s3_parameters["secret-key"],
+                s3_parameters["endpoint"],
                 backup_id,
             )
             logger.debug(f"Stdout of xbcloud get commands: {stdout}")
@@ -509,22 +561,13 @@ Juju Version: {str(juju_version)}
         """
         try:
             self.charm._mysql.delete_temp_restore_directory()
-        except MySQLDeleteTempRestoreDirectory:
+        except MySQLDeleteTempRestoreDirectoryError:
             return False, "Failed to delete the temp restore directory"
 
-        logger.info(f"Starting service {MYSQLD_SERVICE} in container {CONTAINER_NAME}")
-        container = self.charm.unit.get_container(CONTAINER_NAME)
-
         try:
-            container.start(MYSQLD_SERVICE)
-            self.charm._mysql.wait_until_mysql_connection()
-        except (
-            ChangeError,
-            MySQLServiceNotRunningError,
-        ) as e:
-            error_message = f"Failed to start service {MYSQLD_SERVICE}"
-            logger.exception(error_message, exc_info=e)
-            return False, error_message
+            self.charm._mysql.start_mysqld()
+        except MySQLStartMySQLDError:
+            return False, "Failed to start mysqld"
 
         return True, None
 
@@ -539,11 +582,12 @@ Juju Version: {str(juju_version)}
 
         try:
             logger.info("Configuring instance to be part of an InnoDB cluster")
-            self.charm._mysql.configure_instance(
-                create_cluster_admin=False,
-                set_group_replication_initial_variables=False,
-            )
-        except MySQLConfigureInstanceError:
+            self.charm._mysql.configure_instance(create_cluster_admin=False)
+            self.charm._mysql.wait_until_mysql_connection()
+        except (
+            MySQLConfigureInstanceError,
+            MySQLServiceNotRunningError,
+        ):
             return False, "Failed to configure restored instance for InnoDB cluster"
 
         self.charm.unit_peer_data["unit-configured"] = "True"
@@ -552,11 +596,14 @@ Juju Version: {str(juju_version)}
             logger.info("Creating cluster on restored node")
             unit_label = self.charm.unit.name.replace("/", "-")
             self.charm._mysql.create_cluster(unit_label)
+            self.charm._mysql.initialize_juju_units_operations_table()
 
             logger.info("Retrieving instance cluster state and role")
             state, role = self.charm._mysql.get_member_state()
         except MySQLCreateClusterError:
             return False, "Failed to create InnoDB cluster on restored instance"
+        except MySQLInitializeJujuOperationsTableError:
+            return False, "Failed to initialize the juju operations table"
         except MySQLGetMemberStateError:
             return False, "Failed to retrieve member state in restored instance"
 

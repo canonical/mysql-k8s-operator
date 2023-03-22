@@ -72,7 +72,7 @@ async def get_max_written_value_in_database(ops_test: OpsTest, unit: Unit) -> in
     return output[0]
 
 
-async def get_application_name(ops_test: OpsTest, application_name: str) -> str:
+def get_application_name(ops_test: OpsTest, application_name_substring: str) -> str:
     """Returns the name of the application witt the provided application name.
 
     This enables us to retrieve the name of the deployed application in an existing model.
@@ -80,12 +80,8 @@ async def get_application_name(ops_test: OpsTest, application_name: str) -> str:
     Note: if multiple applications with the application name exist,
     the first one found will be returned.
     """
-    status = await ops_test.model.get_status()
-
     for application in ops_test.model.applications:
-        # note that format of the charm field is not exactly "mysql" but instead takes the form
-        # of `local:focal/mysql-6`
-        if application_name in status["applications"][application]["charm"]:
+        if application_name_substring in application:
             return application
 
     return None
@@ -101,7 +97,7 @@ async def ensure_n_online_mysql_members(
         number_online_members: Number of online members to wait for
         mysql_units: Expected online mysql units
     """
-    mysql_application = await get_application_name(ops_test, "mysql")
+    mysql_application = get_application_name(ops_test, "mysql")
 
     if not mysql_units:
         mysql_units = ops_test.model.applications[mysql_application].units
@@ -137,7 +133,7 @@ async def deploy_and_scale_mysql(
         mysql_application_name: The name of the mysql application if it is to be deployed
         num_units: The number of units to deploy
     """
-    application_name = await get_application_name(ops_test, "mysql")
+    application_name = get_application_name(ops_test, "mysql")
 
     if check_for_existing_application and application_name:
         if len(ops_test.model.applications[application_name].units) != num_units:
@@ -360,13 +356,14 @@ async def insert_data_into_mysql_and_validate_replication(
     database_name: str,
     table_name: str,
     mysql_units: Optional[List[Unit]] = None,
+    mysql_application_substring: Optional[str] = "mysql",
 ) -> str:
     """Inserts data into the mysql cluster and validates its replication.
 
     database_name: The name of the database to create
     table_name: The name of the table to create and insert data into
     """
-    mysql_application_name = await get_application_name(ops_test, "mysql")
+    mysql_application_name = get_application_name(ops_test, mysql_application_substring)
 
     if not mysql_units:
         mysql_units = ops_test.model.applications[mysql_application_name].units
@@ -425,7 +422,7 @@ async def clean_up_database_and_table(
         database_name: The name of the database to drop
         table_name: The name of the table to drop
     """
-    mysql_application_name = await get_application_name(ops_test, "mysql")
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
 
@@ -456,7 +453,7 @@ async def ensure_all_units_continuous_writes_incrementing(
     Also, ensure that all continuous writes up to the max written value is available
     on all units (ensure that no committed data is lost).
     """
-    mysql_application_name = await get_application_name(ops_test, "mysql")
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     if not mysql_units:
         mysql_units = ops_test.model.applications[mysql_application_name].units
