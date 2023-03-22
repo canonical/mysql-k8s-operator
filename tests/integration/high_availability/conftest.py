@@ -10,6 +10,7 @@ from pytest_operator.plugin import OpsTest
 from constants import CONTAINER_NAME, MYSQLD_SERVICE
 
 from .high_availability_helpers import (
+    APPLICATION_DEFAULT_APP_NAME,
     deploy_chaos_mesh,
     destroy_chaos_mesh,
     get_application_name,
@@ -22,9 +23,7 @@ logger = logging.getLogger(__name__)
 @pytest.fixture()
 async def continuous_writes(ops_test: OpsTest) -> None:
     """Starts continuous writes to the MySQL cluster for a test and clear the writes at the end."""
-    application_name = await get_application_name(ops_test, "application")
-
-    application_unit = ops_test.model.applications[application_name].units[0]
+    application_unit = ops_test.model.applications[APPLICATION_DEFAULT_APP_NAME].units[0]
 
     clear_writes_action = await application_unit.run_action("clear-continuous-writes")
     await clear_writes_action.wait()

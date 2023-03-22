@@ -886,7 +886,7 @@ Swap:     1027600384  1027600384           0
         ]
 
         try:
-            process = self.container.exec(cmd)
+            process = self.container.exec(cmd, timeout=timeout)
             stdout, _ = process.wait_output()
             return stdout
         except ExecError as e:
