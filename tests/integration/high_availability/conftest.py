@@ -7,7 +7,7 @@ import logging
 import pytest
 from pytest_operator.plugin import OpsTest
 
-from constants import CONTAINER_NAME, MYSQLD_SERVICE
+from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE
 
 from .high_availability_helpers import (
     deploy_chaos_mesh,
@@ -58,7 +58,7 @@ async def restart_policy(ops_test: OpsTest) -> None:
             ops_test,
             unit.name,
             CONTAINER_NAME,
-            MYSQLD_SERVICE,
+            MYSQLD_SAFE_SERVICE,
             "tests/integration/high_availability/manifests/extend_pebble_restart_delay.yml",
         )
 
@@ -78,7 +78,7 @@ async def restart_policy(ops_test: OpsTest) -> None:
             ops_test,
             unit.name,
             CONTAINER_NAME,
-            MYSQLD_SERVICE,
+            MYSQLD_SAFE_SERVICE,
             "tests/integration/high_availability/manifests/reduce_pebble_restart_delay.yml",
         )
 
