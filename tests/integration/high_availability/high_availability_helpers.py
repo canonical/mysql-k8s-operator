@@ -180,7 +180,7 @@ async def deploy_and_scale_application(ops_test: OpsTest) -> str:
     Args:
         ops_test: The ops test framework
     """
-    application_name = await get_application_name(ops_test, "mysql-test-app")
+    application_name = get_application_name(ops_test, APPLICATION_DEFAULT_APP_NAME)
 
     if application_name:
         if len(ops_test.model.applications[application_name].units) != 1:
