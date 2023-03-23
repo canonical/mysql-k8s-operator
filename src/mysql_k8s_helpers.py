@@ -736,13 +736,13 @@ class MySQL(MySQLBase):
         except ExecError as e:
             raise MySQLClientError(e.stderr)
 
-    def safe_stop_mysqld(self):
+    def safe_stop_mysqld_safe(self):
         """Safely stop mysqld.
 
         TODO: remove when https://github.com/canonical/pebble/pull/190 is merged/released
         """
 
-        def get_mysqld_pid(self):
+        def get_mysqld_safe_pid(self):
             try:
                 process = self.container.exec(["pgrep", "-x", MYSQLD_SAFE_SERVICE])
                 pid, _ = process.wait_output()
@@ -751,12 +751,12 @@ class MySQL(MySQLBase):
                 return 0
 
         logger.debug("Safe stopping mysqld safe")
-        pid = initial_pid = get_mysqld_pid(self)
+        pid = initial_pid = get_mysqld_safe_pid(self)
         if pid == 0:
             return
         self.container.exec(["pkill", "-15", MYSQLD_SAFE_SERVICE])
 
         # Wait for mysqld to stop
         while initial_pid == pid:
-            pid = get_mysqld_pid(self)
+            pid = get_mysqld_safe_pid(self)
             sleep(0.1)
