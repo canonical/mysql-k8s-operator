@@ -561,16 +561,15 @@ class MySQLBase(ABC):
             logger.exception(f"Failed to delete users for relation {relation_id}", exc_info=e)
             raise MySQLDeleteUserForRelationError(e.message)
 
-    def configure_instance(self, restart: bool = True, create_cluster_admin: bool = True) -> None:
+    def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
 
         Raises MySQLConfigureInstanceError
             if the was an error configuring the instance for use in an InnoDB cluster.
         """
         options = {
-            "restart": "true" if restart else "false",
+            "restart": "true",
         }
-
         if create_cluster_admin:
             options.update(
                 {
@@ -586,6 +585,7 @@ class MySQLBase(ABC):
         try:
             logger.debug(f"Configuring instance for InnoDB on {self.instance_address}")
             self._run_mysqlsh_script("\n".join(configure_instance_command))
+            self.wait_until_mysql_connection()
 
         except MySQLClientError as e:
             logger.exception(
