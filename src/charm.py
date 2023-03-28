@@ -359,13 +359,13 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = event.workload
-        if not self._prepare_configs(container):
-            return
-
         if not container.can_connect():
             self.unit.status = WaitingStatus("Waiting for workload continer.")
             logger.debug("Cannot connect workload continer, waiting...")
             event.defer()
+            return
+
+        if not self._prepare_configs(container):
             return
 
         self.unit.status = MaintenanceStatus("Initialising mysqld")
