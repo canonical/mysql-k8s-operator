@@ -87,6 +87,7 @@ jobs:
         env:
            CI_PACKED_CHARMS: ${{ needs.build.outputs.charms }}
       - name: Setup upterm session
+        if: success() || failure()
         uses: lhotari/action-upterm@v1
         with:
           limit-access-to-actor: true
