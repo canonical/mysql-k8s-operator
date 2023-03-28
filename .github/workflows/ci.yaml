@@ -104,7 +104,7 @@ jobs:
             echo "mark_expression=not unstable" >> $GITHUB_OUTPUT
           fi
       - name: Run integration tests
-        run: tox run -e ${{ matrix.tox-environments }} -- -m '${{ steps.select-tests.outputs.mark_expression }}'
+        run: tox run -e ${{ matrix.tox-environments }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' --junit-xml=pytest_report.xml
         env:
           AWS_ACCESS_KEY: "${{ matrix.tox-environments != 'integration-backups' || secrets.AWS_ACCESS_KEY }}"
           AWS_SECRET_KEY: "${{ matrix.tox-environments != 'integration-backups' || secrets.AWS_SECRET_KEY }}"
