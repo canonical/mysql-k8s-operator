@@ -362,6 +362,12 @@ class MySQLOperatorCharm(CharmBase):
         if not self._prepare_configs(container):
             return
 
+        if not container.can_connect():
+            self.unit.status = WaitingStatus("Waiting for workload continer.")
+            logger.debug("Cannot connect workload continer, waiting...")
+            event.defer()
+            return
+
         self.unit.status = MaintenanceStatus("Initialising mysqld")
         if self.unit_peer_data.get("unit-configured"):
             # Only update pebble layer if unit is already configured for GR
