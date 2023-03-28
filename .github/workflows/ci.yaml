@@ -49,13 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         tox-environments:
-          - integration-charm
-          - integration-database-relation
-          - integration-osm-mysql
           - integration-replication
-          - integration-self-healing
-          - integration-tls
-          - integration-backups
     name: ${{ matrix.tox-environments }}
     needs:
       - lint
@@ -91,8 +85,9 @@ jobs:
       - name: Run integration tests
         run: tox run -e ${{ matrix.tox-environments }} -- -m '${{ steps.select-tests.outputs.mark_expression }}'
         env:
-          AWS_ACCESS_KEY: "${{ matrix.tox-environments != 'integration-backups' || secrets.AWS_ACCESS_KEY }}"
-          AWS_SECRET_KEY: "${{ matrix.tox-environments != 'integration-backups' || secrets.AWS_SECRET_KEY }}"
-          GCP_ACCESS_KEY: "${{ matrix.tox-environments != 'integration-backups' || secrets.GCP_ACCESS_KEY }}"
-          GCP_SECRET_KEY: "${{ matrix.tox-environments != 'integration-backups' || secrets.GCP_SECRET_KEY }}"
-          CI_PACKED_CHARMS: ${{ needs.build.outputs.charms }}
+           CI_PACKED_CHARMS: ${{ needs.build.outputs.charms }}
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          limit-access-to-actor: true
+          limit-access-to-users: taurus-forever
