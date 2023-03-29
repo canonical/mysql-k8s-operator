@@ -58,6 +58,7 @@ from mysql_k8s_helpers import (
     MySQLForceRemoveUnitFromClusterError,
     MySQLGetInnoDBBufferPoolParametersError,
     MySQLInitialiseMySQLDError,
+    MySQLInstallDependenciesError,
 )
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
@@ -278,6 +279,9 @@ class MySQLOperatorCharm(CharmBase):
     def _configure_instance(self, container) -> bool:
         """Configure the instance for use in Group Replication."""
         try:
+            logger.debug("Installing dependencies")
+            self._mysql.install_dependencies()
+
             # Run mysqld for the first time to
             # bootstrap the data directory and users
             logger.debug("Initializing instance")
@@ -303,6 +307,7 @@ class MySQLOperatorCharm(CharmBase):
             MySQLConfigureInstanceError,
             MySQLConfigureMySQLUsersError,
             MySQLInitialiseMySQLDError,
+            MySQLInstallDependenciesError,
             MySQLCreateCustomConfigFileError,
         ) as e:
             logger.debug("Unable to configure instance: {}".format(e))

@@ -10,6 +10,7 @@ from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
+    MySQLExecError,
 )
 from ops.pebble import ExecError
 
@@ -23,6 +24,7 @@ from mysql_k8s_helpers import (
     MySQLEscalateUserPrivilegesError,
     MySQLForceRemoveUnitFromClusterError,
     MySQLInitialiseMySQLDError,
+    MySQLInstallDependenciesError,
     MySQLServiceNotRunningError,
     MySQLWaitUntilUnitRemovedFromClusterError,
 )
@@ -485,3 +487,23 @@ class TestMySQL(unittest.TestCase):
         self.mysql.safe_stop_mysqld()
 
         _container.exec.assert_called_once()
+
+    @patch("mysql_k8s_helpers.MySQL._execute_commands")
+    def test_install_dependencies(self, _execute_commands):
+        """Test the successful execution of install_dependencies()."""
+        self.mysql.install_dependencies()
+
+        _execute_commands.assert_called_once_with(
+            "apt-get update && apt-get install -y ca-certificates".split(),
+            bash=True,
+            user="root",
+            group="root",
+        )
+
+    @patch("mysql_k8s_helpers.MySQL._execute_commands")
+    def test_install_dependences_exception(self, _execute_commands):
+        """Test failure in the execution of install_dependencies()."""
+        _execute_commands.side_effect = MySQLExecError
+
+        with self.assertRaises(MySQLInstallDependenciesError):
+            self.mysql.install_dependencies()

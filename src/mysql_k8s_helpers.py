@@ -42,10 +42,17 @@ from constants import (
     MYSQLD_SERVICE,
     MYSQLD_SOCK_FILE,
     MYSQLSH_SCRIPT_FILE,
+    ROOT_SYSTEM_GROUP,
+    ROOT_SYSTEM_USER,
+    TMP_DIR,
     XTRABACKUP_PLUGIN_DIR,
 )
 
 logger = logging.getLogger(__name__)
+
+
+class MySQLInstallDependenciesError(Error):
+    """Exception raised when there is an issue install dependencies in the container."""
 
 
 class MySQLInitialiseMySQLDError(Error):
@@ -177,6 +184,19 @@ class MySQL(MySQLBase):
 
         # Default to the full path version
         return "/snap/bin/mysql-shell"
+
+    def install_dependencies(self) -> None:
+        """Installs necessary apt packages that were not possible during ROCK build."""
+        try:
+            self._execute_commands(
+                "apt-get update && apt-get install -y ca-certificates".split(),
+                bash=True,
+                user=ROOT_SYSTEM_USER,
+                group=ROOT_SYSTEM_GROUP,
+            )
+        except MySQLExecError as e:
+            logger.exception("Failed to install apt packages in mysql container")
+            raise MySQLInstallDependenciesError(e)
 
     def initialise_mysqld(self) -> None:
         """Execute instance first run.
@@ -321,7 +341,7 @@ class MySQL(MySQLBase):
             CHARMED_MYSQL_XBCLOUD_LOCATION,
             XTRABACKUP_PLUGIN_DIR,
             MYSQLD_SOCK_FILE,
-            MYSQL_DATA_DIR,
+            TMP_DIR,
             MYSQLD_DEFAULTS_CONFIG_FILE,
             user=MYSQL_SYSTEM_USER,
             group=MYSQL_SYSTEM_GROUP,

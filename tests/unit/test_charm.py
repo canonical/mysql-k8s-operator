@@ -74,8 +74,10 @@ class TestCharm(unittest.TestCase):
     @patch(
         "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters", return_value=(123456, None)
     )
+    @patch("mysql_k8s_helpers.MySQL.install_dependencies")
     def test_mysql_pebble_ready(
         self,
+        _install_dependencies,
         _get_innodb_buffer_pool_parameters,
         _get_member_state,
         _is_instance_in_cluster,
