@@ -26,7 +26,7 @@ Before we start, make sure your machine meets the following requirements:
 Let's install Multipass from [Snap](https://snapcraft.io/multipass) and launch a new VM using "[charm-dev](https://github.com/canonical/multipass-blueprints/blob/main/v1/charm-dev.yaml)" cloud-init config:
 ```shell
 sudo snap install multipass && \
-multipass launch -c 4 -m 8G -d 10G -n my-vm charm-dev # tune CPU/RAM/HDD accordingly to your needs 
+multipass launch --cpus 4 --memory 8G --disk 30G --name my-vm charm-dev # tune CPU/RAM/HDD accordingly to your needs
 ```
 *Note: all 'multipass launch' params are [described here](https://multipass.run/docs/launch-command)*.
 
@@ -41,16 +41,25 @@ multipass shell my-vm
 ```
 *Note: if at any point you'd like to leave Multipass VM, enter `Ctrl+d` or type `exit`*.
 
-All the parts have been pre-installed inside VM already, like Microk8s and Juju (the file '/var/log/cloud-init.log' contains all low-level installation details). Juju uses models to isolate applications, let's add a new model for Charmed MySQL K8s application named ‘tutorial’:
+All the parts have been pre-installed inside VM already, like MicroK8s and Juju (the files '/var/log/cloud-init.log' and '/var/log/cloud-init-output.log' contain all low-level installation details). The Juju controller can work with different models; models host applications such as Charmed MySQL K8s. Set up a specific model for Charmed MySQL K8s named ‘tutorial’:
 ```shell
 juju add-model tutorial
+```
+
+You can now view the model you created above by entering the command `juju status` into the command line. You should see the following:
+```
+Model     Controller  Cloud/Region        Version  SLA          Timestamp
+tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:30:11+01:00
+
+Model "admin/tutorial" is empty.
 ```
 
 ## Deploy Charmed MySQL K8s
 To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=edge) and deploy it to your model:
 ```shell
-juju deploy mysql-k8s --channel edge
+juju deploy mysql-k8s --channel edge --trust
 ```
+Note: `--trust` is required to create some K8s resources.
 
 Juju will now fetch Charmed MySQL K8s and begin deploying it to the Microk8s Kubernetes. This process can take several minutes depending on how provisioned (RAM, CPU, etc) your machine is. You can track the progress by running:
 ```shell
@@ -154,9 +163,9 @@ Charmed MySQL K8s operator uses [MySQL InnoDB Cluster](https://dev.mysql.com/doc
 
 
 ### Add cluster members (replicas)
-You can add two replicas to your deployed MySQL application with:
+You can add two replicas to your deployed MySQL application by scaling it to three units using:
 ```shell
-juju add-unit mysql-k8s -n 2
+juju scale-application mysql-k8s 3
 ```
 
 You can now watch the scaling process in live using: `juju status --watch 1s`. It usually takes several minutes for new cluster members to be added. You’ll know that all three nodes are in sync when `juju status` reports `Workload=active` and `Agent=idle`:
@@ -174,9 +183,9 @@ mysql-k8s/2   active    idle   10.1.84.73          Unit is ready: Mode: RO
 ```
 
 ### Remove cluster members (replicas)
-Removing a unit from the application, scales the replicas down. Before we scale down the replicas, list all the units with `juju status`, here you will see three units `mysql-k8s/0`, `mysql-k8s/1`, and `mysql-k8s/2`. Each of these units hosts a MySQL replica. To remove the replica enter:
+Removing a unit from the application, scales the replicas down. Before we scale down the replicas, list all the units with `juju status`, here you will see three units `mysql-k8s/0`, `mysql-k8s/1`, and `mysql-k8s/2`. Each of these units hosts a MySQL replica. To scale the application down to two units, enter:
 ```shell
-juju remove-unit mysql-k8s --num-units 1
+juju scale-application mysql-k8s 2
 ```
 
 You’ll know that the replica was successfully removed when `juju status --watch 1s` reports:
@@ -452,27 +461,14 @@ juju relate mysql-k8s tls-certificates-operator
 ```
 
 ### Add external TLS certificate
-Like before, connect to the MySQL in one of described above ways and check the TLS certificate in use:
+Use `openssl` to connect to the MySQL and check the TLS certificate in use:
 ```shell
-> mysql -h 10.1.84.74 -uroot -pmy-password -e "SELECT * FROM performance_schema.session_status WHERE VARIABLE_NAME IN ('Ssl_version','Ssl_cipher','Current_tls_cert')"
-+------------------+------------------------+
-| VARIABLE_NAME    | VARIABLE_VALUE         |
-+------------------+------------------------+
-| Current_tls_cert | custom-server-cert.pem |
-| Ssl_cipher       | TLS_AES_256_GCM_SHA384 |
-| Ssl_version      | TLSv1.3                |
-+------------------+------------------------+
+> openssl s_client -starttls mysql -connect 10.1.84.74:3306 | grep Issuer
+...
+depth=1 C = US, CN = Tutorial CA
+...
 ```
-
-Check the TLS certificate issuer:
-```shell
-juju ssh --container mysql mysql-k8s/leader openssl x509 -noout -text -in /var/lib/mysql/custom-server-cert.pem | grep Issuer
-```
-The output should indicate CA configured during TLS operator deployment:
-```
-Issuer: C = US, CN = Tutorial CA
-```
-Congratulations! MySQL is now using TLS cetrificate generated by the external application `tls-certificates-operator`.
+Congratulations! MySQL is now using TLS certificate generated by the external application `tls-certificates-operator`.
 
 
 ### Remove external TLS certificate
@@ -481,26 +477,17 @@ To remove the external TLS and return to the locally generate one, unrelate appl
 juju remove-relation mysql-k8s tls-certificates-operator
 ```
 
+Check the TLS certificate in use:
 ```shell
-> mysql -h 10.1.84.74 -uroot -pmy-password -e "SELECT * FROM performance_schema.session_status WHERE VARIABLE_NAME IN ('Ssl_version','Ssl_cipher','Current_tls_cert')"
-+------------------+------------------------+
-| VARIABLE_NAME    | VARIABLE_VALUE         |
-+------------------+------------------------+
-| Current_tls_cert | server-cert.pem        |
-| Ssl_cipher       | TLS_AES_256_GCM_SHA384 |
-| Ssl_version      | TLSv1.3                |
-+------------------+------------------------+
-```
-
-Check the TLS certificate issuer:
-```shell
-juju ssh --container mysql mysql-k8s/leader openssl x509 -noout -text -in /var/lib/mysql/server-cert.pem | grep Issuer
+> openssl s_client -starttls mysql -connect 10.1.84.74:3306 | grep Issuer
 ```
 The output should be similar to:
 ```
+...
 Issuer: CN = MySQL_Server_8.0.31_Auto_Generated_CA_Certificate
+...
 ```
-The Charmed MySQL K8s application returned to the certificate `server-cert.pem` created locally in a moment of the MySQL server installation.
+The Charmed MySQL K8s application reverted to the certificate that was created locally during the MySQL server installation.
 
 ## Next Steps
 In this tutorial we've successfully deployed MySQL, added/removed cluster members, added/removed users to/from the database, and even enabled and disabled TLS. You may now keep your Charmed MySQL K8s deployment running and write to the database or remove it entirely using the steps in [Remove Charmed MySQL K8s and Juju](#remove-charmed-mysql-and-juju). If you're looking for what to do next you can:
