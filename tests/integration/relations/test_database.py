@@ -18,10 +18,7 @@ DB_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 DATABASE_APP_NAME = DB_METADATA["name"]
 CLUSTER_NAME = "test_cluster"
 
-APP_METADATA = yaml.safe_load(
-    Path("./tests/integration/relations/application-charm/metadata.yaml").read_text()
-)
-APPLICATION_APP_NAME = APP_METADATA["name"]
+APPLICATION_APP_NAME = "mysql-test-app"
 
 APPS = [DATABASE_APP_NAME, APPLICATION_APP_NAME]
 
@@ -34,7 +31,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
     # Build and deploy charm from local source folder
     db_charm = await ops_test.build_charm(".")
-    app_charm = await ops_test.build_charm("./tests/integration/relations/application-charm/")
 
     config = {"cluster-name": CLUSTER_NAME}
     resources = {"mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"]}
@@ -49,7 +45,12 @@ async def test_build_and_deploy(ops_test: OpsTest):
             series="jammy",
             trust=True,
         ),
-        ops_test.model.deploy(app_charm, application_name=APPLICATION_APP_NAME, num_units=2),
+        ops_test.model.deploy(
+            APPLICATION_APP_NAME,
+            application_name=APPLICATION_APP_NAME,
+            num_units=2,
+            channel="latest/edge",
+        ),
     )
 
     # Reduce the update_status frequency until the cluster is deployed

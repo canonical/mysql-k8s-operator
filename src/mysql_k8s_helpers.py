@@ -6,7 +6,6 @@
 
 import json
 import logging
-import os
 from time import sleep
 from typing import Dict, List, Optional, Tuple
 
@@ -14,7 +13,6 @@ from charms.mysql.v0.mysql import (
     Error,
     MySQLBase,
     MySQLClientError,
-    MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLExecError,
     MySQLStartMySQLDError,
@@ -34,13 +32,16 @@ from constants import (
     CHARMED_MYSQL_XBCLOUD_LOCATION,
     CHARMED_MYSQL_XBSTREAM_LOCATION,
     CHARMED_MYSQL_XTRABACKUP_LOCATION,
+    MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
     MYSQLD_DEFAULTS_CONFIG_FILE,
-    MYSQLD_SERVICE,
+    MYSQLD_LOCATION,
+    MYSQLD_SAFE_SERVICE,
     MYSQLD_SOCK_FILE,
+    MYSQLSH_LOCATION,
     MYSQLSH_SCRIPT_FILE,
     ROOT_SYSTEM_GROUP,
     ROOT_SYSTEM_USER,
@@ -167,24 +168,6 @@ class MySQL(MySQLBase):
         )
         self.container = container
 
-    @staticmethod
-    def get_mysqlsh_bin() -> str:
-        """Determine binary path for MySQL Shell.
-
-        Returns:
-            Path to binary mysqlsh
-        """
-        # Allow for various versions of the mysql-shell snap
-        # When we get the alias use /snap/bin/mysqlsh
-        paths = ("/usr/bin/mysqlsh", "/snap/bin/mysqlsh", "/snap/bin/mysql-shell.mysqlsh")
-
-        for path in paths:
-            if os.path.exists(path):
-                return path
-
-        # Default to the full path version
-        return "/snap/bin/mysql-shell"
-
     def install_dependencies(self) -> None:
         """Installs necessary apt packages that were not possible during ROCK build."""
         try:
@@ -204,10 +187,14 @@ class MySQL(MySQLBase):
         Initialise mysql data directory and create blank password root@localhost user.
         Raises MySQLInitialiseMySQLDError if the instance bootstrap fails.
         """
-        bootstrap_command = ["mysqld", "--initialize-insecure", "-u", "mysql"]
+        bootstrap_command = [MYSQLD_LOCATION, "--initialize-insecure", "-u", MYSQL_SYSTEM_USER]
 
         try:
-            process = self.container.exec(command=bootstrap_command)
+            process = self.container.exec(
+                command=bootstrap_command,
+                user=MYSQL_SYSTEM_USER,
+                group=MYSQL_SYSTEM_GROUP,
+            )
             process.wait_output()
         except ExecError as e:
             logger.error("Exited with code %d. Stderr:", e.exit_code)
@@ -224,34 +211,6 @@ class MySQL(MySQLBase):
         """
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
-
-    def configure_instance(
-        self,
-        create_cluster_admin: bool = True,
-    ) -> None:
-        """Configure the instance to be used in an InnoDB cluster.
-
-        Raises MySQLConfigureInstanceError if the instance configuration fails.
-        """
-        try:
-            super(MySQL, self).configure_instance(
-                restart=False,
-                create_cluster_admin=create_cluster_admin,
-            )
-
-            # restart the pebble layer service
-            self.safe_stop_mysqld()
-            self.container.restart(MYSQLD_SERVICE)
-            logger.debug("Waiting until MySQL to restart")
-            self.wait_until_mysql_connection()
-        except (
-            MySQLClientError,
-            MySQLServiceNotRunningError,
-        ) as e:
-            logger.exception(
-                "Failed to configure instance for use in an InnoDB cluster", exc_info=e
-            )
-            raise MySQLConfigureInstanceError(e.message)
 
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
@@ -638,22 +597,22 @@ class MySQL(MySQLBase):
     def stop_mysqld(self) -> None:
         """Stops the mysqld process."""
         try:
-            self.container.stop(MYSQLD_SERVICE)
+            self.container.stop(MYSQLD_SAFE_SERVICE)
         except ChangeError:
-            error_message = f"Failed to stop service {MYSQLD_SERVICE}"
+            error_message = f"Failed to stop service {MYSQLD_SAFE_SERVICE}"
             logger.exception(error_message)
             raise MySQLStopMySQLDError(error_message)
 
     def start_mysqld(self) -> None:
         """Starts the mysqld process."""
         try:
-            self.container.start(MYSQLD_SERVICE)
+            self.container.start(MYSQLD_SAFE_SERVICE)
             self.wait_until_mysql_connection()
         except (
             ChangeError,
             MySQLServiceNotRunningError,
         ):
-            error_message = f"Failed to start service {MYSQLD_SERVICE}"
+            error_message = f"Failed to start service {MYSQLD_SAFE_SERVICE}"
             logger.exception(error_message)
             raise MySQLStartMySQLDError(error_message)
 
@@ -700,7 +659,7 @@ class MySQL(MySQLBase):
 
         # render command with remove file after run
         cmd = [
-            "/usr/bin/mysqlsh",
+            MYSQLSH_LOCATION,
             "--no-wizard",
             "--python",
             f"--verbose={verbose}",
@@ -712,7 +671,7 @@ class MySQL(MySQLBase):
         ]
 
         try:
-            process = self.container.exec(cmd)
+            process = self.container.exec(cmd, timeout=timeout)
             stdout, _ = process.wait_output()
             return stdout
         except ExecError as e:
@@ -732,7 +691,7 @@ class MySQL(MySQLBase):
             user: user to run the script
         """
         command = [
-            "/usr/bin/mysql",
+            MYSQL_CLI_LOCATION,
             "-u",
             user,
             "--protocol=SOCKET",
@@ -790,34 +749,34 @@ class MySQL(MySQLBase):
             for line in stdout.strip().split("\n"):
                 [comm, stat] = line.split()
 
-                if comm == "mysqld":
+                if comm == MYSQLD_SAFE_SERVICE:
                     return "T" in stat
 
             return True
         except ExecError as e:
             raise MySQLClientError(e.stderr)
 
-    def safe_stop_mysqld(self):
+    def safe_stop_mysqld_safe(self):
         """Safely stop mysqld.
 
         TODO: remove when https://github.com/canonical/pebble/pull/190 is merged/released
         """
 
-        def get_mysqld_pid(self):
+        def get_mysqld_safe_pid(self):
             try:
-                process = self.container.exec(["pgrep", "-x", "mysqld"])
+                process = self.container.exec(["pgrep", "-x", MYSQLD_SAFE_SERVICE])
                 pid, _ = process.wait_output()
                 return pid
             except ExecError:
                 return 0
 
-        logger.debug("Safe stopping mysqld")
-        pid = initial_pid = get_mysqld_pid(self)
+        logger.debug("Safe stopping mysqld safe")
+        pid = initial_pid = get_mysqld_safe_pid(self)
         if pid == 0:
             return
-        self.container.exec(["pkill", "-15", "mysqld"])
+        self.container.exec(["pkill", "-15", MYSQLD_SAFE_SERVICE])
 
         # Wait for mysqld to stop
         while initial_pid == pid:
-            pid = get_mysqld_pid(self)
+            pid = get_mysqld_safe_pid(self)
             sleep(0.1)

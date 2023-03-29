@@ -41,8 +41,10 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
+    MYSQL_SYSTEM_GROUP,
+    MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
-    MYSQLD_SERVICE,
+    MYSQLD_SAFE_SERVICE,
     PASSWORD_LENGTH,
     PEER,
     REQUIRED_USERNAMES,
@@ -155,16 +157,16 @@ class MySQLOperatorCharm(CharmBase):
         """Return a layer for the pebble service."""
         return Layer(
             {
-                "summary": "mysqld layer",
-                "description": "pebble config layer for mysqld",
+                "summary": "mysqld safe layer",
+                "description": "pebble config layer for mysqld safe",
                 "services": {
-                    MYSQLD_SERVICE: {
+                    MYSQLD_SAFE_SERVICE: {
                         "override": "replace",
-                        "summary": "mysqld",
-                        "command": "mysqld",
+                        "summary": "mysqld safe",
+                        "command": MYSQLD_SAFE_SERVICE,
                         "startup": "enabled",
-                        "user": "mysql",
-                        "group": "mysql",
+                        "user": MYSQL_SYSTEM_USER,
+                        "group": MYSQL_SYSTEM_GROUP,
                     }
                 },
             }
@@ -289,9 +291,9 @@ class MySQLOperatorCharm(CharmBase):
 
             # Add the pebble layer
             logger.debug("Adding pebble layer")
-            container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=False)
-            self._mysql.safe_stop_mysqld()
-            container.restart(MYSQLD_SERVICE)
+            container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=False)
+            self._mysql.safe_stop_mysqld_safe()
+            container.restart(MYSQLD_SAFE_SERVICE)
 
             logger.debug("Waiting for instance to be ready")
             self._mysql.wait_until_mysql_connection()
@@ -376,8 +378,8 @@ class MySQLOperatorCharm(CharmBase):
             if new_layer.services != current_layer:
                 logger.info("Adding pebble layer")
 
-                container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
-                container.restart(MYSQLD_SERVICE)
+                container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
+                container.restart(MYSQLD_SAFE_SERVICE)
                 self._mysql.wait_until_mysql_connection()
                 self._on_update_status(None)
 

@@ -42,7 +42,7 @@ TABLE_NAME = "data"
 CLUSTER_NAME = "test_cluster"
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 MYSQL_DEFAULT_APP_NAME = METADATA["name"]
-APPLICATION_DEFAULT_APP_NAME = "application"
+APPLICATION_DEFAULT_APP_NAME = "mysql-test-app"
 TIMEOUT = 15 * 60
 
 mysql_charm, application_charm = None, None
@@ -180,7 +180,7 @@ async def deploy_and_scale_application(ops_test: OpsTest) -> str:
     Args:
         ops_test: The ops test framework
     """
-    application_name = get_application_name(ops_test, "application")
+    application_name = get_application_name(ops_test, APPLICATION_DEFAULT_APP_NAME)
 
     if application_name:
         if len(ops_test.model.applications[application_name].units) != 1:
@@ -189,19 +189,12 @@ async def deploy_and_scale_application(ops_test: OpsTest) -> str:
 
         return application_name
 
-    global application_charm
-    if not application_charm:
-        charm = await ops_test.build_charm(
-            "./tests/integration/high_availability/application_charm/"
-        )
-        # Cache the built charm to avoid rebuilding it between tests
-        application_charm = charm
-
     async with ops_test.fast_forward():
         await ops_test.model.deploy(
-            application_charm,
+            APPLICATION_DEFAULT_APP_NAME,
             application_name=APPLICATION_DEFAULT_APP_NAME,
             num_units=1,
+            channel="latest/edge",
         )
 
         await ops_test.model.wait_for_idle(

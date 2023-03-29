@@ -35,7 +35,7 @@ from .high_availability_helpers import (
 logger = logging.getLogger(__name__)
 
 MYSQL_CONTAINER_NAME = "mysql"
-MYSQLD_PROCESS_NAME = "mysqld"
+MYSQLD_PROCESS_NAME = "mysqld_safe"
 TIMEOUT = 30 * 60
 
 
