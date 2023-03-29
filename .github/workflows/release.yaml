@@ -20,8 +20,8 @@ jobs:
       - name: Check libs
         uses: canonical/charming-actions/check-libraries@2.1.1
         with:
-          credentials: "${{ secrets.CHARMHUB_TOKEN }}" # FIXME: current token will expire in 2023-07-04
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          credentials: ${{ secrets.CHARMHUB_TOKEN }} # FIXME: current token will expire in 2023-07-04
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   ci-tests:
     needs:
@@ -49,7 +49,7 @@ jobs:
       - name: Upload charm to charmhub
         uses: canonical/charming-actions/upload-charm@2.1.1
         with:
-          credentials: "${{ secrets.CHARMHUB_TOKEN }}"
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-          channel: "${{ steps.channel.outputs.name }}"
+          credentials: ${{ secrets.CHARMHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          channel: ${{ steps.channel.outputs.name }}
 
