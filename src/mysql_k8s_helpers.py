@@ -21,7 +21,7 @@ from charms.mysql.v0.mysql import (
     MySQLStopMySQLDError,
 )
 from ops.model import Container
-from ops.pebble import ChangeError, ExecError
+from ops.pebble import ChangeError, ConnectionError, ExecError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -189,7 +189,7 @@ class MySQL(MySQLBase):
         try:
             process = self.container.exec(command=bootstrap_command)
             process.wait_output()
-        except ExecError as e:
+        except (ConnectionError, ExecError) as e:
             logger.error("Exited with code %d. Stderr:", e.exit_code)
             if e.stderr:
                 for line in e.stderr.splitlines():
