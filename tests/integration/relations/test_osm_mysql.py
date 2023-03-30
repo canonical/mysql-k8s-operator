@@ -31,8 +31,8 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         charm = await ops_test.build_charm(".")
         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
         config = {
-            "osm-mysql-interface-user": "keystone",
-            "osm-mysql-interface-database": "keystone",
+            "mysql-root-interface-user": "keystone",
+            "mysql-root-interface-database": "keystone",
         }
 
         osm_pol_resources = {
@@ -114,9 +114,9 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             timeout=1000,
         )
 
-        await ops_test.model.relate("osm-keystone:db", f"{APP_NAME}:osm-mysql")
+        await ops_test.model.relate("osm-keystone:db", f"{APP_NAME}:mysql-root")
         await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, "db", "osm-mysql"), timeout=1000
+            lambda: is_relation_joined(ops_test, "db", "mysql-root"), timeout=1000
         )
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME, "osm-keystone"],
@@ -136,9 +136,9 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             lambda: is_relation_joined(ops_test, "kafka", "kafka"), timeout=1000
         )
 
-        await ops_test.model.relate("osm-pol:mysql", f"{APP_NAME}:osm-mysql")
+        await ops_test.model.relate("osm-pol:mysql", f"{APP_NAME}:mysql-root")
         await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, "mysql", "osm-mysql"),
+            lambda: is_relation_joined(ops_test, "mysql", "mysql-root"),
             timeout=1000,
         )
 

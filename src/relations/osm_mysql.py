@@ -1,7 +1,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Library containing the implementation of the legacy osm-mysql relation."""
+"""Library containing the implementation of the legacy mysql-root relation."""
 
 import json
 import logging
@@ -14,7 +14,7 @@ from ops.charm import CharmBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
 from ops.model import BlockedStatus
 
-from constants import LEGACY_OSM_MYSQL, PASSWORD_LENGTH
+from constants import LEGACY_MYSQL_ROOT, PASSWORD_LENGTH
 from mysql_k8s_helpers import (
     MySQLCreateDatabaseError,
     MySQLCreateUserError,
@@ -26,19 +26,19 @@ logger = logging.getLogger(__name__)
 
 
 class MySQLOSMRelation(Object):
-    """Encapsulation of the legacy osm-mysql relation."""
+    """Encapsulation of the legacy mysql-root relation."""
 
     def __init__(self, charm: CharmBase):
-        super().__init__(charm, LEGACY_OSM_MYSQL)
+        super().__init__(charm, LEGACY_MYSQL_ROOT)
 
         self.charm = charm
 
         self.framework.observe(self.charm.on.leader_elected, self._on_leader_elected)
         self.framework.observe(
-            self.charm.on[LEGACY_OSM_MYSQL].relation_created, self._on_osm_mysql_relation_created
+            self.charm.on[LEGACY_MYSQL_ROOT].relation_created, self._on_osm_mysql_relation_created
         )
         self.framework.observe(
-            self.charm.on[LEGACY_OSM_MYSQL].relation_broken, self._on_osm_mysql_relation_broken
+            self.charm.on[LEGACY_MYSQL_ROOT].relation_broken, self._on_osm_mysql_relation_broken
         )
 
     def _get_password_from_peer_databag(self, username: str) -> str:
@@ -70,7 +70,7 @@ class MySQLOSMRelation(Object):
 
         relation_data = json.loads(self.charm.app_peer_data.get("osm_mysql_relation_data", "{}"))
 
-        for relation in self.charm.model.relations.get(LEGACY_OSM_MYSQL, []):
+        for relation in self.charm.model.relations.get(LEGACY_MYSQL_ROOT, []):
             relation_databag = relation.data
 
             # Copy relation data into the new leader unit's databag
@@ -105,14 +105,14 @@ class MySQLOSMRelation(Object):
             event.defer()
             return
 
-        logger.warning("DEPRECATION WARNING - `osm-mysql` is a legacy interface")
+        logger.warning("DEPRECATION WARNING - `mysql-root` is a legacy interface")
 
-        username = self.charm.config.get("osm-mysql-interface-user")
-        database = self.charm.config.get("osm-mysql-interface-database")
+        username = self.charm.config.get("mysql-root-interface-user")
+        database = self.charm.config.get("mysql-root-interface-database")
 
         # Ensure that config values exist, else we will be unable to create database and user
         if not username or not database:
-            self.charm.unit.status = BlockedStatus("Missing `osm-mysql` relation data")
+            self.charm.unit.status = BlockedStatus("Missing `mysql-root` relation data")
             return
 
         user_exists = False
@@ -135,7 +135,7 @@ class MySQLOSMRelation(Object):
 
         try:
             self.charm._mysql.create_database(database)
-            self.charm._mysql.create_user(username, password, "osm-mysql-legacy-relation")
+            self.charm._mysql.create_user(username, password, "mysql-root-legacy-relation")
             self.charm._mysql.escalate_user_privileges("root")
             self.charm._mysql.escalate_user_privileges(username)
         except (MySQLCreateDatabaseError, MySQLCreateUserError, MySQLEscalateUserPrivilegesError):
@@ -171,14 +171,14 @@ class MySQLOSMRelation(Object):
         if not self.charm.unit.is_leader():
             return
 
-        # Only execute if the last `osm-mysql` relation is broken
+        # Only execute if the last `mysql-root` relation is broken
         # as there can be multiple applications using the same relation interface
-        if len(self.charm.model.relations[LEGACY_OSM_MYSQL]) > 1:
+        if len(self.charm.model.relations[LEGACY_MYSQL_ROOT]) > 1:
             return
 
-        logger.warning("DEPRECATION WARNING - `osm-mysql` is a legacy interface")
+        logger.warning("DEPRECATION WARNING - `mysql-root` is a legacy interface")
 
         try:
-            self.charm._mysql.delete_users_with_label("label", "osm-mysql-legacy-relation")
+            self.charm._mysql.delete_users_with_label("label", "mysql-root-legacy-relation")
         except MySQLDeleteUsersForUnitError:
             self.charm.unit.status = BlockedStatus("Failed to delete database users")
