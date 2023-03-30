@@ -43,6 +43,7 @@ from constants import (
     MYSQLD_SOCK_FILE,
     MYSQLSH_LOCATION,
     MYSQLSH_SCRIPT_FILE,
+    TMP_DIR,
     XTRABACKUP_PLUGIN_DIR,
 )
 
@@ -280,7 +281,7 @@ class MySQL(MySQLBase):
             CHARMED_MYSQL_XBCLOUD_LOCATION,
             XTRABACKUP_PLUGIN_DIR,
             MYSQLD_SOCK_FILE,
-            MYSQL_DATA_DIR,
+            TMP_DIR,
             MYSQLD_DEFAULTS_CONFIG_FILE,
             user=MYSQL_SYSTEM_USER,
             group=MYSQL_SYSTEM_GROUP,
