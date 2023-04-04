@@ -41,12 +41,21 @@ provides:
     interface: mysql_client
   osm-mysql:
     interface: mysql
+  metrics-endpoint:
+    interface: prometheus_scrape
+  grafana-dashboard:
+    interface: grafana_dashboard
 requires:
   certificates:
     interface: tls-certificates
     limit: 1
+    optional: true
   s3-parameters:
     interface: s3
     limit: 1
+    optional: true
+  logging:
+    interface: loki_push_api
+    optional: true
 assumes:
   - k8s-api

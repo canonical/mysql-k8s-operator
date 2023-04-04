@@ -8,6 +8,8 @@ import logging
 from typing import Dict, Optional
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
+from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
@@ -19,6 +21,7 @@ from charms.mysql.v0.mysql import (
     MySQLRebootFromCompleteOutageError,
 )
 from charms.mysql.v0.tls import MySQLTLS
+from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import (
     ActionEvent,
     CharmBase,
@@ -41,6 +44,7 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
+    MYSQL_EXPORTER_PORT,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
@@ -95,6 +99,18 @@ class MySQLOperatorCharm(CharmBase):
         self.tls = MySQLTLS(self)
         self.s3_integrator = S3Requirer(self, S3_INTEGRATOR_RELATION_NAME)
         self.backups = MySQLBackups(self, self.s3_integrator)
+        self.grafana_dashboards = GrafanaDashboardProvider(self)
+        self.metrics_endpoint = MetricsEndpointProvider(
+            self,
+            refresh_event=self.on.start,
+            jobs=[{"static_configs": [{"targets": [f"*:{MYSQL_EXPORTER_PORT}"]}]}],
+        )
+        self.loki_push = LogProxyConsumer(
+            self,
+            log_files=["/var/log/mysql/error.log"],
+            relation_name="logging",
+            container_name="mysql",
+        )
 
     @property
     def peers(self):
