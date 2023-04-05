@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 
 import pytest
+import urllib3
 import yaml
 from pytest_operator.plugin import OpsTest
 from tenacity import AsyncRetrying, RetryError, stop_after_delay, wait_fixed
@@ -269,3 +270,21 @@ async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
 
     updated_root_credentials = await fetch_credentials(random_unit, ROOT_USERNAME)
     assert updated_credentials["password"] == updated_root_credentials["password"]
+
+
+@pytest.mark.abort_on_fail
+async def test_exporter_endpoints(ops_test: OpsTest) -> None:
+    """Test that endpoints are running."""
+    application = ops_test.model.applications[APP_NAME]
+    http = urllib3.PoolManager()
+
+    for unit in application.units:
+        unit_address = await unit.get_public_address()
+        mysql_exporter_url = f"http://{unit_address}:9104/metrics"
+
+        resp = http.request("GET", mysql_exporter_url)
+
+        assert resp.status == 200, "Can't get metrics from mysql_exporter"
+        assert "mysql_exporter_last_scrape_error 0" in resp.data.decode(
+            "utf8"
+        ), "Scrape error in mysql_exporter"
