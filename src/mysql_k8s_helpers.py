@@ -137,6 +137,8 @@ class MySQL(MySQLBase):
         server_config_password: str,
         cluster_admin_user: str,
         cluster_admin_password: str,
+        monitoring_user: str,
+        monitoring_password: str,
         container: Container,
     ):
         """Initialize the MySQL class.
@@ -149,6 +151,8 @@ class MySQL(MySQLBase):
             server_config_password: password for the server config user
             cluster_admin_user: user name for the cluster admin user
             cluster_admin_password: password for the cluster admin user
+            monitoring_user: user name for the monitoring user
+            monitoring_password: password for the monitoring user
             container: workload container object
         """
         super().__init__(
@@ -159,6 +163,8 @@ class MySQL(MySQLBase):
             server_config_password=server_config_password,
             cluster_admin_user=cluster_admin_user,
             cluster_admin_password=cluster_admin_password,
+            monitoring_user=monitoring_user,
+            monitoring_password=monitoring_password,
         )
         self.container = container
 
