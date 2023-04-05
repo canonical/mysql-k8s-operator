@@ -279,7 +279,7 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
     http = urllib3.PoolManager()
 
     for unit in application.units:
-        unit_address = await unit.get_public_address()
+        unit_address = await get_unit_address(ops_test, unit.name)
         mysql_exporter_url = f"http://{unit_address}:9104/metrics"
 
         resp = http.request("GET", mysql_exporter_url)
