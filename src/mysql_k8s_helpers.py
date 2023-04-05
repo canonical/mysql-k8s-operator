@@ -250,6 +250,8 @@ class MySQL(MySQLBase):
         content = [
             "[mysqld]",
             f"report_host = {report_host}",
+            "bind-address = 0.0.0.0",
+            "mysqlx-bind-address = 0.0.0.0",
             f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
         ]
 
