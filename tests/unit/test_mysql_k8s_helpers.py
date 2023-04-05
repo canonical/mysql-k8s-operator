@@ -108,6 +108,8 @@ class TestMySQL(unittest.TestCase):
                 "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION",
                 "CREATE USER 'serverconfig'@'%' IDENTIFIED BY 'serverconfigpassword'",
                 "GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION",
+                "CREATE USER 'monitoring'@'%' IDENTIFIED BY 'monitoringpassword' WITH MAX_USER_CONNECTIONS 3",
+                "GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%'",
                 "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost'",
                 "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password'",
                 f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'%'",
