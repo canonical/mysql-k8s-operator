@@ -26,9 +26,13 @@ class TestCharm(unittest.TestCase):
         self.peer_relation_id = self.harness.add_relation("database-peers", "database-peers")
         self.harness.add_relation_unit(self.peer_relation_id, f"{APP_NAME}/1")
         self.charm = self.harness.charm
-        self.layer_dict = {
-            "summary": "mysqld safe layer",
-            "description": "pebble config layer for mysqld safe",
+        self.maxDiff = None
+
+    @property
+    def layer_dict(self):
+        return {
+            "summary": "mysqld services layer",
+            "description": "pebble config layer for mysqld safe and exporter",
             "services": {
                 "mysqld_safe": {
                     "override": "replace",
@@ -37,7 +41,22 @@ class TestCharm(unittest.TestCase):
                     "startup": "enabled",
                     "user": "mysql",
                     "group": "mysql",
-                }
+                },
+                "mysqld_exporter": {
+                    "override": "replace",
+                    "summary": "mysqld exporter",
+                    "command": "/start-mysqld-exporter.sh",
+                    "startup": "enabled",
+                    "user": "mysql",
+                    "group": "mysql",
+                    "environment": {
+                        "DATA_SOURCE_NAME": (
+                            "monitoring:"
+                            f"{self.charm.get_secret('app', 'monitoring-password')}"
+                            "@unix(/var/run/mysqld/mysqld.sock)/"
+                        )
+                    },
+                },
             },
         }
 
