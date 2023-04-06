@@ -137,6 +137,8 @@ class MySQL(MySQLBase):
         server_config_password: str,
         cluster_admin_user: str,
         cluster_admin_password: str,
+        monitoring_user: str,
+        monitoring_password: str,
         container: Container,
     ):
         """Initialize the MySQL class.
@@ -149,6 +151,8 @@ class MySQL(MySQLBase):
             server_config_password: password for the server config user
             cluster_admin_user: user name for the cluster admin user
             cluster_admin_password: password for the cluster admin user
+            monitoring_user: user name for the monitoring user
+            monitoring_password: password for the monitoring user
             container: workload container object
         """
         super().__init__(
@@ -159,6 +163,8 @@ class MySQL(MySQLBase):
             server_config_password=server_config_password,
             cluster_admin_user=cluster_admin_user,
             cluster_admin_password=cluster_admin_password,
+            monitoring_user=monitoring_user,
+            monitoring_password=monitoring_password,
         )
         self.container = container
 
@@ -222,6 +228,8 @@ class MySQL(MySQLBase):
             "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION",
             f"CREATE USER '{self.server_config_user}'@'%' IDENTIFIED BY '{self.server_config_password}'",
             f"GRANT ALL ON *.* TO '{self.server_config_user}'@'%' WITH GRANT OPTION",
+            f"CREATE USER '{self.monitoring_user}'@'%' IDENTIFIED BY '{self.monitoring_password}' WITH MAX_USER_CONNECTIONS 3",
+            f"GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO '{self.monitoring_user}'@'%'",
             "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost'",
             f"ALTER USER 'root'@'localhost' IDENTIFIED BY '{self.root_password}'",
             f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'%'",

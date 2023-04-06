@@ -8,6 +8,8 @@ import logging
 from typing import Dict, Optional
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
+from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
@@ -19,6 +21,7 @@ from charms.mysql.v0.mysql import (
     MySQLRebootFromCompleteOutageError,
 )
 from charms.mysql.v0.tls import MySQLTLS
+from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops.charm import (
     ActionEvent,
     CharmBase,
@@ -41,10 +44,16 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
+    MONITORING_PASSWORD_KEY,
+    MONITORING_USERNAME,
+    MYSQL_LOG_FILES,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
+    MYSQLD_EXPORTER_PORT,
+    MYSQLD_EXPORTER_SERVICE,
     MYSQLD_SAFE_SERVICE,
+    MYSQLD_SOCK_FILE,
     PASSWORD_LENGTH,
     PEER,
     REQUIRED_USERNAMES,
@@ -95,6 +104,18 @@ class MySQLOperatorCharm(CharmBase):
         self.tls = MySQLTLS(self)
         self.s3_integrator = S3Requirer(self, S3_INTEGRATOR_RELATION_NAME)
         self.backups = MySQLBackups(self, self.s3_integrator)
+        self.grafana_dashboards = GrafanaDashboardProvider(self)
+        self.metrics_endpoint = MetricsEndpointProvider(
+            self,
+            refresh_event=self.on.start,
+            jobs=[{"static_configs": [{"targets": [f"*:{MYSQLD_EXPORTER_PORT}"]}]}],
+        )
+        self.loki_push = LogProxyConsumer(
+            self,
+            log_files=MYSQL_LOG_FILES,
+            relation_name="logging",
+            container_name="mysql",
+        )
 
     @property
     def peers(self):
@@ -128,6 +149,8 @@ class MySQLOperatorCharm(CharmBase):
             self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
             CLUSTER_ADMIN_USERNAME,
             self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),
+            MONITORING_USERNAME,
+            self.get_secret("app", MONITORING_PASSWORD_KEY),
             self.unit.get_container("mysql"),
         )
 
@@ -153,11 +176,11 @@ class MySQLOperatorCharm(CharmBase):
 
     @property
     def _pebble_layer(self) -> Layer:
-        """Return a layer for the pebble service."""
+        """Return a layer for the mysqld pebble service."""
         return Layer(
             {
-                "summary": "mysqld safe layer",
-                "description": "pebble config layer for mysqld safe",
+                "summary": "mysqld services layer",
+                "description": "pebble config layer for mysqld safe and exporter",
                 "services": {
                     MYSQLD_SAFE_SERVICE: {
                         "override": "replace",
@@ -166,7 +189,22 @@ class MySQLOperatorCharm(CharmBase):
                         "startup": "enabled",
                         "user": MYSQL_SYSTEM_USER,
                         "group": MYSQL_SYSTEM_GROUP,
-                    }
+                    },
+                    MYSQLD_EXPORTER_SERVICE: {
+                        "override": "replace",
+                        "summary": "mysqld exporter",
+                        "command": "/start-mysqld-exporter.sh",
+                        "startup": "enabled",
+                        "user": MYSQL_SYSTEM_USER,
+                        "group": MYSQL_SYSTEM_GROUP,
+                        "environment": {
+                            "DATA_SOURCE_NAME": (
+                                f"{MONITORING_USERNAME}:"
+                                f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
+                                f"@unix({MYSQLD_SOCK_FILE})/"
+                            ),
+                        },
+                    },
                 },
             }
         )
@@ -268,6 +306,7 @@ class MySQLOperatorCharm(CharmBase):
             ROOT_PASSWORD_KEY,
             SERVER_CONFIG_PASSWORD_KEY,
             CLUSTER_ADMIN_PASSWORD_KEY,
+            MONITORING_PASSWORD_KEY,
         ]
 
         for required_password in required_passwords:
@@ -299,6 +338,8 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.configure_mysql_users()
             # Configure instance as a cluster node
             self._mysql.configure_instance()
+            # Restart exporter service after configuration
+            container.restart(MYSQLD_EXPORTER_SERVICE)
 
             self.unit_peer_data["unit-configured"] = "True"
         except (
