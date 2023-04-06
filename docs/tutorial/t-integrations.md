@@ -1,6 +1,6 @@
 # Integrating your Charmed MySQL
 
-This is part of the [Charmed MySQL Tutorial](TODO). Please refer to this page for more information and the overview of the content.
+This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overview/9677). Please refer to this page for more information and the overview of the content.
 
 ## Integrations (Relations for Juju 2.9)
 Relations, or what Juju 3.0+ documentation [describes as an Integration](https://juju.is/docs/sdk/integration), are the easiest way to create a user for MySQL in Charmed MySQL K8s. Relations automatically create a username, password, and database for the desired user/application. As mentioned earlier in the [Access MySQL section](#access-mysql) it is a better practice to connect to MySQL via a specific user rather than the admin user.
@@ -135,4 +135,3 @@ juju run-action data-integrator/leader get-credentials --wait
 ```
 You can connect to the database with this new credentials.
 From here you will see all of your data is still present in the database.
-

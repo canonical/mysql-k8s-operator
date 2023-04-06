@@ -20,6 +20,6 @@ Here’s an overview of the steps required with links to our separate tutorials 
 * [Deploy MySQL](/t/charmed-mysql-k8s-tutorial-deploy-mysql/9667)
 * [Managing your units](/t/charmed-mysql-k8s-tutorial-managing-units/9675)
 * [Manage passwords](/t/charmed-mysql-k8s-tutorial-manage-passwords/9673)
-* [Relate your PostgreSQL to other applications](/t/charmed-mysql-k8s-tutorial-integrations/9671)
+* [Relate your MySQL to other applications](/t/charmed-mysql-k8s-tutorial-integrations/9671)
 * [Enable security](/t/charmed-mysql-k8s-tutorial-enable-security/9669)
 * [Cleanup your environment](/t/charmed-mysql-k8s-tutorial-cleanup-environment/9665)

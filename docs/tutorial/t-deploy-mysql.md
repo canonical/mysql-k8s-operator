@@ -1,6 +1,6 @@
 # Get a Charmed MySQL up and running
 
-This is part of the [Charmed MySQL Tutorial](TODO). Please refer to this page for more information and the overview of the content.
+This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overview/9677). Please refer to this page for more information and the overview of the content.
 
 ## Deploy Charmed MySQL K8s
 To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=edge) and deploy it to your model:

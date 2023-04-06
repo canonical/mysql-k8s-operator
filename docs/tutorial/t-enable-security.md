@@ -1,6 +1,6 @@
 # Enable Security in your MySQL deployment 
 
-This is part of the [Charmed MySQL Tutorial](TODO). Please refer to this page for more information and the overview of the content.
+This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overview/9677). Please refer to this page for more information and the overview of the content.
 
 ## Transport Layer Security (TLS)
 [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) is used to encrypt data exchanged between two applications; it secures data transmitted over the network. Typically, enabling TLS within a highly available database, and between a highly available database and client/server applications, requires domain-specific knowledge and a high level of expertise. Fortunately, the domain-specific knowledge has been encoded into Charmed MySQL K8s. This means (re-)configuring TLS on Charmed MySQL K8s is readily available and requires minimal effort on your end.
@@ -64,5 +64,3 @@ Issuer: CN = MySQL_Server_8.0.31_Auto_Generated_CA_Certificate
 ...
 ```
 The Charmed MySQL K8s application reverted to the certificate that was created locally during the MySQL server installation.
-
-
