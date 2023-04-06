@@ -1,4 +1,4 @@
-# Get a Charmed PostgreSQL up and running
+# Get a Charmed MySQL up and running
 
 This is part of the [Charmed MySQL Tutorial](TODO). Please refer to this page for more information and the overview of the content.
 
