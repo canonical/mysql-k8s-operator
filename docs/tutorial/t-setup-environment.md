@@ -16,7 +16,7 @@ Before we start, make sure your machine meets the following requirements:
 Let's install Multipass from [Snap](https://snapcraft.io/multipass) and launch a new VM using "[charm-dev](https://github.com/canonical/multipass-blueprints/blob/main/v1/charm-dev.yaml)" cloud-init config:
 ```shell
 sudo snap install multipass && \
-multipass launch -c 4 -m 8G -d 10G -n my-vm charm-dev # tune CPU/RAM/HDD accordingly to your needs 
+multipass launch --cpus 4 --memory 8G --disk 30G --name my-vm charm-dev
 ```
 *Note: all 'multipass launch' params are [described here](https://multipass.run/docs/launch-command)*.
 
@@ -31,7 +31,7 @@ multipass shell my-vm
 ```
 *Note: if at any point you'd like to leave Multipass VM, enter `Ctrl+d` or type `exit`*.
 
-All the parts have been pre-installed inside VM already, like Microk8s and Juju (the file '/var/log/cloud-init.log' contains all low-level installation details). Juju uses models to isolate applications, let's add a new model for Charmed MySQL K8s application named ‘tutorial’:
+All the parts have been pre-installed inside VM already, like MicroK8s and Juju (the files '/var/log/cloud-init.log' and '/var/log/cloud-init-output.log' contain all low-level installation details). The Juju controller can work with different models; models host applications such as Charmed MySQL K8s. Set up a specific model for Charmed MySQL K8s named ‘tutorial’:
 ```shell
 juju add-model tutorial
 ```
@@ -39,7 +39,6 @@ juju add-model tutorial
 You can now view the model you created above by entering the command `juju status` into the command line. You should see the following:
 ```
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  charm-dev   microk8s/localhost  2.9.42   unsupported  11:56:38+01:00
-
+tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:30:11+01:00
 Model "admin/tutorial" is empty.
 ```

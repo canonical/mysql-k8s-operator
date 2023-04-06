@@ -5,8 +5,9 @@ This is part of the [Charmed MySQL Tutorial](TODO). Please refer to this page fo
 ## Deploy Charmed MySQL K8s
 To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=edge) and deploy it to your model:
 ```shell
-juju deploy mysql-k8s --channel edge
+juju deploy mysql-k8s --channel edge --trust
 ```
+Note: `--trust` is required to create some K8s resources.
 
 Juju will now fetch Charmed MySQL K8s and begin deploying it to the Microk8s Kubernetes. This process can take several minutes depending on how provisioned (RAM, CPU, etc) your machine is. You can track the progress by running:
 ```shell

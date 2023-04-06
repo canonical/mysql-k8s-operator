@@ -9,9 +9,9 @@ Charmed MySQL K8s operator uses [MySQL InnoDB Cluster](https://dev.mysql.com/doc
 > **!** *Disclaimer: this tutorial hosts replicas all on the same machine, this should not be done in a production environment. To enable high availability in a production environment, replicas should be hosted on different servers to [maintain isolation](https://canonical.com/blog/database-high-availability).*
 
 ### Add cluster members (replicas)
-You can add two replicas to your deployed MySQL application with:
+You can add two replicas to your deployed MySQL application by scaling it to three units using:
 ```shell
-juju add-unit mysql-k8s -n 2
+juju scale-application mysql-k8s 3
 ```
 
 You can now watch the scaling process in live using: `juju status --watch 1s`. It usually takes several minutes for new cluster members to be added. You’ll know that all three nodes are in sync when `juju status` reports `Workload=active` and `Agent=idle`:
@@ -29,9 +29,9 @@ mysql-k8s/2   active    idle   10.1.84.73          Unit is ready: Mode: RO
 ```
 
 ### Remove cluster members (replicas)
-Removing a unit from the application, scales the replicas down. Before we scale down the replicas, list all the units with `juju status`, here you will see three units `mysql-k8s/0`, `mysql-k8s/1`, and `mysql-k8s/2`. Each of these units hosts a MySQL replica. To remove the replica enter:
+Removing a unit from the application, scales the replicas down. Before we scale down the replicas, list all the units with `juju status`, here you will see three units `mysql-k8s/0`, `mysql-k8s/1`, and `mysql-k8s/2`. Each of these units hosts a MySQL replica. To scale the application down to two units, enter:
 ```shell
-juju remove-unit mysql-k8s --num-units 1
+juju scale-application mysql-k8s 2
 ```
 
 You’ll know that the replica was successfully removed when `juju status --watch 1s` reports:
