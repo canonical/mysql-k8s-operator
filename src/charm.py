@@ -46,6 +46,7 @@ from constants import (
     CONTAINER_NAME,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
+    MYSQL_LOG_FILES,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
@@ -111,7 +112,7 @@ class MySQLOperatorCharm(CharmBase):
         )
         self.loki_push = LogProxyConsumer(
             self,
-            log_files=["/var/log/mysql/error.log"],
+            log_files=MYSQL_LOG_FILES,
             relation_name="logging",
             container_name="mysql",
         )
