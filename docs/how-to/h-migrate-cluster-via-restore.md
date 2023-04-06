@@ -1,9 +1,9 @@
-This is a How-To for restoring a backup that was made from the a *different* cluster, (i.e. cluster migration via restore). To perform a basic restore please reference the [Restore How-To](/t/cluster-migration-via-restore/TODO)
+This is a How-To for restoring a backup that was made from the a *different* cluster, (i.e. cluster migration via restore). To perform a basic restore please reference the [Restore How-To](/t/charmed-mysql-k8s-how-to-restore-backup/9663)
 
 Restoring a backup from a previous cluster to a current cluster requires that you:
 - Have a single unit Charmed MySQL deployed and running
 - Access to S3 storage
-- [Have configured settings for S3 storage](/t/configuring-settings-for-s3/TODO)
+- [Have configured settings for S3 storage](/t/charmed-mysql-k8s-how-to-configure-s3/9651)
 - Have the backups from the previous cluster in your S3-storage
 - Have the passwords from your previous cluster
 

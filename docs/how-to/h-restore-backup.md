@@ -1,11 +1,11 @@
 This is a How-To for performing a basic restore (restoring a locally made backup).
-To restore a backup that was made from the a *different* cluster, (i.e. cluster migration via restore), please reference the [Cluster Migration via Restore How-To](/t/cluster-migration-via-restore/TODO):
+To restore a backup that was made from the a *different* cluster, (i.e. cluster migration via restore), please reference the [Cluster Migration via Restore How-To](/t/charmed-mysql-k8s-how-to-migrate-cluster-via-restore/9661):
 
 Restoring from a backup requires that you:
-- [Scale-down to the single MySQL unit (scale it up after the backup is restored).](/t/charmed-mysql-tutorial-managing-units/TODO)
+- [Scale-down to the single MySQL unit (scale it up after the backup is restored).](/t/charmed-mysql-k8s-how-to-manage-units/9659)
 - Access to S3 storage
-- [Have configured settings for S3 storage](/t/configuring-settings-for-s3/TODO)
-- [Have existing backups in your S3-storage](/t/how-to-create-and-list-backups/TODO)
+- [Have configured settings for S3 storage](/t/charmed-mysql-k8s-how-to-configure-s3/9651)
+- [Have existing backups in your S3-storage](/t/charmed-mysql-k8s-how-to-create-and-list-backups/9653)
 
 To view the available backups to restore you can enter the command `list-backups`:
 ```shell
