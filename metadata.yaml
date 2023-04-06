@@ -5,6 +5,7 @@ name: mysql-k8s
 display-name: MySQL
 description: |
   MySQL charm for Kubernetes deployments
+docs: https://discourse.charmhub.io/t/charmed-mysql-k8s-documentation/9680
 summary: |
   MySQL is a widely used, open-source relational database management system
   (RDBMS). MySQL InnoDB cluster provide a complete high availability solution
