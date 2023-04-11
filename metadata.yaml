@@ -35,11 +35,11 @@ storage:
     type: filesystem
     description: Persistent storage for MySQL data
 provides:
-  mysql:
-    interface: mysql
   database:
     interface: mysql_client
-  osm-mysql:
+  mysql:
+    interface: mysql
+  mysql-root:
     interface: mysql
   metrics-endpoint:
     interface: prometheus_scrape

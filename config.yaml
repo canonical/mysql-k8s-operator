@@ -1,21 +1,20 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 options:
   cluster-name:
     description: "Optional - Name of the MySQL InnoDB cluster"
     type: "string"
-# Config options for the legacy 'mysql' relation
+# Config options for the legacy 'mysql' interface
   mysql-interface-user:
-    description: "The database username for the legacy 'mysql' relation"
+    description: "The database username for the legacy 'mysql' interface"
     type: "string"
   mysql-interface-database:
-    description: "The database name for the legacy 'mysql' relation"
+    description: "The database name for the legacy 'mysql' interface"
     type: "string"
-# Config options for the legacy 'osm-mysql' relation
-  osm-mysql-interface-user:
-    description: "The database username for the legacy 'osm-mysql' relation"
+  mysql-root-interface-user:
+    description: "The database username for the legacy 'mysql' interface (root level access)"
     type: "string"
-  osm-mysql-interface-database:
-    description: "The database name for the legacy 'osm-mysql' relation"
+  mysql-root-interface-database:
+    description: "The database name for the legacy 'mysql' interface (root level access)"
     type: "string"

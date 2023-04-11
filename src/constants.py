@@ -20,7 +20,7 @@ REQUIRED_USERNAMES = [
 ]
 DB_RELATION_NAME = "database"
 LEGACY_MYSQL = "mysql"
-LEGACY_OSM_MYSQL = "osm-mysql"
+LEGACY_MYSQL_ROOT = "mysql-root"
 ROOT_PASSWORD_KEY = "root-password"
 SERVER_CONFIG_PASSWORD_KEY = "server-config-password"
 CLUSTER_ADMIN_PASSWORD_KEY = "cluster-admin-password"

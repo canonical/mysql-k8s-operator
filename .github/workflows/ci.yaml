@@ -52,7 +52,7 @@ jobs:
         tox-environments:
           - integration-charm
           - integration-database-relation
-          - integration-osm-mysql
+          - integration-mysql-root
           - integration-replication
           - integration-self-healing
           - integration-tls
