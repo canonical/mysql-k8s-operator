@@ -53,6 +53,7 @@ async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
 
 
 @pytest.mark.abort_on_fail
+@pytest.mark.unstable
 async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writes) -> None:
     """Test to ensure that writes to one cluster do not replicate to another cluster."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
