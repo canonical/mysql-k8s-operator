@@ -56,6 +56,7 @@ class TestMySQL(unittest.TestCase):
             "monitoring",
             "monitoringpassword",
             None,
+            None,
         )
 
     @patch("ops.pebble.ExecProcess")

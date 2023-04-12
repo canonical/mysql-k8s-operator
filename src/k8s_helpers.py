@@ -4,7 +4,7 @@
 """Kubernetes helpers."""
 
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from lightkube import Client
 from lightkube.core.exceptions import ApiError
@@ -115,4 +115,20 @@ class KubernetesHelpers:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
             else:
                 logger.exception("Kubernetes pod label creation failed: %s", e)
+            raise KubernetesClientError
+
+    def get_resources_limits(self, container_name: str) -> Dict:
+        """Return resources limits for a given container.
+
+        Args:
+            container_name: name of the container to get resources limits for
+        """
+        try:
+            pod = self.client.get(Pod, self.pod_name, namespace=self.namespace)
+
+            for container in pod.spec.containers:
+                if container.name == container_name:
+                    return container.resources.limits or {}
+            return {}
+        except ApiError:
             raise KubernetesClientError

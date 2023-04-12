@@ -71,3 +71,15 @@ class TestK8sHelpers(unittest.TestCase):
         _get.return_value = pod
         self.k8s_helpers.label_pod("role1")
         _patch.assert_called_once_with(Pod, pod.name, pod)
+
+    @patch("lightkube.Client.get")
+    def test_get_resources_limit(self, _get):
+        pod = MagicMock()
+        container = MagicMock()
+        container.resources.limits = {"memory": "2Gi"}
+        container.name = "mysql"
+        pod.spec.containers = [container]
+        _get.return_value = pod
+        self.assertEqual(
+            self.k8s_helpers.get_resources_limits(container_name="mysql"), {"memory": "2Gi"}
+        )
