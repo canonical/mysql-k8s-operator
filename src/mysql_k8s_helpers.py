@@ -32,6 +32,7 @@ from constants import (
     CHARMED_MYSQL_XBCLOUD_LOCATION,
     CHARMED_MYSQL_XBSTREAM_LOCATION,
     CHARMED_MYSQL_XTRABACKUP_LOCATION,
+    CONTAINER_NAME,
     MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
     MYSQL_SYSTEM_GROUP,
@@ -46,6 +47,8 @@ from constants import (
     TMP_DIR,
     XTRABACKUP_PLUGIN_DIR,
 )
+from k8s_helpers import KubernetesHelpers
+from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +143,7 @@ class MySQL(MySQLBase):
         monitoring_user: str,
         monitoring_password: str,
         container: Container,
+        k8s_helper: KubernetesHelpers,
     ):
         """Initialize the MySQL class.
 
@@ -154,6 +158,7 @@ class MySQL(MySQLBase):
             monitoring_user: user name for the monitoring user
             monitoring_password: password for the monitoring user
             container: workload container object
+            k8s_helper: KubernetesHelpers object
         """
         super().__init__(
             instance_address=instance_address,
@@ -167,6 +172,7 @@ class MySQL(MySQLBase):
             monitoring_password=monitoring_password,
         )
         self.container = container
+        self.k8s_helper = k8s_helper
 
     def initialise_mysqld(self) -> None:
         """Execute instance first run.
@@ -771,3 +777,12 @@ class MySQL(MySQLBase):
         while initial_pid == pid:
             pid = get_mysqld_safe_pid(self)
             sleep(0.1)
+
+    def _get_total_memory(self) -> int:
+        """Get total memory of the container in bytes."""
+        container_limits = self.k8s_helper.get_resources_limits(CONTAINER_NAME)
+        if "memory" in container_limits:
+            mem_str = container_limits["memory"]
+            return any_memory_to_bytes(mem_str)
+
+        return super()._get_total_memory()

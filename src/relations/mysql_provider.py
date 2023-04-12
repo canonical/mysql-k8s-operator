@@ -35,7 +35,7 @@ from constants import (
     PASSWORD_LENGTH,
     PEER,
 )
-from k8s_helpers import KubernetesClientError, KubernetesHelpers
+from k8s_helpers import KubernetesClientError
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -64,8 +64,6 @@ class MySQLProvider(Object):
         self.framework.observe(self.charm.on.leader_elected, self._configure_endpoints)
         self.framework.observe(self.charm.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
         self.framework.observe(self.charm.on.update_status, self._on_update_status)
-
-        self.k8s_helpers = KubernetesHelpers(self.charm)
 
     # =============
     # Helpers
@@ -102,15 +100,15 @@ class MySQLProvider(Object):
             # rw pod labels
             if rw_endpoints:
                 for pod in self._endpoints_to_pod_list(rw_endpoints):
-                    self.k8s_helpers.label_pod("primary", pod)
+                    self.charm.k8s_helpers.label_pod("primary", pod)
             # ro pod labels
             if ro_endpoints:
                 for pod in self._endpoints_to_pod_list(ro_endpoints):
-                    self.k8s_helpers.label_pod("replicas", pod)
+                    self.charm.k8s_helpers.label_pod("replicas", pod)
             # offline pod labels
             if offline:
                 for pod in self._endpoints_to_pod_list(offline):
-                    self.k8s_helpers.label_pod("offline", pod)
+                    self.charm.k8s_helpers.label_pod("offline", pod)
         except MySQLGetClusterEndpointsError as e:
             logger.exception("Failed to get cluster members", exc_info=e)
         except KubernetesClientError:
@@ -153,7 +151,7 @@ class MySQLProvider(Object):
             self._update_endpoints()
 
             # create k8s services for endpoints
-            self.k8s_helpers.create_endpoint_services(["primary", "replicas"])
+            self.charm.k8s_helpers.create_endpoint_services(["primary", "replicas"])
 
             primary_endpoint = socket.getfqdn(f"{self.charm.app.name}-primary")
             self.database.set_endpoints(relation_id, f"{primary_endpoint}:3306")
@@ -306,7 +304,7 @@ class MySQLProvider(Object):
 
         if len(self.model.relations[DB_RELATION_NAME]) == 1:
             # remove kubernetes service when last relation is removed
-            self.k8s_helpers.delete_endpoint_services(["primary", "replicas"])
+            self.charm.k8s_helpers.delete_endpoint_services(["primary", "replicas"])
 
         relation_id = event.relation.id
         try:

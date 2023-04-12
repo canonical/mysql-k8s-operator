@@ -63,6 +63,7 @@ from constants import (
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
+from k8s_helpers import KubernetesHelpers
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
@@ -98,6 +99,7 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.get_password_action, self._on_get_password)
         self.framework.observe(self.on.set_password_action, self._on_set_password)
 
+        self.k8s_helpers = KubernetesHelpers(self)
         self.mysql_relation = MySQLRelation(self)
         self.database_relation = MySQLProvider(self)
         self.osm_mysql_relation = MySQLOSMRelation(self)
@@ -152,6 +154,7 @@ class MySQLOperatorCharm(CharmBase):
             MONITORING_USERNAME,
             self.get_secret("app", MONITORING_PASSWORD_KEY),
             self.unit.get_container("mysql"),
+            self.k8s_helpers,
         )
 
     @property
