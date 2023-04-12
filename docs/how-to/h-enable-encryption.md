@@ -1,5 +1,9 @@
 # How to enable encryption
 
+MySQL will enable encrypted connections by default with self generated certificates. Though also by default, connecting clients can disable encryption by setting the connection ssl-mode as disabled.
+When related with the `tls-certificates-operator` the charmed operator for MySQL will require that every client connection (new and running connections) use encryption, rendering an error when attempting to establish an unencrypted connection.
+
+
 Note: The TLS settings here are for self-signed-certificates which are not recommended for production clusters, the `tls-certificates-operator` charm offers a variety of configurations, read more on the TLS charm [here](https://charmhub.io/tls-certificates-operator)
 
 ## Enable TLS
@@ -31,7 +35,7 @@ openssl genrsa -out external-key-1.pem 3072
 openssl genrsa -out external-key-2.pem 3072
 ```
 
-* apply both private keys on each unit, shared internal key will be allied only on juju leader
+* apply both private keys on each unit, shared internal key will be applied only on juju leader
 
 ```
 juju run-action mysql-k8s/0 set-tls-private-key "external-key=$(base64 -w0 external-key-0.pem)"  "internal-key=$(base64 -w0 internal-key.pem)"  --wait

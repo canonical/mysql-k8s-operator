@@ -30,7 +30,7 @@ juju relate mysql-k8s:mysql-root wordpress-k8s
 
 ## Rotate applications password
 
-To rotate the passwords of users created for related applications, the relation should be removed and related again. That process will generate a new user and password for the application.
+To rotate the passwords of users created for related applications, the relation should be removed and related again. That process will generate a new user and password for the application, while retaining the requested database and data.
 
 ```shell
 juju remove-relation application mysql-k8s
