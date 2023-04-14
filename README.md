@@ -8,7 +8,7 @@ To deploy on [virtual machines](https://ubuntu.com/lxd), please use [Charmed MyS
 
 ## Usage
 
-To deploy this charm using Juju 2.9 or later, run:
+Bootstrap a Kubernetes (e.g. [Multipass-based MicroK8s](https://discourse.charmhub.io/t/charmed-environment-charm-dev-with-canonical-multipass/8886)) and create a new model using Juju 2.9+:
 
 ```shell
 juju add-model mysql-k8s
@@ -37,19 +37,22 @@ juju destroy-model mysql-k8s --destroy-storage --yes
 
 ## Documentation
 
+This operator provides a MySQL database with replication enabled: one primary instance and one (or more) hot standby replicas. The Operator in this repository is a Python-based framework which wraps MySQL distributed by Ubuntu Jammy providing lifecycle management and handling events (install, configure, integrate, remove, etc).
+
 Please follow the [tutorial guide](https://discourse.charmhub.io/t/charmed-mysql-k8s-tutorial-overview/9677) with detailed explanation how to access DB, configure cluster, change credentials and/or enable TLS.
 
-## Relations
+## Integrations ([relations](https://juju.is/docs/olm/relations))
 
 The charm supports modern `mysql_client` and legacy `mysql` interfaces (in a backward compatible mode).
 
-**Note:** do NOT relate both modern and legacy interfaces simultaneously.
+**Note:** do NOT relate both modern and legacy interfaces simultaneously!
 
 
-### Modern relations
+### Modern interfaces
 
-This charm implements the [provides data platform library](https://charmhub.io/data-platform-libs/libraries/database_provides), with the modern `mysql_client` interface.
-To relate to it, use the [requires data-platform library](https://charmhub.io/data-platform-libs/libraries/database_requires).
+This charm provides modern ['mysql_client' interface](https://github.com/canonical/charm-relation-interfaces). Applications can easily connect MySQL using ['data_interfaces' library](https://charmhub.io/data-platform-libs/libraries/data_interfaces) from ['data-platform-libs'](https://github.com/canonical/data-platform-libs/).
+
+#### Modern `mysql_client` interface (`database` endpoint):
 
 Adding a relation is accomplished with `juju relate` (or `juju integrate` for Juju 3.x) via endpoint `database`. Example:
 
@@ -71,14 +74,15 @@ juju status --relations
 # > mysql-k8s:database     mysql-test-app:database  mysql_client  regular
 ```
 
-**Note:** In order to relate with this charm, every table created by the related application must have a primary key. This is required by the [group replication plugin](https://dev.mysql.com/doc/refman/5.7/en/group-replication-requirements.html) enabled in this charm.
+**Note:** In order to relate with this charm, every table created by the related application must have a primary key. This is required by the [group replication plugin](https://dev.mysql.com/doc/refman/8.0/en/group-replication-requirements.html) enabled in this charm.
 
-
-### Legacy relations
+### Legacy interfaces
 
 **Note:** Legacy relations are deprecated and will be discontinued on future releases. Usage should be avoided.
 
-This charm supports legacy interface `mysql` (endpoint `mysql`). It was a popular interface used by some legacy charms (e.g. "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)"), often in [cross-model relations](https://juju.is/docs/olm/cross-model-integration):
+#### Legacy `mysql` interface (`mysql` and `mysql-root` endpoints):
+
+This charm supports legacy interface `mysql` (endpoint `mysql` and `mysql-root`). It was a popular interface used by some legacy charms (e.g. "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)"), often in [cross-model relations](https://juju.is/docs/olm/cross-model-integration):
 
 ```shell
 juju deploy mysql-k8s --trust --channel 8.0
@@ -90,11 +94,12 @@ juju relate mysql-k8s:mysql wordpress-k8s:db
 **Note:** The endpoint `mysql-root` provides the same legacy interface `mysql` with MySQL root-level privileges. It is NOT recommended to use it from security point of view.
 
 ## OCI Images
-
 This charm uses pinned and tested version of the [charmed-mysql](https://github.com/canonical/charmed-mysql-rock/pkgs/container/charmed-mysql) ROCK image.
 
-## Contributing
+## Security
+Security issues in the Charmed MySQL K8s Operator can be reported through [LaunchPad](https://wiki.ubuntu.com/DebuggingSecurity#How%20to%20File). Please do not file GitHub issues about security issues.
 
+## Contributing
 Please see the [Juju SDK docs](https://juju.is/docs/sdk) for guidelines on enhancements to this
 charm following best practice guidelines, and [CONTRIBUTING.md](https://github.com/canonical/mysql-k8s-operator/blob/main/CONTRIBUTING.md) for developer guidance.
 
