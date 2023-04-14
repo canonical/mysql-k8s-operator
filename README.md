@@ -3,6 +3,7 @@
 ## Description
 
 This repository contains a [Juju Charm](https://charmhub.io/mysql-k8s) for deploying [MySQL](https://www.mysql.com/) on ([Kubernetes](https://microk8s.io/)).
+
 To deploy on virtual machines, please use [Charmed MySQL VM operator](https://charmhub.io/mysql).
 
 ## Usage
@@ -15,6 +16,7 @@ juju deploy mysql-k8s --trust
 ```
 
 **Note:** the `--trust` flag is required when relating using `mysql_client` interface.
+
 **Note:** the above model must be created on K8s environment. Use [another](https://charmhub.io/mysql) charm for VMs!
 
 To confirm the deployment, you can run:
@@ -24,7 +26,6 @@ juju status --watch 1s
 ```
 
 Once MySQL starts up, it will be running on the default port (3306).
-Please follow the [tutorial guide](https://discourse.charmhub.io/t/charmed-mysql-k8s-tutorial-overview/9677) with detailed explanation how to access DB, configure cluster, change credentials and/or enable TLS.
 
 If required, you can remove the deployment completely by running:
 
@@ -34,11 +35,15 @@ juju destroy-model mysql-k8s --destroy-storage --yes
 
 **Note:** the `--destroy-storage` will delete any data persisted by MySQL.
 
+## Documentation
+
+Please follow the [tutorial guide](https://discourse.charmhub.io/t/charmed-mysql-k8s-tutorial-overview/9677) with detailed explanation how to access DB, configure cluster, change credentials and/or enable TLS.
+
 ## Relations
 
 The charm supports modern `mysql_client` and legacy `mysql` interfaces (in a backward compatible mode).
 
-**Note:** do NOT relate both of them simultaneously.
+**Note:** do NOT relate both modern and legacy interfaces simultaneously.
 
 
 ### Modern relations
@@ -81,7 +86,7 @@ juju deploy mediawiki
 juju relate mysql-k8s:mysql mediawiki:db
 ```
 
-**Note:** The endpoint `mysql-root` provides the same legacy interface `mysql` with MySQL root-level priviledges. It is NOT recommended to use it from security point of view.
+**Note:** The endpoint `mysql-root` provides the same legacy interface `mysql` with MySQL root-level privileges. It is NOT recommended to use it from security point of view.
 
 ## OCI Images
 
