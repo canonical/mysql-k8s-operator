@@ -78,12 +78,13 @@ juju status --relations
 
 **Note:** Legacy relations are deprecated and will be discontinued on future releases. Usage should be avoided.
 
-This charm supports legacy interface `mysql`. The `mysql` is a relation that's used from some k8s charms and can be used in cross-model relations.
+This charm supports legacy interface `mysql` (endpoint `mysql`). It was a popular interface used by some legacy charms (e.g. "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)"), often in [cross-model relations](https://juju.is/docs/olm/cross-model-integration):
 
 ```shell
 juju deploy mysql-k8s --trust --channel 8.0
-juju deploy mediawiki
-juju relate mysql-k8s:mysql mediawiki:db
+juju config mysql-k8s mysql-interface-database=wordpress mysql-interface-user=wordpress
+juju deploy wordpress-k8s
+juju relate mysql-k8s:mysql wordpress-k8s:db
 ```
 
 **Note:** The endpoint `mysql-root` provides the same legacy interface `mysql` with MySQL root-level privileges. It is NOT recommended to use it from security point of view.
