@@ -1,40 +1,40 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 name: mysql-k8s
-display-name: MySQL
+display-name: Charmed MySQL K8s
 description: |
-  MySQL charm for Kubernetes deployments
+  Charmed MySQL K8s operator for Kubernetes deployments
 docs: https://discourse.charmhub.io/t/charmed-mysql-k8s-documentation/9680
 summary: |
   MySQL is a widely used, open-source relational database management system
   (RDBMS). MySQL InnoDB cluster provide a complete high availability solution
   for MySQL via Group Replication.
 
-  This charm supports MySQL 8 in Kubernetes environments.
+  This charm supports MySQL 8.0 in Kubernetes environments.
 maintainers:
   - Paulo Machado <paulo.machado@canonical.com>
   - Shayan Patel <shayan.patel@canonical.com>
 source: https://github.com/canonical/mysql-k8s-operator
 issues: https://github.com/canonical/mysql-k8s-operator/issues
+
 containers:
   mysql:
     resource: mysql-image
     mounts:
       - storage: database
         location: /var/lib/mysql
+
 resources:
   mysql-image:
     type: oci-image
     description: Ubuntu LTS Docker image for MySQL
     upstream-source: ghcr.io/canonical/charmed-mysql@sha256:924cb913733002e0936a36b6edab0bb8a4d72f1b92be0e0b7a933e797b7ef215
+
 peers:
   database-peers:
     interface: mysql_peers
-storage:
-  database:
-    type: filesystem
-    description: Persistent storage for MySQL data
+
 provides:
   database:
     interface: mysql_client
@@ -46,6 +46,7 @@ provides:
     interface: prometheus_scrape
   grafana-dashboard:
     interface: grafana_dashboard
+
 requires:
   certificates:
     interface: tls-certificates
@@ -59,5 +60,11 @@ requires:
     interface: loki_push_api
     limit: 1
     optional: true
+
+storage:
+  database:
+    type: filesystem
+    description: Persistent storage for MySQL data
+
 assumes:
   - k8s-api
