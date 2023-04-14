@@ -12,7 +12,7 @@ To deploy this charm using Juju 2.9 or later, run:
 
 ```shell
 juju add-model mysql-k8s
-juju deploy mysql-k8s --trust
+juju deploy mysql-k8s --trust --channel 8.0
 ```
 
 **Note:** the `--trust` flag is required when relating using `mysql_client` interface.
@@ -55,7 +55,7 @@ Adding a relation is accomplished with `juju relate` (or `juju integrate` for Ju
 
 ```shell
 # Deploy Charmed MySQL cluster with 3 nodes
-juju deploy mysql-k8s -n 3 --trust
+juju deploy mysql-k8s -n 3 --trust --channel 8.0
 
 # Deploy the relevant charms, e.g. mysql-test-app
 juju deploy mysql-test-app
@@ -81,7 +81,7 @@ juju status --relations
 This charm supports legacy interface `mysql`. The `mysql` is a relation that's used from some k8s charms and can be used in cross-model relations.
 
 ```shell
-juju deploy mysql-k8s --trust
+juju deploy mysql-k8s --trust --channel 8.0
 juju deploy mediawiki
 juju relate mysql-k8s:mysql mediawiki:db
 ```
