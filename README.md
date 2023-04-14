@@ -51,7 +51,7 @@ The charm supports modern `mysql_client` and legacy `mysql` interfaces (in a bac
 This charm implements the [provides data platform library](https://charmhub.io/data-platform-libs/libraries/database_provides), with the modern `mysql_client` interface.
 To relate to it, use the [requires data-platform library](https://charmhub.io/data-platform-libs/libraries/database_requires).
 
-Adding a relation is accomplished with `juju relate` (or `juju integrate` for Juju 3.x). Example:
+Adding a relation is accomplished with `juju relate` (or `juju integrate` for Juju 3.x) via endpoint `database`. Example:
 
 ```shell
 # Deploy Charmed MySQL cluster with 3 nodes
