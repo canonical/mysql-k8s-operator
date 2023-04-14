@@ -2,9 +2,9 @@
 
 ## Description
 
-This repository contains a [Juju Charm](https://charmhub.io/mysql-k8s) for deploying [MySQL](https://www.mysql.com/) on ([Kubernetes](https://microk8s.io/)).
+This repository contains a [Juju Charm](https://charmhub.io/mysql-k8s) for deploying [MySQL](https://www.mysql.com/) on [Kubernetes](https://microk8s.io/).
 
-To deploy on virtual machines, please use [Charmed MySQL VM operator](https://charmhub.io/mysql).
+To deploy on [virtual machines](https://ubuntu.com/lxd), please use [Charmed MySQL VM operator](https://charmhub.io/mysql).
 
 ## Usage
 
