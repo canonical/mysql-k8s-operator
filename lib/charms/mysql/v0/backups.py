@@ -46,7 +46,6 @@ class MySQL(MySQLBase):
 """
 
 import datetime
-import json
 import logging
 import pathlib
 from typing import Dict, List, Tuple
@@ -93,7 +92,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 2
+LIBPATCH = 3
 
 
 class MySQLBackups(Object):
@@ -170,6 +169,16 @@ Stderr:
 
     # ------------------ List Backups ------------------
 
+    def _format_backups_list(self, backup_list: Tuple[str, bool]) -> str:
+        """Formats the provided list of backups as a table."""
+        backups = [f"{'backup-id':<21} | {'backup-type':<12} | backup-status"]
+
+        backups.append("-" * len(backups[0]))
+        for backup_id, backup_status in backup_list:
+            backups.append(f"{backup_id:<21} | {'physical':<12} | {backup_status}")
+
+        return "\n".join(backups)
+
     def _on_list_backups(self, event: ActionEvent) -> None:
         """Handle the list backups action.
 
@@ -187,8 +196,8 @@ Stderr:
                 return
 
             logger.info("Listing backups in the specified s3 path")
-            backup_ids = list_backups_in_s3_path(s3_parameters)
-            event.set_results({"backup-ids": json.dumps(backup_ids)})
+            backups = sorted(list_backups_in_s3_path(s3_parameters), key=lambda pair: pair[0])
+            event.set_results({"backups": self._format_backups_list(backups)})
         except Exception:
             event.fail("Failed to retrieve backup ids from S3")
 
@@ -561,8 +570,11 @@ Juju Version: {str(juju_version)}
         """
         try:
             self.charm._mysql.delete_temp_restore_directory()
+            self.charm._mysql.delete_temp_backup_directory()
         except MySQLDeleteTempRestoreDirectoryError:
             return False, "Failed to delete the temp restore directory"
+        except MySQLDeleteTempBackupDirectoryError:
+            return False, "Failed to delete the temp backup directory"
 
         try:
             self.charm._mysql.start_mysqld()

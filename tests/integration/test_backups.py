@@ -2,7 +2,6 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import json
 import logging
 import os
 from pathlib import Path
@@ -152,7 +151,8 @@ async def test_backup(ops_test: OpsTest) -> None:
 
         action = await zeroth_unit.run_action(action_name="list-backups")
         result = await action.wait()
-        backup_ids = json.loads(result.results["backup-ids"])
+        output = result.results["backups"]
+        backup_ids = [line.split("|")[0].strip() for line in output.split("\n")[2:]]
 
         # create backup
         logger.info("Creating backup")
@@ -166,7 +166,8 @@ async def test_backup(ops_test: OpsTest) -> None:
 
         action = await zeroth_unit.run_action(action_name="list-backups")
         result = await action.wait()
-        new_backup_ids = json.loads(result.results["backup-ids"])
+        output = result.results["backups"]
+        new_backup_ids = [line.split("|")[0].strip() for line in output.split("\n")[2:]]
 
         assert sorted(new_backup_ids) == sorted(backup_ids + [backup_id])
 
