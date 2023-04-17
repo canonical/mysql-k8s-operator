@@ -44,7 +44,6 @@ from constants import (
     MYSQLD_SOCK_FILE,
     MYSQLSH_LOCATION,
     MYSQLSH_SCRIPT_FILE,
-    TMP_DIR,
     XTRABACKUP_PLUGIN_DIR,
 )
 from k8s_helpers import KubernetesHelpers
@@ -297,14 +296,14 @@ class MySQL(MySQLBase):
             CHARMED_MYSQL_XBCLOUD_LOCATION,
             XTRABACKUP_PLUGIN_DIR,
             MYSQLD_SOCK_FILE,
-            TMP_DIR,
+            MYSQL_DATA_DIR,
             MYSQLD_DEFAULTS_CONFIG_FILE,
             user=MYSQL_SYSTEM_USER,
             group=MYSQL_SYSTEM_GROUP,
         )
 
     def delete_temp_backup_directory(self) -> None:
-        """Delete the temp backup directory in /tmp."""
+        """Delete the temp backup directory in the data directory."""
         super().delete_temp_backup_directory(
             MYSQL_DATA_DIR,
             user=MYSQL_SYSTEM_USER,

@@ -16,7 +16,8 @@
 
 import logging
 import tempfile
-from typing import Dict, List
+import time
+from typing import Dict, List, Tuple
 
 import boto3
 
@@ -30,7 +31,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 1
+LIBPATCH = 2
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -71,6 +72,23 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
     return True
 
 
+def _compile_backups_from_file_ids(
+    metadata_ids: List[str], md5_ids: List[str], log_ids: List[str]
+) -> Tuple[str, str]:
+    """Helper function that compiles tuples of (backup_id, status) from file ids."""
+    backups = []
+    for backup_id in metadata_ids:
+        backup_status = "in progress"
+        if backup_id in md5_ids:
+            backup_status = "finished"
+        elif backup_id in log_ids:
+            backup_status = "failed"
+
+        backups.append((backup_id, backup_status))
+
+    return backups
+
+
 def list_backups_in_s3_path(s3_parameters: Dict) -> List[str]:
     """Retrieve subdirectories in an S3 path.
 
@@ -101,7 +119,10 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[str]:
             else f"{s3_parameters['path']}/"
         )
 
-        directories = []
+        metadata_ids = []
+        md5_ids = []
+        log_ids = []
+
         for page in list_objects_v2_paginator.paginate(
             Bucket=s3_parameters["bucket"],
             Prefix=s3_path_directory,
@@ -109,12 +130,22 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[str]:
         ):
             for content in page.get("Contents", []):
                 key = content["Key"]
-                if ".md5" in key:
-                    directories.append(
-                        key.lstrip(s3_path_directory).split("/")[0].split(".md5")[0]
-                    )
 
-        return directories
+                filename = key.lstrip(s3_path_directory).split("/")[0]
+
+                if ".metadata" in filename:
+                    try:
+                        backup_id = filename.split(".metadata")[0]
+                        time.strptime(backup_id, "%Y-%m-%dT%H:%M:%SZ")
+                        metadata_ids.append(backup_id)
+                    except ValueError:
+                        pass
+                elif ".md5" in key:
+                    md5_ids.append(filename.split(".md5")[0])
+                elif ".backup.log" in key:
+                    log_ids.append(filename.split(".backup.log")[0])
+
+        return _compile_backups_from_file_ids(metadata_ids, md5_ids, log_ids)
     except Exception as e:
         logger.exception(
             f"Failed to list subdirectories in S3 bucket={s3_parameters['bucket']}, path={s3_parameters['path']}",

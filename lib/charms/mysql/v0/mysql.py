@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 20
+LIBPATCH = 21
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -1502,7 +1502,9 @@ Swap:     1027600384  1027600384           0
         mysql container.
         """
         nproc_command = "nproc".split()
-        make_temp_dir_command = f"mktemp --directory {mysql_data_directory}/mysql_sst_XXXX".split()
+        make_temp_dir_command = (
+            f"mktemp --directory {mysql_data_directory}/#mysql_sst_XXXX".split()
+        )
 
         try:
             nproc, _ = self._execute_commands(nproc_command)
@@ -1594,7 +1596,7 @@ Swap:     1027600384  1027600384           0
         group=None,
     ) -> None:
         """Empty the mysql data directory in preparation of backup restore."""
-        empty_data_files_command = f"find {mysql_data_directory} -not -path {mysql_data_directory}/mysql_sst_* -not -path {mysql_data_directory} -delete".split()
+        empty_data_files_command = f"find {mysql_data_directory} -not -path {mysql_data_directory}/#mysql_sst_* -not -path {mysql_data_directory} -delete".split()
 
         try:
             self._execute_commands(
@@ -1652,7 +1654,7 @@ Swap:     1027600384  1027600384           0
     ) -> None:
         """Delete the temp restore directory from the mysql data directory."""
         logger.info(f"Deleting temp restore directory in {mysql_data_directory}")
-        delete_temp_restore_directory_command = f"find {mysql_data_directory} -wholename {mysql_data_directory}/mysql_sst_* -delete".split()
+        delete_temp_restore_directory_command = f"find {mysql_data_directory} -wholename {mysql_data_directory}/#mysql_sst_* -delete".split()
 
         try:
             self._execute_commands(
