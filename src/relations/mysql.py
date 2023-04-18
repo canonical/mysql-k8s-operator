@@ -87,6 +87,10 @@ class MySQLRelation(Object):
         if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) == "{}":
             return
 
+        if not self.charm.unit_peer_data.get("unit-initialized"):
+            # Skip update status for uninitialized unit
+            return
+
         container = self.charm.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
             return
