@@ -3,20 +3,24 @@
 
 name: mysql-k8s
 display-name: Charmed MySQL K8s
+summary: Charmed MySQL K8s operator
 description: |
-  Charmed MySQL K8s operator for Kubernetes deployments
-docs: https://discourse.charmhub.io/t/charmed-mysql-k8s-documentation/9680
-summary: |
   MySQL is a widely used, open-source relational database management system
   (RDBMS). MySQL InnoDB cluster provide a complete high availability solution
   for MySQL via Group Replication.
 
   This charm supports MySQL 8.0 in Kubernetes environments.
+docs: https://discourse.charmhub.io/t/charmed-mysql-k8s-documentation/9680
+source: https://github.com/canonical/mysql-k8s-operator
+issues: https://github.com/canonical/mysql-k8s-operator/issues
+website:
+  - https://ubuntu.com/data/mysql
+  - https://charmhub.io/mysql-k8s
+  - https://github.com/canonical/mysql-k8s-operator
+  - https://chat.charmhub.io/charmhub/channels/data-platform
 maintainers:
   - Paulo Machado <paulo.machado@canonical.com>
   - Shayan Patel <shayan.patel@canonical.com>
-source: https://github.com/canonical/mysql-k8s-operator
-issues: https://github.com/canonical/mysql-k8s-operator/issues
 
 containers:
   mysql:
