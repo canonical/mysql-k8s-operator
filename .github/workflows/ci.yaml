@@ -49,7 +49,7 @@ jobs:
     name: Release charm
     needs:
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@release-digest
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v2
     with:
       channel: 8.0/edge/mysqlrouter-user
       artifact-name: ${{ needs.build.outputs.artifact-name }}
