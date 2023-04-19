@@ -45,6 +45,18 @@ jobs:
     name: Build charms
     uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v2
 
+  release:
+    name: Release charm
+    needs:
+      - build
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v2
+    with:
+      channel: 8.0/edge/mysqlrouter-user
+      artifact-name: ${{ needs.build.outputs.artifact-name }}
+      create-github-release: false
+    secrets:
+      charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
+
   integration-test:
     strategy:
       fail-fast: false
