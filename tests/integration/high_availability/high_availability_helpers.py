@@ -150,7 +150,7 @@ async def deploy_and_scale_mysql(
 
     config = {"cluster-name": CLUSTER_NAME}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-    constraints = {"memory": "728M"}
+    constraints = {"mem": "1G"}
 
     async with ops_test.fast_forward():
         await ops_test.model.deploy(
