@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 21
+LIBPATCH = 22
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -1167,7 +1167,7 @@ class MySQLBase(ABC):
             raise MySQLGrantPrivilegesToUserError("Failed to get cluster primary address")
 
         grant_privileges_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{cluster_primary}')",
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{cluster_primary}')",
             f"session.run_sql(\"GRANT {', '.join(privileges)} ON *.* TO '{username}'@'{hostname}'{' WITH GRANT OPTION' if with_grant_option else ''}\")",
         )
 
