@@ -195,7 +195,9 @@ class MySQLRelation(Object):
         # else we'd be unable to create database and user
         if not username or not database:
             logger.warning("Missing mysql-interface-user or mysql-interface-database")
-            self.charm.unit.status = BlockedStatus("Missing config mysql-interface-{user,database}")
+            self.charm.unit.status = BlockedStatus(
+                "Missing config mysql-interface-{user,database}"
+            )
             return
 
         user_exists = False
