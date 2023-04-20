@@ -35,6 +35,7 @@ class MySQLRelation(Object):
         self.charm = charm
 
         self.framework.observe(self.charm.on.leader_elected, self._on_leader_elected)
+        self.framework.observe(self.charm.on.config_changed, self._on_config_changed)
         self.framework.observe(
             self.charm.on[LEGACY_MYSQL].relation_created, self._on_mysql_relation_created
         )
@@ -76,6 +77,22 @@ class MySQLRelation(Object):
         # Trigger a peer relation changed event in order to refresh the relation data
         leader_elected_count = int(self.charm.app_peer_data.get("leader_elected_count", "1"))
         self.charm.app_peer_data["leader_elected_count"] = str(leader_elected_count + 1)
+
+    def _on_config_changed(self, _) -> None:
+        """Handle the delayed setup of relation configuration."""
+        if not self.model.get_relation(LEGACY_MYSQL):
+            # skip if the relation is not present
+            return
+
+        if self.charm.app_peer_data.get("mysql_relation_data"):
+            # skip if the relation data is already set
+            return
+
+        username = self.charm.config.get("mysql-interface-user")
+        database = self.charm.config.get("mysql-interface-database")
+
+        if username and database:
+            self._on_mysql_relation_created(None)
 
     def _update_status(self, _) -> None:
         """Handle the update status event.
@@ -145,7 +162,7 @@ class MySQLRelation(Object):
 
         self.model.get_relation(LEGACY_MYSQL).data[self.charm.unit].update(updates)
 
-    def _on_mysql_relation_created(self, event: RelationCreatedEvent) -> None:
+    def _on_mysql_relation_created(self, event: RelationCreatedEvent) -> None:  # noqa: C901
         """Handle the legacy 'mysql' relation created event.
 
         Will set up the database and the scoped application user. The connection
@@ -164,7 +181,9 @@ class MySQLRelation(Object):
             or self.charm.unit_peer_data.get("member-state") != "online"
         ):
             logger.info("Unit not ready to execute `mysql` relation created. Deferring")
-            event.defer()
+            if event:
+                # Only defer if event is not None (i.e. not called from config-changed)
+                event.defer()
             return
 
         logger.warning("DEPRECATION WARNING - `mysql` is a legacy interface")
@@ -175,8 +194,10 @@ class MySQLRelation(Object):
         # Only execute handler if config values are set
         # else we'd be unable to create database and user
         if not username or not database:
-            logger.warning("mysql-interface-user or mysql-interface-database not set")
-            self.charm.unit.status = BlockedStatus("Missing `mysql` relation data")
+            logger.warning("Missing mysql-interface-user or mysql-interface-database")
+            self.charm.unit.status = BlockedStatus(
+                "Missing config mysql-interface-{user,database}"
+            )
             return
 
         user_exists = False
