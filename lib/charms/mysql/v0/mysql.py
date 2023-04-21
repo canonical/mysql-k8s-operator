@@ -122,6 +122,10 @@ class MySQLCheckUserExistenceError(Error):
     """Exception raised when checking for the existence of a MySQL user."""
 
 
+class MySQLConfigureRouterUserError(Error):
+    """Exception raised when configuring the MySQLRouter user."""
+
+
 class MySQLCreateApplicationDatabaseAndScopedUserError(Error):
     """Exception raised when creating application database and scoped user."""
 
@@ -406,6 +410,54 @@ class MySQLBase(ABC):
                 exc_info=e,
             )
             raise MySQLCheckUserExistenceError(e.message)
+
+    def configure_mysqlrouter_user(
+        self, username: str, password: str, hostname: str, unit_name: str
+    ) -> None:
+        """Configure a mysqlrouter user and grant the appropriate permissions to the user.
+
+        Args:
+            username: The username for the mysqlrouter user
+            password: The password for the mysqlrouter user
+            hostname: The hostname for the mysqlrouter user
+            unit_name: The name of unit from which the mysqlrouter user will be accessed
+
+        Raises MySQLConfigureRouterUserError
+            if there is an issue creating and configuring the mysqlrouter user
+        """
+        try:
+            primary_address = self.get_cluster_primary_address()
+
+            escaped_mysqlrouter_user_attributes = json.dumps({"unit_name": unit_name}).replace(
+                '"', r"\""
+            )
+            # Using server_config_user as we are sure it has create user grants
+            create_mysqlrouter_user_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_mysqlrouter_user_attributes}';\")",
+            )
+
+            # Using server_config_user as we are sure it has create user grants
+            mysqlrouter_user_grant_commands = (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"session.run_sql(\"GRANT CREATE USER ON *.* TO '{username}'@'{hostname}' WITH GRANT OPTION;\")",
+                f"session.run_sql(\"GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON mysql_innodb_cluster_metadata.* TO '{username}'@'{hostname}';\")",
+                f"session.run_sql(\"GRANT SELECT ON mysql.user TO '{username}'@'{hostname}';\")",
+                f"session.run_sql(\"GRANT SELECT ON performance_schema.replication_group_members TO '{username}'@'{hostname}';\")",
+                f"session.run_sql(\"GRANT SELECT ON performance_schema.replication_group_member_stats TO '{username}'@'{hostname}';\")",
+                f"session.run_sql(\"GRANT SELECT ON performance_schema.global_variables TO '{username}'@'{hostname}';\")",
+            )
+
+            logger.debug(f"Configuring MySQLRouter user for {self.instance_address}")
+            self._run_mysqlsh_script("\n".join(create_mysqlrouter_user_commands))
+            # grant permissions to the newly created mysqlrouter user
+            self._run_mysqlsh_script("\n".join(mysqlrouter_user_grant_commands))
+        except MySQLClientError as e:
+            logger.exception(
+                f"Failed to configure mysqlrouter user for: {self.instance_address} with error {e.message}",
+                exc_info=e,
+            )
+            raise MySQLConfigureRouterUserError(e.message)
 
     def create_application_database_and_scoped_user(
         self, database_name: str, username: str, password: str, hostname: str, unit_name: str
