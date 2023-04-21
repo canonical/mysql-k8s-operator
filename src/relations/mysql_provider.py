@@ -165,7 +165,6 @@ class MySQLProvider(Object):
             )
 
             if "mysqlrouter" in extra_user_roles:
-                self.charm._mysql.upgrade_user_for_mysqlrouter(db_user, "%")
                 self.charm._mysql.grant_privileges_to_user(
                     db_user, "%", ["ALL PRIVILEGES"], with_grant_option=True
                 )
