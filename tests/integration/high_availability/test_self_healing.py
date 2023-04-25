@@ -45,7 +45,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send a SIGKILL to the primary db process and ensure that the cluster self heals."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
@@ -103,7 +102,6 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send a SIGSTOP to the primary db process and ensure that the cluster self heals."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
@@ -205,7 +203,6 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send SIGTERM to primary instance and then verify recovery."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
@@ -263,7 +260,6 @@ async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_network_cut_affecting_an_instance(
     ops_test: OpsTest, continuous_writes, chaos_mesh
 ) -> None:
@@ -322,7 +318,6 @@ async def test_network_cut_affecting_an_instance(
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_graceful_full_cluster_crash_test(
     ops_test: OpsTest, continuous_writes, restart_policy
 ) -> None:
@@ -404,7 +399,6 @@ async def test_graceful_full_cluster_crash_test(
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
     """Delete the pod in a single unit deployment and write data to new pod."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
