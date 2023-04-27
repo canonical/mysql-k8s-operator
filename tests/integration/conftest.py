@@ -29,7 +29,7 @@ def ops_test(ops_test: OpsTest) -> OpsTest:
 
     model_name = ops_test.model.info.name
     subprocess.run(
-        f"juju set-model-constraints --model={model_name} cores=2 mem=1G".split(),
+        f"juju set-model-constraints --model={model_name} mem=1G".split(),
         check=True,
     )
 

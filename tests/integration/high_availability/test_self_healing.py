@@ -35,7 +35,7 @@ from .high_availability_helpers import (
 logger = logging.getLogger(__name__)
 
 MYSQL_CONTAINER_NAME = "mysql"
-MYSQLD_PROCESS_NAME = "mysqld_safe"
+MYSQLD_PROCESS_NAME = "mysqld"
 TIMEOUT = 30 * 60
 
 
@@ -144,7 +144,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     ]
 
     # retring as it may take time for the cluster to recognize that the primary process is stopped
-    for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(10)):
+    for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
         with attempt:
             assert await ensure_n_online_mysql_members(
                 ops_test, 2, remaining_online_units
