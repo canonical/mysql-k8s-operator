@@ -158,7 +158,7 @@ async def test_osm_pol_operations(ops_test: OpsTest) -> None:
     # Retry until osm-pol runs migrations since it is not possible to wait_for_idle
     # as osm-pol throws intermittent pod errors (due to being a podspec charm)
     try:
-        async for attempt in AsyncRetrying(stop=stop_after_attempt(15), wait=wait_fixed(30)):
+        async for attempt in AsyncRetrying(stop=stop_after_attempt(30), wait=wait_fixed(30)):
             with attempt:
                 for unit in ops_test.model.applications[APP_NAME].units:
                     unit_address = await get_unit_address(ops_test, unit.name)
