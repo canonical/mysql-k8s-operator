@@ -17,7 +17,6 @@ from charms.mysql.v0.mysql import (
     MySQLGetClusterEndpointsError,
     MySQLGetMySQLVersionError,
     MySQLGrantPrivilegesToUserError,
-    MySQLUpgradeUserForMySQLRouterError,
 )
 from ops.charm import (
     PebbleReadyEvent,
@@ -165,7 +164,6 @@ class MySQLProvider(Object):
             )
 
             if "mysqlrouter" in extra_user_roles:
-                self.charm._mysql.upgrade_user_for_mysqlrouter(db_user, "%")
                 self.charm._mysql.grant_privileges_to_user(
                     db_user, "%", ["ALL PRIVILEGES"], with_grant_option=True
                 )
@@ -175,7 +173,6 @@ class MySQLProvider(Object):
         except (
             MySQLCreateApplicationDatabaseAndScopedUserError,
             MySQLGetMySQLVersionError,
-            MySQLUpgradeUserForMySQLRouterError,
             MySQLGrantPrivilegesToUserError,
         ) as e:
             logger.exception("Failed to set up database relation", exc_info=e)

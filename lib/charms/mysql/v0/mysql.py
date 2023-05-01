@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 22
+LIBPATCH = 23
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -185,10 +185,6 @@ class MySQLGetMySQLVersionError(Error):
 
 class MySQLGetClusterPrimaryAddressError(Error):
     """Exception raised when there is an issue getting the primary instance."""
-
-
-class MySQLUpgradeUserForMySQLRouterError(Error):
-    """Exception raised when there is an issue upgrading user for mysqlrouter."""
 
 
 class MySQLGrantPrivilegesToUserError(Error):
@@ -1118,35 +1114,6 @@ class MySQLBase(ABC):
             return None
 
         return matches.group(1)
-
-    def upgrade_user_for_mysqlrouter(self, username, hostname) -> None:
-        """Upgrades a user for use with mysqlrouter.
-
-        Args:
-            username: The username of user to upgrade
-            hostname: The hostname of user to upgrade
-
-        Raises:
-            MySQLUpgradeUserForMySQLRouterError if there is an issue upgrading user for mysqlrouter
-        """
-        cluster_primary = self.get_cluster_primary_address()
-        if not cluster_primary:
-            raise MySQLUpgradeUserForMySQLRouterError("Failed to retrieve cluster primary")
-
-        options = {"update": "true"}
-        upgrade_user_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{cluster_primary}')",
-            f"cluster = dba.get_cluster('{self.cluster_name}')",
-            f"cluster.setup_router_account('{username}@{hostname}', {json.dumps(options)})",
-        )
-
-        try:
-            self._run_mysqlsh_script("\n".join(upgrade_user_commands))
-        except MySQLClientError as e:
-            logger.warning(
-                f"Failed to upgrade user {username}@{hostname} for mysqlrouter", exc_info=e
-            )
-            raise MySQLUpgradeUserForMySQLRouterError(e.message)
 
     def grant_privileges_to_user(
         self, username, hostname, privileges, with_grant_option=False
