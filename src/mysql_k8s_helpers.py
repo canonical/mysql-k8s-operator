@@ -634,6 +634,7 @@ class MySQL(MySQLBase):
             stdout, stderr = process.wait_output()
             return (stdout, stderr)
         except ExecError as e:
+            logger.debug(f"Failed command: {commands}; user={user}; group={group}")
             raise MySQLExecError(e.stderr)
 
     def _run_mysqlsh_script(
