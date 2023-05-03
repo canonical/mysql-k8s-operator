@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 22
+LIBPATCH = 23
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -1224,9 +1224,7 @@ class MySQLBase(ABC):
         try:
             output = self._run_mysqlsh_script("\n".join(member_state_commands), timeout=10)
         except MySQLClientError as e:
-            logger.error(
-                "Failed to get member state: mysqld daemon is down",
-            )
+            logger.error("Failed to get member state")
             raise MySQLGetMemberStateError(e.message)
 
         results = output.lower().split()

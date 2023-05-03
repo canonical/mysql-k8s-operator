@@ -467,6 +467,9 @@ class MySQLOperatorCharm(CharmBase):
             # health checks are only after cluster and members are initialized
             return True
 
+        if not self._mysql.is_mysqld_running():
+            return True
+
         # retrieve and persist state for every unit
         try:
             state, role = self._mysql.get_member_state()
@@ -474,7 +477,7 @@ class MySQLOperatorCharm(CharmBase):
             self.unit_peer_data["member-state"] = state
         except MySQLGetMemberStateError:
             role = self.unit_peer_data["member-role"] = "unknown"
-            state = self.unit_peer_data["member-state"] = "unreachable"
+            state = self.unit_peer_data["member-state"] = "gr_inactive"
 
         logger.info(f"Unit workload member-state is {state} with member-role {role}")
 
@@ -482,21 +485,22 @@ class MySQLOperatorCharm(CharmBase):
         self.unit.status = (
             ActiveStatus(self.active_status_message)
             if state == "online"
-            else MaintenanceStatus(state)
+            else MaintenanceStatus(state if state != "gr_inactive" else "unreachable")
         )
 
-        if state in ["unreachable", "recovering"]:
+        if state == "recovering":
             return True
 
-        if state == "offline":
+        if state in ["offline", "gr_inactive"]:
             # Group Replication is active but the member does not belong to any group
             all_states = {
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
             # Add state for this unit (self.peers.units does not include this unit)
             all_states.add("offline")
+            all_states.add("gr_inactive")
 
-            if all_states == {"offline"} and self.unit.is_leader():
+            if all_states == {"offline", "gr_inactive"} and self.unit.is_leader():
                 # All instance are off, reboot cluster from outage from the leader unit
 
                 logger.info("Attempting reboot from complete outage.")
@@ -534,8 +538,7 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = self.unit.get_container(CONTAINER_NAME)
-        if not container.can_connect() and event:
-            event.defer()
+        if not container.can_connect():
             return
 
         if self._handle_potential_cluster_crash_scenario():
