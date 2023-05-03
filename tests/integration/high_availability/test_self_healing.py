@@ -22,7 +22,6 @@ from .high_availability_helpers import (
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
     ensure_process_not_running,
-    get_max_written_value_in_database,
     get_process_stat,
     high_availability_test_setup,
     insert_data_into_mysql_and_validate_replication,
@@ -296,7 +295,9 @@ async def test_network_cut_affecting_an_instance(
     mysql_units = ops_test.model.applications[mysql_application_name].units
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
 
-    logger.info(f"Creating networkchaos policy to isolate instance {primary.name} from the cluster")
+    logger.info(
+        f"Creating networkchaos policy to isolate instance {primary.name} from the cluster"
+    )
     isolate_instance_from_cluster(ops_test, primary.name)
 
     remaining_units = [unit for unit in mysql_units if unit.name != primary.name]
@@ -366,8 +367,6 @@ async def test_graceful_full_cluster_crash_test(
 
         unit_mysqld_pids[unit.name] = pid
 
-    written_value = await get_max_written_value_in_database(ops_test, mysql_units[0])
-
     logger.info("Send SIGTERM to all units")
     for unit in mysql_units:
         await send_signal_to_pod_container_process(
@@ -384,7 +383,9 @@ async def test_graceful_full_cluster_crash_test(
 
     async with ops_test.fast_forward():
         logger.info("Sleeping for 6 minutes to await restart of mysqld processes in units")
-        logger.info("The restart delay for pebble is 300s, sleep for 360s to ensure that mysqld is started")
+        logger.info(
+            "The restart delay for pebble is 300s, sleep for 360s to ensure that mysqld is started"
+        )
         time.sleep(360)
 
         logger.info("Wait for model to stabilize, and all members to recover")
