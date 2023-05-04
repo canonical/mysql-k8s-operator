@@ -649,15 +649,19 @@ def modify_pebble_restart_delay(
         pebble_plan_path,
     )
 
-    add_to_pebble_layer_command = (
-        f"/charm/bin/pebble add --combine {process_name} /tmp/pebble_plan_{now}.yml"
-    )
+    add_to_pebble_layer_command = [
+        "/charm/bin/pebble",
+        "add",
+        "--combine",
+        process_name,
+        f"/tmp/pebble_plan_{now}.yml",
+    ]
     response = kubernetes.stream.stream(
         client.connect_get_namespaced_pod_exec,
         pod_name,
         ops_test.model.info.name,
         container=container_name,
-        command=add_to_pebble_layer_command.split(),
+        command=add_to_pebble_layer_command,
         stdin=False,
         stdout=True,
         stderr=True,
@@ -669,13 +673,13 @@ def modify_pebble_restart_delay(
         response.returncode == 0
     ), f"Failed to add to pebble layer, unit={unit_name}, container={container_name}, process={process_name}"
 
-    stop_pebble_service_command = f"/charm/bin/pebble stop {process_name}"
+    stop_pebble_service_command = ["/charm/bin/pebble", "stop", process_name]
     response = kubernetes.stream.stream(
         client.connect_get_namespaced_pod_exec,
         pod_name,
         ops_test.model.info.name,
         container=container_name,
-        command=stop_pebble_service_command.split(),
+        command=stop_pebble_service_command,
         stdin=False,
         stdout=True,
         stderr=True,
@@ -687,13 +691,13 @@ def modify_pebble_restart_delay(
         response.returncode == 0
     ), f"Failed to stop pebble service, unit={unit_name}, container={container_name}, process={process_name}"
 
-    replan_pebble_layer_command = "/charm/bin/pebble replan"
+    replan_pebble_layer_command = ["/charm/bin/pebble", "replan"]
     response = kubernetes.stream.stream(
         client.connect_get_namespaced_pod_exec,
         pod_name,
         ops_test.model.info.name,
         container=container_name,
-        command=replan_pebble_layer_command.split(),
+        command=replan_pebble_layer_command,
         stdin=False,
         stdout=True,
         stderr=True,
