@@ -565,7 +565,7 @@ class MySQLBase(ABC):
             drop_users_command = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
-                # Delete users with matching mysql_relation_id attribute
+                # Delete users with matching relation ID attribute
                 f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER))) INTO @sql from INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.{MYSQL_RELATION_ID_ATTRIBUTE}'={relation_id}\")",
                 'session.run_sql("PREPARE stmt FROM @sql")',
                 'session.run_sql("EXECUTE stmt")',
