@@ -562,6 +562,8 @@ class MySQLBase(ABC):
         try:
             user = f"relation-{str(relation_id)}"
             primary_address = self.get_cluster_primary_address()
+            if not primary_address:
+                raise MySQLDeleteUsersForRelationError("Unable to query cluster primary address")
             drop_users_command = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
