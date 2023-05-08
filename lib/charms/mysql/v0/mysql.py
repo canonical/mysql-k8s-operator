@@ -135,7 +135,7 @@ class MySQLDeleteUsersForUnitError(Error):
 
 
 class MySQLDeleteUsersForRelationError(Error):
-    """Exception raised when there is an issue deleting a user for a relation."""
+    """Exception raised when there is an issue deleting users for a relation."""
 
 
 class MySQLConfigureInstanceError(Error):
