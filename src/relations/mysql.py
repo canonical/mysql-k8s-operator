@@ -9,6 +9,7 @@ import logging
 from charms.mysql.v0.mysql import (
     MySQLCheckUserExistenceError,
     MySQLCreateApplicationDatabaseAndScopedUserError,
+    MySQLDeleteUserForRelationError,
 )
 from ops.charm import (
     CharmBase,
@@ -21,8 +22,6 @@ from ops.model import BlockedStatus
 
 from constants import CONTAINER_NAME, LEGACY_MYSQL, PASSWORD_LENGTH, PEER
 from utils import generate_random_password
-
-from lib.charms.mysql.v0.mysql import MySQLDeleteUserForRelationError
 
 logger = logging.getLogger(__name__)
 
