@@ -90,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 24
+LIBPATCH = 25
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -459,7 +459,7 @@ class MySQLBase(ABC):
             raise MySQLConfigureRouterUserError(e.message)
 
     def create_application_database_and_scoped_user(
-        self, database_name: str, username: str, password: str, hostname: str, unit_name: str
+        self, database_name: str, username: str, password: str, hostname: str, attributes: dict = None
     ) -> None:
         """Create an application database and a user scoped to the created database.
 
@@ -468,11 +468,13 @@ class MySQLBase(ABC):
             username: The username of the scoped user
             password: The password of the scoped user
             hostname: The hostname of the scoped user
-            unit_name: The name of the unit from which the user will be accessed
+            attributes: User attributes
 
         Raises MySQLCreateApplicationDatabaseAndScopedUserError
             if there is an issue creating the application database or a user scoped to the database
         """
+        if attributes is None:
+            attributes = {}
         try:
             primary_address = self.get_cluster_primary_address()
 
@@ -482,7 +484,7 @@ class MySQLBase(ABC):
                 f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
             )
 
-            escaped_user_attributes = json.dumps({"unit_name": unit_name}).replace('"', r"\"")
+            escaped_user_attributes = json.dumps(attributes).replace('"', r"\"")
             # Using server_config_user as we are sure it has create user grants
             create_scoped_user_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
@@ -543,8 +545,8 @@ class MySQLBase(ABC):
             logger.exception(f"Failed to query and delete users for unit {unit_name}", exc_info=e)
             raise MySQLDeleteUsersForUnitError(e.message)
 
-    def delete_user_for_relation(self, relation_id: int) -> None:
-        """Delete user for a relation.
+    def delete_users_for_relation(self, relation_id: int) -> None:
+        """Delete users for a relation.
 
         Args:
             relation_id: The id of the relation for which to delete mysql users for
@@ -558,6 +560,11 @@ class MySQLBase(ABC):
             drop_users_command = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
+                # Delete users with matching mysql_relation_id attribute
+                f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER))) INTO @sql from INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.mysql_relation_id'={relation_id}\")",
+                'session.run_sql("PREPARE stmt FROM @sql")',
+                'session.run_sql("EXECUTE stmt")',
+                'session.run_sql("DEALLOCATE PREPARE stmt")',
             )
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:

@@ -222,7 +222,7 @@ class MySQLRelation(Object):
                 username,
                 password,
                 "%",
-                "mysql-legacy-relation",
+                {"mysql_relation_id": event.relation.id},
             )
         except MySQLCreateApplicationDatabaseAndScopedUserError:
             self.charm.unit.status = BlockedStatus(
@@ -266,7 +266,7 @@ class MySQLRelation(Object):
 
         try:
             logger.info("Deleting users for unit (`mysql` relation)")
-            self.charm._mysql.delete_users_for_unit("mysql-legacy-relation")
+            self.charm._mysql.delete_users_for_relation(event.relation.id)
         except MySQLDeleteUsersForUnitError:
             self.charm.unit.status = BlockedStatus("Failed to delete users for unit")
 
