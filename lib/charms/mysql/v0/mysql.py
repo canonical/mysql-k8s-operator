@@ -460,7 +460,14 @@ class MySQLBase(ABC):
             raise MySQLConfigureRouterUserError(e.message)
 
     def create_application_database_and_scoped_user(
-        self, database_name: str, username: str, password: str, hostname: str, *, unit_name: str = None, relation_id: int = None
+        self,
+        database_name: str,
+        username: str,
+        password: str,
+        hostname: str,
+        *,
+        unit_name: str = None,
+        relation_id: int = None,
     ) -> None:
         """Create an application database and a user scoped to the created database.
 
