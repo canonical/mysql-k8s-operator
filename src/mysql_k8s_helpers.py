@@ -672,6 +672,8 @@ class MySQL(MySQLBase):
             return stdout
         except ExecError as e:
             raise MySQLClientError(e.stderr)
+        except ChangeError as e:
+            raise MySQLClientError(e)
 
     def _run_mysqlcli_script(
         self, script: str, password: Optional[str] = None, user: str = "root"

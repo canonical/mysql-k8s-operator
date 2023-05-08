@@ -66,7 +66,9 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 channel="latest/candidate",
                 resources=osm_pol_resources,
             ),
-            ops_test.model.deploy("charmed-osm-kafka-k8s", application_name="osm-kafka"),
+            ops_test.model.deploy(
+                "charmed-osm-kafka-k8s", application_name="osm-kafka", constraints="mem=1G"
+            ),
             ops_test.model.deploy("charmed-osm-zookeeper-k8s", application_name="osm-zookeeper"),
             ops_test.model.deploy("charmed-osm-mongodb-k8s", application_name="osm-mongodb"),
         )
@@ -158,7 +160,7 @@ async def test_osm_pol_operations(ops_test: OpsTest) -> None:
     # Retry until osm-pol runs migrations since it is not possible to wait_for_idle
     # as osm-pol throws intermittent pod errors (due to being a podspec charm)
     try:
-        async for attempt in AsyncRetrying(stop=stop_after_attempt(10), wait=wait_fixed(30)):
+        async for attempt in AsyncRetrying(stop=stop_after_attempt(30), wait=wait_fixed(30)):
             with attempt:
                 for unit in ops_test.model.applications[APP_NAME].units:
                     unit_address = await get_unit_address(ops_test, unit.name)

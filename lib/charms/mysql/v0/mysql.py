@@ -1191,9 +1191,7 @@ class MySQLBase(ABC):
         try:
             output = self._run_mysqlsh_script("\n".join(member_state_commands), timeout=10)
         except MySQLClientError as e:
-            logger.error(
-                "Failed to get member state: mysqld daemon is down",
-            )
+            logger.error("Failed to get member state")
             raise MySQLGetMemberStateError(e.message)
 
         results = output.lower().split()

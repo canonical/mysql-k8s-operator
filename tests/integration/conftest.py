@@ -4,6 +4,7 @@
 
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -25,4 +26,10 @@ def ops_test(ops_test: OpsTest) -> OpsTest:
             raise ValueError(f"Unable to find .charm file for {bases_index=} at {charm_path=}")
 
         ops_test.build_charm = build_charm
+
+    subprocess.run(
+        ["juju", "set-model-constraints", "--model", ops_test.model.info.name, "mem=250M"],
+        check=True,
+    )
+
     return ops_test

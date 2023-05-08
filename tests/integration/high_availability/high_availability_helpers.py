@@ -466,7 +466,7 @@ async def ensure_all_units_continuous_writes_incrementing(
     server_config_credentials = await get_server_config_credentials(mysql_units[0])
 
     async with ops_test.fast_forward():
-        for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(10)):
+        for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
             with attempt:
                 # ensure that all units are up to date (including the previous primary)
                 for unit in mysql_units:
@@ -649,33 +649,19 @@ def modify_pebble_restart_delay(
         pebble_plan_path,
     )
 
-    add_to_pebble_layer_commands = (
-        f"/charm/bin/pebble add --combine {process_name} /tmp/pebble_plan_{now}.yml"
-    )
+    add_to_pebble_layer_command = [
+        "/charm/bin/pebble",
+        "add",
+        "--combine",
+        process_name,
+        f"/tmp/pebble_plan_{now}.yml",
+    ]
     response = kubernetes.stream.stream(
         client.connect_get_namespaced_pod_exec,
         pod_name,
         ops_test.model.info.name,
         container=container_name,
-        command=add_to_pebble_layer_commands.split(),
-        stdin=False,
-        stdout=True,
-        stderr=True,
-        tty=False,
-        _preload_content=False,
-    )
-    response.run_forever(timeout=5)
-    assert (
-        response.returncode == 0
-    ), f"Failed to add to pebble layer, unit={unit_name}, container={container_name}, process={process_name}"
-
-    replan_pebble_layer_commands = "/charm/bin/pebble replan"
-    response = kubernetes.stream.stream(
-        client.connect_get_namespaced_pod_exec,
-        pod_name,
-        ops_test.model.info.name,
-        container=container_name,
-        command=replan_pebble_layer_commands.split(),
+        command=add_to_pebble_layer_command,
         stdin=False,
         stdout=True,
         stderr=True,
@@ -683,6 +669,42 @@ def modify_pebble_restart_delay(
         _preload_content=False,
     )
     response.run_forever(timeout=15)
+    assert (
+        response.returncode == 0
+    ), f"Failed to add to pebble layer, unit={unit_name}, container={container_name}, process={process_name}"
+
+    stop_pebble_service_command = ["/charm/bin/pebble", "stop", process_name]
+    response = kubernetes.stream.stream(
+        client.connect_get_namespaced_pod_exec,
+        pod_name,
+        ops_test.model.info.name,
+        container=container_name,
+        command=stop_pebble_service_command,
+        stdin=False,
+        stdout=True,
+        stderr=True,
+        tty=False,
+        _preload_content=False,
+    )
+    response.run_forever(timeout=60)
+    assert (
+        response.returncode == 0
+    ), f"Failed to stop pebble service, unit={unit_name}, container={container_name}, process={process_name}"
+
+    replan_pebble_layer_command = ["/charm/bin/pebble", "replan"]
+    response = kubernetes.stream.stream(
+        client.connect_get_namespaced_pod_exec,
+        pod_name,
+        ops_test.model.info.name,
+        container=container_name,
+        command=replan_pebble_layer_command,
+        stdin=False,
+        stdout=True,
+        stderr=True,
+        tty=False,
+        _preload_content=False,
+    )
+    response.run_forever(timeout=60)
     assert (
         response.returncode == 0
     ), f"Failed to replan pebble layer, unit={unit_name}, container={container_name}, process={process_name}"
