@@ -459,7 +459,7 @@ class MySQLBase(ABC):
             raise MySQLConfigureRouterUserError(e.message)
 
     def create_application_database_and_scoped_user(
-        self, database_name: str, username: str, password: str, hostname: str, attributes: dict = None
+        self, database_name: str, username: str, password: str, hostname: str, *, unit_name: str = None, relation_id: int = None
     ) -> None:
         """Create an application database and a user scoped to the created database.
 
@@ -468,13 +468,17 @@ class MySQLBase(ABC):
             username: The username of the scoped user
             password: The password of the scoped user
             hostname: The hostname of the scoped user
-            attributes: User attributes
+            unit_name: The name of the unit from which the user will be accessed
+            relation_id: ID of the relation between the application charm and MySQL charm
 
         Raises MySQLCreateApplicationDatabaseAndScopedUserError
             if there is an issue creating the application database or a user scoped to the database
         """
-        if attributes is None:
-            attributes = {}
+        attributes = {}
+        if unit_name is not None:
+            attributes["unit_name"] = unit_name
+        if relation_id is not None:
+            attributes["mysql_relation_id"] = relation_id
         try:
             primary_address = self.get_cluster_primary_address()
 

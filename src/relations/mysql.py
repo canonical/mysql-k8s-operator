@@ -222,7 +222,7 @@ class MySQLRelation(Object):
                 username,
                 password,
                 "%",
-                {"mysql_relation_id": event.relation.id},
+                relation_id=event.relation.id,
             )
         except MySQLCreateApplicationDatabaseAndScopedUserError:
             self.charm.unit.status = BlockedStatus(
