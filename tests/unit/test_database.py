@@ -4,7 +4,7 @@
 import unittest
 from unittest.mock import patch
 
-from charms.mysql.v0.mysql import MySQLDeleteUserForRelationError
+from charms.mysql.v0.mysql import MySQLDeleteUsersForRelationError
 from ops.testing import Harness
 
 from charm import MySQLOperatorCharm
@@ -129,7 +129,7 @@ class TestDatabase(unittest.TestCase):
         self.harness.set_leader(True)
         self.charm.on.config_changed.emit()
 
-        _delete_user_for_relation.side_effect = MySQLDeleteUserForRelationError()
+        _delete_user_for_relation.side_effect = MySQLDeleteUsersForRelationError()
 
         self.harness.remove_relation(self.database_relation_id)
 

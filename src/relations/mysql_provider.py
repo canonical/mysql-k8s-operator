@@ -13,7 +13,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
 )
 from charms.mysql.v0.mysql import (
     MySQLCreateApplicationDatabaseAndScopedUserError,
-    MySQLDeleteUserForRelationError,
+    MySQLDeleteUsersForRelationError,
     MySQLGetClusterEndpointsError,
     MySQLGetMySQLVersionError,
     MySQLGrantPrivilegesToUserError,
@@ -307,6 +307,6 @@ class MySQLProvider(Object):
         try:
             self.charm._mysql.delete_users_for_relation(relation_id)
             logger.info(f"Removed user for relation {relation_id}")
-        except MySQLDeleteUserForRelationError:
+        except MySQLDeleteUsersForRelationError:
             logger.error(f"Failed to delete user for relation {relation_id}")
             return

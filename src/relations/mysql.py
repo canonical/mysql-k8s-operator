@@ -9,7 +9,7 @@ import logging
 from charms.mysql.v0.mysql import (
     MySQLCheckUserExistenceError,
     MySQLCreateApplicationDatabaseAndScopedUserError,
-    MySQLDeleteUserForRelationError,
+    MySQLDeleteUsersForRelationError,
 )
 from ops.charm import (
     CharmBase,
@@ -267,7 +267,7 @@ class MySQLRelation(Object):
         try:
             logger.info("Deleting users for unit (`mysql` relation)")
             self.charm._mysql.delete_users_for_relation(event.relation.id)
-        except MySQLDeleteUserForRelationError:
+        except MySQLDeleteUsersForRelationError:
             self.charm.unit.status = BlockedStatus("Failed to delete users for unit")
 
         del self.charm.app_peer_data["mysql_relation_data"]

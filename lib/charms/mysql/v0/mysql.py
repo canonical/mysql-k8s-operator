@@ -134,7 +134,7 @@ class MySQLDeleteUsersForUnitError(Error):
     """Exception raised when there is an issue deleting users for a unit."""
 
 
-class MySQLDeleteUserForRelationError(Error):
+class MySQLDeleteUsersForRelationError(Error):
     """Exception raised when there is an issue deleting a user for a relation."""
 
 
@@ -557,7 +557,7 @@ class MySQLBase(ABC):
             relation_id: The id of the relation for which to delete mysql users for
 
         Raises:
-            MySQLDeleteUserForRelationError if there is an error deleting users for the relation
+            MySQLDeleteUsersForRelationError if there is an error deleting users for the relation
         """
         try:
             user = f"relation-{str(relation_id)}"
@@ -574,7 +574,7 @@ class MySQLBase(ABC):
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
             logger.exception(f"Failed to delete users for relation {relation_id}", exc_info=e)
-            raise MySQLDeleteUserForRelationError(e.message)
+            raise MySQLDeleteUsersForRelationError(e.message)
 
     def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
