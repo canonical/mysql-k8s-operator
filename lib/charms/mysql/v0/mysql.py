@@ -93,6 +93,7 @@ LIBAPI = 0
 LIBPATCH = 25
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
+MYSQL_RELATION_ID_ATTRIBUTE = "mysql_relation_id"
 
 
 class Error(Exception):
@@ -478,7 +479,7 @@ class MySQLBase(ABC):
         if unit_name is not None:
             attributes["unit_name"] = unit_name
         if relation_id is not None:
-            attributes["mysql_relation_id"] = relation_id
+            attributes[MYSQL_RELATION_ID_ATTRIBUTE] = relation_id
         try:
             primary_address = self.get_cluster_primary_address()
 
@@ -565,7 +566,7 @@ class MySQLBase(ABC):
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
                 # Delete users with matching mysql_relation_id attribute
-                f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER))) INTO @sql from INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.mysql_relation_id'={relation_id}\")",
+                f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER))) INTO @sql from INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.{MYSQL_RELATION_ID_ATTRIBUTE}'={relation_id}\")",
                 'session.run_sql("PREPARE stmt FROM @sql")',
                 'session.run_sql("EXECUTE stmt")',
                 'session.run_sql("DEALLOCATE PREPARE stmt")',
