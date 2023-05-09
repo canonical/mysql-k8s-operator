@@ -88,4 +88,4 @@ class TestK8sHelpers(unittest.TestCase):
     @patch("socket.socket")
     def test_wait_service_ready(self, _socket):
         _socket.return_value.connect_ex.return_value = 0
-        self.k8s_helpers.wait_service_ready(("test-service",3306))
+        self.k8s_helpers.wait_service_ready(("test-service", 3306))
