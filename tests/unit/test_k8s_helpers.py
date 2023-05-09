@@ -42,6 +42,7 @@ class TestK8sHelpers(unittest.TestCase):
                 metadata=ObjectMeta(
                     namespace=self.harness.charm.model.name,
                     name=f"{self.harness.charm.model.app.name}-role1",
+                    ownerReferences=self.mock_k8s_client.return_value.request.return_value.metadata.ownerReferences,
                 ),
                 spec=ServiceSpec(
                     selector={
@@ -83,3 +84,8 @@ class TestK8sHelpers(unittest.TestCase):
         self.assertEqual(
             self.k8s_helpers.get_resources_limits(container_name="mysql"), {"memory": "2Gi"}
         )
+
+    @patch("socket.socket")
+    def test_wait_service_ready(self, _socket):
+        _socket.return_value.connect_ex.return_value = 0
+        self.k8s_helpers.wait_service_ready(("test-service",3306))
