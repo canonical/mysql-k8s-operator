@@ -31,7 +31,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 2
+LIBPATCH = 3
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -74,7 +74,7 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
 
 def _compile_backups_from_file_ids(
     metadata_ids: List[str], md5_ids: List[str], log_ids: List[str]
-) -> Tuple[str, str]:
+) -> List[Tuple[str, str]]:
     """Helper function that compiles tuples of (backup_id, status) from file ids."""
     backups = []
     for backup_id in metadata_ids:
@@ -89,7 +89,7 @@ def _compile_backups_from_file_ids(
     return backups
 
 
-def list_backups_in_s3_path(s3_parameters: Dict) -> List[str]:
+def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
     """Retrieve subdirectories in an S3 path.
 
     Args:
@@ -154,7 +154,7 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[str]:
         raise
 
 
-def fetch_and_check_existence_of_s3_path(s3_parameters: Dict, path: str) -> bool:
+def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str]) -> bool:
     """Checks the existence of a provided S3 path by fetching the object.
 
     Args:

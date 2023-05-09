@@ -67,7 +67,6 @@ error handling on the subclass and in the charm code.
 
 import json
 import logging
-import pathlib
 import re
 import socket
 from abc import ABC, abstractmethod
@@ -91,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 23
+LIBPATCH = 24
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -1029,7 +1028,7 @@ class MySQLBase(ABC):
 
         return (member_addresses, "<MEMBER_ADDRESSES>" in output)
 
-    def get_cluster_primary_address(self, connect_instance_address: str = None) -> str:
+    def get_cluster_primary_address(self, connect_instance_address: str = None) -> Optional[str]:
         """Get the cluster primary's address.
 
         Keyword args:
@@ -1191,7 +1190,9 @@ class MySQLBase(ABC):
         try:
             output = self._run_mysqlsh_script("\n".join(member_state_commands), timeout=10)
         except MySQLClientError as e:
-            logger.error("Failed to get member state")
+            logger.error(
+                "Failed to get member state: mysqld daemon is down",
+            )
             raise MySQLGetMemberStateError(e.message)
 
         results = output.lower().split()
@@ -1347,11 +1348,8 @@ Swap:     1027600384  1027600384           0
 
     def execute_backup_commands(
         self,
-        s3_bucket: str,
-        s3_directory: str,
-        s3_access_key: str,
-        s3_secret_key: str,
-        s3_endpoint: str,
+        s3_path: str,
+        s3_parameters: Dict[str, str],
         xtrabackup_location: str,
         xbcloud_location: str,
         xtrabackup_plugin_dir: str,
@@ -1396,12 +1394,15 @@ Swap:     1027600384  1027600384           0
     | {xbcloud_location} put
             --curl-retriable-errors=7
             --insecure
-            --storage=s3
             --parallel=10
             --md5
-            --s3-bucket={s3_bucket}
-            --s3-endpoint={s3_endpoint}
-            {s3_directory}
+            --storage=S3
+            --s3-region={s3_parameters["region"]}
+            --s3-bucket={s3_parameters["bucket"]}
+            --s3-endpoint={s3_parameters["endpoint"]}
+            --s3-api-version={s3_parameters["s3-api-version"]}
+            --s3-bucket-lookup={s3_parameters["s3-uri-style"]}
+            {s3_path}
 """.split()
 
         try:
@@ -1412,8 +1413,8 @@ Swap:     1027600384  1027600384           0
                 user=user,
                 group=group,
                 env={
-                    "ACCESS_KEY_ID": s3_access_key,
-                    "SECRET_ACCESS_KEY": s3_secret_key,
+                    "ACCESS_KEY_ID": s3_parameters["access-key"],
+                    "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
                 },
             )
         except MySQLExecError as e:
@@ -1449,12 +1450,8 @@ Swap:     1027600384  1027600384           0
 
     def retrieve_backup_with_xbcloud(
         self,
-        s3_bucket: str,
-        s3_path: str,
-        s3_access_key: str,
-        s3_secret_key: str,
-        s3_endpoint: str,
         backup_id: str,
+        s3_parameters: Dict[str, str],
         mysql_data_directory: str,
         xbcloud_location: str,
         xbstream_location: str,
@@ -1483,14 +1480,17 @@ Swap:     1027600384  1027600384           0
             logger.exception("Failed to execute commands prior to running xbcloud get")
             raise MySQLRetrieveBackupWithXBCloudError(e.message)
 
-        backup_path = str(pathlib.Path(s3_bucket) / s3_path / backup_id)
-
         retrieve_backup_command = f"""
 {xbcloud_location} get
         --curl-retriable-errors=7
         --parallel=10
-        --s3-endpoint={s3_endpoint}
-        s3://{backup_path}
+        --storage=S3
+        --s3-region={s3_parameters["region"]}
+        --s3-bucket={s3_parameters["bucket"]}
+        --s3-endpoint={s3_parameters["endpoint"]}
+        --s3-bucket-lookup={s3_parameters["s3-uri-style"]}
+        --s3-api-version={s3_parameters["s3-api-version"]}
+        {s3_parameters["path"]}/{backup_id}
     | {xbstream_location}
         --decompress
         -x
@@ -1504,8 +1504,8 @@ Swap:     1027600384  1027600384           0
                 retrieve_backup_command,
                 bash=True,
                 env={
-                    "ACCESS_KEY_ID": s3_access_key,
-                    "SECRET_ACCESS_KEY": s3_secret_key,
+                    "ACCESS_KEY_ID": s3_parameters["access-key"],
+                    "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
                 },
                 user=user,
                 group=group,

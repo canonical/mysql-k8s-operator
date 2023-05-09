@@ -48,7 +48,7 @@ class MySQL(MySQLBase):
 import datetime
 import logging
 import pathlib
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
@@ -92,7 +92,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 3
+LIBPATCH = 4
 
 
 class MySQLBackups(Object):
@@ -110,7 +110,7 @@ class MySQLBackups(Object):
 
     # ------------------ Helpers ------------------
 
-    def _retrieve_s3_parameters(self) -> Tuple[Dict, List[str]]:
+    def _retrieve_s3_parameters(self) -> Tuple[Dict[str, str], List[str]]:
         """Retrieve S3 parameters from the S3 integrator relation.
 
         Returns: tuple of (s3_parameters, missing_required_parameters)
@@ -133,17 +133,24 @@ class MySQLBackups(Object):
 
         # Add some sensible defaults (as expected by the code) for missing optional parameters
         s3_parameters.setdefault("endpoint", "https://s3.amazonaws.com")
-        s3_parameters.setdefault("region")
+        s3_parameters.setdefault("region", "")
         s3_parameters.setdefault("path", "")
+        s3_parameters.setdefault("s3-uri-style", "auto")
+        s3_parameters.setdefault("s3-api-version", "auto")
+
+        # Clean up extra slash symbols to avoid issues on 3rd-party storages
+        # like Ceph Object Gateway (radosgw)
+        s3_parameters["endpoint"] = s3_parameters["endpoint"].rstrip("/")
+        s3_parameters["path"] = s3_parameters["path"].strip("/")
 
         return s3_parameters, []
 
+    @staticmethod
     def _upload_logs_to_s3(
-        self: str,
         stdout: str,
         stderr: str,
         log_filename: str,
-        s3_parameters: Dict,
+        s3_parameters: Dict[str, str],
     ) -> bool:
         """Upload logs to S3 at the specified location.
 
@@ -169,7 +176,8 @@ Stderr:
 
     # ------------------ List Backups ------------------
 
-    def _format_backups_list(self, backup_list: Tuple[str, bool]) -> str:
+    @staticmethod
+    def _format_backups_list(backup_list: List[Tuple[str, str]]) -> str:
         """Formats the provided list of backups as a table."""
         backups = [f"{'backup-id':<21} | {'backup-type':<12} | backup-status"]
 
@@ -283,7 +291,7 @@ Juju Version: {str(juju_version)}
             }
         )
 
-    def _can_unit_perform_backup(self) -> Tuple[bool, str]:
+    def _can_unit_perform_backup(self) -> Tuple[bool, Optional[str]]:
         """Validates whether this unit can perform a backup.
 
         Returns: tuple of (success, error_message)
@@ -314,7 +322,7 @@ Juju Version: {str(juju_version)}
 
         return True, None
 
-    def _pre_backup(self) -> Tuple[bool, str]:
+    def _pre_backup(self) -> Tuple[bool, Optional[str]]:
         """Runs operations required before performing a backup.
 
         Returns: tuple of (success, error_message)
@@ -339,7 +347,7 @@ Juju Version: {str(juju_version)}
 
         return True, None
 
-    def _backup(self, backup_path: str, s3_parameters: Dict) -> Tuple[bool, str]:
+    def _backup(self, backup_path: str, s3_parameters: Dict) -> Tuple[bool, Optional[str]]:
         """Runs the backup operations.
 
         Args:
@@ -351,11 +359,8 @@ Juju Version: {str(juju_version)}
         try:
             logger.info("Running the xtrabackup commands")
             stdout = self.charm._mysql.execute_backup_commands(
-                s3_parameters["bucket"],
                 backup_path,
-                s3_parameters["access-key"],
-                s3_parameters["secret-key"],
-                s3_parameters["endpoint"],
+                s3_parameters,
             )
         except MySQLExecuteBackupCommandsError as e:
             self._upload_logs_to_s3(
@@ -376,7 +381,7 @@ Juju Version: {str(juju_version)}
 
         return True, None
 
-    def _post_backup(self) -> Tuple[bool, str]:
+    def _post_backup(self) -> Tuple[bool, Optional[str]]:
         """Runs operations required after performing a backup.
 
         Returns: tuple of (success, error_message)
@@ -465,7 +470,7 @@ Juju Version: {str(juju_version)}
         # Validate the provided backup id
         logger.info("Validating provided backup-id in the specified s3 path")
         s3_backup_md5 = str(pathlib.Path(s3_parameters["path"]) / f"{backup_id}.md5")
-        if not fetch_and_check_existence_of_s3_path(s3_parameters, s3_backup_md5):
+        if not fetch_and_check_existence_of_s3_path(s3_backup_md5, s3_parameters):
             event.fail(f"Invalid backup-id: {backup_id}")
             return
 
@@ -503,7 +508,7 @@ Juju Version: {str(juju_version)}
             }
         )
 
-    def _pre_restore(self) -> Tuple[bool, str]:
+    def _pre_restore(self) -> Tuple[bool, Optional[str]]:
         """Perform operations that need to be done before performing a restore.
 
         Returns: tuple of (success, error_message)
@@ -515,7 +520,9 @@ Juju Version: {str(juju_version)}
 
         return True, None
 
-    def _restore(self, backup_id: str, s3_parameters: Dict) -> Tuple[bool, bool, str]:
+    def _restore(
+        self, backup_id: str, s3_parameters: Dict[str, str]
+    ) -> Tuple[bool, bool, Optional[str]]:
         """Run the restore operations.
 
         Args:
@@ -527,12 +534,8 @@ Juju Version: {str(juju_version)}
         try:
             logger.info("Running xbcloud get commands to retrieve the backup")
             stdout, stderr, backup_location = self.charm._mysql.retrieve_backup_with_xbcloud(
-                s3_parameters["bucket"],
-                s3_parameters["path"],
-                s3_parameters["access-key"],
-                s3_parameters["secret-key"],
-                s3_parameters["endpoint"],
                 backup_id,
+                s3_parameters,
             )
             logger.debug(f"Stdout of xbcloud get commands: {stdout}")
             logger.debug(f"Stderr of xbcloud get commands: {stderr}")
@@ -563,7 +566,7 @@ Juju Version: {str(juju_version)}
 
         return True, True, None
 
-    def _clean_data_dir_and_start_mysqld(self) -> Tuple[bool, str]:
+    def _clean_data_dir_and_start_mysqld(self) -> Tuple[bool, Optional[str]]:
         """Run idempotent operations run after restoring a backup.
 
         Returns tuple of (success, error_message)
@@ -583,7 +586,7 @@ Juju Version: {str(juju_version)}
 
         return True, None
 
-    def _post_restore(self) -> Tuple[bool, str]:
+    def _post_restore(self) -> Tuple[bool, Optional[str]]:
         """Run operations required after restoring a backup.
 
         Returns: tuple of (success, error_message)
