@@ -19,8 +19,8 @@ You can now watch the scaling process in live using: `juju status --watch 1s`. I
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
 tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:48:57+01:00
 
-App        Version    Status  Scale  Charm      Channel  Rev  Address         Exposed  Message
-mysql-k8s  8.0.31     active      3  mysql-k8s  edge      36  10.152.183.234  no       
+App        Version    Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
+mysql-k8s  8.0.31     active      3  mysql-k8s  8.0/stable  36   10.152.183.234  no       
 
 Unit          Workload  Agent  Address      Ports  Message
 mysql-k8s/0*  active    idle   10.1.84.74          Unit is ready: Mode: RW
@@ -39,10 +39,13 @@ You’ll know that the replica was successfully removed when `juju status --watc
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
 tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:48:57+01:00
 
-App        Version    Status  Scale  Charm      Channel  Rev  Address         Exposed  Message
-mysql-k8s  8.0.31     active      3  mysql-k8s  edge      36  10.152.183.234  no       
+App        Version    Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
+mysql-k8s  8.0.31     active      3  mysql-k8s  8.0/stable  36   10.152.183.234  no       
 
 Unit          Workload  Agent  Address      Ports  Message
 mysql-k8s/0*  active    idle   10.1.84.74          Unit is ready: Mode: RW
 mysql-k8s/1   active    idle   10.1.84.127         Unit is ready: Mode: RO
 ```
+
+### Scaling limitations
+**Note**: the maximum number of Charmed MySQL K8s units in a single Juju application is 9. It is a limitation of MySQL Group replication, read more about all limitations [here](https://dev.mysql.com/doc/refman/8.0/en/group-replication-limitations.html).
