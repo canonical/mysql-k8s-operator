@@ -93,7 +93,6 @@ LIBAPI = 0
 LIBPATCH = 25
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
-MYSQL_RELATION_ID_ATTRIBUTE = "mysql_relation_id"
 
 
 class Error(Exception):
@@ -467,7 +466,6 @@ class MySQLBase(ABC):
         hostname: str,
         *,
         unit_name: str = None,
-        relation_id: int = None,
     ) -> None:
         """Create an application database and a user scoped to the created database.
 
@@ -477,7 +475,6 @@ class MySQLBase(ABC):
             password: The password of the scoped user
             hostname: The hostname of the scoped user
             unit_name: The name of the unit from which the user will be accessed
-            relation_id: ID of the relation between the application charm and MySQL charm
 
         Raises MySQLCreateApplicationDatabaseAndScopedUserError
             if there is an issue creating the application database or a user scoped to the database
@@ -485,8 +482,6 @@ class MySQLBase(ABC):
         attributes = {}
         if unit_name is not None:
             attributes["unit_name"] = unit_name
-        if relation_id is not None:
-            attributes[MYSQL_RELATION_ID_ATTRIBUTE] = relation_id
         try:
             primary_address = self.get_cluster_primary_address()
 
@@ -574,8 +569,9 @@ class MySQLBase(ABC):
             drop_users_command = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
                 f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
-                # Delete users with matching relation ID attribute
-                f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER))) INTO @sql from INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.{MYSQL_RELATION_ID_ATTRIBUTE}'={relation_id}\")",
+                # If the relation is with a MySQL Router charm application, delete any users
+                # created by that application.
+                f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER))) INTO @sql from INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.created_by_user'='{user}'\")",
                 'session.run_sql("PREPARE stmt FROM @sql")',
                 'session.run_sql("EXECUTE stmt")',
                 'session.run_sql("DEALLOCATE PREPARE stmt")',
