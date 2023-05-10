@@ -4,7 +4,8 @@
 """Kubernetes helpers."""
 
 import logging
-from typing import Dict, List, Optional
+import socket
+from typing import Dict, List, Optional, Tuple
 
 from lightkube import Client
 from lightkube.core.exceptions import ApiError
@@ -12,6 +13,7 @@ from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.core_v1 import Pod, Service
 from ops.charm import CharmBase
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,11 @@ class KubernetesHelpers:
         for role in roles:
             selector = {"cluster-name": self.cluster_name, "role": role}
             service_name = f"{self.app_name}-{role}"
+            pod0 = self.client.get(
+                res=Pod,
+                name=self.app_name + "-0",
+                namespace=self.namespace,
+            )
 
             service = Service(
                 apiVersion="v1",
@@ -51,6 +58,7 @@ class KubernetesHelpers:
                 metadata=ObjectMeta(
                     namespace=self.namespace,
                     name=service_name,
+                    ownerReferences=pod0.metadata.ownerReferences,
                 ),
                 spec=ServiceSpec(
                     selector=selector,
@@ -132,3 +140,22 @@ class KubernetesHelpers:
             return {}
         except ApiError:
             raise KubernetesClientError
+
+    @retry(stop=stop_after_attempt(10), wait=wait_fixed(1), reraise=True)
+    def wait_service_ready(self, service_endpoint: Tuple[str, int]) -> None:
+        """Wait for a service to be listening on a given endpoint.
+
+        Args:
+            service_endpoint: tuple of service endpoint (ip, port)
+        """
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+
+        result = sock.connect_ex(service_endpoint)
+        sock.close()
+
+        # check if the port is open
+        if result != 0:
+            logger.debug("Kubernetes service endpoint not ready yet")
+            raise KubernetesClientError
+        logger.debug("Kubernetes service endpoint ready")
