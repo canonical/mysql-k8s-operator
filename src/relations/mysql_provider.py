@@ -17,6 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLGetClusterEndpointsError,
     MySQLGetMySQLVersionError,
     MySQLGrantPrivilegesToUserError,
+    MySQLRemoveRouterFromMetadataError,
 )
 from ops.charm import (
     PebbleReadyEvent,
@@ -327,5 +328,8 @@ class MySQLProvider(Object):
             return
 
         if router_id := event.relation.data[event.departing_unit].get("router_id"):
-            self.charm._mysql.remove_router_from_cluster_metadata(router_id)
-            logger.info(f"Removed router from metadata {router_id}")
+            try:
+                self.charm._mysql.remove_router_from_cluster_metadata(router_id)
+                logger.info(f"Removed router from metadata {router_id}")
+            except MySQLRemoveRouterFromMetadataError:
+                logger.error(f"Failed to remove router from metadata with ID {router_id}")
