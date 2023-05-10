@@ -54,6 +54,10 @@ class MySQLProvider(Object):
         self.framework.observe(
             self.charm.on[DB_RELATION_NAME].relation_broken, self._on_database_broken
         )
+        self.framework.observe(
+            self.charm.on[DB_RELATION_NAME].relation_departed,
+            self._on_database_provides_relation_departed,
+        )
 
         self.framework.observe(
             self.charm.on[PEER].relation_departed, self._on_peer_relation_departed
@@ -313,3 +317,15 @@ class MySQLProvider(Object):
         except MySQLDeleteUsersForRelationError:
             logger.error(f"Failed to delete user for relation {relation_id}")
             return
+
+    def _on_database_provides_relation_departed(self, event: RelationDepartedEvent) -> None:
+        """Remove MySQL Router cluster metadata for departing unit."""
+        if not self.charm.unit.is_leader():
+            return
+
+        if event.departing_unit.app.name == self.charm.app.name:
+            return
+
+        if router_id := event.relation.data[event.departing_unit].get("router_id"):
+            self.charm._mysql.remove_router_from_cluster_metadata(router_id)
+            logger.info(f"Removed router from metadata {router_id}")

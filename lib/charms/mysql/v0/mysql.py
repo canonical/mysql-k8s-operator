@@ -137,6 +137,10 @@ class MySQLDeleteUsersForRelationError(Error):
     """Exception raised when there is an issue deleting users for a relation."""
 
 
+class MySQLRemoveRouterFromMetadataError(Error):
+    """Exception raised when there is an issue removing MySQL Router from cluster metadata."""
+
+
 class MySQLConfigureInstanceError(Error):
     """Exception raised when there is an issue configuring a MySQL instance."""
 
@@ -580,6 +584,22 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.exception(f"Failed to delete users for relation {relation_id}", exc_info=e)
             raise MySQLDeleteUsersForRelationError(e.message)
+
+    def remove_router_from_cluster_metadata(self, router_id: str) -> None:
+        """Remove MySQL Router from InnoDB Cluster metadata."""
+        primary_address = self.get_cluster_primary_address()
+        if not primary_address:
+            raise MySQLRemoveRouterFromMetadataError("Unable to query cluster primary address")
+        command = [
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{primary_address}')",
+            "cluster = dba.get_cluster()",
+            f'cluster.remove_router_metadata("{router_id}")',
+        ]
+        try:
+            self._run_mysqlsh_script("\n".join(command))
+        except MySQLClientError as e:
+            logger.exception(f"Failed to remove router from metadata with ID {router_id}")
+            raise MySQLRemoveRouterFromMetadataError(e.message)
 
     def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
