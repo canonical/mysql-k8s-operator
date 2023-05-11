@@ -4,7 +4,7 @@
 import unittest
 from unittest.mock import patch
 
-from charms.mysql.v0.mysql import MySQLDeleteUserForRelationError
+from charms.mysql.v0.mysql import MySQLDeleteUsersForRelationError
 from ops.testing import Harness
 
 from charm import MySQLOperatorCharm
@@ -114,26 +114,26 @@ class TestDatabase(unittest.TestCase):
         _wait_service_ready.assert_called_once()
 
     @patch("k8s_helpers.KubernetesHelpers.delete_endpoint_services")
-    @patch("mysql_k8s_helpers.MySQL.delete_user_for_relation")
-    def test_database_broken(self, _delete_user_for_relation, _delete_endpoint_services):
+    @patch("mysql_k8s_helpers.MySQL.delete_users_for_relation")
+    def test_database_broken(self, _delete_users_for_relation, _delete_endpoint_services):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
         self.charm.on.config_changed.emit()
 
         self.harness.remove_relation(self.database_relation_id)
 
-        _delete_user_for_relation.assert_called_once_with(self.database_relation_id)
+        _delete_users_for_relation.assert_called_once_with(self.database_relation_id)
         _delete_endpoint_services.assert_called_once()
 
     @patch("k8s_helpers.KubernetesHelpers.delete_endpoint_services")
-    @patch("mysql_k8s_helpers.MySQL.delete_user_for_relation")
-    def test_database_broken_failure(self, _delete_user_for_relation, _delete_endpoint_services):
+    @patch("mysql_k8s_helpers.MySQL.delete_users_for_relation")
+    def test_database_broken_failure(self, _delete_users_for_relation, _delete_endpoint_services):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
         self.charm.on.config_changed.emit()
 
-        _delete_user_for_relation.side_effect = MySQLDeleteUserForRelationError()
+        _delete_users_for_relation.side_effect = MySQLDeleteUsersForRelationError()
 
         self.harness.remove_relation(self.database_relation_id)
 
-        _delete_user_for_relation.assert_called_once()
+        _delete_users_for_relation.assert_called_once()

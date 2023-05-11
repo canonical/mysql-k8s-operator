@@ -90,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 24
+LIBPATCH = 25
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -133,8 +133,8 @@ class MySQLDeleteUsersForUnitError(Error):
     """Exception raised when there is an issue deleting users for a unit."""
 
 
-class MySQLDeleteUserForRelationError(Error):
-    """Exception raised when there is an issue deleting a user for a relation."""
+class MySQLDeleteUsersForRelationError(Error):
+    """Exception raised when there is an issue deleting users for a relation."""
 
 
 class MySQLConfigureInstanceError(Error):
@@ -459,7 +459,13 @@ class MySQLBase(ABC):
             raise MySQLConfigureRouterUserError(e.message)
 
     def create_application_database_and_scoped_user(
-        self, database_name: str, username: str, password: str, hostname: str, unit_name: str
+        self,
+        database_name: str,
+        username: str,
+        password: str,
+        hostname: str,
+        *,
+        unit_name: str = None,
     ) -> None:
         """Create an application database and a user scoped to the created database.
 
@@ -473,6 +479,9 @@ class MySQLBase(ABC):
         Raises MySQLCreateApplicationDatabaseAndScopedUserError
             if there is an issue creating the application database or a user scoped to the database
         """
+        attributes = {}
+        if unit_name is not None:
+            attributes["unit_name"] = unit_name
         try:
             primary_address = self.get_cluster_primary_address()
 
@@ -482,7 +491,7 @@ class MySQLBase(ABC):
                 f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
             )
 
-            escaped_user_attributes = json.dumps({"unit_name": unit_name}).replace('"', r"\"")
+            escaped_user_attributes = json.dumps(attributes).replace('"', r"\"")
             # Using server_config_user as we are sure it has create user grants
             create_scoped_user_commands = (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
@@ -500,6 +509,25 @@ class MySQLBase(ABC):
             )
             raise MySQLCreateApplicationDatabaseAndScopedUserError(e.message)
 
+    @staticmethod
+    def _get_statements_to_delete_users_with_attribute(
+        attribute_name: str, attribute_value: str
+    ) -> list[str]:
+        """Generate mysqlsh statements to delete users with an attribute.
+
+        Args:
+            attribute_name: Name of the attribute
+            attribute_value: Value of the attribute.
+                If the value of the attribute is a string, include single quotes in the string.
+                (e.g. "'bar'")
+        """
+        return [
+            f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER))) INTO @sql from INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.{attribute_name}'={attribute_value}\")",
+            'session.run_sql("PREPARE stmt FROM @sql")',
+            'session.run_sql("EXECUTE stmt")',
+            'session.run_sql("DEALLOCATE PREPARE stmt")',
+        ]
+
     def delete_users_for_unit(self, unit_name: str) -> None:
         """Delete users for a unit.
 
@@ -509,60 +537,49 @@ class MySQLBase(ABC):
         Raises:
             MySQLDeleteUsersForUnitError if there is an error deleting users for the unit
         """
-        get_unit_user_commands = (
-            "SELECT CONCAT(user.user, '@', user.host) FROM mysql.user AS user "
-            "JOIN information_schema.user_attributes AS attributes"
-            " ON (user.user = attributes.user AND user.host = attributes.host) "
-            f'WHERE attributes.attribute LIKE \'%"unit_name": "{unit_name}"%\'',
+        primary_address = self.get_cluster_primary_address()
+        if not primary_address:
+            raise MySQLDeleteUsersForUnitError("Unable to query cluster primary address")
+        # Using server_config_user as we are sure it has drop user grants
+        drop_users_command = [
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+        ]
+        drop_users_command.extend(
+            self._get_statements_to_delete_users_with_attribute("unit_name", f"'{unit_name}'")
         )
-
         try:
-            output = self._run_mysqlcli_script(
-                "; ".join(get_unit_user_commands),
-                user=self.server_config_user,
-                password=self.server_config_password,
-            )
-            users = [line.strip() for line in output.split("\n") if line.strip()][1:]
-            users = [f"'{user.split('@')[0]}'@'{user.split('@')[1]}'" for user in users]
-
-            if len(users) == 0:
-                logger.debug(f"There are no users to drop for unit {unit_name}")
-                return
-
-            primary_address = self.get_cluster_primary_address()
-            if not primary_address:
-                raise MySQLDeleteUsersForUnitError("Unable to query cluster primary address")
-
-            # Using server_config_user as we are sure it has drop user grants
-            drop_users_command = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
-                f"session.run_sql(\"DROP USER IF EXISTS {', '.join(users)};\")",
-            )
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
             logger.exception(f"Failed to query and delete users for unit {unit_name}", exc_info=e)
             raise MySQLDeleteUsersForUnitError(e.message)
 
-    def delete_user_for_relation(self, relation_id: int) -> None:
-        """Delete user for a relation.
+    def delete_users_for_relation(self, relation_id: int) -> None:
+        """Delete users for a relation.
 
         Args:
             relation_id: The id of the relation for which to delete mysql users for
 
         Raises:
-            MySQLDeleteUserForRelationError if there is an error deleting users for the relation
+            MySQLDeleteUsersForRelationError if there is an error deleting users for the relation
         """
+        user = f"relation-{str(relation_id)}"
+        primary_address = self.get_cluster_primary_address()
+        if not primary_address:
+            raise MySQLDeleteUsersForRelationError("Unable to query cluster primary address")
+        drop_users_command = [
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+            f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
+        ]
+        # If the relation is with a MySQL Router charm application, delete any users
+        # created by that application.
+        drop_users_command.extend(
+            self._get_statements_to_delete_users_with_attribute("created_by_user", f"'{user}'")
+        )
         try:
-            user = f"relation-{str(relation_id)}"
-            primary_address = self.get_cluster_primary_address()
-            drop_users_command = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
-                f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
-            )
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
             logger.exception(f"Failed to delete users for relation {relation_id}", exc_info=e)
-            raise MySQLDeleteUserForRelationError(e.message)
+            raise MySQLDeleteUsersForRelationError(e.message)
 
     def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
