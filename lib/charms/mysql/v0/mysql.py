@@ -90,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 25
+LIBPATCH = 26
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -522,7 +522,7 @@ class MySQLBase(ABC):
                 (e.g. "'bar'")
         """
         return [
-            f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER))) INTO @sql from INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.{attribute_name}'={attribute_value}\")",
+            f"session.run_sql(\"SELECT CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER), '@', QUOTE(HOST))) INTO @sql FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.{attribute_name}'={attribute_value}\")",
             'session.run_sql("PREPARE stmt FROM @sql")',
             'session.run_sql("EXECUTE stmt")',
             'session.run_sql("DEALLOCATE PREPARE stmt")',
