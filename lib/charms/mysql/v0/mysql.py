@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 23
+LIBPATCH = 26
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -805,7 +805,7 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(status_commands))
+            output = self._run_mysqlsh_script("\n".join(status_commands), timeout=30)
             output_dict = json.loads(output.lower())
             return output_dict
         except MySQLClientError as e:
@@ -1171,31 +1171,35 @@ class MySQLBase(ABC):
             )
             raise MySQLCheckUserExistenceError(e.message)
 
-    @retry(reraise=True, stop=stop_after_attempt(6), wait=wait_fixed(10))
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(10))
     def get_member_state(self) -> Tuple[str, str]:
         """Get member status in cluster.
 
         Returns:
             A tuple(str) with the MEMBER_STATE and MEMBER_ROLE within the cluster.
         """
-        member_state_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
-            (
-                "raw_result=session.run_sql('SELECT MEMBER_STATE, MEMBER_ROLE FROM"
-                " performance_schema.replication_group_members WHERE MEMBER_ID = @@server_uuid;')"
-            ),
-            "result=raw_result.fetch_one()",
-            "print(result[0],result[1])",
+        member_state_query = (
+            "SELECT MEMBER_STATE, MEMBER_ROLE FROM"
+            " performance_schema.replication_group_members WHERE MEMBER_ID = @@server_uuid;"
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(member_state_commands), timeout=10)
+            output = self._run_mysqlcli_script(
+                member_state_query,
+                user=self.cluster_admin_user,
+                password=self.cluster_admin_password,
+                timeout=10,
+            )
         except MySQLClientError as e:
             logger.error("Failed to get member state")
             raise MySQLGetMemberStateError(e.message)
 
-        results = output.lower().split()
-        # MEMBER_ROLE is empty if member is not in a group/offline
+        lines = output.lower().split("\n")
+        if len(lines) < 2:
+            raise MySQLGetMemberStateError("No member state retrieved")
+
+        results = lines[1].split()
+        # no member role defined when member state is 'offline'
         return results[0], results[1] if len(results) == 2 else "unknown"
 
     def reboot_from_complete_outage(self) -> None:
@@ -1741,7 +1745,7 @@ Swap:     1027600384  1027600384           0
         raise NotImplementedError
 
     @abstractmethod
-    def _run_mysqlcli_script(self, script: str, user: str = "root", password: str = None) -> str:
+    def _run_mysqlcli_script(self, script: str, user: str = "root", password: str = None, timeout: int = None) -> str:
         """Execute a MySQL CLI script.
 
         Execute SQL script as instance with given user.

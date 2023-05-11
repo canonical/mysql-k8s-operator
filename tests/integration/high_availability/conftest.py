@@ -40,10 +40,12 @@ async def continuous_writes(ops_test: OpsTest) -> None:
 @pytest.fixture()
 async def chaos_mesh(ops_test: OpsTest) -> None:
     """Deploys chaos mesh to the namespace and uninstalls it at the end."""
+    logger.info("Deploying chaos mesh")
     deploy_chaos_mesh(ops_test.model.info.name)
 
     yield
 
+    logger.info("Destroying chaos mesh")
     destroy_chaos_mesh(ops_test.model.info.name)
 
 
@@ -53,6 +55,8 @@ async def restart_policy(ops_test: OpsTest) -> None:
     mysql_application_name = get_application_name(ops_test, "mysql")
 
     for unit in ops_test.model.applications[mysql_application_name].units:
+        logger.info(f"Extending pebble restart delay for {unit.name}")
+
         modify_pebble_restart_delay(
             ops_test,
             unit.name,
@@ -73,6 +77,8 @@ async def restart_policy(ops_test: OpsTest) -> None:
     yield
 
     for unit in ops_test.model.applications[mysql_application_name].units:
+        logger.info(f"Reducing pebble restart delay for {unit.name}")
+
         modify_pebble_restart_delay(
             ops_test,
             unit.name,

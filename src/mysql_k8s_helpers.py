@@ -676,7 +676,11 @@ class MySQL(MySQLBase):
             raise MySQLClientError(e)
 
     def _run_mysqlcli_script(
-        self, script: str, password: Optional[str] = None, user: str = "root"
+        self,
+        script: str,
+        password: Optional[str] = None,
+        user: str = "root",
+        timeout: Optional[int] = None,
     ) -> str:
         """Execute a MySQL CLI script.
 
@@ -687,6 +691,7 @@ class MySQL(MySQLBase):
             script: raw SQL script string
             password: root password to use for the script when needed
             user: user to run the script
+            timeout: a timeout to execute the mysqlcli script
         """
         command = [
             MYSQL_CLI_LOCATION,
@@ -702,11 +707,13 @@ class MySQL(MySQLBase):
             command.append(f"--password={password}")
 
         try:
-            process = self.container.exec(command)
+            process = self.container.exec(command, timeout=timeout)
             stdout, _ = process.wait_output()
             return stdout
         except ExecError as e:
             raise MySQLClientError(e.stderr)
+        except ChangeError as e:
+            raise MySQLClientError(e)
 
     def write_content_to_file(
         self,
