@@ -279,19 +279,13 @@ class MySQL(MySQLBase):
 
     def execute_backup_commands(
         self,
-        s3_bucket: str,
         s3_directory: str,
-        s3_access_key: str,
-        s3_secret_key: str,
-        s3_endpoint: str,
+        s3_parameters: Dict[str, str],
     ) -> Tuple[str, str]:
         """Executes commands to create a backup."""
         return super().execute_backup_commands(
-            s3_bucket,
             s3_directory,
-            s3_access_key,
-            s3_secret_key,
-            s3_endpoint,
+            s3_parameters,
             CHARMED_MYSQL_XTRABACKUP_LOCATION,
             CHARMED_MYSQL_XBCLOUD_LOCATION,
             XTRABACKUP_PLUGIN_DIR,
@@ -312,12 +306,8 @@ class MySQL(MySQLBase):
 
     def retrieve_backup_with_xbcloud(
         self,
-        s3_bucket: str,
-        s3_path: str,
-        s3_access_key: str,
-        s3_secret_key: str,
-        s3_endpoint: str,
         backup_id: str,
+        s3_parameters: Dict[str, str],
     ) -> Tuple[str, str, str]:
         """Retrieve the specified backup from S3.
 
@@ -325,12 +315,8 @@ class MySQL(MySQLBase):
         mysql container.
         """
         return super().retrieve_backup_with_xbcloud(
-            s3_bucket,
-            s3_path,
-            s3_access_key,
-            s3_secret_key,
-            s3_endpoint,
             backup_id,
+            s3_parameters,
             MYSQL_DATA_DIR,
             CHARMED_MYSQL_XBCLOUD_LOCATION,
             CHARMED_MYSQL_XBSTREAM_LOCATION,
@@ -634,6 +620,7 @@ class MySQL(MySQLBase):
             stdout, stderr = process.wait_output()
             return (stdout, stderr)
         except ExecError as e:
+            logger.debug(f"Failed command: {commands=}, {user=}, {group=}")
             raise MySQLExecError(e.stderr)
 
     def _run_mysqlsh_script(

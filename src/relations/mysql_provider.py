@@ -180,6 +180,9 @@ class MySQLProvider(Object):
             self.charm.k8s_helpers.create_endpoint_services(["primary", "replicas"])
 
             primary_endpoint = socket.getfqdn(f"{self.charm.app.name}-primary")
+            # wait for endpoints to be ready
+            self.charm.k8s_helpers.wait_service_ready((primary_endpoint, 3306))
+
             self.database.set_endpoints(relation_id, f"{primary_endpoint}:3306")
             replicas_endpoint = socket.getfqdn(f"{self.charm.app.name}-replicas")
             self.database.set_read_only_endpoints(relation_id, f"{replicas_endpoint}:3306")
