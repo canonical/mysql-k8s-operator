@@ -326,7 +326,7 @@ class MySQLProvider(Object):
         if event.departing_unit is None or event.departing_unit.app.name == self.charm.app.name:
             return
 
-        logger.debug(f"FOO: {event.relation.data}")
+        logger.error(f"FOO: {event.relation.data}")
         if router_id := event.relation.data[event.departing_unit].get("router_id"):
             try:
                 self.charm._mysql.remove_router_from_cluster_metadata(router_id)
