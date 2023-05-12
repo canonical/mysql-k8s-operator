@@ -563,7 +563,7 @@ class MySQLBase(ABC):
         command = [
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
             f"result = session.run_sql(\"SELECT USER, ATTRIBUTE->>'$.router_id' FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.created_by_user'='{relation_user}' AND ATTRIBUTE->'$.created_by_juju_unit'='{mysql_router_unit_name}'\")",
-            "result.fetch_all()",
+            "print(result.fetch_all())",
         ]
         try:
             output = self._run_mysqlsh_script("\n".join(command))
