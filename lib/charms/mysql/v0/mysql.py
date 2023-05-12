@@ -65,7 +65,7 @@ error handling on the subclass and in the charm code.
 
 """
 
-import collections
+import dataclasses
 import json
 import logging
 import re
@@ -286,6 +286,12 @@ class MySQLKillSessionError(Error):
     """Exception raised when there is an issue killing a connection."""
 
 
+@dataclasses.dataclass
+class User:
+    username: str
+    router_id: str
+
+
 class MySQLBase(ABC):
     """Abstract class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -294,8 +300,6 @@ class MySQLBase(ABC):
     Some methods are platform specific and must be implemented in the related
     charm code.
     """
-
-    User = collections.namedtuple("User", ["username", "router_id"])
 
     def __init__(
         self,
@@ -552,7 +556,7 @@ class MySQLBase(ABC):
             "result.fetch_all()",
         ]
         rows = json.loads(self._run_mysqlsh_script("\n".join(command)))
-        return [self.User(username=row[0], router_id=row[1]) for row in rows]
+        return [User(username=row[0], router_id=row[1]) for row in rows]
 
     def delete_users_for_unit(self, unit_name: str) -> None:
         """Delete users for a unit.
