@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Library containing the implementation of the standard relation."""
+
 import logging
 import socket
 from typing import List
@@ -323,10 +324,9 @@ class MySQLProvider(Object):
         if not self.charm.unit.is_leader():
             return
 
-        if event.departing_unit is None or event.departing_unit.app.name == self.charm.app.name:
+        if event.departing_unit.app.name == self.charm.app.name:
             return
 
-        logger.debug(f"FOO: {event.relation.data}")
         if router_id := event.relation.data[event.departing_unit].get("router_id"):
             try:
                 self.charm._mysql.remove_router_from_cluster_metadata(router_id)
