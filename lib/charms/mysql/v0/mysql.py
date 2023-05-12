@@ -287,7 +287,8 @@ class MySQLKillSessionError(Error):
 
 
 @dataclasses.dataclass
-class User:
+class RouterUser:
+    """MySQL Router user"""
     username: str
     router_id: str
 
@@ -545,7 +546,7 @@ class MySQLBase(ABC):
 
     def get_mysql_router_users_for_unit(
         self, *, relation_id: int, mysql_router_unit_name: str
-    ) -> list[User]:
+    ) -> list[RouterUser]:
         """Get users for related MySQL Router unit.
 
         For each user, get username & router ID attribute.
@@ -556,7 +557,7 @@ class MySQLBase(ABC):
             "result.fetch_all()",
         ]
         rows = json.loads(self._run_mysqlsh_script("\n".join(command)))
-        return [User(username=row[0], router_id=row[1]) for row in rows]
+        return [RouterUser(username=row[0], router_id=row[1]) for row in rows]
 
     def delete_users_for_unit(self, unit_name: str) -> None:
         """Delete users for a unit.
