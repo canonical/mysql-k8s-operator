@@ -292,7 +292,7 @@ class MySQLKillSessionError(Error):
 
 @dataclasses.dataclass
 class RouterUser:
-    """MySQL Router user"""
+    """MySQL Router user."""
 
     username: str
     router_id: str
