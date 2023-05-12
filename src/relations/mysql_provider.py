@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Library containing the implementation of the standard relation."""
+
 import logging
 import socket
 from typing import List
