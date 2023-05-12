@@ -130,6 +130,10 @@ class MySQLCreateApplicationDatabaseAndScopedUserError(Error):
     """Exception raised when creating application database and scoped user."""
 
 
+class MySQLGetRouterUsersError(Error):
+    """Exception raised when there is an issue getting MySQL Router users."""
+
+
 class MySQLDeleteUsersForUnitError(Error):
     """Exception raised when there is an issue deleting users for a unit."""
 
@@ -289,6 +293,7 @@ class MySQLKillSessionError(Error):
 @dataclasses.dataclass
 class RouterUser:
     """MySQL Router user"""
+
     username: str
     router_id: str
 
@@ -551,12 +556,23 @@ class MySQLBase(ABC):
 
         For each user, get username & router ID attribute.
         """
+        primary_address = self.get_cluster_primary_address()
+        if not primary_address:
+            raise MySQLGetRouterUsersError("Unable to query cluster primary address")
         relation_user = f"relation-{relation_id}"
         command = [
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
             f"result = session.run_sql(\"SELECT USER, ATTRIBUTE->>'$.router_id' FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.created_by_user'='{relation_user}' AND ATTRIBUTE->'$.created_by_juju_unit'='{mysql_router_unit_name}'\")",
             "result.fetch_all()",
         ]
-        rows = json.loads(self._run_mysqlsh_script("\n".join(command)))
+        try:
+            output = self._run_mysqlsh_script("\n".join(command))
+        except MySQLClientError as e:
+            logger.exception(
+                f"Failed to get MySQL Router users for relation {relation_id} and unit {mysql_router_unit_name}"
+            )
+            raise MySQLGetRouterUsersError(e.message)
+        rows = json.loads(output)
         return [RouterUser(username=row[0], router_id=row[1]) for row in rows]
 
     def delete_users_for_unit(self, unit_name: str) -> None:
