@@ -4,7 +4,6 @@
 import unittest
 from unittest.mock import patch
 
-from charms.mysql.v0.mysql import MySQLDeleteUsersForRelationError
 from ops.testing import Harness
 
 from charm import MySQLOperatorCharm
