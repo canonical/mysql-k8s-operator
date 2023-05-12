@@ -64,7 +64,7 @@ error handling on the subclass and in the charm code.
 
 
 """
-
+import collections
 import json
 import logging
 import re
@@ -135,6 +135,10 @@ class MySQLDeleteUsersForUnitError(Error):
 
 class MySQLDeleteUsersForRelationError(Error):
     """Exception raised when there is an issue deleting users for a relation."""
+
+
+class MySQLDeleteUserError(Error):
+    """Exception raised when there is an issue deleting a user."""
 
 
 class MySQLRemoveRouterFromMetadataError(Error):
@@ -289,6 +293,8 @@ class MySQLBase(ABC):
     Some methods are platform specific and must be implemented in the related
     charm code.
     """
+
+    User = collections.namedtuple("User", ["username", "router_id"])
 
     def __init__(
         self,
@@ -532,6 +538,21 @@ class MySQLBase(ABC):
             'session.run_sql("DEALLOCATE PREPARE stmt")',
         ]
 
+    def get_mysql_router_users_for_unit(
+        self, *, relation_id: int, mysql_router_unit_name: str
+    ) -> list[User]:
+        """Get users for related MySQL Router unit.
+
+        For each user, get username & router ID attribute.
+        """
+        relation_user = f"relation-{relation_id}"
+        command = [
+            f"result = session.run_sql(\"SELECT USER, ATTRIBUTE->>'$.router_id' FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.created_by_user'='{relation_user}' AND ATTRIBUTE->'$.created_by_juju_unit'='{mysql_router_unit_name}'\")",
+            "result.fetch_all()",
+        ]
+        rows = json.loads(self._run_mysqlsh_script("\n".join(command)))
+        return [self.User(username=row[0], router_id=row[1]) for row in rows]
+
     def delete_users_for_unit(self, unit_name: str) -> None:
         """Delete users for a unit.
 
@@ -554,7 +575,7 @@ class MySQLBase(ABC):
         try:
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
-            logger.exception(f"Failed to query and delete users for unit {unit_name}", exc_info=e)
+            logger.exception(f"Failed to query and delete users for unit {unit_name}")
             raise MySQLDeleteUsersForUnitError(e.message)
 
     def delete_users_for_relation(self, relation_id: int) -> None:
@@ -582,8 +603,23 @@ class MySQLBase(ABC):
         try:
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
-            logger.exception(f"Failed to delete users for relation {relation_id}", exc_info=e)
+            logger.exception(f"Failed to delete users for relation {relation_id}")
             raise MySQLDeleteUsersForRelationError(e.message)
+
+    def delete_user(self, username: str) -> None:
+        """Delete user."""
+        primary_address = self.get_cluster_primary_address()
+        if not primary_address:
+            raise MySQLDeleteUserError("Unable to query cluster primary address")
+        drop_user_command = [
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+            f'session.run_sql("DROP USER `{username}`")',
+        ]
+        try:
+            self._run_mysqlsh_script("\n".join(drop_user_command))
+        except MySQLClientError as e:
+            logger.exception(f"Failed to delete user {username}")
+            raise MySQLDeleteUserError(e.message)
 
     def remove_router_from_cluster_metadata(self, router_id: str) -> None:
         """Remove MySQL Router from InnoDB Cluster metadata."""

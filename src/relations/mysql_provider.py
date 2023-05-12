@@ -2,7 +2,6 @@
 # See LICENSE file for licensing details.
 
 """Library containing the implementation of the standard relation."""
-
 import logging
 import socket
 from typing import List
@@ -13,6 +12,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
 )
 from charms.mysql.v0.mysql import (
     MySQLCreateApplicationDatabaseAndScopedUserError,
+    MySQLDeleteUserError,
     MySQLDeleteUsersForRelationError,
     MySQLGetClusterEndpointsError,
     MySQLGetMySQLVersionError,
@@ -320,16 +320,32 @@ class MySQLProvider(Object):
             return
 
     def _on_database_provides_relation_departed(self, event: RelationDepartedEvent) -> None:
-        """Remove MySQL Router cluster metadata for departing unit."""
+        """Remove MySQL Router cluster metadata & user for departing unit."""
         if not self.charm.unit.is_leader():
             return
-
         if event.departing_unit.app.name == self.charm.app.name:
             return
 
-        if router_id := event.relation.data[event.departing_unit].get("router_id"):
-            try:
-                self.charm._mysql.remove_router_from_cluster_metadata(router_id)
-                logger.info(f"Removed router from metadata {router_id}")
-            except MySQLRemoveRouterFromMetadataError:
-                logger.error(f"Failed to remove router from metadata with ID {router_id}")
+        users = self.charm._mysql.get_mysql_router_users_for_unit(
+            relation_id=event.relation.id, mysql_router_unit_name=event.departing_unit.name
+        )
+        if not users:
+            return
+
+        if len(users) > 1:
+            logger.error(
+                f"More than one router user for departing unit {event.departing_unit.name}"
+            )
+            return
+
+        user = users[0]
+        try:
+            self.charm._mysql.delete_user(user.username)
+            logger.info(f"Deleted router user {user.username}")
+        except MySQLDeleteUserError:
+            logger.error(f"Failed to delete user {user.username}")
+        try:
+            self.charm._mysql.remove_router_from_cluster_metadata(user.router_id)
+            logger.info(f"Removed router from metadata {user.router_id}")
+        except MySQLRemoveRouterFromMetadataError:
+            logger.error(f"Failed to remove router from metadata with ID {user.router_id}")
