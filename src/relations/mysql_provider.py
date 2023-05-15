@@ -302,7 +302,9 @@ class MySQLProvider(Object):
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.
 
-        Remove user, keeping database intact.
+        Remove users, keeping database intact.
+
+        Includes users created by MySQL Router for MySQL Router <-> application relation
         """
         if not self.charm.unit.is_leader():
             # run once by the leader
@@ -321,7 +323,7 @@ class MySQLProvider(Object):
             return
 
     def _on_database_provides_relation_departed(self, event: RelationDepartedEvent) -> None:
-        """Remove MySQL Router cluster metadata & user for departing unit."""
+        """Remove MySQL Router cluster metadata & router user for departing unit."""
         if not self.charm.unit.is_leader():
             return
         if event.departing_unit.app.name == self.charm.app.name:
