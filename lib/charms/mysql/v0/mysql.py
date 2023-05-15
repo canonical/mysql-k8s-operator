@@ -90,7 +90,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 26
+LIBPATCH = 28
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 
@@ -466,6 +466,7 @@ class MySQLBase(ABC):
         hostname: str,
         *,
         unit_name: str = None,
+        create_database: bool = True,
     ) -> None:
         """Create an application database and a user scoped to the created database.
 
@@ -475,6 +476,7 @@ class MySQLBase(ABC):
             password: The password of the scoped user
             hostname: The hostname of the scoped user
             unit_name: The name of the unit from which the user will be accessed
+            create_database: Whether to create database
 
         Raises MySQLCreateApplicationDatabaseAndScopedUserError
             if there is an issue creating the application database or a user scoped to the database
@@ -500,7 +502,8 @@ class MySQLBase(ABC):
                 f'session.run_sql("GRANT ALL PRIVILEGES ON `{database_name}`.* TO `{username}`@`{hostname}`;")',
             )
 
-            self._run_mysqlsh_script("\n".join(create_database_commands))
+            if create_database:
+                self._run_mysqlsh_script("\n".join(create_database_commands))
             self._run_mysqlsh_script("\n".join(create_scoped_user_commands))
         except MySQLClientError as e:
             logger.exception(
