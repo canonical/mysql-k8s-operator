@@ -632,7 +632,7 @@ class MySQLBase(ABC):
             raise MySQLDeleteUserError("Unable to query cluster primary address")
         drop_user_command = [
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
-            f'session.run_sql("DROP USER `{username}`")',
+            f"session.run_sql(\"DROP USER `{username}`@'%'\")",
         ]
         try:
             self._run_mysqlsh_script("\n".join(drop_user_command))
