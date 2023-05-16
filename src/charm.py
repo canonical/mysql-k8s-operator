@@ -5,7 +5,9 @@
 """Charm for MySQL."""
 
 import logging
+from socket import getfqdn
 from typing import Dict, Optional
+
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
@@ -18,6 +20,8 @@ from charms.mysql.v0.mysql import (
     MySQLCreateClusterError,
     MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
+    MySQLInitializeJujuOperationsTableError,
+    MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
 )
 from charms.mysql.v0.tls import MySQLTLS
@@ -44,6 +48,7 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
+    GR_MAX_MEMBERS,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
     MYSQL_LOG_FILES,
@@ -91,7 +96,7 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.update_status, self._on_update_status)
 
-        self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
+        #        self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
 
         # Actions events
@@ -164,7 +169,6 @@ class MySQLOperatorCharm(CharmBase):
             and self.get_secret("app", ROOT_PASSWORD_KEY)
             and self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY)
             and self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
-            and self.app_peer_data.get("allowlist")
         )
 
     @property
@@ -233,7 +237,7 @@ class MySQLOperatorCharm(CharmBase):
         unit_name = unit_name or self.unit.name
         return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
 
-    def _get_unit_fqdn(self, unit_name: str) -> str:
+    def _get_unit_fqdn(self, unit_name: Optional[str] = None) -> str:
         """Create a fqdn for a unit.
 
         Translate juju unit name to resolvable hostname.
@@ -243,7 +247,7 @@ class MySQLOperatorCharm(CharmBase):
         Returns:
             A string representing the fqdn of the unit.
         """
-        return f"{self.get_unit_hostname(unit_name)}.{self.model.name}.svc.cluster.local"
+        return getfqdn(self.get_unit_hostname(unit_name))
 
     def get_secret(self, scope: str, key: str) -> Optional[str]:
         """Get secret from the secret storage."""
@@ -277,6 +281,97 @@ class MySQLOperatorCharm(CharmBase):
         """Returns whether the unit is busy."""
         return self._is_cluster_blocked()
 
+    def _prepare_configs(self, container: Container) -> bool:
+        """Copies files to the workload container.
+
+        Meant to be called from the pebble-ready handler.
+
+        Returns: a boolean indicating if the method was successful.
+        """
+        if not container.exists(MYSQLD_CONFIG_FILE):
+            try:
+                (
+                    innodb_buffer_pool_size,
+                    innodb_buffer_pool_chunk_size,
+                ) = self._mysql.get_innodb_buffer_pool_parameters()
+            except MySQLGetInnoDBBufferPoolParametersError:
+                self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
+                return False
+
+            try:
+                self._mysql.create_custom_config_file(
+                    report_host=self._get_unit_fqdn(self.unit.name),
+                    innodb_buffer_pool_size=innodb_buffer_pool_size,
+                    innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
+                )
+            except MySQLCreateCustomConfigFileError:
+                self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
+                return False
+
+        return True
+
+    def _get_primary_address_from_peers(self) -> Optional[str]:
+        """Retrieve primary address based on peer data."""
+        for unit in self.peers.units:
+            if (
+                self.peers.data[unit]["member-role"] == "primary"
+                and self.peers.data[unit]["member-state"] == "online"
+            ):
+                return self.peers.data[unit]["instance-hostname"]
+
+    def _is_unit_waiting_to_join_cluster(self) -> bool:
+        """Return if the unit is waiting to join the cluster."""
+        # alternatively, we could check if the instance is configured
+        # and have an empty performance_schema.replication_group_members table
+        return (
+            self.unit_peer_data.get("member-state") == "waiting"
+            and self.unit_peer_data.get("unit-configured") == "True"
+            and not self.unit_peer_data.get("unit-initialized")
+        )
+
+    def _join_unit_to_cluster(self) -> None:
+        """Join the unit to the cluster.
+
+        Try to join the unit from the primary unit.
+        """
+        instance_label = self.unit.name.replace("/", "-")
+        instance_fqdn = self._get_unit_fqdn(self.unit.name)
+        # Add new instance to the cluster
+        try:
+            cluster_primary = self._get_primary_address_from_peers()
+            if not cluster_primary:
+                self.unit.status = WaitingStatus("waiting to get cluster primary from peers")
+                logger.debug("Unable to retrieve the cluster primary from peers")
+                return
+
+            if self._mysql.get_cluster_node_count(from_instance=cluster_primary) == GR_MAX_MEMBERS:
+                self.unit.status = BlockedStatus(
+                    f"Cluster reached max size of {GR_MAX_MEMBERS} units. Standby."
+                )
+                logger.warning(
+                    f"Cluster reached max size of {GR_MAX_MEMBERS} unit. This unit will stay as standby."
+                )
+                return
+
+            self.unit.status = MaintenanceStatus("adding instance to cluster")
+
+            self._mysql.add_instance_to_cluster(
+                instance_fqdn, instance_label, from_instance=cluster_primary
+            )
+            logger.debug(f"Added instance {instance_fqdn} to cluster")
+
+            # Update 'units-added-to-cluster' counter in the peer relation databag
+            self.unit_peer_data["unit-initialized"] = "True"
+            self.unit_peer_data["member-state"] = "online"
+            self.unit.status = ActiveStatus(self.active_status_message)
+            logger.debug(f"Instance {instance_label} is cluster member")
+
+        except MySQLAddInstanceToClusterError:
+            logger.debug(f"Unable to add instance {instance_fqdn} to cluster.")
+        except MySQLLockAcquisitionError:
+            self.unit.status = WaitingStatus("waiting to acquire lock")
+            logger.debug(f"Waiting to acquire lock. Yelding.")
+
     # =========================================================================
     # Charm event handlers
     # =========================================================================
@@ -293,16 +388,10 @@ class MySQLOperatorCharm(CharmBase):
                 self.config.get("cluster-name") or f"cluster_{generate_random_hash()}"
             )
 
-        # initialise allowlist with leader hostname
-        if not self.app_peer_data.get("allowlist"):
-            self.app_peer_data["allowlist"] = f"{self._get_unit_fqdn(self.unit.name)}"
-
     def _on_leader_elected(self, _: LeaderElectedEvent) -> None:
         """Handle the leader elected event.
 
         Set config values in the peer relation databag if not already set.
-        Idempotently remove unreachable instances from the cluster and update
-        the allowlist accordingly.
         """
         # Set required passwords if not already set
         required_passwords = [
@@ -344,6 +433,7 @@ class MySQLOperatorCharm(CharmBase):
             # Restart exporter service after configuration
             container.restart(MYSQLD_EXPORTER_SERVICE)
 
+            self.unit_peer_data["instance-hostname"] = self._get_unit_fqdn(self.unit.name)
             self.unit_peer_data["unit-configured"] = "True"
         except (
             MySQLConfigureInstanceError,
@@ -361,35 +451,6 @@ class MySQLOperatorCharm(CharmBase):
         except MySQLGetMySQLVersionError:
             # Do not block the charm if the version cannot be retrieved
             pass
-
-        return True
-
-    def _prepare_configs(self, container: Container) -> bool:
-        """Copies files to the workload container.
-
-        Meant to be called from the pebble-ready handler.
-
-        Returns: a boolean indicating if the method was successful.
-        """
-        if not container.exists(MYSQLD_CONFIG_FILE):
-            try:
-                (
-                    innodb_buffer_pool_size,
-                    innodb_buffer_pool_chunk_size,
-                ) = self._mysql.get_innodb_buffer_pool_parameters()
-            except MySQLGetInnoDBBufferPoolParametersError:
-                self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
-                return False
-
-            try:
-                self._mysql.create_custom_config_file(
-                    report_host=self._get_unit_fqdn(self.unit.name),
-                    innodb_buffer_pool_size=innodb_buffer_pool_size,
-                    innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
-                )
-            except MySQLCreateCustomConfigFileError:
-                self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
-                return False
 
         return True
 
@@ -433,6 +494,8 @@ class MySQLOperatorCharm(CharmBase):
             # Non-leader units should wait for leader to add them to the cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
+
+            self._join_unit_to_cluster()
             return
 
         try:
@@ -441,6 +504,7 @@ class MySQLOperatorCharm(CharmBase):
             unit_label = self.unit.name.replace("/", "-")
             self._mysql.create_cluster(unit_label)
 
+            self._mysql.initialize_juju_units_operations_table()
             # Create control file in data directory
             self.app_peer_data["units-added-to-cluster"] = "1"
 
@@ -456,6 +520,8 @@ class MySQLOperatorCharm(CharmBase):
             logger.debug("Unable to create cluster: {}".format(e))
         except MySQLGetMemberStateError:
             self.unit.status = BlockedStatus("Unable to query member state and role")
+        except MySQLInitializeJujuOperationsTableError:
+            self.unit.status = BlockedStatus("Failed to initialize juju operations table")
 
     def _handle_potential_cluster_crash_scenario(self) -> bool:
         """Handle potential full cluster crash scenarios.
@@ -544,8 +610,13 @@ class MySQLOperatorCharm(CharmBase):
         if self._handle_potential_cluster_crash_scenario():
             return
 
-        if not self.unit.is_leader():
+        if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
+            self._join_unit_to_cluster()
             return
+
+        nodes = self._mysql.get_cluster_node_count()
+        if nodes > 0 and self.unit.is_leader():
+            self.app_peer_data["units-added-to-cluster"] = str(nodes)
 
         planned_units = self.app.planned_units()
 
@@ -554,11 +625,15 @@ class MySQLOperatorCharm(CharmBase):
             self.unit.status = BlockedStatus("Failed to get cluster status")
             return
 
-        addresses_of_units_to_remove = [
-            member["address"]
-            for unit_name, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if int(unit_name.split("-")[-1]) >= planned_units
-        ]
+        try:
+            addresses_of_units_to_remove = [
+                member["address"]
+                for unit_name, member in cluster_status["defaultreplicaset"]["topology"].items()
+                if int(unit_name.split("-")[-1]) >= planned_units
+            ]
+        except ValueError:
+            # exception can occur if unit is not yet labeled
+            return
 
         if not addresses_of_units_to_remove:
             return
@@ -635,15 +710,8 @@ class MySQLOperatorCharm(CharmBase):
             event.defer()
             return
 
-        instance_label = self.unit.name.replace("/", "-")
-        # Test if non-leader unit is ready
-        if isinstance(self.unit.status, WaitingStatus) and self._mysql.is_instance_in_cluster(
-            instance_label
-        ):
-            self.unit_peer_data["unit-initialized"] = "True"
-            self.unit_peer_data["member-state"] = "online"
-            self.unit.status = ActiveStatus(self.active_status_message)
-            logger.debug(f"Instance {instance_label} is cluster member")
+        if self._is_unit_waiting_to_join_cluster():
+            self._join_unit_to_cluster()
 
     # =========================================================================
     # Charm action handlers

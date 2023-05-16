@@ -198,7 +198,8 @@ class MySQLProvider(Object):
             event.defer()
             return
 
-        if not self.charm.cluster_initialized:
+        relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
+        if not self.charm.cluster_initialized and not relations:
             return
 
         charm_unit_label = self.charm.unit.name.replace("/", "-")
