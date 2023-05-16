@@ -202,6 +202,10 @@ class MySQLProvider(Object):
         if not self.charm.cluster_initialized and not relations:
             return
 
+        if isinstance(self.charm.unit.status, BlockedStatus):
+            # avoid deferral when in blocked state
+            return
+
         charm_unit_label = self.charm.unit.name.replace("/", "-")
         if not self.charm._mysql.is_instance_in_cluster(charm_unit_label):
             logger.debug(f"Unit {self.charm.unit.name} is not yet a member of the cluster")

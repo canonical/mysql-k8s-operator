@@ -31,7 +31,6 @@ from ops.charm import (
     CharmBase,
     LeaderElectedEvent,
     RelationChangedEvent,
-    RelationJoinedEvent,
     UpdateStatusEvent,
 )
 from ops.main import main
@@ -96,7 +95,6 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.update_status, self._on_update_status)
 
-        #        self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
 
         # Actions events
@@ -336,12 +334,17 @@ class MySQLOperatorCharm(CharmBase):
         """
         instance_label = self.unit.name.replace("/", "-")
         instance_fqdn = self._get_unit_fqdn(self.unit.name)
+
+        if self._mysql.is_instance_in_cluster(instance_label):
+            logger.debug("instance already in cluster")
+            return
+
         # Add new instance to the cluster
         try:
             cluster_primary = self._get_primary_address_from_peers()
             if not cluster_primary:
                 self.unit.status = WaitingStatus("waiting to get cluster primary from peers")
-                logger.debug("Unable to retrieve the cluster primary from peers")
+                logger.debug("waiting: unable to retrieve the cluster primary from peers")
                 return
 
             if self._mysql.get_cluster_node_count(from_instance=cluster_primary) == GR_MAX_MEMBERS:
@@ -369,8 +372,8 @@ class MySQLOperatorCharm(CharmBase):
         except MySQLAddInstanceToClusterError:
             logger.debug(f"Unable to add instance {instance_fqdn} to cluster.")
         except MySQLLockAcquisitionError:
-            self.unit.status = WaitingStatus("waiting to acquire lock")
-            logger.debug(f"Waiting to acquire lock. Yelding.")
+            self.unit.status = WaitingStatus("waiting to join the cluster")
+            logger.debug("Waiting to joing the cluster, failed to acquire lock.")
 
     # =========================================================================
     # Charm event handlers
@@ -505,7 +508,7 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.create_cluster(unit_label)
 
             self._mysql.initialize_juju_units_operations_table()
-            # Create control file in data directory
+            # Start control flag
             self.app_peer_data["units-added-to-cluster"] = "1"
 
             state, role = self._mysql.get_member_state()
@@ -648,58 +651,6 @@ class MySQLOperatorCharm(CharmBase):
                 return
 
         self.unit.status = ActiveStatus(self.active_status_message)
-
-    def _on_peer_relation_joined(self, event: RelationJoinedEvent):
-        """Handle the peer relation joined event."""
-        # Only leader unit add instances to the cluster
-        if not self.unit.is_leader():
-            return
-
-        # only add other units
-        if event.unit.name == self.unit.name:
-            return
-
-        # Defer run when leader is not active
-        if not isinstance(self.unit.status, ActiveStatus):
-            event.defer()
-            return
-
-        new_instance_fqdn = self._get_unit_fqdn(event.unit.name)
-        new_instance_label = event.unit.name.replace("/", "-")
-
-        # Check if new instance is ready to be added to the cluster
-        if not self._mysql.is_instance_configured_for_innodb(
-            new_instance_fqdn, new_instance_label
-        ):
-            event.defer()
-            return
-
-        # Check if instance was already added to the cluster
-        if self._mysql.is_instance_in_cluster(new_instance_label):
-            logger.debug(f"Instance {new_instance_fqdn} already in cluster")
-            return
-
-        # Add new instance to the cluster
-        try:
-            cluster_primary = self._mysql.get_cluster_primary_address()
-            if not cluster_primary:
-                self.unit.status = BlockedStatus("Unable to retrieve the cluster primary")
-                return
-
-            self._mysql.add_instance_to_cluster(
-                new_instance_fqdn, new_instance_label, from_instance=cluster_primary
-            )
-            logger.debug(f"Added instance {new_instance_fqdn} to cluster")
-
-            # Update 'units-added-to-cluster' counter in the peer relation databag
-            # in order to trigger a relation_changed event which will move the added unit
-            # into ActiveStatus
-            units_started = int(self.app_peer_data["units-added-to-cluster"])
-            self.app_peer_data["units-added-to-cluster"] = str(units_started + 1)
-
-        except MySQLAddInstanceToClusterError:
-            logger.debug(f"Unable to add instance {new_instance_fqdn} to cluster.")
-            self.unit.status = BlockedStatus("Unable to add instance to cluster")
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
