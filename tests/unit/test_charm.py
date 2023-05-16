@@ -80,6 +80,7 @@ class TestCharm(unittest.TestCase):
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("mysql_k8s_helpers.MySQL.initialize_juju_units_operations_table")
     @patch("mysql_k8s_helpers.MySQL.safe_stop_mysqld_safe")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.0")
     @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
@@ -106,6 +107,7 @@ class TestCharm(unittest.TestCase):
         _wait_until_mysql_connection,
         _get_mysql_version,
         _safe_stop_mysqld_safe,
+        _initialize_juju_units_operations_table,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -182,23 +184,6 @@ class TestCharm(unittest.TestCase):
 
         mysql = self.charm._mysql
         self.assertTrue(isinstance(mysql, MySQL))
-
-    @patch("charm.MySQLOperatorCharm._mysql")
-    def test_on_peer_relation_joined(self, _mysql_mock):
-        # Test basic peer relation joined calls
-        self.harness.set_leader()
-        event = MagicMock()
-        event.unit.name.return_value = f"{APP_NAME}/2"
-        self.charm._mysql = _mysql_mock
-
-        _mysql_mock.is_instance_configured_for_innodb.return_value = True
-
-        self.charm._on_peer_relation_joined(event)
-
-        _mysql_mock.add_instance_to_cluster.called_once_with("mysql-k8s-endpoints.mysql-k8s-2")
-        _mysql_mock.is_instance_configured_for_innodb.called_once_with(
-            "mysql-k8s-endpoints.mysql-k8s-2"
-        )
 
     # @patch_network_get(private_address="1.1.1.1")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
