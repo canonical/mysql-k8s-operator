@@ -355,7 +355,7 @@ class MySQLOperatorCharm(CharmBase):
                 )
                 return
 
-            self.unit.status = MaintenanceStatus("adding instance to cluster")
+            self.unit.status = MaintenanceStatus("joining the cluster")
 
             self._mysql.add_instance_to_cluster(
                 instance_fqdn, instance_label, from_instance=cluster_primary
