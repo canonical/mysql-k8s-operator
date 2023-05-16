@@ -8,7 +8,6 @@ import logging
 from socket import getfqdn
 from typing import Dict, Optional
 
-
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
@@ -406,6 +405,19 @@ class MySQLOperatorCharm(CharmBase):
                 return
         self.unit.status = ActiveStatus(self.active_status_message)
 
+    def _reconcile_pebble_layer(self, container: Container) -> None:
+        """Reconcile pebble layer."""
+        current_layer = container.get_plan()
+        new_layer = self._pebble_layer
+
+        if new_layer.services != current_layer:
+            logger.info("Adding pebble layer")
+
+            container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
+            container.restart(MYSQLD_SAFE_SERVICE)
+            self._mysql.wait_until_mysql_connection()
+            self._on_update_status(None)
+
     # =========================================================================
     # Charm event handlers
     # =========================================================================
@@ -506,17 +518,7 @@ class MySQLOperatorCharm(CharmBase):
         self.unit.status = MaintenanceStatus("Initialising mysqld")
         if self.unit_peer_data.get("unit-configured"):
             # Only update pebble layer if unit is already configured for GR
-            current_layer = container.get_plan()
-            new_layer = self._pebble_layer
-
-            if new_layer.services != current_layer:
-                logger.info("Adding pebble layer")
-
-                container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
-                container.restart(MYSQLD_SAFE_SERVICE)
-                self._mysql.wait_until_mysql_connection()
-                self._on_update_status(None)
-
+            self._reconcile_pebble_layer(container)
             return
 
         # First run setup
