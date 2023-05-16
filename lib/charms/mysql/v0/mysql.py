@@ -556,12 +556,9 @@ class MySQLBase(ABC):
 
         For each user, get username & router ID attribute.
         """
-        primary_address = self.get_cluster_primary_address()
-        if not primary_address:
-            raise MySQLGetRouterUsersError("Unable to query cluster primary address")
         relation_user = f"relation-{relation_id}"
         command = [
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"result = session.run_sql(\"SELECT USER, ATTRIBUTE->>'$.router_id' FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.created_by_user'='{relation_user}' AND ATTRIBUTE->'$.created_by_juju_unit'='{mysql_router_unit_name}'\")",
             "print(result.fetch_all())",
         ]
