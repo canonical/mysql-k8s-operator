@@ -1027,7 +1027,11 @@ class MySQLBase(ABC):
             "print(f'<ACQUIRED_LOCK>{acquired_lock}</ACQUIRED_LOCK>')",
         )
 
-        output = self._run_mysqlsh_script("\n".join(acquire_lock_commands))
+        try:
+            output = self._run_mysqlsh_script("\n".join(acquire_lock_commands))
+        except MySQLClientError:
+            logger.debug("Failed to acquire lock")
+            return False
         matches = re.search(r"<ACQUIRED_LOCK>(\d)</ACQUIRED_LOCK>", output)
         if not matches:
             return False
