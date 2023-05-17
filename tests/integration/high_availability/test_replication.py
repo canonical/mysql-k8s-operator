@@ -66,6 +66,7 @@ async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writ
         ops_test,
         check_for_existing_application=False,
         mysql_application_name=another_mysql_application_name,
+        num_units=1,
     )
 
     # insert some data into the first/original mysql cluster
@@ -74,28 +75,24 @@ async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writ
 
     # ensure that the inserted data DOES NOT get replicated into the another mysql cluster
     another_mysql_unit = ops_test.model.applications[another_mysql_application_name].units[0]
-    another_mysql_primary = await get_primary_unit(
-        ops_test, another_mysql_unit, another_mysql_application_name
-    )
-    another_server_config_credentials = await get_server_config_credentials(another_mysql_primary)
+    another_server_config_credentials = await get_server_config_credentials(another_mysql_unit)
 
     select_databases_sql = [
         "SELECT schema_name FROM information_schema.schemata",
     ]
 
-    for unit in ops_test.model.applications[another_mysql_application_name].units:
-        unit_address = await get_unit_address(ops_test, unit.name)
+    unit_address = await get_unit_address(ops_test, another_mysql_unit.name)
 
-        output = await execute_queries_on_unit(
-            unit_address,
-            another_server_config_credentials["username"],
-            another_server_config_credentials["password"],
-            select_databases_sql,
-        )
+    output = await execute_queries_on_unit(
+        unit_address,
+        another_server_config_credentials["username"],
+        another_server_config_credentials["password"],
+        select_databases_sql,
+    )
 
-        assert len(output) > 0
-        assert "information_schema" in output
-        assert database_name not in output
+    assert len(output) > 0
+    assert "information_schema" in output
+    assert database_name not in output
 
     # remove another mysql application cluster
     await scale_application(ops_test, another_mysql_application_name, 0, wait=False)
