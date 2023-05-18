@@ -13,10 +13,12 @@ from charms.data_platform_libs.v0.data_interfaces import (
 )
 from charms.mysql.v0.mysql import (
     MySQLCreateApplicationDatabaseAndScopedUserError,
+    MySQLDeleteUserError,
     MySQLDeleteUsersForRelationError,
     MySQLGetClusterEndpointsError,
     MySQLGetMySQLVersionError,
     MySQLGrantPrivilegesToUserError,
+    MySQLRemoveRouterFromMetadataError,
 )
 from ops.charm import (
     PebbleReadyEvent,
@@ -53,6 +55,10 @@ class MySQLProvider(Object):
 
         self.framework.observe(
             self.charm.on[DB_RELATION_NAME].relation_broken, self._on_database_broken
+        )
+        self.framework.observe(
+            self.charm.on[DB_RELATION_NAME].relation_departed,
+            self._on_database_provides_relation_departed,
         )
 
         self.framework.observe(
@@ -296,7 +302,9 @@ class MySQLProvider(Object):
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.
 
-        Remove user, keeping database intact.
+        Remove users, keeping database intact.
+
+        Includes users created by MySQL Router for MySQL Router <-> application relation
         """
         if not self.charm.unit.is_leader():
             # run once by the leader
@@ -309,7 +317,37 @@ class MySQLProvider(Object):
         relation_id = event.relation.id
         try:
             self.charm._mysql.delete_users_for_relation(relation_id)
-            logger.info(f"Removed user for relation {relation_id}")
+            logger.info(f"Removed user(s) for relation {relation_id}")
         except MySQLDeleteUsersForRelationError:
-            logger.error(f"Failed to delete user for relation {relation_id}")
+            logger.error(f"Failed to delete user(s) for relation {relation_id}")
+
+    def _on_database_provides_relation_departed(self, event: RelationDepartedEvent) -> None:
+        """Remove MySQL Router cluster metadata & router user for departing unit."""
+        if not self.charm.unit.is_leader():
             return
+        if event.departing_unit.app.name == self.charm.app.name:
+            return
+
+        users = self.charm._mysql.get_mysql_router_users_for_unit(
+            relation_id=event.relation.id, mysql_router_unit_name=event.departing_unit.name
+        )
+        if not users:
+            return
+
+        if len(users) > 1:
+            logger.error(
+                f"More than one router user for departing unit {event.departing_unit.name}"
+            )
+            return
+
+        user = users[0]
+        try:
+            self.charm._mysql.delete_user(user.username)
+            logger.info(f"Deleted router user {user.username}")
+        except MySQLDeleteUserError:
+            logger.error(f"Failed to delete user {user.username}")
+        try:
+            self.charm._mysql.remove_router_from_cluster_metadata(user.router_id)
+            logger.info(f"Removed router from metadata {user.router_id}")
+        except MySQLRemoveRouterFromMetadataError:
+            logger.error(f"Failed to remove router from metadata with ID {user.router_id}")
