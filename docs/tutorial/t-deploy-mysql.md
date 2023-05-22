@@ -3,9 +3,9 @@
 This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overview/9677). Please refer to this page for more information and the overview of the content.
 
 ## Deploy Charmed MySQL K8s
-To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=edge) and deploy it to your model:
+To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=8.0) and deploy it to your model:
 ```shell
-juju deploy mysql-k8s --channel edge --trust
+juju deploy mysql-k8s --channel 8.0 --trust
 ```
 Note: `--trust` is required to create some K8s resources.
 
@@ -15,12 +15,12 @@ juju status --watch 1s
 ```
 
 This command is useful for checking the status of Charmed MySQL K8s and gathering information about the machines hosting Charmed MySQL. Some of the helpful information it displays include IP addresses, ports, state, etc. The command updates the status of Charmed MySQL K8s every second and as the application starts you can watch the status and messages of Charmed MySQL K8s change. Wait until the application is ready - when it is ready, `juju status` will show:
-```
+```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
 tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:33:45+01:00
 
-App        Version   Status  Scale  Charm      Channel  Rev  Address         Exposed  Message
-mysql-k8s  8.0.31    active      1  mysql-k8s  edge      36  10.152.183.234  no       Unit is ready: Mode: RW
+App        Version   Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
+mysql-k8s  8.0.31    active      1  mysql-k8s  8.0/stable  36   10.152.183.234  no       Unit is ready: Mode: RW
 
 Unit          Workload  Agent  Address     Ports  Message
 mysql-k8s/0*  active    idle   10.1.84.74         Unit is ready: Mode: RW
@@ -57,7 +57,7 @@ juju run-action mysql-k8s/leader get-password username=myuser --wait
 ```
 
 The host’s IP address can be found with `juju status` (the unit hosting the MySQL K8s application):
-```
+```shell
 ...
 Unit          Workload  Agent  Address     Ports  Message
 mysql-k8s/0*  active    idle   10.1.84.74         Unit is ready: Mode: RW
@@ -71,7 +71,7 @@ mysql -h 10.1.84.74 -uroot -p<password>
 *Note: if at any point you'd like to leave the unit hosting Charmed MySQL, enter `Ctrl+d` or type `exit`*.
 
 Inside MySQL list DBs available on the host `show databases`:
-```
+```shell
 > mysql -h 10.1.84.74 -uroot -psQI3Ojih7uL5UC4J1D9Xuqgx
 
 Server version: 8.0.31-0ubuntu0.22.04.1 (Ubuntu)
@@ -92,7 +92,7 @@ mysql> show databases;
 *Note: if at any point you'd like to leave the MySQL client, enter `Ctrl+d` or type `exit`*.
 
 You can now interact with MySQL directly using any [MySQL Queries](https://dev.mysql.com/doc/refman/8.0/en/entering-queries.html). For example entering `SELECT VERSION(), CURRENT_DATE;` should output something like:
-```
+```shell
 mysql> SELECT VERSION(), CURRENT_DATE;
 +-------------------------+--------------+
 | VERSION()               | CURRENT_DATE |
