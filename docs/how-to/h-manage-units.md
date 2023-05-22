@@ -4,12 +4,12 @@
 
 To deploy a single unit of MySQL using its default configuration
 ```shell
-juju deploy mysql-k8s --channel edge --trust
+juju deploy mysql-k8s --channel 8.0 --trust
 ```
 
 It is customary to use MySQL with replication. Hence usually more than one unit (preferably an odd number to prohibit a "split-brain" scenario) is deployed. To deploy MySQL with multiple replicas, specify the number of desired units with the `-n` option.
 ```shell
-juju deploy mysql-k8s --channel edge --trust -n <number_of_replicas>
+juju deploy mysql-k8s --channel 8.0 --trust -n <number_of_replicas>
 ```
 
 To retrieve primary replica one can use the action `get-primary` on any of the units running MySQL:

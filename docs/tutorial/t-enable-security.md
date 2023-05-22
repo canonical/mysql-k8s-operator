@@ -11,17 +11,17 @@ Again, relations come in handy here as TLS is enabled via relations; i.e. by rel
 ### Configure TLS
 Before enabling TLS on Charmed MySQL K8s we must first deploy the `tls-certificates-operator` charm:
 ```shell
-juju deploy tls-certificates-operator --channel=edge --config generate-self-signed-certificates="true" --config ca-common-name="Tutorial CA"
+juju deploy tls-certificates-operator --config generate-self-signed-certificates="true" --config ca-common-name="Tutorial CA"
 ```
 
 Wait until the `tls-certificates-operator` is up and active, use `juju status --watch 1s` to monitor the progress:
-```
+```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
 tutorial  overlord    microk8s/localhost  2.9.38   unsupported  23:04:02+01:00
 
-App                        Version   Status  Scale  Charm                      Channel  Rev  Address         Exposed  Message
-mysql-k8s                  8.0.31    active      2  mysql-k8s                  edge      36  10.152.183.234  no       
-tls-certificates-operator            active      1  tls-certificates-operator  edge      22  10.152.183.76   no       
+App                        Version   Status  Scale  Charm                      Channel      Rev  Address         Exposed  Message
+mysql-k8s                  8.0.31    active      2  mysql-k8s                  8.0/stable   36   10.152.183.234  no       
+tls-certificates-operator            active      1  tls-certificates-operator  stable       22   10.152.183.76   no       
 
 Unit                          Workload  Agent  Address      Ports  Message
 mysql-k8s/0*                  active    idle   10.1.84.74          Unit is ready: Mode: RW
@@ -58,7 +58,7 @@ Check the TLS certificate in use:
 ```
 
 The output should be similar to:
-```
+```shell
 ...
 Issuer: CN = MySQL_Server_8.0.31_Auto_Generated_CA_Certificate
 ...
