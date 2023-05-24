@@ -17,6 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
     MySQLInitializeJujuOperationsTableError,
@@ -285,36 +286,40 @@ class MySQLOperatorCharm(CharmBase):
 
         Returns: a boolean indicating if the method was successful.
         """
-        if not container.exists(MYSQLD_CONFIG_FILE):
-            try:
-                (
-                    innodb_buffer_pool_size,
-                    innodb_buffer_pool_chunk_size,
-                ) = self._mysql.get_innodb_buffer_pool_parameters()
-            except MySQLGetInnoDBBufferPoolParametersError:
-                self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
-                return False
+        if container.exists(MYSQLD_CONFIG_FILE):
+            return True
+        try:
+            (
+                innodb_buffer_pool_size,
+                innodb_buffer_pool_chunk_size,
+            ) = self._mysql.get_innodb_buffer_pool_parameters()
+        except MySQLGetInnoDBBufferPoolParametersError:
+            self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
+            return False
 
-            try:
-                self._mysql.create_custom_config_file(
-                    report_host=self._get_unit_fqdn(self.unit.name),
-                    innodb_buffer_pool_size=innodb_buffer_pool_size,
-                    innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
-                )
-            except MySQLCreateCustomConfigFileError:
-                self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
-                return False
+        try:
+            self._mysql.create_custom_config_file(
+                report_host=self._get_unit_fqdn(self.unit.name),
+                innodb_buffer_pool_size=innodb_buffer_pool_size,
+                innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
+            )
+        except MySQLCreateCustomConfigFileError:
+            self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
+            return False
 
         return True
 
-    def _get_primary_address_from_peers(self) -> Optional[str]:
-        """Retrieve primary address based on peer data."""
+    def _get_primary_from_online_peer(self) -> Optional[str]:
+        """Get the primary address from an online peer."""
         for unit in self.peers.units:
-            if (
-                self.peers.data[unit].get("member-role") == "primary"
-                and self.peers.data[unit].get("member-state") == "online"
-            ):
-                return self.peers.data[unit].get("instance-hostname")
+            if self.peers.data[unit].get("member-state") == "online":
+                try:
+                    return self._mysql.get_cluster_primary_address(
+                        connect_instance_address=self._get_unit_fqdn(unit.name),
+                    )
+                except MySQLGetClusterPrimaryAddressError:
+                    # try next unit
+                    continue
 
     def _is_unit_waiting_to_join_cluster(self) -> bool:
         """Return if the unit is waiting to join the cluster."""
@@ -340,7 +345,7 @@ class MySQLOperatorCharm(CharmBase):
 
         # Add new instance to the cluster
         try:
-            cluster_primary = self._get_primary_address_from_peers()
+            cluster_primary = self._get_primary_from_online_peer()
             if not cluster_primary:
                 self.unit.status = WaitingStatus("waiting to get cluster primary from peers")
                 logger.debug("waiting: unable to retrieve the cluster primary from peers")
@@ -351,7 +356,7 @@ class MySQLOperatorCharm(CharmBase):
                     f"Cluster reached max size of {GR_MAX_MEMBERS} units. Standby."
                 )
                 logger.warning(
-                    f"Cluster reached max size of {GR_MAX_MEMBERS} unit. This unit will stay as standby."
+                    f"Cluster reached max size of {GR_MAX_MEMBERS} units. This unit will stay as standby."
                 )
                 return
 
@@ -410,7 +415,7 @@ class MySQLOperatorCharm(CharmBase):
         current_layer = container.get_plan()
         new_layer = self._pebble_layer
 
-        if new_layer.services != current_layer:
+        if new_layer.services != current_layer.services:
             logger.info("Adding pebble layer")
 
             container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
@@ -630,7 +635,7 @@ class MySQLOperatorCharm(CharmBase):
 
         return False
 
-    def _on_update_status(self, event: UpdateStatusEvent) -> None:
+    def _on_update_status(self, _: UpdateStatusEvent) -> None:
         """Handle the update status event.
 
         One purpose of this event handler is to ensure that scaled down units are

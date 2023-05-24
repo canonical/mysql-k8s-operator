@@ -213,7 +213,7 @@ class MySQLProvider(Object):
             event.defer()
             return
 
-        relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
+        relations = self.charm.model.relations.get(DB_RELATION_NAME)
         if not self.charm.cluster_initialized and not relations:
             return
 
