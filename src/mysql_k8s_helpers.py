@@ -141,6 +141,8 @@ class MySQL(MySQLBase):
         cluster_admin_password: str,
         monitoring_user: str,
         monitoring_password: str,
+        backups_user: str,
+        backups_password: str,
         container: Container,
         k8s_helper: KubernetesHelpers,
     ):
@@ -156,6 +158,8 @@ class MySQL(MySQLBase):
             cluster_admin_password: password for the cluster admin user
             monitoring_user: user name for the monitoring user
             monitoring_password: password for the monitoring user
+            backups_user: user name for the backups user
+            backups_password: password for the backups user
             container: workload container object
             k8s_helper: KubernetesHelpers object
         """
@@ -169,6 +173,8 @@ class MySQL(MySQLBase):
             cluster_admin_password=cluster_admin_password,
             monitoring_user=monitoring_user,
             monitoring_password=monitoring_password,
+            backups_user=backups_user,
+            backups_password=backups_password,
         )
         self.container = container
         self.k8s_helper = k8s_helper
@@ -609,7 +615,7 @@ class MySQL(MySQLBase):
         """Execute commands on the server where MySQL is running."""
         try:
             if bash:
-                commands = ["bash", "-c", " ".join(commands)]
+                commands = ["bash", "-c", "set -o pipefail; " + " ".join(commands)]
 
             process = self.container.exec(
                 commands,

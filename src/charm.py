@@ -41,6 +41,8 @@ from ops.model import (
 from ops.pebble import Layer
 
 from constants import (
+    BACKUPS_PASSWORD_KEY,
+    BACKUPS_USERNAME,
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
@@ -153,6 +155,8 @@ class MySQLOperatorCharm(CharmBase):
             self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),
             MONITORING_USERNAME,
             self.get_secret("app", MONITORING_PASSWORD_KEY),
+            BACKUPS_USERNAME,
+            self.get_secret("app", BACKUPS_PASSWORD_KEY),
             self.unit.get_container("mysql"),
             self.k8s_helpers,
         )
@@ -310,6 +314,7 @@ class MySQLOperatorCharm(CharmBase):
             SERVER_CONFIG_PASSWORD_KEY,
             CLUSTER_ADMIN_PASSWORD_KEY,
             MONITORING_PASSWORD_KEY,
+            BACKUPS_PASSWORD_KEY,
         ]
 
         for required_password in required_passwords:
@@ -661,6 +666,8 @@ class MySQLOperatorCharm(CharmBase):
             secret_key = SERVER_CONFIG_PASSWORD_KEY
         elif username == CLUSTER_ADMIN_USERNAME:
             secret_key = CLUSTER_ADMIN_PASSWORD_KEY
+        elif username == BACKUPS_USERNAME:
+            secret_key = BACKUPS_PASSWORD_KEY
         else:
             raise RuntimeError("Invalid username.")
 
@@ -682,6 +689,8 @@ class MySQLOperatorCharm(CharmBase):
             secret_key = SERVER_CONFIG_PASSWORD_KEY
         elif username == CLUSTER_ADMIN_USERNAME:
             secret_key = CLUSTER_ADMIN_PASSWORD_KEY
+        elif username == BACKUPS_USERNAME:
+            secret_key = BACKUPS_PASSWORD_KEY
         else:
             raise RuntimeError("Invalid username.")
 

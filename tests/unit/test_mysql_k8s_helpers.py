@@ -55,6 +55,8 @@ class TestMySQL(unittest.TestCase):
             "clusteradminpassword",
             "monitoring",
             "monitoringpassword",
+            "backups",
+            "backupspassword",
             None,
             None,
         )
