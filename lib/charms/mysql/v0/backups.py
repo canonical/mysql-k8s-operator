@@ -62,6 +62,7 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLPrepareBackupForRestoreError,
+    MySQLRescanClusterError,
     MySQLRestoreBackupError,
     MySQLRetrieveBackupWithXBCloudError,
     MySQLServiceNotRunningError,
@@ -92,7 +93,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 4
+LIBPATCH = 5
 
 
 class MySQLBackups(Object):
@@ -138,10 +139,16 @@ class MySQLBackups(Object):
         s3_parameters.setdefault("s3-uri-style", "auto")
         s3_parameters.setdefault("s3-api-version", "auto")
 
+        # Strip whitespaces from all parameters
+        for key, value in s3_parameters.items():
+            if isinstance(value, str):
+                s3_parameters[key] = value.strip()
+
         # Clean up extra slash symbols to avoid issues on 3rd-party storages
         # like Ceph Object Gateway (radosgw)
         s3_parameters["endpoint"] = s3_parameters["endpoint"].rstrip("/")
         s3_parameters["path"] = s3_parameters["path"].strip("/")
+        s3_parameters["bucket"] = s3_parameters["bucket"].strip("/")
 
         return s3_parameters, []
 
@@ -207,7 +214,9 @@ Stderr:
             backups = sorted(list_backups_in_s3_path(s3_parameters), key=lambda pair: pair[0])
             event.set_results({"backups": self._format_backups_list(backups)})
         except Exception:
-            event.fail("Failed to retrieve backup ids from S3")
+            error_message = "Failed to retrieve backup ids from S3"
+            logger.exception(error_message)
+            event.fail(error_message)
 
     # ------------------ Create Backup ------------------
 
@@ -458,7 +467,7 @@ Juju Version: {str(juju_version)}
         if not self._pre_restore_checks(event):
             return
 
-        backup_id = event.params.get("backup-id")
+        backup_id = event.params.get("backup-id").strip().strip("/")
         logger.info(f"A restore with backup-id {backup_id} has been requested on unit")
 
         # Retrieve and validate missing S3 parameters
@@ -613,12 +622,16 @@ Juju Version: {str(juju_version)}
             self.charm._mysql.create_cluster(unit_label)
             self.charm._mysql.initialize_juju_units_operations_table()
 
+            self.charm._mysql.rescan_cluster()
+
             logger.info("Retrieving instance cluster state and role")
             state, role = self.charm._mysql.get_member_state()
         except MySQLCreateClusterError:
             return False, "Failed to create InnoDB cluster on restored instance"
         except MySQLInitializeJujuOperationsTableError:
             return False, "Failed to initialize the juju operations table"
+        except MySQLRescanClusterError:
+            return False, "Failed to rescan the cluster"
         except MySQLGetMemberStateError:
             return False, "Failed to retrieve member state in restored instance"
 
