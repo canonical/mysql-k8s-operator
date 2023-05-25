@@ -132,8 +132,10 @@ class MySQLProvider(Object):
                         label = "offline"
                     elif properties["memberrole"] == "secondary":
                         label = "replicas"
-                    else:
+                    elif properties["memberrole"] == "primary":
                         label = "primary"
+                    else:
+                        label = "none"
 
                     logger.debug(f"Labeling pod {pod} with label {label}")
                     self.charm.k8s_helpers.label_pod(label, pod)

@@ -439,12 +439,10 @@ async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
 
     logger.info("Wait for a new pod to be created by k8s")
     async with ops_test.fast_forward():
-        # unit can go into blocked if restarted, and update-status fails to connect
-        # to mysqld before mysqld starts up and recovers
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],
             status="active",
-            raise_on_blocked=False,
+            raise_on_blocked=True,
             timeout=TIMEOUT,
             idle_period=30,
         )

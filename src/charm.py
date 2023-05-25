@@ -477,7 +477,7 @@ class MySQLOperatorCharm(CharmBase):
             self.unit_peer_data["member-role"] = role
         except MySQLGetMemberStateError:
             logger.error("Error getting member state. Avoiding potential cluster crash recovery")
-            self.unit.status = BlockedStatus("Unable to get member state")
+            self.unit.status = MaintenanceStatus("Unable to get member state")
             return True
 
         logger.info(f"Unit workload member-state is {state} with member-role {role}")
