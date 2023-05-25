@@ -222,7 +222,7 @@ class MySQLRelation(Object):
                 username,
                 password,
                 "%",
-                "mysql-legacy-relation",
+                unit_name="mysql-legacy-relation",
             )
         except MySQLCreateApplicationDatabaseAndScopedUserError:
             self.charm.unit.status = BlockedStatus(

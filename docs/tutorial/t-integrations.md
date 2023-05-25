@@ -12,19 +12,19 @@ Before relating to a charmed application, we must first deploy our charmed appli
 juju deploy data-integrator --channel edge --config database-name=test-database
 ```
 The expected output:
-```
+```shell
 Located charm "data-integrator" in charm-hub, revision 4
 Deploying "data-integrator" from charm-hub charm "data-integrator", revision 4 in channel edge on jammy
 ```
 
 Checking the deployment progress using `juju status` will show you the `blocked` state for newly deployed charm:
-```
+```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
 tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:54:31+01:00
 
-App              Version    Status   Scale  Charm            Channel  Rev  Address         Exposed  Message
-data-integrator             waiting      1  data-integrator  edge       4  10.152.183.180  no       installing agent
-mysql-k8s        8.0.31     active       2  mysql-k8s        edge      36  10.152.183.234  no       
+App              Version    Status   Scale  Charm            Channel     Rev  Address         Exposed  Message
+data-integrator             waiting      1  data-integrator  edge        4    10.152.183.180  no       installing agent
+mysql-k8s        8.0.31     active       2  mysql-k8s        8.0/stable  36   10.152.183.234  no       
 
 Unit                Workload  Agent  Address      Ports  Message
 data-integrator/0*  blocked   idle   10.1.84.66          Please relate the data-integrator with the desired product
@@ -39,13 +39,13 @@ Now that the Database Integrator Charm has been set up, we can relate it to MySQ
 juju relate data-integrator mysql-k8s
 ```
 Wait for `juju status --watch 1s` to show all applications/units as `active`:
-```
+```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
 tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:55:44+01:00
 
-App              Version    Status   Scale  Charm            Channel  Rev  Address         Exposed  Message
-data-integrator             waiting      1  data-integrator  edge       4  10.152.183.180  no       installing agent
-mysql-k8s        8.0.31     active       2  mysql-k8s        edge      36  10.152.183.234  no       
+App              Version    Status   Scale  Charm            Channel     Rev  Address         Exposed  Message
+data-integrator             waiting      1  data-integrator  edge        4    10.152.183.180  no       installing agent
+mysql-k8s        8.0.31     active       2  mysql-k8s        8.0/stable  36   10.152.183.234  no       
 
 Unit                Workload  Agent  Address      Ports  Message
 data-integrator/0*  active    idle   10.1.84.66          
@@ -119,7 +119,7 @@ mysql -h 10.1.84.74 -u relation-3 -p7VRfmGjfUI1pVUPsfbMwmHFm -e "show databases;
 ```
 
 This will output an error message:
-```
+```shell
 ERROR 1045 (28000): Access denied for user 'relation-3'@'10.76.203.127' (using password: YES)
 ```
 As this user no longer exists. This is expected as `juju remove-relation mysql-k8s data-integrator` also removes the user.

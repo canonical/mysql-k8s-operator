@@ -1,6 +1,6 @@
 # How to manage related applications
 
-## New `mysql_client` interface:
+## Modern `mysql_client` interface:
 
 Relations to new applications are supported via the "[mysql_client](https://github.com/canonical/charm-relation-interfaces/blob/main/interfaces/mysql_client/v0/README.md)" interface. To create a relation:
 
@@ -16,13 +16,13 @@ juju remove-relation mysql-k8s application
 
 ## Legacy `mysql` interface:
 
-We have also added support for the database legacy relation from the [original version](https://launchpad.net/TODO) of the charm via the `mysql` interface. Please note that these interface is deprecated.
+This charm also supports the legacy relation via the `mysql` interface. Please note that these interface is deprecated.
 
  ```shell
 juju relate mysql-k8s:mysql wordpress-k8s
 ```
 
-Also extended permissions can be requested using `mysql-root` edpoint:
+Also extended permissions can be requested using `mysql-root` endpoint:
 ```shell
 juju relate mysql-k8s:mysql-root wordpress-k8s
 ```

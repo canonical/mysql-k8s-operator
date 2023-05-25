@@ -31,7 +31,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 3
+LIBPATCH = 4
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -51,7 +51,7 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
         session = boto3.session.Session(
             aws_access_key_id=s3_parameters["access-key"],
             aws_secret_access_key=s3_parameters["secret-key"],
-            region_name=s3_parameters["region"],
+            region_name=s3_parameters["region"] or None,
         )
 
         s3 = session.resource("s3", endpoint_url=s3_parameters["endpoint"])
@@ -110,7 +110,7 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
             aws_access_key_id=s3_parameters["access-key"],
             aws_secret_access_key=s3_parameters["secret-key"],
             endpoint_url=s3_parameters["endpoint"],
-            region_name=s3_parameters["region"],
+            region_name=s3_parameters["region"] or None,
         )
         list_objects_v2_paginator = s3_client.get_paginator("list_objects_v2")
         s3_path_directory = (
@@ -172,7 +172,7 @@ def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str
         aws_access_key_id=s3_parameters["access-key"],
         aws_secret_access_key=s3_parameters["secret-key"],
         endpoint_url=s3_parameters["endpoint"],
-        region_name=s3_parameters["region"],
+        region_name=s3_parameters["region"] or None,
     )
 
     try:

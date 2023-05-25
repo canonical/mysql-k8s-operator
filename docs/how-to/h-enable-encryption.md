@@ -10,9 +10,11 @@ Note: The TLS settings here are for self-signed-certificates which are not recom
 
 ```shell
 # deploy the TLS charm
-juju deploy tls-certificates-operator --channel=edge
+juju deploy tls-certificates-operator
+
 # add the necessary configurations for TLS
 juju config tls-certificates-operator generate-self-signed-certificates="true" ca-common-name="Test CA"
+
 # to enable TLS relate the two applications
 juju relate tls-certificates-operator mysql-k8s
 ```
@@ -21,29 +23,21 @@ juju relate tls-certificates-operator mysql-k8s
 
 Updates to private keys for certificate signing requests (CSR) can be made via the `set-tls-private-key` action. Note passing keys to external/internal keys should *only be done with* `base64 -w0` *not* `cat`. With three replicas this schema should be followed
 
-* Generate a shared internal key
+* Generate a shared internal (private) key:
 
 ```shell
 openssl genrsa -out internal-key.pem 3072
 ```
 
-* generate external keys for each unit
+* apply newly generated internal key on each unit:
 
 ```
-openssl genrsa -out external-key-0.pem 3072
-openssl genrsa -out external-key-1.pem 3072
-openssl genrsa -out external-key-2.pem 3072
+juju run-action mysql-k8s/0 set-tls-private-key "internal-key=$(base64 -w0 internal-key.pem)" --wait
+juju run-action mysql-k8s/1 set-tls-private-key "internal-key=$(base64 -w0 internal-key.pem)" --wait
+juju run-action mysql-k8s/2 set-tls-private-key "internal-key=$(base64 -w0 internal-key.pem)" --wait
 ```
 
-* apply both private keys on each unit, shared internal key will be applied only on juju leader
-
-```
-juju run-action mysql-k8s/0 set-tls-private-key "external-key=$(base64 -w0 external-key-0.pem)"  "internal-key=$(base64 -w0 internal-key.pem)"  --wait
-juju run-action mysql-k8s/1 set-tls-private-key "external-key=$(base64 -w0 external-key-1.pem)"  "internal-key=$(base64 -w0 internal-key.pem)"  --wait
-juju run-action mysql-k8s/2 set-tls-private-key "external-key=$(base64 -w0 external-key-2.pem)"  "internal-key=$(base64 -w0 internal-key.pem)"  --wait
-```
-
-* updates can also be done with auto-generated keys with
+* updates can also be done with auto-generated keys with:
 
 ```
 juju run-action mysql-k8s/0 set-tls-private-key --wait
