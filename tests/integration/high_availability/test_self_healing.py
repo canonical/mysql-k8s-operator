@@ -423,6 +423,7 @@ async def test_graceful_full_cluster_crash_test(
 
 
 @pytest.mark.abort_on_fail
+@pytest.mark.unstable
 async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
     """Delete the pod in a single unit deployment and write data to new pod."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
