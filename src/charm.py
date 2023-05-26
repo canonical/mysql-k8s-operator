@@ -173,7 +173,6 @@ class MySQLOperatorCharm(CharmBase):
             and self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
             and self.get_secret("app", MONITORING_PASSWORD_KEY)
             and self.get_secret("app", BACKUPS_PASSWORD_KEY)
-            and self.app_peer_data.get("allowlist")
         )
 
     @property
