@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 30
+LIBPATCH = 33
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -295,6 +295,10 @@ class MySQLLockAcquisitionError(Error):
     """Exception raised when a lock fails to be acquired."""
 
 
+class MySQLRescanClusterError(Error):
+    """Exception raised when there is an issue rescanning the cluster."""
+
+
 @dataclasses.dataclass
 class RouterUser:
     """MySQL Router user."""
@@ -323,6 +327,8 @@ class MySQLBase(ABC):
         cluster_admin_password: str,
         monitoring_user: str,
         monitoring_password: str,
+        backups_user: str,
+        backups_password: str,
     ):
         """Initialize the MySQL class.
 
@@ -336,6 +342,8 @@ class MySQLBase(ABC):
             cluster_admin_password: password for the cluster admin user
             monitoring_user: user name for the mysql exporter
             monitoring_password: password for the monitoring user
+            backups_user: user name used to create backups
+            backups_password: password for the backups user
         """
         self.instance_address = instance_address
         self.cluster_name = cluster_name
@@ -346,6 +354,8 @@ class MySQLBase(ABC):
         self.cluster_admin_password = cluster_admin_password
         self.monitoring_user = monitoring_user
         self.monitoring_password = monitoring_password
+        self.backups_user = backups_user
+        self.backups_password = backups_password
 
     def configure_mysql_users(self):
         """Configure the MySQL users for the instance.
@@ -374,14 +384,23 @@ class MySQLBase(ABC):
         create_root_user_commands = (
             f"CREATE USER 'root'@'%' IDENTIFIED BY '{self.root_password}'",
             "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION",
+            "FLUSH PRIVILEGES",
         )
 
         # commands to be run from mysql client with root user and password set above
+        # privileges for the backups user:
+        #   https://docs.percona.com/percona-xtrabackup/8.0/using_xtrabackup/privileges.html#permissions-and-privileges-needed
+        # CONNECTION_ADMIN added to provide it privileges to connect to offline_mode node
         configure_users_commands = (
             f"CREATE USER '{self.server_config_user}'@'%' IDENTIFIED BY '{self.server_config_password}'",
             f"GRANT ALL ON *.* TO '{self.server_config_user}'@'%' WITH GRANT OPTION",
             f"CREATE USER '{self.monitoring_user}'@'%' IDENTIFIED BY '{self.monitoring_password}' WITH MAX_USER_CONNECTIONS 3",
             f"GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO '{self.monitoring_user}'@'%'",
+            f"CREATE USER '{self.backups_user}'@'%' IDENTIFIED BY '{self.backups_password}'",
+            f"GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO '{self.backups_user}'@'%'",
+            f"GRANT SELECT ON performance_schema.log_status TO '{self.backups_user}'@'%'",
+            f"GRANT SELECT ON performance_schema.keyring_component_status TO '{self.backups_user}'@'%'",
+            f"GRANT SELECT ON performance_schema.replication_group_members TO '{self.backups_user}'@'%'",
             "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost'",
             f"ALTER USER 'root'@'localhost' IDENTIFIED BY '{self.root_password}'",
             f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM root@'%'",
@@ -789,6 +808,7 @@ class MySQLBase(ABC):
                 f"@{from_instance or self.instance_address}')"
             ),
             f"cluster = dba.get_cluster('{self.cluster_name}')",
+            "shell.options['dba.restartWaitTimeout'] = 3600",
         )
 
         for recovery_method in ["auto", "clone"]:
@@ -852,25 +872,67 @@ class MySQLBase(ABC):
             )
             return False
 
-    def remove_obsoletes_instance(self, from_instance: Optional[str] = None) -> None:
-        """Purge obsoletes instances from cluster metadata.
+    def are_locks_acquired(self, from_instance: Optional[str] = None) -> bool:
+        """Report if any topology change is being executed.
+
+        Query the mysql.juju_units_operations table for any
+        in-progress lock for either unit add or removal.
 
         Args:
             from_instance: member instance to run the command from (fallback to current one)
         """
-        auto_remove_command = (
+        commands = (
+            (
+                f"shell.connect('{self.server_config_user}:{self.server_config_password}"
+                f"@{from_instance or self.instance_address}')"
+            ),
+            "result = session.run_sql(\"SELECT COUNT(*) FROM mysql.juju_units_operations WHERE status='in-progress';\")",
+            "print(f'<LOCKS>{result.fetch_one()[0]}</LOCKS>')",
+        )
+        try:
+            output = self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError:
+            # log error and fallback to assuming topology is changing
+            logger.exception("Failed to get locks count")
+            return True
+
+        matches = re.search(r"<LOCKS>(\d)</LOCKS>", output)
+
+        return int(matches.group(1)) > 0 if matches else False
+
+    def rescan_cluster(
+        self,
+        from_instance: Optional[str] = None,
+        remove_instances: bool = False,
+        add_instances: bool = False,
+    ) -> None:
+        """Rescan the cluster.
+
+        Args:
+            from_instance: member instance to run the command from (fallback to current one)
+            remove_instances: whether to remove non-active instances from the metadata
+            add_instances: whether to add new instances to the metadata
+        """
+        options = {}
+        if remove_instances:
+            options["removeInstances"] = "auto"
+        if add_instances:
+            options["addInstances"] = "auto"
+
+        rescan_cluster_commands = (
             (
                 f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@"
                 f"{from_instance or self.instance_address}')"
             ),
             f"cluster = dba.get_cluster('{self.cluster_name}')",
-            "cluster.rescan({'removeInstances':'auto'})",
+            f"cluster.rescan({json.dumps(options)})",
         )
         try:
-            logger.debug("Removing obsolete instances")
-            self._run_mysqlsh_script("\n".join(auto_remove_command))
-        except MySQLClientError:
-            logger.warning("No instance removed")
+            logger.debug("Rescanning cluster")
+            self._run_mysqlsh_script("\n".join(rescan_cluster_commands))
+        except MySQLClientError as e:
+            logger.exception("Error rescanning the cluster")
+            raise MySQLRescanClusterError(e.message)
 
     def is_instance_in_cluster(self, unit_label: str) -> bool:
         """Confirm if instance is in the cluster.
@@ -916,11 +978,11 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(status_commands))
+            output = self._run_mysqlsh_script("\n".join(status_commands), timeout=30)
             output_dict = json.loads(output.lower())
             return output_dict
-        except MySQLClientError as e:
-            logger.exception(f"Failed to get cluster status for {self.cluster_name}", exc_info=e)
+        except MySQLClientError:
+            logger.exception(f"Failed to get cluster status for {self.cluster_name}")
 
     def get_cluster_node_count(self, from_instance: Optional[str] = None) -> int:
         """Retrieve current count of cluster nodes.
@@ -1309,33 +1371,37 @@ class MySQLBase(ABC):
             )
             raise MySQLCheckUserExistenceError(e.message)
 
-    @retry(reraise=True, stop=stop_after_attempt(6), wait=wait_fixed(10))
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(10))
     def get_member_state(self) -> Tuple[str, str]:
         """Get member status in cluster.
 
         Returns:
             A tuple(str) with the MEMBER_STATE and MEMBER_ROLE within the cluster.
         """
-        member_state_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
-            (
-                "raw_result=session.run_sql('SELECT MEMBER_STATE, MEMBER_ROLE FROM"
-                " performance_schema.replication_group_members WHERE MEMBER_ID = @@server_uuid;')"
-            ),
-            "result=raw_result.fetch_one()",
-            "print(result[0],result[1])",
+        member_state_query = (
+            "SELECT MEMBER_STATE, MEMBER_ROLE FROM"
+            " performance_schema.replication_group_members WHERE MEMBER_ID = @@server_uuid"
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(member_state_commands), timeout=10)
+            output = self._run_mysqlcli_script(
+                member_state_query,
+                user=self.cluster_admin_user,
+                password=self.cluster_admin_password,
+                timeout=10,
+            )
         except MySQLClientError as e:
             logger.error(
                 "Failed to get member state: mysqld daemon is down",
             )
             raise MySQLGetMemberStateError(e.message)
 
-        results = output.lower().split()
-        # MEMBER_ROLE is empty if member is not in a group/offline
+        lines = output.lower().split("\n")
+        if len(lines) < 2:
+            raise MySQLGetMemberStateError("No member state retrieved")
+
+        results = lines[1].split()
+        # no member role defined when member state is 'offline'
         return results[0], results[1] if len(results) == 2 else "unknown"
 
     def reboot_from_complete_outage(self) -> None:
@@ -1521,8 +1587,8 @@ Swap:     1027600384  1027600384           0
             --defaults-group=mysqld
             --no-version-check
             --parallel={nproc}
-            --user={self.server_config_user}
-            --password={self.server_config_password}
+            --user={self.backups_user}
+            --password={self.backups_password}
             --socket={mysqld_socket_file}
             --lock-ddl
             --backup
@@ -1545,6 +1611,10 @@ Swap:     1027600384  1027600384           0
 """.split()
 
         try:
+            logger.debug(
+                f"Command to create backup: {' '.join(xtrabackup_commands).replace(self.backups_password, 'xxxxxxxxxxxx')}"
+            )
+
             # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
             return self._execute_commands(
                 xtrabackup_commands,
@@ -1575,6 +1645,10 @@ Swap:     1027600384  1027600384           0
         delete_temp_dir_command = f"find {tmp_base_directory} -wholename {tmp_base_directory}/xtra_backup_* -delete".split()
 
         try:
+            logger.debug(
+                f"Command to delete temp backup directory: {' '.join(delete_temp_dir_command)}"
+            )
+
             self._execute_commands(
                 delete_temp_dir_command,
                 user=user,
@@ -1638,6 +1712,8 @@ Swap:     1027600384  1027600384           0
 """.split()
 
         try:
+            logger.debug(f"Command to retrieve backup: {' '.join(retrieve_backup_command)}")
+
             # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
             stdout, stderr = self._execute_commands(
                 retrieve_backup_command,
@@ -1681,6 +1757,10 @@ Swap:     1027600384  1027600384           0
 """.split()
 
         try:
+            logger.debug(
+                f"Command to prepare backup for restore: {' '.join(prepare_backup_command)}"
+            )
+
             return self._execute_commands(
                 prepare_backup_command,
                 user=user,
@@ -1703,6 +1783,7 @@ Swap:     1027600384  1027600384           0
         empty_data_files_command = f"find {mysql_data_directory} -not -path {mysql_data_directory}/#mysql_sst_* -not -path {mysql_data_directory} -delete".split()
 
         try:
+            logger.debug(f"Command to empty data directory: {' '.join(empty_data_files_command)}")
             self._execute_commands(
                 empty_data_files_command,
                 user=user,
@@ -1738,6 +1819,8 @@ Swap:     1027600384  1027600384           0
 """.split()
 
         try:
+            logger.debug(f"Command to restore backup: {' '.join(restore_backup_command)}")
+
             return self._execute_commands(
                 restore_backup_command,
                 user=user,
@@ -1761,6 +1844,9 @@ Swap:     1027600384  1027600384           0
         delete_temp_restore_directory_command = f"find {mysql_data_directory} -wholename {mysql_data_directory}/#mysql_sst_* -delete".split()
 
         try:
+            logger.debug(
+                f"Command to delete temp restore directory: {' '.join(delete_temp_restore_directory_command)}"
+            )
             self._execute_commands(
                 delete_temp_restore_directory_command,
                 user=user,
@@ -1880,7 +1966,9 @@ Swap:     1027600384  1027600384           0
         raise NotImplementedError
 
     @abstractmethod
-    def _run_mysqlcli_script(self, script: str, user: str = "root", password: str = None) -> str:
+    def _run_mysqlcli_script(
+        self, script: str, user: str = "root", password: str = None, timeout: Optional[int] = None
+    ) -> str:
         """Execute a MySQL CLI script.
 
         Execute SQL script as instance with given user.
@@ -1891,5 +1979,6 @@ Swap:     1027600384  1027600384           0
             script: raw SQL script string
             user: (optional) user to invoke the mysql cli script with (default is "root")
             password: (optional) password to invoke the mysql cli script with
+            timeout: (optional) time before the query should timeout
         """
         raise NotImplementedError

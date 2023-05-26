@@ -141,6 +141,8 @@ class MySQL(MySQLBase):
         cluster_admin_password: str,
         monitoring_user: str,
         monitoring_password: str,
+        backups_user: str,
+        backups_password: str,
         container: Container,
         k8s_helper: KubernetesHelpers,
     ):
@@ -156,6 +158,8 @@ class MySQL(MySQLBase):
             cluster_admin_password: password for the cluster admin user
             monitoring_user: user name for the monitoring user
             monitoring_password: password for the monitoring user
+            backups_user: user name for the backups user
+            backups_password: password for the backups user
             container: workload container object
             k8s_helper: KubernetesHelpers object
         """
@@ -169,6 +173,8 @@ class MySQL(MySQLBase):
             cluster_admin_password=cluster_admin_password,
             monitoring_user=monitoring_user,
             monitoring_password=monitoring_password,
+            backups_user=backups_user,
+            backups_password=backups_password,
         )
         self.container = container
         self.k8s_helper = k8s_helper
@@ -235,6 +241,11 @@ class MySQL(MySQLBase):
             f"GRANT ALL ON *.* TO '{self.server_config_user}'@'%' WITH GRANT OPTION",
             f"CREATE USER '{self.monitoring_user}'@'%' IDENTIFIED BY '{self.monitoring_password}' WITH MAX_USER_CONNECTIONS 3",
             f"GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO '{self.monitoring_user}'@'%'",
+            f"CREATE USER '{self.backups_user}'@'%' IDENTIFIED BY '{self.backups_password}'",
+            f"GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO '{self.backups_user}'@'%'",
+            f"GRANT SELECT ON performance_schema.log_status TO '{self.backups_user}'@'%'",
+            f"GRANT SELECT ON performance_schema.keyring_component_status TO '{self.backups_user}'@'%'",
+            f"GRANT SELECT ON performance_schema.replication_group_members TO '{self.backups_user}'@'%'",
             "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost'",
             f"ALTER USER 'root'@'localhost' IDENTIFIED BY '{self.root_password}'",
             f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'%'",
@@ -609,7 +620,7 @@ class MySQL(MySQLBase):
         """Execute commands on the server where MySQL is running."""
         try:
             if bash:
-                commands = ["bash", "-c", " ".join(commands)]
+                commands = ["bash", "-c", "set -o pipefail; " + " ".join(commands)]
 
             process = self.container.exec(
                 commands,
@@ -663,7 +674,11 @@ class MySQL(MySQLBase):
             raise MySQLClientError(e)
 
     def _run_mysqlcli_script(
-        self, script: str, password: Optional[str] = None, user: str = "root"
+        self,
+        script: str,
+        password: Optional[str] = None,
+        user: str = "root",
+        timeout: Optional[int] = None,
     ) -> str:
         """Execute a MySQL CLI script.
 
@@ -674,6 +689,7 @@ class MySQL(MySQLBase):
             script: raw SQL script string
             password: root password to use for the script when needed
             user: user to run the script
+            timeout: a timeout to execute the mysqlcli script
         """
         command = [
             MYSQL_CLI_LOCATION,
@@ -689,11 +705,13 @@ class MySQL(MySQLBase):
             command.append(f"--password={password}")
 
         try:
-            process = self.container.exec(command)
+            process = self.container.exec(command, timeout=timeout)
             stdout, _ = process.wait_output()
             return stdout
         except ExecError as e:
             raise MySQLClientError(e.stderr)
+        except ChangeError as e:
+            raise MySQLClientError(e)
 
     def write_content_to_file(
         self,

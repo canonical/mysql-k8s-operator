@@ -111,6 +111,9 @@ class KubernetesHelpers:
             if not pod.metadata.labels:
                 pod.metadata.labels = {}
 
+            if pod.metadata.labels.get("role") == role:
+                return
+
             pod.metadata.labels["cluster-name"] = self.cluster_name
             pod.metadata.labels["role"] = role
             self.client.patch(Pod, pod_name or self.pod_name, pod)

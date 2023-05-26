@@ -12,11 +12,13 @@ ROOT_USERNAME = "root"
 CLUSTER_ADMIN_USERNAME = "clusteradmin"
 SERVER_CONFIG_USERNAME = "serverconfig"
 MONITORING_USERNAME = "monitoring"
+BACKUPS_USERNAME = "backups"
 REQUIRED_USERNAMES = [
     CLUSTER_ADMIN_USERNAME,
     SERVER_CONFIG_USERNAME,
     MONITORING_USERNAME,
     ROOT_USERNAME,
+    BACKUPS_USERNAME,
 ]
 DB_RELATION_NAME = "database"
 LEGACY_MYSQL = "mysql"
@@ -25,6 +27,7 @@ ROOT_PASSWORD_KEY = "root-password"
 SERVER_CONFIG_PASSWORD_KEY = "server-config-password"
 CLUSTER_ADMIN_PASSWORD_KEY = "cluster-admin-password"
 MONITORING_PASSWORD_KEY = "monitoring-password"
+BACKUPS_PASSWORD_KEY = "backups-password"
 CONTAINER_RESTARTS = "unit-container-restarts"
 UNIT_ENDPOINTS_KEY = "unit-endpoints"
 TLS_RELATION = "certificates"
