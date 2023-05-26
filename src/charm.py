@@ -366,6 +366,11 @@ class MySQLOperatorCharm(CharmBase):
                 )
                 return
 
+            if self._mysql.are_locks_acquired(from_instance=cluster_primary):
+                self.unit.status = WaitingStatus("waiting to join in queue.")
+                logger.debug("waiting: cluster locks are acquired")
+                return
+
             self.unit.status = MaintenanceStatus("joining the cluster")
 
             self._mysql.add_instance_to_cluster(
