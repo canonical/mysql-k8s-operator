@@ -147,11 +147,6 @@ class MySQLProvider(Object):
         remote_app = event.app.name
 
         try:
-            db_version = self.charm._mysql.get_mysql_version()
-            self.database.set_credentials(relation_id, db_user, db_pass)
-            self.database.set_version(relation_id, db_version)
-            self.database.set_database(relation_id, db_name)
-
             # make sure pods are labeled before adding service
             self._update_endpoints()
 
@@ -159,12 +154,12 @@ class MySQLProvider(Object):
             self.charm.k8s_helpers.create_endpoint_services(["primary", "replicas"])
 
             primary_endpoint = socket.getfqdn(f"{self.charm.app.name}-primary")
+            replicas_endpoint = socket.getfqdn(f"{self.charm.app.name}-replicas")
+
+            db_version = self.charm._mysql.get_mysql_version()
+
             # wait for endpoints to be ready
             self.charm.k8s_helpers.wait_service_ready((primary_endpoint, 3306))
-
-            self.database.set_endpoints(relation_id, f"{primary_endpoint}:3306")
-            replicas_endpoint = socket.getfqdn(f"{self.charm.app.name}-replicas")
-            self.database.set_read_only_endpoints(relation_id, f"{replicas_endpoint}:3306")
 
             if "mysqlrouter" in extra_user_roles:
                 self.charm._mysql.create_application_database_and_scoped_user(
@@ -186,8 +181,14 @@ class MySQLProvider(Object):
                     db_name, db_user, db_pass, "%"
                 )
 
+            # Set relation data
+            self.database.set_endpoints(relation_id, f"{primary_endpoint}:3306")
+            self.database.set_read_only_endpoints(relation_id, f"{replicas_endpoint}:3306")
+            self.database.set_credentials(relation_id, db_user, db_pass)
+            self.database.set_version(relation_id, db_version)
+            self.database.set_database(relation_id, db_name)
+
             logger.info(f"Created user for app {remote_app}")
-            return
         except (
             MySQLCreateApplicationDatabaseAndScopedUserError,
             MySQLGetMySQLVersionError,
