@@ -400,15 +400,28 @@ class MySQLOperatorCharm(CharmBase):
 
         return True
 
+    def _mysql_pebble_ready_checks(self, event) -> bool:
+        """Executes some checks to see if it is safe to execute the pebble ready handler."""
+        if not self._is_peer_data_set:
+            self.unit.status = WaitingStatus("Waiting for leader election.")
+            logger.debug("Leader not ready yet, waiting...")
+            event.defer()
+            return True
+
+        container = event.workload
+        if not container.can_connect():
+            logger.debug("Pebble in container not ready, waiting...")
+            event.defer()
+            return True
+
+        return False
+
     def _on_mysql_pebble_ready(self, event) -> None:
         """Pebble ready handler.
 
         Define and start a pebble service and bootstrap instance.
         """
-        if not self._is_peer_data_set:
-            self.unit.status = WaitingStatus("Waiting for leader election.")
-            logger.debug("Leader not ready yet, waiting...")
-            event.defer()
+        if self._mysql_pebble_ready_checks(event):
             return
 
         container = event.workload
