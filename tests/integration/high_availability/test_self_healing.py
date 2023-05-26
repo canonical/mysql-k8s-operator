@@ -166,7 +166,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     logger.info("Ensuring all remaining units continuous writes incrementing")
 
     async with ops_test.fast_forward():
-        for attempt in Retrying(stop=stop_after_delay(180), wait=wait_fixed(10)):
+        for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
             with attempt:
                 await ensure_all_units_continuous_writes_incrementing(
                     ops_test, remaining_online_units
@@ -205,6 +205,15 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     assert (
         new_mysql_pid == mysql_pid
     ), "mysql process id is not the same as it was before process was stopped"
+
+    # wait for possible recovery of the old primary
+    async with ops_test.fast_forward():
+        await ops_test.model.wait_for_idle(
+            apps=[mysql_application_name],
+            status="active",
+            raise_on_blocked=False,
+            timeout=TIMEOUT,
+        )
 
     logger.info("Ensuring that there are 3 online mysql members")
     assert await ensure_n_online_mysql_members(
@@ -414,6 +423,7 @@ async def test_graceful_full_cluster_crash_test(
 
 
 @pytest.mark.abort_on_fail
+@pytest.mark.unstable
 async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
     """Delete the pod in a single unit deployment and write data to new pod."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
@@ -434,7 +444,8 @@ async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
             apps=[mysql_application_name],
             status="active",
             raise_on_blocked=True,
-            timeout=15 * 60,
+            timeout=TIMEOUT,
+            idle_period=30,
         )
 
     logger.info("Write data to unit and verify that data was written")

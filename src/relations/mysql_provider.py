@@ -114,11 +114,40 @@ class MySQLProvider(Object):
             if offline:
                 for pod in self._endpoints_to_pod_list(offline):
                     self.charm.k8s_helpers.label_pod("offline", pod)
-        except MySQLGetClusterEndpointsError as e:
-            logger.exception("Failed to get cluster members", exc_info=e)
+        except MySQLGetClusterEndpointsError:
+            logger.exception("Failed to get cluster endpoints")
         except KubernetesClientError:
             logger.debug("Can't update pod labels")
             self.charm.unit.status = BlockedStatus("Can't update pod labels")
+
+    def _update_pod_endpoint(self) -> None:
+        """Update pod label to reflect the role of the unit."""
+        logger.debug(f"Updating pod endpoint for {self.charm.unit.name}")
+
+        pod = self.charm.unit.name.replace("/", "-")
+
+        try:
+            cluster_status = self.charm._mysql.get_cluster_status()
+            if not cluster_status:
+                self.charm.k8s_helpers.label_pod("error", pod)
+                return
+
+            for hostname, properties in cluster_status["defaultreplicaset"]["topology"].items():
+                if hostname.split(".")[0] == pod:
+                    if properties["status"] != "online":
+                        label = "offline"
+                    elif properties["memberrole"] == "secondary":
+                        label = "replicas"
+                    elif properties["memberrole"] == "primary":
+                        label = "primary"
+                    else:
+                        label = "none"
+
+                    logger.debug(f"Labeling pod {pod} with label {label}")
+                    self.charm.k8s_helpers.label_pod(label, pod)
+        except KubernetesClientError:
+            logger.debug("Can't update pod labels")
+            self.charm.unit.status = BlockedStatus("Can't update pod label")
 
     # =============
     # Handlers
@@ -233,7 +262,7 @@ class MySQLProvider(Object):
         Update the endpoints + read_only_endpoints.
         """
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not self.charm.unit.is_leader() or not relations or not self.charm.cluster_initialized:
+        if not relations or not self.charm.cluster_initialized:
             return
 
         event_unit_label = event.unit.name.replace("/", "-")
@@ -248,7 +277,7 @@ class MySQLProvider(Object):
             if relation.id not in relation_data:
                 continue
 
-            self._update_endpoints()
+            self._update_pod_endpoint()
 
     def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
         """Handle the peer relation departed event.
@@ -256,7 +285,7 @@ class MySQLProvider(Object):
         Update the endpoints + read_only_endpoints.
         """
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not self.charm.unit.is_leader() or not relations or not self.charm.cluster_initialized:
+        if not relations or not self.charm.cluster_initialized:
             return
 
         departing_unit_name = event.departing_unit.name.replace("/", "-")
@@ -272,12 +301,12 @@ class MySQLProvider(Object):
             if relation.id not in relation_data:
                 continue
 
-            self._update_endpoints()
+            self._update_pod_endpoint()
 
     def _configure_endpoints(self, _) -> None:
         """Update the endpoints + read_only_endpoints."""
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not self.charm.unit.is_leader() or not relations or not self.charm.cluster_initialized:
+        if not relations or not self.charm.cluster_initialized:
             return
 
         relation_data = self.database.fetch_relation_data()
@@ -286,7 +315,7 @@ class MySQLProvider(Object):
             if relation.id not in relation_data:
                 continue
 
-            self._update_endpoints()
+            self._update_pod_endpoint()
 
     def _on_update_status(self, _) -> None:
         """Handle the update status event.
@@ -304,9 +333,7 @@ class MySQLProvider(Object):
         ):
             return
 
-        if self.charm.unit.is_leader():
-            # pass in None as the event as it is not being utilized in _configure_endpoints
-            self._configure_endpoints(None)
+        self._update_pod_endpoint()
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.

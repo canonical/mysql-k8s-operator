@@ -320,7 +320,8 @@ class TestMySQL(unittest.TestCase):
                 f"--socket={MYSQLD_SOCK_FILE}",
                 "-e",
                 "script",
-            ]
+            ],
+            timeout=None,
         )
 
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)

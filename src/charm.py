@@ -400,15 +400,28 @@ class MySQLOperatorCharm(CharmBase):
 
         return True
 
+    def _mysql_pebble_ready_checks(self, event) -> bool:
+        """Executes some checks to see if it is safe to execute the pebble ready handler."""
+        if not self._is_peer_data_set:
+            self.unit.status = WaitingStatus("Waiting for leader election.")
+            logger.debug("Leader not ready yet, waiting...")
+            event.defer()
+            return True
+
+        container = event.workload
+        if not container.can_connect():
+            logger.debug("Pebble in container not ready, waiting...")
+            event.defer()
+            return True
+
+        return False
+
     def _on_mysql_pebble_ready(self, event) -> None:
         """Pebble ready handler.
 
         Define and start a pebble service and bootstrap instance.
         """
-        if not self._is_peer_data_set:
-            self.unit.status = WaitingStatus("Waiting for leader election.")
-            logger.debug("Leader not ready yet, waiting...")
-            event.defer()
+        if self._mysql_pebble_ready_checks(event):
             return
 
         container = event.workload
@@ -480,11 +493,12 @@ class MySQLOperatorCharm(CharmBase):
         # retrieve and persist state for every unit
         try:
             state, role = self._mysql.get_member_state()
-            self.unit_peer_data["member-role"] = role
             self.unit_peer_data["member-state"] = state
+            self.unit_peer_data["member-role"] = role
         except MySQLGetMemberStateError:
-            role = self.unit_peer_data["member-role"] = "unknown"
-            state = self.unit_peer_data["member-state"] = "gr_inactive"
+            logger.error("Error getting member state. Avoiding potential cluster crash recovery")
+            self.unit.status = MaintenanceStatus("Unable to get member state")
+            return True
 
         logger.info(f"Unit workload member-state is {state} with member-role {role}")
 
@@ -492,22 +506,21 @@ class MySQLOperatorCharm(CharmBase):
         self.unit.status = (
             ActiveStatus(self.active_status_message)
             if state == "online"
-            else MaintenanceStatus(state if state != "gr_inactive" else "unreachable")
+            else MaintenanceStatus(state)
         )
 
         if state == "recovering":
             return True
 
-        if state in ["offline", "gr_inactive"]:
+        if state in ["offline"]:
             # Group Replication is active but the member does not belong to any group
             all_states = {
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
             # Add state for this unit (self.peers.units does not include this unit)
             all_states.add("offline")
-            all_states.add("gr_inactive")
 
-            if all_states == {"offline", "gr_inactive"} and self.unit.is_leader():
+            if all_states == {"offline"} and self.unit.is_leader():
                 # All instance are off, reboot cluster from outage from the leader unit
 
                 logger.info("Attempting reboot from complete outage.")
