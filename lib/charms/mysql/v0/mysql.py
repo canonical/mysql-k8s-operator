@@ -831,6 +831,11 @@ class MySQLBase(ABC):
                         f"Failed to add instance {instance_address} to cluster {self.cluster_name} on {self.instance_address}",
                         exc_info=e,
                     )
+                    self._release_lock(
+                        from_instance or self.instance_address,
+                        instance_unit_label,
+                        UNIT_ADD_LOCKNAME,
+                    )
                     raise MySQLAddInstanceToClusterError(e.message)
 
                 logger.debug(

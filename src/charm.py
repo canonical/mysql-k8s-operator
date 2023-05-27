@@ -666,6 +666,12 @@ class MySQLOperatorCharm(CharmBase):
         One purpose of this event handler is to ensure that scaled down units are
         removed from the cluster.
         """
+        if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
+            # join cluster test takes precedence over blocked test
+            # due to matching criteria
+            self._join_unit_to_cluster()
+            return
+
         if self._is_cluster_blocked():
             return
 
@@ -676,16 +682,34 @@ class MySQLOperatorCharm(CharmBase):
         if self._handle_potential_cluster_crash_scenario():
             return
 
-        if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
-            self._join_unit_to_cluster()
-            return
-
         nodes = self._mysql.get_cluster_node_count()
         if nodes > 0 and self.unit.is_leader():
             self.app_peer_data["units-added-to-cluster"] = str(nodes)
 
+        if not self.unit.is_leader():
+            return
+
         # Check if there are any scaled down units that need to be removed from the cluster
         self._remove_scaled_down_units()
+        try:
+            primary_address = self._mysql.get_cluster_primary_address()
+        except MySQLGetClusterPrimaryAddressError:
+            return
+
+        if not primary_address:
+            return
+
+        # Set active status when primary is known
+        self.app.status = ActiveStatus()
+
+        if self._mysql.are_locks_acquired(from_instance=primary_address):
+            logger.debug("Skip cluster rescan while locks are acquired")
+            return
+
+        # Only rescan cluster when topology is not changing
+        self._mysql.rescan_cluster(
+            remove_instances=True, add_instances=True, from_instance=primary_address
+        )
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
