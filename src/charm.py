@@ -567,7 +567,7 @@ class MySQLOperatorCharm(CharmBase):
         if not self.unit.is_leader():
             return
 
-        planned_units = self.app.planned_units()
+        current_units = 1 + len(self.peers.units)
 
         cluster_status = self._mysql.get_cluster_status()
         if not cluster_status:
@@ -577,7 +577,7 @@ class MySQLOperatorCharm(CharmBase):
         addresses_of_units_to_remove = [
             member["address"]
             for unit_name, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if int(unit_name.split("-")[-1]) >= planned_units
+            if int(unit_name.split("-")[-1]) >= current_units
         ]
 
         if not addresses_of_units_to_remove:
