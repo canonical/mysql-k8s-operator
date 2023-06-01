@@ -456,10 +456,8 @@ class MySQL(MySQLBase):
             MySQLCreateDatabaseError if there is an issue creating specified database
         """
         try:
-            primary_address = self.get_cluster_primary_address()
-
             create_database_commands = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
                 f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
             )
 
@@ -481,11 +479,9 @@ class MySQL(MySQLBase):
             MySQLCreateUserError if there is an issue creating specified user
         """
         try:
-            primary_address = self.get_cluster_primary_address()
-
             escaped_user_attributes = json.dumps({"label": label}).replace('"', r"\"")
             create_user_commands = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
                 f"session.run_sql(\"CREATE USER `{username}`@`{hostname}` IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
             )
 
@@ -518,10 +514,8 @@ class MySQL(MySQLBase):
                 "CONNECTION_ADMIN",
             )
 
-            primary_address = self.get_cluster_primary_address()
-
             escalate_user_privileges_commands = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
                 f'session.run_sql("GRANT ALL ON *.* TO `{username}`@`{hostname}` WITH GRANT OPTION;")',
                 f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM `{username}`@`{hostname}`;\")",
                 'session.run_sql("FLUSH PRIVILEGES;")',
@@ -564,11 +558,9 @@ class MySQL(MySQLBase):
                 logger.debug(f"There are no users to drop for label {label_name}={label_value}")
                 return
 
-            primary_address = self.get_cluster_primary_address()
-
             # Using server_config_user as we are sure it has drop user grants
             drop_users_command = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
                 f"session.run_sql(\"DROP USER IF EXISTS {', '.join(users)};\")",
             )
             self._run_mysqlsh_script("\n".join(drop_users_command))

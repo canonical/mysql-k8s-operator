@@ -470,20 +470,18 @@ class MySQLBase(ABC):
             if there is an issue creating and configuring the mysqlrouter user
         """
         try:
-            primary_address = self.get_cluster_primary_address()
-
             escaped_mysqlrouter_user_attributes = json.dumps({"unit_name": unit_name}).replace(
                 '"', r"\""
             )
             # Using server_config_user as we are sure it has create user grants
             create_mysqlrouter_user_commands = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
                 f"session.run_sql(\"CREATE USER '{username}'@'{hostname}' IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_mysqlrouter_user_attributes}';\")",
             )
 
             # Using server_config_user as we are sure it has create user grants
             mysqlrouter_user_grant_commands = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
                 f"session.run_sql(\"GRANT CREATE USER ON *.* TO '{username}'@'{hostname}' WITH GRANT OPTION;\")",
                 f"session.run_sql(\"GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON mysql_innodb_cluster_metadata.* TO '{username}'@'{hostname}';\")",
                 f"session.run_sql(\"GRANT SELECT ON mysql.user TO '{username}'@'{hostname}';\")",
@@ -530,26 +528,28 @@ class MySQLBase(ABC):
         if unit_name is not None:
             attributes["unit_name"] = unit_name
         try:
-            primary_address = self.get_cluster_primary_address()
-
             # Using server_config_user as we are sure it has create database grants
-            create_database_commands = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+            connect_command = [
+                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            ]
+            create_database_commands = [
                 f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
-            )
+            ]
 
             escaped_user_attributes = json.dumps(attributes).replace('"', r"\"")
             # Using server_config_user as we are sure it has create user grants
-            create_scoped_user_commands = (
-                f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+            create_scoped_user_commands = [
                 f"session.run_sql(\"CREATE USER `{username}`@`{hostname}` IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
                 f'session.run_sql("GRANT USAGE ON *.* TO `{username}`@`{hostname}`;")',
                 f'session.run_sql("GRANT ALL PRIVILEGES ON `{database_name}`.* TO `{username}`@`{hostname}`;")',
-            )
+            ]
 
             if create_database:
-                self._run_mysqlsh_script("\n".join(create_database_commands))
-            self._run_mysqlsh_script("\n".join(create_scoped_user_commands))
+                commands = connect_command + create_database_commands + create_scoped_user_commands
+            else:
+                commands = connect_command + create_scoped_user_commands
+
+            self._run_mysqlsh_script("\n".join(commands))
         except MySQLClientError as e:
             logger.exception(
                 f"Failed to create application database {database_name} and scoped user {username}@{hostname}",
@@ -608,12 +608,9 @@ class MySQLBase(ABC):
         Raises:
             MySQLDeleteUsersForUnitError if there is an error deleting users for the unit
         """
-        primary_address = self.get_cluster_primary_address()
-        if not primary_address:
-            raise MySQLDeleteUsersForUnitError("Unable to query cluster primary address")
         # Using server_config_user as we are sure it has drop user grants
         drop_users_command = [
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
         ]
         drop_users_command.extend(
             self._get_statements_to_delete_users_with_attribute("unit_name", f"'{unit_name}'")
@@ -634,11 +631,8 @@ class MySQLBase(ABC):
             MySQLDeleteUsersForRelationError if there is an error deleting users for the relation
         """
         user = f"relation-{str(relation_id)}"
-        primary_address = self.get_cluster_primary_address()
-        if not primary_address:
-            raise MySQLDeleteUsersForRelationError("Unable to query cluster primary address")
         drop_users_command = [
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
         ]
         # If the relation is with a MySQL Router charm application, delete any users
@@ -654,11 +648,8 @@ class MySQLBase(ABC):
 
     def delete_user(self, username: str) -> None:
         """Delete user."""
-        primary_address = self.get_cluster_primary_address()
-        if not primary_address:
-            raise MySQLDeleteUserError("Unable to query cluster primary address")
         drop_user_command = [
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{primary_address}')",
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"session.run_sql(\"DROP USER `{username}`@'%'\")",
         ]
         try:
@@ -669,11 +660,8 @@ class MySQLBase(ABC):
 
     def remove_router_from_cluster_metadata(self, router_id: str) -> None:
         """Remove MySQL Router from InnoDB Cluster metadata."""
-        primary_address = self.get_cluster_primary_address()
-        if not primary_address:
-            raise MySQLRemoveRouterFromMetadataError("Unable to query cluster primary address")
         command = [
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{primary_address}')",
+            f"shell.connect_to_primary('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
             "cluster = dba.get_cluster()",
             f'cluster.remove_router_metadata("{router_id}")',
         ]
@@ -987,7 +975,7 @@ class MySQLBase(ABC):
             output_dict = json.loads(output.lower())
             return output_dict
         except MySQLClientError:
-            logger.exception(f"Failed to get cluster status for {self.cluster_name}")
+            logger.error(f"Failed to get cluster status for {self.cluster_name}")
 
     def get_cluster_node_count(self, from_instance: Optional[str] = None) -> int:
         """Retrieve current count of cluster nodes.
@@ -1249,9 +1237,8 @@ class MySQLBase(ABC):
         logger.debug(f"Getting cluster primary member's address from {connect_instance_address}")
 
         get_cluster_primary_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
-            f"cluster = dba.get_cluster('{self.cluster_name}')",
-            "primary_address = sorted([cluster_member['address'] for cluster_member in cluster.status()['defaultReplicaSet']['topology'].values() if cluster_member['mode'] == 'R/W'])[0]",
+            f"shell.connect_to_primary('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
+            "primary_address = shell.parse_uri(session.uri)['host']",
             "print(f'<PRIMARY_ADDRESS>{primary_address}</PRIMARY_ADDRESS>')",
         )
 
@@ -1334,12 +1321,8 @@ class MySQLBase(ABC):
         Raises:
             MySQLGrantPrivilegesToUserError if there is an issue granting privileges to a user
         """
-        cluster_primary = self.get_cluster_primary_address()
-        if not cluster_primary:
-            raise MySQLGrantPrivilegesToUserError("Failed to get cluster primary address")
-
         grant_privileges_commands = (
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{cluster_primary}')",
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"session.run_sql(\"GRANT {', '.join(privileges)} ON *.* TO '{username}'@'{hostname}'{' WITH GRANT OPTION' if with_grant_option else ''}\")",
         )
 
