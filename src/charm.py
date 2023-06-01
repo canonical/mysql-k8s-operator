@@ -23,6 +23,7 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
+    MySQLRescanClusterError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -358,7 +359,7 @@ class MySQLOperatorCharm(CharmBase):
                 return
 
             if self._mysql.get_cluster_node_count(from_instance=cluster_primary) == GR_MAX_MEMBERS:
-                self.unit.status = BlockedStatus(
+                self.unit.status = WaitingStatus(
                     f"Cluster reached max size of {GR_MAX_MEMBERS} units. Standby."
                 )
                 logger.warning(
@@ -367,8 +368,8 @@ class MySQLOperatorCharm(CharmBase):
                 return
 
             if self._mysql.are_locks_acquired(from_instance=cluster_primary):
-                self.unit.status = WaitingStatus("waiting to join in queue.")
-                logger.debug("waiting: cluster locks are acquired")
+                self.unit.status = WaitingStatus("waiting to join the cluster")
+                logger.debug("waiting: cluster lock is held")
                 return
 
             self.unit.status = MaintenanceStatus("joining the cluster")
@@ -388,7 +389,7 @@ class MySQLOperatorCharm(CharmBase):
             logger.debug(f"Unable to add instance {instance_fqdn} to cluster.")
         except MySQLLockAcquisitionError:
             self.unit.status = WaitingStatus("waiting to join the cluster")
-            logger.debug("Waiting to joing the cluster, failed to acquire lock.")
+            logger.debug("waiting: failed to acquire lock when adding instance to cluster")
 
     def _remove_scaled_down_units(self) -> None:
         """Remove scaled down units from the cluster."""
@@ -430,7 +431,7 @@ class MySQLOperatorCharm(CharmBase):
             logger.info("Adding pebble layer")
 
             container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
-            container.restart(MYSQLD_SAFE_SERVICE)
+            container.replan()
             self._mysql.wait_until_mysql_connection()
             self._on_update_status(None)
 
@@ -452,9 +453,12 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         # Only rescan cluster when topology is not changing
-        self._mysql.rescan_cluster(
-            remove_instances=True, add_instances=True, from_instance=primary_address
-        )
+        try:
+            self._mysql.rescan_cluster(
+                remove_instances=True, add_instances=True, from_instance=primary_address
+            )
+        except MySQLRescanClusterError:
+            logger.warning("Failed to rescan cluster")
 
     # =========================================================================
     # Charm event handlers
@@ -682,7 +686,7 @@ class MySQLOperatorCharm(CharmBase):
 
         return False
 
-    def _on_update_status(self, _: UpdateStatusEvent) -> None:
+    def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
         """Handle the update status event.
 
         One purpose of this event handler is to ensure that scaled down units are
