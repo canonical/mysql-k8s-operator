@@ -20,14 +20,9 @@ from charms.mysql.v0.mysql import (
     MySQLGrantPrivilegesToUserError,
     MySQLRemoveRouterFromMetadataError,
 )
-from ops.charm import (
-    PebbleReadyEvent,
-    RelationBrokenEvent,
-    RelationDepartedEvent,
-    RelationJoinedEvent,
-)
+from ops.charm import PebbleReadyEvent, RelationBrokenEvent, RelationDepartedEvent
 from ops.framework import Object
-from ops.model import BlockedStatus
+from ops.model import ActiveStatus, BlockedStatus
 
 from constants import (
     CONTAINER_NAME,
@@ -61,10 +56,6 @@ class MySQLProvider(Object):
             self._on_database_provides_relation_departed,
         )
 
-        self.framework.observe(
-            self.charm.on[PEER].relation_departed, self._on_peer_relation_departed
-        )
-        self.framework.observe(self.charm.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.charm.on[PEER].relation_changed, self._configure_endpoints)
         self.framework.observe(self.charm.on.leader_elected, self._configure_endpoints)
         self.framework.observe(self.charm.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
@@ -146,8 +137,7 @@ class MySQLProvider(Object):
                     logger.debug(f"Labeling pod {pod} with label {label}")
                     self.charm.k8s_helpers.label_pod(label, pod)
         except KubernetesClientError:
-            logger.debug("Can't update pod labels")
-            self.charm.unit.status = BlockedStatus("Can't update pod label")
+            logger.error("Error updating pod label. Traffic may not be properly routed.")
 
     # =============
     # Handlers
@@ -232,7 +222,7 @@ class MySQLProvider(Object):
             )
             event.defer()
 
-    def _on_mysql_pebble_ready(self, event: PebbleReadyEvent) -> None:
+    def _on_mysql_pebble_ready(self, _: PebbleReadyEvent) -> None:
         """Handle the mysql pebble ready event.
 
         Update a value in the peer app databag to trigger the peer_relation_changed
@@ -240,21 +230,18 @@ class MySQLProvider(Object):
         """
         container = self.charm.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
-            event.defer()
             return
 
         relations = self.charm.model.relations.get(DB_RELATION_NAME)
         if not self.charm.cluster_initialized and not relations:
             return
 
-        if isinstance(self.charm.unit.status, BlockedStatus):
-            # avoid deferral when in blocked state
+        if not isinstance(self.charm.unit.status, ActiveStatus):
             return
 
         charm_unit_label = self.charm.unit.name.replace("/", "-")
         if not self.charm._mysql.is_instance_in_cluster(charm_unit_label):
             logger.debug(f"Unit {self.charm.unit.name} is not yet a member of the cluster")
-            event.defer()
             return
 
         container_restarts = int(self.charm.unit_peer_data.get(CONTAINER_RESTARTS, "0"))
@@ -262,57 +249,10 @@ class MySQLProvider(Object):
 
         self._configure_endpoints(None)
 
-    def _on_peer_relation_joined(self, event: RelationJoinedEvent) -> None:
-        """Handle the peer relation joined event.
-
-        Update the endpoints + read_only_endpoints.
-        """
-        relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not relations or not self.charm.cluster_initialized:
-            return
-
-        event_unit_label = event.unit.name.replace("/", "-")
-        if not self.charm._mysql.is_instance_in_cluster(event_unit_label):
-            logger.debug(f"Unit {event.unit.name} is not yet a member of the cluster")
-            event.defer()
-            return
-
-        relation_data = self.database.fetch_relation_data()
-        for relation in relations:
-            # only update endpoints if on_database_requested has executed
-            if relation.id not in relation_data:
-                continue
-
-            self._update_pod_endpoint()
-
-    def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
-        """Handle the peer relation departed event.
-
-        Update the endpoints + read_only_endpoints.
-        """
-        relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not relations or not self.charm.cluster_initialized:
-            return
-
-        departing_unit_name = event.departing_unit.name.replace("/", "-")
-
-        if self.charm._mysql.is_instance_in_cluster(departing_unit_name):
-            logger.debug(f"Departing unit {departing_unit_name} still in cluster")
-            event.defer()
-            return
-
-        relation_data = self.database.fetch_relation_data()
-        for relation in relations:
-            # only update endpoints if on_database_requested has executed
-            if relation.id not in relation_data:
-                continue
-
-            self._update_pod_endpoint()
-
     def _configure_endpoints(self, _) -> None:
         """Update the endpoints + read_only_endpoints."""
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not relations or not self.charm.cluster_initialized:
+        if not relations or not self.charm.unit_initialized:
             return
 
         relation_data = self.database.fetch_relation_data()
