@@ -154,8 +154,7 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         logger.info("Block until primary start removing scale down units")
         await ops_test.model.block_until(
             lambda: ops_test.model.applications[APP_NAME].units[0].workload_status
-            == "maintenance",
-            wait_period=0.2,
+            == "maintenance", wait_period=0.2
         )
 
         logger.info("Block until primary finish removing scale down units")
@@ -185,7 +184,7 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 @pytest.mark.abort_on_fail
 async def test_password_rotation(ops_test: OpsTest):
     """Rotate password and confirm changes."""
-    random_unit = ops_test.model.applications[APP_NAME].units[-1]
+    random_unit = ops_test.model.applications[APP_NAME].units[0]
 
     old_credentials = await fetch_credentials(random_unit, CLUSTER_ADMIN_USERNAME)
 
@@ -218,7 +217,7 @@ async def test_password_rotation(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_password_rotation_silent(ops_test: OpsTest):
     """Rotate password and confirm changes."""
-    random_unit = ops_test.model.applications[APP_NAME].units[-1]
+    random_unit = ops_test.model.applications[APP_NAME].units[0]
 
     old_credentials = await fetch_credentials(random_unit, CLUSTER_ADMIN_USERNAME)
 
@@ -246,7 +245,7 @@ async def test_password_rotation_silent(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
     """Rotate password and confirm changes."""
-    random_unit = ops_test.model.applications[APP_NAME].units[-1]
+    random_unit = ops_test.model.applications[APP_NAME].units[0]
 
     root_credentials = await fetch_credentials(random_unit, ROOT_USERNAME)
 
