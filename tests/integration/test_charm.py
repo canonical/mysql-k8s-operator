@@ -154,7 +154,8 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         logger.info("Block until primary start removing scale down units")
         await ops_test.model.block_until(
             lambda: ops_test.model.applications[APP_NAME].units[0].workload_status
-            == "maintenance", wait_period=0.2
+            == "maintenance",
+            wait_period=0.2,
         )
 
         logger.info("Block until primary finish removing scale down units")
