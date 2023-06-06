@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 33
+LIBPATCH = 34
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -529,20 +529,20 @@ class MySQLBase(ABC):
             attributes["unit_name"] = unit_name
         try:
             # Using server_config_user as we are sure it has create database grants
-            connect_command = [
+            connect_command = (
                 f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-            ]
-            create_database_commands = [
+            )
+            create_database_commands = (
                 f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
-            ]
+            )
 
             escaped_user_attributes = json.dumps(attributes).replace('"', r"\"")
             # Using server_config_user as we are sure it has create user grants
-            create_scoped_user_commands = [
+            create_scoped_user_commands = (
                 f"session.run_sql(\"CREATE USER `{username}`@`{hostname}` IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
                 f'session.run_sql("GRANT USAGE ON *.* TO `{username}`@`{hostname}`;")',
                 f'session.run_sql("GRANT ALL PRIVILEGES ON `{database_name}`.* TO `{username}`@`{hostname}`;")',
-            ]
+            )
 
             if create_database:
                 commands = connect_command + create_database_commands + create_scoped_user_commands

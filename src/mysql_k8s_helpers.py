@@ -457,7 +457,10 @@ class MySQL(MySQLBase):
         """
         try:
             create_database_commands = (
-                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+                (
+                    f"shell.connect_to_primary('{self.server_config_user}:"
+                    f"{self.server_config_password}@{self.instance_address}')"
+                ),
                 f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
             )
 
@@ -481,8 +484,14 @@ class MySQL(MySQLBase):
         try:
             escaped_user_attributes = json.dumps({"label": label}).replace('"', r"\"")
             create_user_commands = (
-                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-                f"session.run_sql(\"CREATE USER `{username}`@`{hostname}` IDENTIFIED BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")",
+                (
+                    f"shell.connect_to_primary('{self.server_config_user}:"
+                    f"{self.server_config_password}@{self.instance_address}')"
+                ),
+                (
+                    f'session.run_sql("CREATE USER `{username}`@`{hostname}` IDENTIFIED'
+                    f" BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")"
+                ),
             )
 
             self._run_mysqlsh_script("\n".join(create_user_commands))
@@ -515,7 +524,10 @@ class MySQL(MySQLBase):
             )
 
             escalate_user_privileges_commands = (
-                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+                (
+                    f"shell.connect_to_primary('{self.server_config_user}:"
+                    f"{self.server_config_password}@{self.instance_address}')"
+                ),
                 f'session.run_sql("GRANT ALL ON *.* TO `{username}`@`{hostname}` WITH GRANT OPTION;")',
                 f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM `{username}`@`{hostname}`;\")",
                 'session.run_sql("FLUSH PRIVILEGES;")',
@@ -560,7 +572,10 @@ class MySQL(MySQLBase):
 
             # Using server_config_user as we are sure it has drop user grants
             drop_users_command = (
-                f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+                (
+                    f"shell.connect_to_primary('{self.server_config_user}:"
+                    f"{self.server_config_password}@{self.instance_address}')"
+                ),
                 f"session.run_sql(\"DROP USER IF EXISTS {', '.join(users)};\")",
             )
             self._run_mysqlsh_script("\n".join(drop_users_command))

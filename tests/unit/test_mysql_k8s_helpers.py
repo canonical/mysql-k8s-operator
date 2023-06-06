@@ -245,11 +245,7 @@ class TestMySQL(unittest.TestCase):
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_delete_users_with_label_exception(
-        self,
-        _run_mysqlsh_script,
-        _run_mysqlcli_script,
-    ):
+    def test_delete_users_with_label_exception(self, _run_mysqlsh_script, _run_mysqlcli_script):
         """Test exception while executing delete_users_with_label."""
         _run_mysqlcli_script.side_effect = MySQLClientError("Error getting label users")
 
