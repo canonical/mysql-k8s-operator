@@ -393,7 +393,7 @@ class MySQLOperatorCharm(CharmBase):
 
     def _remove_scaled_down_units(self) -> None:
         """Remove scaled down units from the cluster."""
-        planned_units = self.app.planned_units()
+        current_units = 1 + len(self.peers.units)
         cluster_status = self._mysql.get_cluster_status()
         if not cluster_status:
             self.unit.status = BlockedStatus("Failed to get cluster status")
@@ -403,7 +403,7 @@ class MySQLOperatorCharm(CharmBase):
             addresses_of_units_to_remove = [
                 member["address"]
                 for unit_name, member in cluster_status["defaultreplicaset"]["topology"].items()
-                if int(unit_name.split("-")[-1]) >= planned_units
+                if int(unit_name.split("-")[-1]) >= current_units
             ]
         except ValueError:
             # exception can occur if unit is not yet labeled
