@@ -154,18 +154,16 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 
         await scale_application(ops_test, APP_NAME, 1, wait=False)
 
+        logger.info("Block until primary start removing scale down units")
         await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications[APP_NAME].units) == 1
-            and ops_test.model.applications[APP_NAME].units[0].workload_status
-            in ("maintenance", "error", "blocked")
+            lambda: ops_test.model.applications[APP_NAME].units[0].workload_status
+            == "maintenance",
+            wait_period=0.2,
         )
-        assert ops_test.model.applications[APP_NAME].units[0].workload_status == "maintenance"
 
-        await ops_test.model.wait_for_idle(
-            apps=[APP_NAME],
-            status="active",
-            raise_on_blocked=True,
-            timeout=TIMEOUT,
+        logger.info("Block until primary finish removing scale down units")
+        await ops_test.model.block_until(
+            lambda: ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
         )
 
         random_unit = ops_test.model.applications[APP_NAME].units[0]
@@ -175,14 +173,16 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
             for _, member in cluster_status["defaultreplicaset"]["topology"].items()
             if member["status"] == "online"
         ]
-        assert len(online_member_addresses) == 1
+        assert len(online_member_addresses) == 1, "Cluster reports online nodes not 1"
 
         not_online_member_addresses = [
             member["address"]
             for _, member in cluster_status["defaultreplicaset"]["topology"].items()
             if member["status"] != "online"
         ]
-        assert len(not_online_member_addresses) == 0
+        assert (
+            len(not_online_member_addresses) == 0
+        ), "Cluster reports existence of offline members."
 
 
 @pytest.mark.abort_on_fail
