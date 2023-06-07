@@ -796,6 +796,7 @@ class MySQL(MySQLBase):
         container_limits = self.k8s_helper.get_resources_limits(CONTAINER_NAME)
         if "memory" in container_limits:
             mem_str = container_limits["memory"]
+            logger.debug(f"Memory constrained to {mem_str} from resource limit")
             return any_memory_to_bytes(mem_str)
 
         return super()._get_total_memory()

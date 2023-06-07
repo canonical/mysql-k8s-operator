@@ -156,11 +156,13 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
             lambda: ops_test.model.applications[APP_NAME].units[0].workload_status
             == "maintenance",
             wait_period=0.2,
+            timeout=5 * 60,
         )
 
         logger.info("Block until primary finish removing scale down units")
         await ops_test.model.block_until(
-            lambda: ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
+            lambda: ops_test.model.applications[APP_NAME].units[0].workload_status == "active",
+            timeout=5 * 60,
         )
 
         random_unit = ops_test.model.applications[APP_NAME].units[0]
