@@ -179,6 +179,29 @@ class MySQL(MySQLBase):
         self.container = container
         self.k8s_helper = k8s_helper
 
+    def fix_data_dir(self, container: Container) -> None:
+        """Ensure the data directory for mysql is writable for the "mysql" user.
+
+        Until the ability to set fsGroup and fsGroupChangePolicy via Pod securityContext
+        is available we fix permissions incorrectly with chown.
+        """
+        paths = container.list_files(MYSQL_DATA_DIR, itself=True)
+        assert len(paths) == 1, "list_files doesn't return only directory itself"
+        logger.debug(f"Data directory ownership: {paths[0].user}:{paths[0].group}")
+        if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
+            try:
+                container.exec(
+                    f"chown -o {MYSQL_SYSTEM_USER} -g {MYSQL_SYSTEM_GROUP} -R {MYSQL_DATA_DIR}".split(
+                        " "
+                    )
+                )
+            except ExecError as e:
+                logger.error("Exited with code %d. Stderr:", e.exit_code)
+                if e.stderr:
+                    for line in e.stderr.splitlines():
+                        logger.error("  %s", line)
+                raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
+
     def initialise_mysqld(self) -> None:
         """Execute instance first run.
 

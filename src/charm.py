@@ -332,6 +332,7 @@ class MySQLOperatorCharm(CharmBase):
             # Run mysqld for the first time to
             # bootstrap the data directory and users
             logger.debug("Initializing instance")
+            self._mysql.fix_data_dir()
             self._mysql.initialise_mysqld()
 
             # Add the pebble layer
