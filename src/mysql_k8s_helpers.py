@@ -191,7 +191,7 @@ class MySQL(MySQLBase):
         if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
             try:
                 container.exec(
-                    f"chown -o {MYSQL_SYSTEM_USER} -g {MYSQL_SYSTEM_GROUP} -R {MYSQL_DATA_DIR}".split(
+                    f"chown -R {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP} {MYSQL_DATA_DIR}".split(
                         " "
                     )
                 )
