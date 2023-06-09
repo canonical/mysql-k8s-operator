@@ -189,6 +189,7 @@ class MySQL(MySQLBase):
         assert len(paths) == 1, "list_files doesn't return only directory itself"
         logger.debug(f"Data directory ownership: {paths[0].user}:{paths[0].group}")
         if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
+            logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
             try:
                 container.exec(
                     f"chown -R {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP} {MYSQL_DATA_DIR}".split(
@@ -196,11 +197,8 @@ class MySQL(MySQLBase):
                     )
                 )
             except ExecError as e:
-                logger.error("Exited with code %d. Stderr:", e.exit_code)
-                if e.stderr:
-                    for line in e.stderr.splitlines():
-                        logger.error("  %s", line)
-                raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
+                logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
+                raise MySQLInitialiseMySQLDError(e.stderr or "")
 
     def initialise_mysqld(self) -> None:
         """Execute instance first run.
