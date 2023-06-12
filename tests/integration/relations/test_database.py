@@ -44,6 +44,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             resources=resources,
             series="jammy",
             trust=True,
+            constraints="mem=768M",
         ),
         ops_test.model.deploy(
             APPLICATION_APP_NAME,

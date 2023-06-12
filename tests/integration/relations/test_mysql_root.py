@@ -47,6 +47,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 config=config,
                 num_units=3,
                 series="jammy",
+                constraints="mem=768M",
             ),
             # Deploy the osm-keystone charm
             # (using ops_test.juju instead of ops_test.deploy as the latter does
