@@ -137,14 +137,6 @@ class KubernetesHelpers:
         try:
             pod = self.client.get(Pod, self.pod_name, namespace=self.namespace)
 
-            # Test hack: juju agent 2.9.29 is setting
-            # the constraint to the `charm` container only
-            # and as a resource `request` instead of a `limit`
-            for container in pod.spec.containers:
-                if container.name == "charm":
-                    if container.resources.requests:
-                        return container.resources.requests
-
             for container in pod.spec.containers:
                 if container.name == container_name:
                     return container.resources.limits or {}
