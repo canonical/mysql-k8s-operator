@@ -28,7 +28,7 @@ def ops_test(ops_test: OpsTest) -> OpsTest:
         ops_test.build_charm = build_charm
 
     subprocess.run(
-        ["juju", "set-model-constraints", "--model", ops_test.model.info.name, "mem=700M"],
+        ["juju", "set-model-constraints", "--model", ops_test.model.info.name, "mem=512M"],
         check=True,
     )
 
