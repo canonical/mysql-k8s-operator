@@ -139,9 +139,6 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
     async with ops_test.fast_forward():
         random_unit = ops_test.model.applications[APP_NAME].units[0]
 
-        # TODO: address the flakiness of scaling up multiple units at once
-        # For now, we'll scale up one at a time to make tests reliably pass
-        await scale_application(ops_test, APP_NAME, 4)
         await scale_application(ops_test, APP_NAME, 5)
 
         cluster_status = await get_cluster_status(ops_test, random_unit)
