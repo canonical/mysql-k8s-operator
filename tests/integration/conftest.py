@@ -4,7 +4,8 @@
 
 import json
 import os
-import subprocess
+
+# import subprocess
 from pathlib import Path
 
 import pytest
@@ -27,9 +28,9 @@ def ops_test(ops_test: OpsTest) -> OpsTest:
 
         ops_test.build_charm = build_charm
 
-    subprocess.run(
-        ["juju", "set-model-constraints", "--model", ops_test.model.info.name, "mem=500M"],
-        check=True,
-    )
+    # subprocess.run(
+    #    ["juju", "set-model-constraints", "--model", ops_test.model.info.name, "mem=720M"],
+    #    check=True,
+    # )
 
     return ops_test

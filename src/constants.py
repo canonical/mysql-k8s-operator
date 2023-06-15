@@ -51,3 +51,4 @@ XTRABACKUP_PLUGIN_DIR = "/usr/lib64/xtrabackup/plugin"
 MYSQLD_DEFAULTS_CONFIG_FILE = "/etc/mysql/my.cnf"
 MYSQLD_EXPORTER_PORT = "9104"
 MYSQLD_EXPORTER_SERVICE = "mysqld_exporter"
+GR_MAX_MEMBERS = 9
