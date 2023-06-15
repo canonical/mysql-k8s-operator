@@ -73,9 +73,8 @@ from constants import (
 from k8s_helpers import KubernetesHelpers
 from mysql_k8s_helpers import (
     MySQL,
-    MySQLCreateCustomConfigFileError,
+    MySQLCreateCustomMySQLDConfigError,
     MySQLForceRemoveUnitFromClusterError,
-    MySQLGetInnoDBBufferPoolParametersError,
     MySQLInitialiseMySQLDError,
 )
 from relations.mysql import MySQLRelation
@@ -295,22 +294,12 @@ class MySQLOperatorCharm(CharmBase):
         """
         if container.exists(MYSQLD_CONFIG_FILE):
             return True
-        try:
-            (
-                innodb_buffer_pool_size,
-                innodb_buffer_pool_chunk_size,
-            ) = self._mysql.get_innodb_buffer_pool_parameters()
-        except MySQLGetInnoDBBufferPoolParametersError:
-            self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
-            return False
 
         try:
-            self._mysql.create_custom_config_file(
+            self._mysql.create_custom_mysqld_config(
                 report_host=self._get_unit_fqdn(self.unit.name),
-                innodb_buffer_pool_size=innodb_buffer_pool_size,
-                innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
             )
-        except MySQLCreateCustomConfigFileError:
+        except MySQLCreateCustomMySQLDConfigError:
             self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
             return False
 
@@ -529,7 +518,7 @@ class MySQLOperatorCharm(CharmBase):
             MySQLConfigureInstanceError,
             MySQLConfigureMySQLUsersError,
             MySQLInitialiseMySQLDError,
-            MySQLCreateCustomConfigFileError,
+            MySQLCreateCustomMySQLDConfigError,
         ) as e:
             logger.debug("Unable to configure instance: {}".format(e))
             return False

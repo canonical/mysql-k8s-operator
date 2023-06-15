@@ -15,6 +15,7 @@ from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureMySQLUsersError,
     MySQLExecError,
+    MySQLGetAutoTunningParametersError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
@@ -60,7 +61,7 @@ class MySQLServiceNotRunningError(Error):
     """Exception raised when the MySQL service is not running."""
 
 
-class MySQLCreateCustomConfigFileError(Error):
+class MySQLCreateCustomMySQLDConfigError(Error):
     """Exception raised when there is an issue creating custom config file."""
 
 
@@ -166,6 +167,7 @@ class MySQL(MySQLBase):
         super().__init__(
             instance_address=instance_address,
             cluster_name=cluster_name,
+            cluster_set_name="dummy",
             root_password=root_password,
             server_config_user=server_config_user,
             server_config_password=server_config_password,
@@ -281,23 +283,33 @@ class MySQL(MySQLBase):
             logger.exception("Error configuring MySQL users", exc_info=e)
             raise MySQLConfigureMySQLUsersError(e.message)
 
-    def create_custom_config_file(
+    def create_custom_mysqld_config(
         self,
         report_host: str,
-        innodb_buffer_pool_size: int,
-        innodb_buffer_pool_chunk_size: int,
     ) -> None:
-        """Create custom configuration file.
+        """Create custom mysqld configuration file.
 
         Necessary for k8s deployments.
         Raises MySQLCreateCustomConfigFileError if the script gets a non-zero return code.
         """
+        try:
+            (
+                innodb_buffer_pool_size,
+                innodb_buffer_pool_chunk_size,
+            ) = self.get_innodb_buffer_pool_parameters()
+            max_connections = self.get_max_connections()
+        except MySQLGetAutoTunningParametersError:
+            raise MySQLCreateCustomMySQLDConfigError(
+                "Failed to compute mysql parameters automatically"
+            )
+
         content = [
             "[mysqld]",
             f"report_host = {report_host}",
             "bind-address = 0.0.0.0",
             "mysqlx-bind-address = 0.0.0.0",
             f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
+            f"max_connections = {max_connections}",
         ]
 
         if innodb_buffer_pool_chunk_size:
@@ -307,7 +319,7 @@ class MySQL(MySQLBase):
         try:
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
         except Exception:
-            raise MySQLCreateCustomConfigFileError()
+            raise MySQLCreateCustomMySQLDConfigError("Failed to write custom config file")
 
     def execute_backup_commands(
         self,

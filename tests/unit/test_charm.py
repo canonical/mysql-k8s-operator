@@ -87,17 +87,13 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.configure_mysql_users")
     @patch("mysql_k8s_helpers.MySQL.configure_instance")
     @patch("mysql_k8s_helpers.MySQL.create_cluster")
-    @patch("mysql_k8s_helpers.MySQL.create_custom_config_file")
+    @patch("mysql_k8s_helpers.MySQL.create_custom_mysqld_config")
     @patch("mysql_k8s_helpers.MySQL.initialise_mysqld")
     @patch("mysql_k8s_helpers.MySQL.fix_data_dir")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster")
     @patch("mysql_k8s_helpers.MySQL.get_member_state", return_value=("online", "primary"))
-    @patch(
-        "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters", return_value=(123456, None)
-    )
     def test_mysql_pebble_ready(
         self,
-        _get_innodb_buffer_pool_parameters,
         _get_member_state,
         _is_instance_in_cluster,
         _initialise_mysqld,
