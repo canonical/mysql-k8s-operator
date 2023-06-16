@@ -89,7 +89,9 @@ def clean_backups_from_buckets() -> None:
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
-    mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
+    mysql_application_name = await deploy_and_scale_mysql(
+        ops_test, num_units=1, mem_constraint="800M"
+    )
 
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
 

@@ -123,6 +123,7 @@ async def deploy_and_scale_mysql(
     check_for_existing_application: bool = True,
     mysql_application_name: str = MYSQL_DEFAULT_APP_NAME,
     num_units: int = 3,
+    mem_constraint: str = "mem=750M",
 ) -> str:
     """Deploys and scales the mysql application charm.
 
@@ -132,6 +133,7 @@ async def deploy_and_scale_mysql(
             in the model
         mysql_application_name: The name of the mysql application if it is to be deployed
         num_units: The number of units to deploy
+        mem_constraint: The memory constraint to apply to the deployed units
     """
     application_name = get_application_name(ops_test, "mysql")
 
@@ -160,6 +162,7 @@ async def deploy_and_scale_mysql(
             num_units=num_units,
             series="jammy",
             trust=True,
+            constraints=mem_constraint,
         )
 
         await ops_test.model.wait_for_idle(

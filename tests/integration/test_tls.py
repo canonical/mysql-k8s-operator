@@ -54,6 +54,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         num_units=3,
         series="jammy",
         trust=True,
+        constraints="mem=800M",
     )
 
     # Reduce the update_status frequency until the cluster is deployed

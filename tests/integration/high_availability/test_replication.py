@@ -67,6 +67,7 @@ async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writ
         check_for_existing_application=False,
         mysql_application_name=another_mysql_application_name,
         num_units=1,
+        mem_constraint="720M",
     )
 
     # insert some data into the first/original mysql cluster
