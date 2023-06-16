@@ -134,6 +134,7 @@ class MySQL(MySQLBase):
         self,
         instance_address: str,
         cluster_name: str,
+        cluster_set_name: str,
         root_password: str,
         server_config_user: str,
         server_config_password: str,
@@ -151,6 +152,7 @@ class MySQL(MySQLBase):
         Args:
             instance_address: address of the targeted instance
             cluster_name: cluster name
+            cluster_set_name: cluster set name
             root_password: password for the 'root' user
             server_config_user: user name for the server config user
             server_config_password: password for the server config user
@@ -166,6 +168,7 @@ class MySQL(MySQLBase):
         super().__init__(
             instance_address=instance_address,
             cluster_name=cluster_name,
+            cluster_set_name=cluster_set_name,
             root_password=root_password,
             server_config_user=server_config_user,
             server_config_password=server_config_password,
