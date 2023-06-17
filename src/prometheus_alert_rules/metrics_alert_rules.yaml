@@ -1,0 +1,13 @@
+groups:
+  - name: MysqlExporter
+
+    rules:
+      - alert: MySQLDown
+        expr: "mysql_up == 0"
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: MySQL Down (instance {{ $labels.instance }})
+          description: "MySQL instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
