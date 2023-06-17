@@ -302,6 +302,11 @@ class MySQL(MySQLBase):
 
         if innodb_buffer_pool_chunk_size:
             content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
+
+        if self._get_total_memory() < 2000000000:
+            # further reduce memory usage for small instances
+            content.append("performance-schema-instrument='memory/%=OFF'")
+
         content.append("")
 
         try:
