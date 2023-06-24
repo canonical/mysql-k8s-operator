@@ -825,3 +825,39 @@ class MySQL(MySQLBase):
         return 796917760
 
         return super()._get_total_memory()
+
+    def is_data_dir_initialised(self) -> bool:
+        """Check if data dir is initialised.
+
+        Returns:
+            A bool for an initialised and integral data dir.
+        """
+        try:
+            content = self.container.list_files(MYSQL_DATA_DIR)
+            content_set = {item.name for item in content}
+
+            # minimal expected content for an integral mysqld data-dir
+            expected_content = {
+                "#innodb_redo",
+                "#innodb_temp",
+                "auto.cnf",
+                "ca-key.pem",
+                "ca.pem",
+                "client-cert.pem",
+                "client-key.pem",
+                "ib_buffer_pool",
+                "mysql",
+                "mysql.ibd",
+                "performance_schema",
+                "private_key.pem",
+                "public_key.pem",
+                "server-cert.pem",
+                "server-key.pem",
+                "sys",
+                "undo_001",
+                "undo_002",
+            }
+
+            return expected_content <= content_set
+        except ExecError:
+            return False
