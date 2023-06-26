@@ -48,6 +48,7 @@ class TestMySQL(unittest.TestCase):
         self.mysql = MySQL(
             "127.0.0.1",
             "test_cluster",
+            "test_cluster_set",
             "password",
             "serverconfig",
             "serverconfigpassword",
