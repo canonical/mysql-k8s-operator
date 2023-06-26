@@ -614,8 +614,6 @@ Juju Version: {str(juju_version)}
         ):
             return False, "Failed to configure restored instance for InnoDB cluster"
 
-        self.charm.unit_peer_data["unit-configured"] = "True"
-
         try:
             logger.info("Creating cluster on restored node")
             unit_label = self.charm.unit.name.replace("/", "-")

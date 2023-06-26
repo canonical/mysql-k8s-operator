@@ -11,9 +11,12 @@ bases:
         channel: "22.04"
 parts:
   charm:
-    build-packages:
-      - libffi-dev
-      - libssl-dev
-      - rustc
-      - cargo
+    charm-binary-python-packages:
+      - boto3==1.26.117
+      - cryptography==38.0.2
+      - jsonschema==4.16.0
+      - lightkube==0.12.0
+      - ops >= 2.0.0
+      - tenacity==8.0.1
+      - urllib3==1.26.15
 
