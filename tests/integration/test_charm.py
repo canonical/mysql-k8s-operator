@@ -183,6 +183,23 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
+async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
+    """Confirm storage reuse works."""
+    async with ops_test.fast_forward():
+        random_unit = ops_test.model.applications[APP_NAME].units[0]
+
+        await scale_application(ops_test, APP_NAME, 3)
+
+        cluster_status = await get_cluster_status(ops_test, random_unit)
+        online_member_addresses = [
+            member["address"]
+            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if member["status"] == "online"
+        ]
+        assert len(online_member_addresses) == 3
+
+
+@pytest.mark.abort_on_fail
 async def test_password_rotation(ops_test: OpsTest):
     """Rotate password and confirm changes."""
     random_unit = ops_test.model.applications[APP_NAME].units[-1]
@@ -285,20 +302,3 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
         assert "mysql_exporter_last_scrape_error 0" in resp.data.decode(
             "utf8"
         ), "Scrape error in mysql_exporter"
-
-
-@pytest.mark.abort_on_fail
-async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
-    """Confirm storage reuse works."""
-    async with ops_test.fast_forward():
-        random_unit = ops_test.model.applications[APP_NAME].units[0]
-
-        await scale_application(ops_test, APP_NAME, 3)
-
-        cluster_status = await get_cluster_status(ops_test, random_unit)
-        online_member_addresses = [
-            member["address"]
-            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if member["status"] == "online"
-        ]
-        assert len(online_member_addresses) == 3
