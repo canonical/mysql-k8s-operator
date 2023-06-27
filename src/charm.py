@@ -376,6 +376,9 @@ class MySQLOperatorCharm(CharmBase):
 
             self.unit.status = MaintenanceStatus("joining the cluster")
 
+            # Stop GR for cases where the instance was previously part of the cluster
+            # harmless otherwise
+            self._mysql.stop_group_replication()
             self._mysql.add_instance_to_cluster(
                 instance_fqdn, instance_label, from_instance=cluster_primary
             )
@@ -543,8 +546,8 @@ class MySQLOperatorCharm(CharmBase):
 
         try:
             # Set workload version
-            workload_version = self._mysql.get_mysql_version()
-            self.unit.set_workload_version(workload_version)
+            if workload_version := self._mysql.get_mysql_version():
+                self.unit.set_workload_version(workload_version)
         except MySQLGetMySQLVersionError:
             # Do not block the charm if the version cannot be retrieved
             pass
@@ -580,6 +583,7 @@ class MySQLOperatorCharm(CharmBase):
 
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration
+            logger.debug("Data directory is already initialised, skipping configuration")
             self._reconcile_pebble_layer(container)
             return
 

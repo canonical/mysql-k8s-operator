@@ -640,6 +640,19 @@ class MySQL(MySQLBase):
             logger.exception(error_message)
             raise MySQLStartMySQLDError(error_message)
 
+    def stop_group_replication(self) -> None:
+        """Stop Group replication if enabled on the instance."""
+        stop_gr_command = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            "data = session.run_sql('SELECT 1 FROM performance_schema.replication_group_members')",
+            "if len(data.fetch_all()) > 0:",
+            "    session.run_sql('STOP GROUP_REPLICATION')",
+        )
+        try:
+            self._run_mysqlsh_script("\n".join(stop_gr_command))
+        except ExecError:
+            logger.debug("Failed to stop Group Replication for unit")
+
     def _execute_commands(
         self,
         commands: List[str],
