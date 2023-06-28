@@ -288,7 +288,7 @@ class MySQLOperatorCharm(CharmBase):
         """Returns whether the unit is busy."""
         return self._is_cluster_blocked()
 
-    def _prepare_configs(self, container: Container) -> bool:
+    def _prepare_configs(self, container: Container, profile: str) -> bool:
         """Copies files to the workload container.
 
         Meant to be called from the pebble-ready handler.
@@ -297,14 +297,19 @@ class MySQLOperatorCharm(CharmBase):
         """
         if container.exists(MYSQLD_CONFIG_FILE):
             return True
-        try:
-            (
-                innodb_buffer_pool_size,
-                innodb_buffer_pool_chunk_size,
-            ) = self._mysql.get_innodb_buffer_pool_parameters()
-        except MySQLGetInnoDBBufferPoolParametersError:
-            self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
-            return False
+
+        if profile == "testing":
+            innodb_buffer_pool_size = 20971520
+            innodb_buffer_pool_chunk_size = 1048576
+        else:
+            try:
+                (
+                    innodb_buffer_pool_size,
+                    innodb_buffer_pool_chunk_size,
+                ) = self._mysql.get_innodb_buffer_pool_parameters()
+            except MySQLGetInnoDBBufferPoolParametersError:
+                self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
+                return False
 
         try:
             self._mysql.create_custom_config_file(
@@ -577,7 +582,7 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = event.workload
-        if not self._prepare_configs(container):
+        if not self._prepare_configs(container, self.config.get("profile")):
             return
 
         if self._mysql.is_data_dir_initialised():
