@@ -472,7 +472,6 @@ class MySQLOperatorCharm(CharmBase):
     def _on_peer_relation_joined(self, _) -> None:
         """Handle the peer relation joined event."""
         # set some initial unit data
-        self.unit_peer_data.setdefault("instance-hostname", self._get_unit_fqdn(self.unit.name))
         self.unit_peer_data.setdefault("member-role", "unknown")
         self.unit_peer_data.setdefault("member-state", "waiting")
 
