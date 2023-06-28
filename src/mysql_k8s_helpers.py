@@ -836,10 +836,6 @@ class MySQL(MySQLBase):
             logger.debug(f"Memory constrained to {mem_str} from resource limit")
             return any_memory_to_bytes(mem_str)
 
-        # Test validation
-        # Unset limits from k8s
-        return 796917760
-
         return super()._get_total_memory()
 
     def is_data_dir_initialised(self) -> bool:

@@ -148,7 +148,7 @@ async def deploy_and_scale_mysql(
         # Cache the built charm to avoid rebuilding it between tests
         mysql_charm = charm
 
-    config = {"cluster-name": CLUSTER_NAME}
+    config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     async with ops_test.fast_forward():
