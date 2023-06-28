@@ -99,6 +99,7 @@ class MySQLOperatorCharm(CharmBase):
             self.on.database_storage_detaching, self._on_database_storage_detaching
         )
 
+        self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
 
         # Actions events
@@ -148,7 +149,7 @@ class MySQLOperatorCharm(CharmBase):
         return self.peers.data[self.unit]
 
     @property
-    def _mysql(self):
+    def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
             self.get_unit_hostname(self.unit.name),
@@ -336,7 +337,7 @@ class MySQLOperatorCharm(CharmBase):
         # and have an empty performance_schema.replication_group_members table
         return (
             self.unit_peer_data.get("member-state") == "waiting"
-            and self.unit_peer_data.get("unit-configured") == "True"
+            and self._mysql.is_data_dir_initialised()
             and not self.unit_peer_data.get("unit-initialized")
         )
 
@@ -376,6 +377,9 @@ class MySQLOperatorCharm(CharmBase):
 
             self.unit.status = MaintenanceStatus("joining the cluster")
 
+            # Stop GR for cases where the instance was previously part of the cluster
+            # harmless otherwise
+            self._mysql.stop_group_replication()
             self._mysql.add_instance_to_cluster(
                 instance_fqdn, instance_label, from_instance=cluster_primary
             )
@@ -409,6 +413,12 @@ class MySQLOperatorCharm(CharmBase):
     # =========================================================================
     # Charm event handlers
     # =========================================================================
+
+    def _on_peer_relation_joined(self, _) -> None:
+        """Handle the peer relation joined event."""
+        # set some initial unit data
+        self.unit_peer_data.setdefault("member-role", "unknown")
+        self.unit_peer_data.setdefault("member-state", "waiting")
 
     def _on_config_changed(self, _) -> None:
         """Handle the config changed event."""
@@ -469,9 +479,6 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.configure_instance()
             # Restart exporter service after configuration
             container.restart(MYSQLD_EXPORTER_SERVICE)
-
-            self.unit_peer_data["instance-hostname"] = self._get_unit_fqdn(self.unit.name)
-            self.unit_peer_data["unit-configured"] = "True"
         except (
             MySQLConfigureInstanceError,
             MySQLConfigureMySQLUsersError,
@@ -483,8 +490,8 @@ class MySQLOperatorCharm(CharmBase):
 
         try:
             # Set workload version
-            workload_version = self._mysql.get_mysql_version()
-            self.unit.set_workload_version(workload_version)
+            if workload_version := self._mysql.get_mysql_version():
+                self.unit.set_workload_version(workload_version)
         except MySQLGetMySQLVersionError:
             # Do not block the charm if the version cannot be retrieved
             pass
@@ -496,13 +503,11 @@ class MySQLOperatorCharm(CharmBase):
         if not self._is_peer_data_set:
             self.unit.status = WaitingStatus("Waiting for leader election.")
             logger.debug("Leader not ready yet, waiting...")
-            event.defer()
             return True
 
         container = event.workload
         if not container.can_connect():
             logger.debug("Pebble in container not ready, waiting...")
-            event.defer()
             return True
 
         return False
@@ -513,22 +518,24 @@ class MySQLOperatorCharm(CharmBase):
         Define and start a pebble service and bootstrap instance.
         """
         if self._mysql_pebble_ready_checks(event):
+            event.defer()
             return
 
         container = event.workload
         if not self._prepare_configs(container):
             return
 
-        self.unit.status = MaintenanceStatus("Initialising mysqld")
-        if self.unit_peer_data.get("unit-configured"):
-            # Only update pebble layer if unit is already configured for GR
+        if self._mysql.is_data_dir_initialised():
+            # Data directory is already initialised, skip configuration
+            logger.debug("Data directory is already initialised, skipping configuration")
             self._reconcile_pebble_layer(container)
             return
 
+        self.unit.status = MaintenanceStatus("Initialising mysqld")
+
         # First run setup
         if not self._configure_instance(container):
-            self.unit.status = BlockedStatus("Unable to configure instance")
-            return
+            raise
 
         if not self.unit.is_leader():
             # Non-leader units should wait for leader to add them to the cluster

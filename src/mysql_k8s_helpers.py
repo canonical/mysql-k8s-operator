@@ -640,6 +640,19 @@ class MySQL(MySQLBase):
             logger.exception(error_message)
             raise MySQLStartMySQLDError(error_message)
 
+    def stop_group_replication(self) -> None:
+        """Stop Group replication if enabled on the instance."""
+        stop_gr_command = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            "data = session.run_sql('SELECT 1 FROM performance_schema.replication_group_members')",
+            "if len(data.fetch_all()) > 0:",
+            "    session.run_sql('STOP GROUP_REPLICATION')",
+        )
+        try:
+            self._run_mysqlsh_script("\n".join(stop_gr_command))
+        except ExecError:
+            logger.debug("Failed to stop Group Replication for unit")
+
     def _execute_commands(
         self,
         commands: List[str],
@@ -828,3 +841,39 @@ class MySQL(MySQLBase):
         return 796917760
 
         return super()._get_total_memory()
+
+    def is_data_dir_initialised(self) -> bool:
+        """Check if data dir is initialised.
+
+        Returns:
+            A bool for an initialised and integral data dir.
+        """
+        try:
+            content = self.container.list_files(MYSQL_DATA_DIR)
+            content_set = {item.name for item in content}
+
+            # minimal expected content for an integral mysqld data-dir
+            expected_content = {
+                "#innodb_redo",
+                "#innodb_temp",
+                "auto.cnf",
+                "ca-key.pem",
+                "ca.pem",
+                "client-cert.pem",
+                "client-key.pem",
+                "ib_buffer_pool",
+                "mysql",
+                "mysql.ibd",
+                "performance_schema",
+                "private_key.pem",
+                "public_key.pem",
+                "server-cert.pem",
+                "server-key.pem",
+                "sys",
+                "undo_001",
+                "undo_002",
+            }
+
+            return expected_content <= content_set
+        except ExecError:
+            return False
