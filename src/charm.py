@@ -23,7 +23,6 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
-    MySQLRescanClusterError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -435,31 +434,6 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.wait_until_mysql_connection()
             self._on_update_status(None)
 
-    def _rescan_cluster(self) -> None:
-        """Rescan the cluster topology."""
-        try:
-            primary_address = self._mysql.get_cluster_primary_address()
-        except MySQLGetClusterPrimaryAddressError:
-            return
-
-        if not primary_address:
-            return
-
-        # Set active status when primary is known
-        self.app.status = ActiveStatus()
-
-        if self._mysql.are_locks_acquired(from_instance=primary_address):
-            logger.debug("Skip cluster rescan while locks are acquired")
-            return
-
-        # Only rescan cluster when topology is not changing
-        try:
-            self._mysql.rescan_cluster(
-                remove_instances=True, add_instances=True, from_instance=primary_address
-            )
-        except MySQLRescanClusterError:
-            logger.warning("Failed to rescan cluster")
-
     # =========================================================================
     # Charm event handlers
     # =========================================================================
@@ -718,7 +692,17 @@ class MySQLOperatorCharm(CharmBase):
 
         # Check if there are any scaled down units that need to be removed from the cluster
         self._remove_scaled_down_units()
-        self._rescan_cluster()
+
+        try:
+            primary_address = self._mysql.get_cluster_primary_address()
+        except MySQLGetClusterPrimaryAddressError:
+            return
+
+        if not primary_address:
+            return
+
+        # Set active status when primary is known
+        self.app.status = ActiveStatus()
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
