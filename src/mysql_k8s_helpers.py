@@ -327,10 +327,10 @@ class MySQL(MySQLBase):
             group=MYSQL_SYSTEM_GROUP,
         )
 
-    def delete_temp_backup_directory(self) -> None:
+    def delete_temp_backup_directory(self, from_directory: str = MYSQL_DATA_DIR) -> None:
         """Delete the temp backup directory in the data directory."""
         super().delete_temp_backup_directory(
-            MYSQL_DATA_DIR,
+            from_directory,
             user=MYSQL_SYSTEM_USER,
             group=MYSQL_SYSTEM_GROUP,
         )

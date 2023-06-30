@@ -81,6 +81,8 @@ from ops.framework import Object
 from ops.jujuversion import JujuVersion
 from ops.model import ActiveStatus, BlockedStatus
 
+from constants import MYSQL_DATA_DIR
+
 logger = logging.getLogger(__name__)
 
 MYSQL_BACKUPS = "mysql-backups"
@@ -93,7 +95,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 5
+LIBPATCH = 6
 
 
 class MySQLBackups(Object):
@@ -225,10 +227,12 @@ Stderr:
         logger.info("A backup has been requested on unit")
 
         if not self.charm.s3_integrator_relation_exists:
+            logger.error("Backup failed: missing relation with S3 integrator charm")
             event.fail("Missing relation with S3 integrator charm")
             return
 
         if not self.charm._mysql.is_mysqld_running():
+            logger.error(f"Backup failed: process mysqld is not running on {self.charm.unit.name}")
             event.fail("Process mysqld not running")
             return
 
@@ -237,6 +241,7 @@ Stderr:
         # Retrieve and validate missing S3 parameters
         s3_parameters, missing_parameters = self._retrieve_s3_parameters()
         if missing_parameters:
+            logger.error(f"Backup failed: missing S3 parameters {missing_parameters}")
             event.fail(f"Missing S3 parameters: {missing_parameters}")
             return
 
@@ -245,7 +250,7 @@ Stderr:
         # Check if this unit can perform backup
         can_unit_perform_backup, validation_message = self._can_unit_perform_backup()
         if not can_unit_perform_backup:
-            logger.warning(validation_message)
+            logger.error(f"Backup failed: {validation_message}")
             event.fail(validation_message)
             return
 
@@ -259,25 +264,26 @@ Juju Version: {str(juju_version)}
 """
 
         if not upload_content_to_s3(metadata, f"{backup_path}.metadata", s3_parameters):
+            logger.error("Backup failed: Failed to upload metadata to provided S3")
             event.fail("Failed to upload metadata to provided S3")
             return
 
         # Run operations to prepare for the backup
         success, error_message = self._pre_backup()
         if not success:
-            logger.warning(error_message)
+            logger.error(f"Backup failed: {error_message}")
             event.fail(error_message)
             return
 
         # Perform the backup
         success, error_message = self._backup(backup_path, s3_parameters)
         if not success:
-            logger.warning(error_message)
+            logger.error(f"Backup failed: {error_message}")
             event.fail(error_message)
 
             success, error_message = self._post_backup()
             if not success:
-                logger.error(error_message)
+                logger.error(f"Backup failed: {error_message}")
                 self.charm.unit.status = BlockedStatus(
                     "Failed to create backup; instance in bad state"
                 )
@@ -287,13 +293,14 @@ Juju Version: {str(juju_version)}
         # Run operations to clean up after the backup
         success, error_message = self._post_backup()
         if not success:
-            logger.error(error_message)
+            logger.error(f"Backup failed: {error_message}")
             self.charm.unit.status = BlockedStatus(
                 "Failed to create backup; instance in bad state"
             )
             event.fail(error_message)
             return
 
+        logger.info(f"Backup succeeded: with backup-id {datetime_backup_requested}")
         event.set_results(
             {
                 "backup-id": datetime_backup_requested,
@@ -424,26 +431,26 @@ Juju Version: {str(juju_version)}
         """
         if not self.charm.s3_integrator_relation_exists:
             error_message = "Missing relation with S3 integrator charm"
-            logger.warning(error_message)
+            logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
             return False
 
         if not event.params.get("backup-id"):
             error_message = "Missing backup-id to restore"
-            logger.warning(error_message)
+            logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
             return False
 
         if not self.charm._mysql.is_server_connectable():
             error_message = "Server running mysqld is not connectable"
-            logger.warning(error_message)
+            logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
             return False
 
         logger.info("Checking if the unit is waiting to start or restart")
         if self.charm.is_unit_busy():
             error_message = "Unit is waiting to start or restart"
-            logger.warning(error_message)
+            logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
             return False
 
@@ -452,7 +459,7 @@ Juju Version: {str(juju_version)}
             error_message = (
                 "Unit cannot restore backup as there are more than one units in the cluster"
             )
-            logger.warning(error_message)
+            logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
             return False
 
@@ -473,6 +480,7 @@ Juju Version: {str(juju_version)}
         # Retrieve and validate missing S3 parameters
         s3_parameters, missing_parameters = self._retrieve_s3_parameters()
         if missing_parameters:
+            logger.error(f"Restore failed: missing S3 parameters {missing_parameters}")
             event.fail(f"Missing S3 parameters: {missing_parameters}")
             return
 
@@ -480,20 +488,21 @@ Juju Version: {str(juju_version)}
         logger.info("Validating provided backup-id in the specified s3 path")
         s3_backup_md5 = str(pathlib.Path(s3_parameters["path"]) / f"{backup_id}.md5")
         if not fetch_and_check_existence_of_s3_path(s3_backup_md5, s3_parameters):
+            logger.error(f"Restore failed: invalid backup-id {backup_id}")
             event.fail(f"Invalid backup-id: {backup_id}")
             return
 
         # Run operations to prepare for the restore
         success, error_message = self._pre_restore()
         if not success:
-            logger.warning(error_message)
+            logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
             return
 
         # Perform the restore
         success, recoverable, error_message = self._restore(backup_id, s3_parameters)
         if not success:
-            logger.warning(error_message)
+            logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
 
             if recoverable:
@@ -506,11 +515,12 @@ Juju Version: {str(juju_version)}
         # Run post-restore operations
         success, error_message = self._post_restore()
         if not success:
-            logger.warning(error_message)
+            logger.error(f"Restore failed: {error_message}")
             self.charm.unit.status = BlockedStatus(error_message)
             event.fail(error_message)
             return
 
+        logger.info("Restore succeeded")
         event.set_results(
             {
                 "completed": "ok",
@@ -583,6 +593,9 @@ Juju Version: {str(juju_version)}
         try:
             self.charm._mysql.delete_temp_restore_directory()
             self.charm._mysql.delete_temp_backup_directory()
+            # Old backups may contain the temp backup directory (as previously, the temp
+            # backup directory was created in the mysql data directory to reduce IOPS latency)
+            self.charm._mysql.delete_temp_backup_directory(from_directory=MYSQL_DATA_DIR)
         except MySQLDeleteTempRestoreDirectoryError:
             return False, "Failed to delete the temp restore directory"
         except MySQLDeleteTempBackupDirectoryError:
