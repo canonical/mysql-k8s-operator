@@ -292,6 +292,12 @@ class MySQLProvider(Object):
             # run once by the leader
             return
 
+        if self.charm.unit_peer_data.get("unit-status", None) == "removing":
+            # safeguard against relation broken being triggered for
+            # a unit being torn down (instead of un-related). See:
+            # https://bugs.launchpad.net/juju/+bug/1979811
+            return
+
         if len(self.model.relations[DB_RELATION_NAME]) == 1:
             # remove kubernetes service when last relation is removed
             self.charm.k8s_helpers.delete_endpoint_services(["primary", "replicas"])

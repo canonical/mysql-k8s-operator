@@ -23,7 +23,6 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
-    MySQLRescanClusterError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -74,7 +73,6 @@ from k8s_helpers import KubernetesHelpers
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
-    MySQLForceRemoveUnitFromClusterError,
     MySQLGetInnoDBBufferPoolParametersError,
     MySQLInitialiseMySQLDError,
 )
@@ -97,6 +95,9 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.update_status, self._on_update_status)
+        self.framework.observe(
+            self.on.database_storage_detaching, self._on_database_storage_detaching
+        )
 
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
@@ -401,37 +402,6 @@ class MySQLOperatorCharm(CharmBase):
             self.unit.status = WaitingStatus("waiting to join the cluster")
             logger.debug("waiting: failed to acquire lock when adding instance to cluster")
 
-    def _remove_scaled_down_units(self) -> None:
-        """Remove scaled down units from the cluster."""
-        current_units = 1 + len(self.peers.units)
-        cluster_status = self._mysql.get_cluster_status()
-        if not cluster_status:
-            self.unit.status = BlockedStatus("Failed to get cluster status")
-            return
-
-        try:
-            addresses_of_units_to_remove = [
-                member["address"]
-                for unit_name, member in cluster_status["defaultreplicaset"]["topology"].items()
-                if int(unit_name.split("-")[-1]) >= current_units
-            ]
-        except ValueError:
-            # exception can occur if unit is not yet labeled
-            return
-
-        if not addresses_of_units_to_remove:
-            return
-
-        self.unit.status = MaintenanceStatus("Removing scaled down units from cluster")
-
-        for unit_address in addresses_of_units_to_remove:
-            try:
-                self._mysql.force_remove_unit_from_cluster(unit_address)
-            except MySQLForceRemoveUnitFromClusterError:
-                self.unit.status = BlockedStatus("Failed to remove scaled down unit from cluster")
-                return
-        self.unit.status = ActiveStatus(self.active_status_message)
-
     def _reconcile_pebble_layer(self, container: Container) -> None:
         """Reconcile pebble layer."""
         current_layer = container.get_plan()
@@ -444,31 +414,6 @@ class MySQLOperatorCharm(CharmBase):
             container.replan()
             self._mysql.wait_until_mysql_connection()
             self._on_update_status(None)
-
-    def _rescan_cluster(self) -> None:
-        """Rescan the cluster topology."""
-        try:
-            primary_address = self._mysql.get_cluster_primary_address()
-        except MySQLGetClusterPrimaryAddressError:
-            return
-
-        if not primary_address:
-            return
-
-        # Set active status when primary is known
-        self.app.status = ActiveStatus()
-
-        if self._mysql.are_locks_acquired(from_instance=primary_address):
-            logger.debug("Skip cluster rescan while locks are acquired")
-            return
-
-        # Only rescan cluster when topology is not changing
-        try:
-            self._mysql.rescan_cluster(
-                remove_instances=True, add_instances=True, from_instance=primary_address
-            )
-        except MySQLRescanClusterError:
-            logger.warning("Failed to rescan cluster")
 
     # =========================================================================
     # Charm event handlers
@@ -732,9 +677,16 @@ class MySQLOperatorCharm(CharmBase):
         if nodes > 0:
             self.app_peer_data["units-added-to-cluster"] = str(nodes)
 
-        # Check if there are any scaled down units that need to be removed from the cluster
-        self._remove_scaled_down_units()
-        self._rescan_cluster()
+        try:
+            primary_address = self._mysql.get_cluster_primary_address()
+        except MySQLGetClusterPrimaryAddressError:
+            return
+
+        if not primary_address:
+            return
+
+        # Set active status when primary is known
+        self.app.status = ActiveStatus()
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
@@ -748,6 +700,25 @@ class MySQLOperatorCharm(CharmBase):
         if self._is_unit_waiting_to_join_cluster():
             self._join_unit_to_cluster()
 
+    def _on_database_storage_detaching(self, _) -> None:
+        """Handle the database storage detaching event."""
+        # Only executes if the unit was initialised
+        if not self.unit_peer_data.get("unit-initialized"):
+            return
+
+        unit_label = self.unit.name.replace("/", "-")
+
+        # No need to remove the instance from the cluster if it is not a member of the cluster
+        if not self._mysql.is_instance_in_cluster(unit_label):
+            return
+
+        # The following operation uses locks to ensure that only one instance is removed
+        # from the cluster at a time (to avoid split-brain or lack of majority issues)
+        self._mysql.remove_instance(unit_label)
+
+        # Inform other hooks of current status
+        self.unit_peer_data["unit-status"] = "removing"
+
     # =========================================================================
     # Charm action handlers
     # =========================================================================
@@ -756,7 +727,10 @@ class MySQLOperatorCharm(CharmBase):
         username = event.params.get("username") or ROOT_USERNAME
 
         if username not in REQUIRED_USERNAMES:
-            raise RuntimeError("Invalid username.")
+            event.fail(
+                f"The action can be run only for users used by the charm: {', '.join(REQUIRED_USERNAMES)} not {username}"
+            )
+            return
 
         if username == ROOT_USERNAME:
             secret_key = ROOT_PASSWORD_KEY
@@ -774,12 +748,16 @@ class MySQLOperatorCharm(CharmBase):
     def _on_set_password(self, event: ActionEvent) -> None:
         """Action used to update/rotate the system user's password."""
         if not self.unit.is_leader():
-            raise RuntimeError("set-password action can only be run on the leader unit.")
+            event.fail("set-password action can only be run on the leader unit.")
+            return
 
         username = event.params.get("username") or ROOT_USERNAME
 
         if username not in REQUIRED_USERNAMES:
-            raise RuntimeError("Invalid username.")
+            event.fail(
+                f"The action can be run only for users used by the charm: {', '.join(REQUIRED_USERNAMES)} not {username}"
+            )
+            return
 
         if username == ROOT_USERNAME:
             secret_key = ROOT_PASSWORD_KEY

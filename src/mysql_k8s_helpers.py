@@ -80,10 +80,6 @@ class MySQLDeleteUsersWithLabelError(Error):
     """Exception raised when there is an issue deleting users with a label."""
 
 
-class MySQLForceRemoveUnitFromClusterError(Error):
-    """Exception raised when there is an issue force removing a unit from the cluster."""
-
-
 class MySQLWaitUntilUnitRemovedFromClusterError(Error):
     """Exception raised when there is an issue checking if a unit is removed from the cluster."""
 
@@ -331,10 +327,10 @@ class MySQL(MySQLBase):
             group=MYSQL_SYSTEM_GROUP,
         )
 
-    def delete_temp_backup_directory(self) -> None:
+    def delete_temp_backup_directory(self, from_directory: str = MYSQL_DATA_DIR) -> None:
         """Delete the temp backup directory in the data directory."""
         super().delete_temp_backup_directory(
-            MYSQL_DATA_DIR,
+            from_directory,
             user=MYSQL_SYSTEM_USER,
             group=MYSQL_SYSTEM_GROUP,
         )
@@ -422,53 +418,6 @@ class MySQL(MySQLBase):
 
         if unit_address in members_in_cluster:
             raise MySQLWaitUntilUnitRemovedFromClusterError("Remove member still in cluster")
-
-    def force_remove_unit_from_cluster(self, unit_address: str) -> None:
-        """Force removes the provided unit from the cluster.
-
-        Args:
-            unit_address: The address of unit to force remove from cluster
-
-        Raises:
-            MySQLForceRemoveUnitFromClusterError - if there was an issue force
-                removing the unit from the cluster
-        """
-        cluster_status = self.get_cluster_status()
-        if not cluster_status:
-            raise MySQLForceRemoveUnitFromClusterError()
-
-        remove_instance_options = {
-            "force": "true",
-        }
-        remove_instance_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
-            f"cluster = dba.get_cluster('{self.cluster_name}')",
-            f"cluster.remove_instance('{unit_address}', {json.dumps(remove_instance_options)})",
-        )
-
-        try:
-            if cluster_status["defaultreplicaset"]["status"] == "no_quorum":
-                logger.warning("Cluster has no quorum. Forcing quorum using this instance.")
-
-                force_quorum_commands = (
-                    f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
-                    f"cluster = dba.get_cluster('{self.cluster_name}')",
-                    f"cluster.force_quorum_using_partition_of('{self.cluster_admin_user}@{self.instance_address}', '{self.cluster_admin_password}')",
-                )
-
-                self._run_mysqlsh_script("\n".join(force_quorum_commands))
-
-            self._run_mysqlsh_script("\n".join(remove_instance_commands))
-
-            self._wait_until_unit_removed_from_cluster(unit_address)
-        except (
-            MySQLClientError,
-            MySQLWaitUntilUnitRemovedFromClusterError,
-        ) as e:
-            logger.exception(
-                f"Failed to force remove instance {unit_address} from cluster", exc_info=e
-            )
-            raise MySQLForceRemoveUnitFromClusterError(e.message)
 
     def create_database(self, database_name: str) -> None:
         """Creates a database.
