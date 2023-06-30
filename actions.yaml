@@ -10,7 +10,7 @@ get-password:
   params:
     username:
       type: string
-      description: The username, the default value 'operator'.
+      description: The username, the default value 'root'.
         Possible values - root, serverconfig, clusteradmin.
 
 set-password:
@@ -19,7 +19,7 @@ set-password:
   params:
     username:
       type: string
-      description: The username, the default value 'operator'.
+      description: The username, the default value 'root'.
         Possible values - root, serverconfig, clusteradmin.
     password:
       type: string

@@ -23,7 +23,6 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
-    MySQLRescanClusterError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -440,31 +439,6 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.wait_until_mysql_connection()
             self._on_update_status(None)
 
-    def _rescan_cluster(self) -> None:
-        """Rescan the cluster topology."""
-        try:
-            primary_address = self._mysql.get_cluster_primary_address()
-        except MySQLGetClusterPrimaryAddressError:
-            return
-
-        if not primary_address:
-            return
-
-        # Set active status when primary is known
-        self.app.status = ActiveStatus()
-
-        if self._mysql.are_locks_acquired(from_instance=primary_address):
-            logger.debug("Skip cluster rescan while locks are acquired")
-            return
-
-        # Only rescan cluster when topology is not changing
-        try:
-            self._mysql.rescan_cluster(
-                remove_instances=True, add_instances=True, from_instance=primary_address
-            )
-        except MySQLRescanClusterError:
-            logger.warning("Failed to rescan cluster")
-
     # =========================================================================
     # Charm event handlers
     # =========================================================================
@@ -729,7 +703,17 @@ class MySQLOperatorCharm(CharmBase):
 
         # Check if there are any scaled down units that need to be removed from the cluster
         self._remove_scaled_down_units()
-        self._rescan_cluster()
+
+        try:
+            primary_address = self._mysql.get_cluster_primary_address()
+        except MySQLGetClusterPrimaryAddressError:
+            return
+
+        if not primary_address:
+            return
+
+        # Set active status when primary is known
+        self.app.status = ActiveStatus()
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
@@ -751,7 +735,10 @@ class MySQLOperatorCharm(CharmBase):
         username = event.params.get("username") or ROOT_USERNAME
 
         if username not in REQUIRED_USERNAMES:
-            raise RuntimeError("Invalid username.")
+            event.fail(
+                f"The action can be run only for users used by the charm: {', '.join(REQUIRED_USERNAMES)} not {username}"
+            )
+            return
 
         if username == ROOT_USERNAME:
             secret_key = ROOT_PASSWORD_KEY
@@ -769,12 +756,16 @@ class MySQLOperatorCharm(CharmBase):
     def _on_set_password(self, event: ActionEvent) -> None:
         """Action used to update/rotate the system user's password."""
         if not self.unit.is_leader():
-            raise RuntimeError("set-password action can only be run on the leader unit.")
+            event.fail("set-password action can only be run on the leader unit.")
+            return
 
         username = event.params.get("username") or ROOT_USERNAME
 
         if username not in REQUIRED_USERNAMES:
-            raise RuntimeError("Invalid username.")
+            event.fail(
+                f"The action can be run only for users used by the charm: {', '.join(REQUIRED_USERNAMES)} not {username}"
+            )
+            return
 
         if username == ROOT_USERNAME:
             secret_key = ROOT_PASSWORD_KEY
