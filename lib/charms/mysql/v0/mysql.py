@@ -159,6 +159,10 @@ class MySQLCreateClusterError(Error):
     """Exception raised when there is an issue creating an InnoDB cluster."""
 
 
+class MySQLCreateClusterSetError(Error):
+    """Exception raised when there is an issue creating an Cluster Set."""
+
+
 class MySQLAddInstanceToClusterError(Error):
     """Exception raised when there is an issue add an instance to the MySQL InnoDB cluster."""
 
@@ -320,6 +324,7 @@ class MySQLBase(ABC):
         self,
         instance_address: str,
         cluster_name: str,
+        cluster_set_name: str,
         root_password: str,
         server_config_user: str,
         server_config_password: str,
@@ -335,6 +340,7 @@ class MySQLBase(ABC):
         Args:
             instance_address: address of the targeted instance
             cluster_name: cluster name
+            cluster_set_name: cluster set domain name
             root_password: password for the 'root' user
             server_config_user: user name for the server config user
             server_config_password: password for the server config user
@@ -347,6 +353,7 @@ class MySQLBase(ABC):
         """
         self.instance_address = instance_address
         self.cluster_name = cluster_name
+        self.cluster_set_name = cluster_set_name
         self.root_password = root_password
         self.server_config_user = server_config_user
         self.server_config_password = server_config_password
@@ -730,6 +737,24 @@ class MySQLBase(ABC):
                 exc_info=e,
             )
             raise MySQLCreateClusterError(e.message)
+
+    def create_cluster_set(self) -> None:
+        """Create a cluster set for the cluster on cluster primary.
+
+        Raises MySQLCreateClusterSetError on cluster set creation failure.
+        """
+        commands = (
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            f"cluster.create_cluster_set('{self.cluster_set_name}')",
+        )
+
+        try:
+            logger.debug(f"Creating cluster set name {self.cluster_set_name}")
+            self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError:
+            logger.exception("Failed to add instance to cluster set on instance")
+            raise MySQLCreateClusterSetError
 
     def initialize_juju_units_operations_table(self) -> None:
         """Initialize the mysql.juju_units_operations table using the serverconfig user.

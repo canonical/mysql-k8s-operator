@@ -6,7 +6,7 @@
 import unittest
 from unittest.mock import PropertyMock, patch
 
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+from ops.model import ActiveStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import MySQLOperatorCharm
@@ -80,6 +80,8 @@ class TestCharm(unittest.TestCase):
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
+    @patch("mysql_k8s_helpers.MySQL.create_cluster_set")
     @patch("mysql_k8s_helpers.MySQL.initialize_juju_units_operations_table")
     @patch("mysql_k8s_helpers.MySQL.safe_stop_mysqld_safe")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.0")
@@ -110,6 +112,8 @@ class TestCharm(unittest.TestCase):
         _get_mysql_version,
         _safe_stop_mysqld_safe,
         _initialize_juju_units_operations_table,
+        _is_data_dir_initialised,
+        _create_cluster_set,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -156,7 +160,7 @@ class TestCharm(unittest.TestCase):
         # Trigger pebble ready after leader election
         self.harness.container_pebble_ready("mysql")
 
-        self.assertTrue(isinstance(self.charm.unit.status, BlockedStatus))
+        self.assertFalse(isinstance(self.charm.unit.status, ActiveStatus))
 
     def test_on_config_changed(self):
         # Test config changed set of cluster name
@@ -168,7 +172,8 @@ class TestCharm(unittest.TestCase):
             self.charm.peers.data[self.charm.app]["cluster-name"], "not_valid_cluster_name"
         )
 
-    def test_mysql_property(self):
+    @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
+    def test_mysql_property(self, _):
         # Test mysql property instance of mysql_k8s_helpers.MySQL
         # set leader and populate peer relation data
         self.harness.set_leader()

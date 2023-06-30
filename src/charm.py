@@ -23,7 +23,6 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
-    MySQLRescanClusterError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -98,6 +97,7 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.update_status, self._on_update_status)
 
+        self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
 
         # Actions events
@@ -147,11 +147,12 @@ class MySQLOperatorCharm(CharmBase):
         return self.peers.data[self.unit]
 
     @property
-    def _mysql(self):
+    def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
             self.get_unit_hostname(self.unit.name),
             self.app_peer_data["cluster-name"],
+            self.app_peer_data["cluster-set-domain-name"],
             self.get_secret("app", ROOT_PASSWORD_KEY),
             SERVER_CONFIG_USERNAME,
             self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
@@ -334,7 +335,7 @@ class MySQLOperatorCharm(CharmBase):
         # and have an empty performance_schema.replication_group_members table
         return (
             self.unit_peer_data.get("member-state") == "waiting"
-            and self.unit_peer_data.get("unit-configured") == "True"
+            and self._mysql.is_data_dir_initialised()
             and not self.unit_peer_data.get("unit-initialized")
         )
 
@@ -374,6 +375,9 @@ class MySQLOperatorCharm(CharmBase):
 
             self.unit.status = MaintenanceStatus("joining the cluster")
 
+            # Stop GR for cases where the instance was previously part of the cluster
+            # harmless otherwise
+            self._mysql.stop_group_replication()
             self._mysql.add_instance_to_cluster(
                 instance_fqdn, instance_label, from_instance=cluster_primary
             )
@@ -435,34 +439,15 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.wait_until_mysql_connection()
             self._on_update_status(None)
 
-    def _rescan_cluster(self) -> None:
-        """Rescan the cluster topology."""
-        try:
-            primary_address = self._mysql.get_cluster_primary_address()
-        except MySQLGetClusterPrimaryAddressError:
-            return
-
-        if not primary_address:
-            return
-
-        # Set active status when primary is known
-        self.app.status = ActiveStatus()
-
-        if self._mysql.are_locks_acquired(from_instance=primary_address):
-            logger.debug("Skip cluster rescan while locks are acquired")
-            return
-
-        # Only rescan cluster when topology is not changing
-        try:
-            self._mysql.rescan_cluster(
-                remove_instances=True, add_instances=True, from_instance=primary_address
-            )
-        except MySQLRescanClusterError:
-            logger.warning("Failed to rescan cluster")
-
     # =========================================================================
     # Charm event handlers
     # =========================================================================
+
+    def _on_peer_relation_joined(self, _) -> None:
+        """Handle the peer relation joined event."""
+        # set some initial unit data
+        self.unit_peer_data.setdefault("member-role", "unknown")
+        self.unit_peer_data.setdefault("member-state", "waiting")
 
     def _on_config_changed(self, _) -> None:
         """Handle the config changed event."""
@@ -470,11 +455,12 @@ class MySQLOperatorCharm(CharmBase):
         if not self.unit.is_leader():
             return
 
-        # Set the cluster name in the peer relation databag if it is not already set
-        if not self.app_peer_data.get("cluster-name"):
-            self.app_peer_data["cluster-name"] = (
-                self.config.get("cluster-name") or f"cluster_{generate_random_hash()}"
-            )
+        # Create and set cluster and cluster-set names in the peer relation databag
+        common_hash = generate_random_hash()
+        self.app_peer_data.setdefault(
+            "cluster-name", self.config.get("cluster-name", f"cluster-{common_hash}")
+        )
+        self.app_peer_data.setdefault("cluster-set-domain-name", f"cluster-set-{common_hash}")
 
     def _on_leader_elected(self, _: LeaderElectedEvent) -> None:
         """Handle the leader elected event.
@@ -522,9 +508,6 @@ class MySQLOperatorCharm(CharmBase):
             self._mysql.configure_instance()
             # Restart exporter service after configuration
             container.restart(MYSQLD_EXPORTER_SERVICE)
-
-            self.unit_peer_data["instance-hostname"] = self._get_unit_fqdn(self.unit.name)
-            self.unit_peer_data["unit-configured"] = "True"
         except (
             MySQLConfigureInstanceError,
             MySQLConfigureMySQLUsersError,
@@ -536,8 +519,8 @@ class MySQLOperatorCharm(CharmBase):
 
         try:
             # Set workload version
-            workload_version = self._mysql.get_mysql_version()
-            self.unit.set_workload_version(workload_version)
+            if workload_version := self._mysql.get_mysql_version():
+                self.unit.set_workload_version(workload_version)
         except MySQLGetMySQLVersionError:
             # Do not block the charm if the version cannot be retrieved
             pass
@@ -549,13 +532,11 @@ class MySQLOperatorCharm(CharmBase):
         if not self._is_peer_data_set:
             self.unit.status = WaitingStatus("Waiting for leader election.")
             logger.debug("Leader not ready yet, waiting...")
-            event.defer()
             return True
 
         container = event.workload
         if not container.can_connect():
             logger.debug("Pebble in container not ready, waiting...")
-            event.defer()
             return True
 
         return False
@@ -566,22 +547,24 @@ class MySQLOperatorCharm(CharmBase):
         Define and start a pebble service and bootstrap instance.
         """
         if self._mysql_pebble_ready_checks(event):
+            event.defer()
             return
 
         container = event.workload
         if not self._prepare_configs(container):
             return
 
-        self.unit.status = MaintenanceStatus("Initialising mysqld")
-        if self.unit_peer_data.get("unit-configured"):
-            # Only update pebble layer if unit is already configured for GR
+        if self._mysql.is_data_dir_initialised():
+            # Data directory is already initialised, skip configuration
+            logger.debug("Data directory is already initialised, skipping configuration")
             self._reconcile_pebble_layer(container)
             return
 
+        self.unit.status = MaintenanceStatus("Initialising mysqld")
+
         # First run setup
         if not self._configure_instance(container):
-            self.unit.status = BlockedStatus("Unable to configure instance")
-            return
+            raise
 
         if not self.unit.is_leader():
             # Non-leader units should wait for leader to add them to the cluster
@@ -596,6 +579,7 @@ class MySQLOperatorCharm(CharmBase):
             logger.info("Creating cluster on the leader unit")
             unit_label = self.unit.name.replace("/", "-")
             self._mysql.create_cluster(unit_label)
+            self._mysql.create_cluster_set()
 
             self._mysql.initialize_juju_units_operations_table()
             # Start control flag
@@ -608,13 +592,14 @@ class MySQLOperatorCharm(CharmBase):
             )
 
             self.unit.status = ActiveStatus(self.active_status_message)
-        except MySQLCreateClusterError as e:
-            self.unit.status = BlockedStatus("Unable to create cluster")
-            logger.debug("Unable to create cluster: {}".format(e))
-        except MySQLGetMemberStateError:
-            self.unit.status = BlockedStatus("Unable to query member state and role")
-        except MySQLInitializeJujuOperationsTableError:
-            self.unit.status = BlockedStatus("Failed to initialize juju operations table")
+        except (
+            MySQLCreateClusterError,
+            MySQLGetMemberStateError,
+            MySQLInitializeJujuOperationsTableError,
+            MySQLCreateClusterError,
+        ):
+            logger.exception("Failed to initialize primary")
+            raise
 
     def _handle_potential_cluster_crash_scenario(self) -> bool:
         """Handle potential full cluster crash scenarios.
@@ -718,7 +703,17 @@ class MySQLOperatorCharm(CharmBase):
 
         # Check if there are any scaled down units that need to be removed from the cluster
         self._remove_scaled_down_units()
-        self._rescan_cluster()
+
+        try:
+            primary_address = self._mysql.get_cluster_primary_address()
+        except MySQLGetClusterPrimaryAddressError:
+            return
+
+        if not primary_address:
+            return
+
+        # Set active status when primary is known
+        self.app.status = ActiveStatus()
 
     def _on_peer_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the relation changed event."""
@@ -740,7 +735,10 @@ class MySQLOperatorCharm(CharmBase):
         username = event.params.get("username") or ROOT_USERNAME
 
         if username not in REQUIRED_USERNAMES:
-            raise RuntimeError("Invalid username.")
+            event.fail(
+                f"The action can be run only for users used by the charm: {', '.join(REQUIRED_USERNAMES)} not {username}"
+            )
+            return
 
         if username == ROOT_USERNAME:
             secret_key = ROOT_PASSWORD_KEY
@@ -758,12 +756,16 @@ class MySQLOperatorCharm(CharmBase):
     def _on_set_password(self, event: ActionEvent) -> None:
         """Action used to update/rotate the system user's password."""
         if not self.unit.is_leader():
-            raise RuntimeError("set-password action can only be run on the leader unit.")
+            event.fail("set-password action can only be run on the leader unit.")
+            return
 
         username = event.params.get("username") or ROOT_USERNAME
 
         if username not in REQUIRED_USERNAMES:
-            raise RuntimeError("Invalid username.")
+            event.fail(
+                f"The action can be run only for users used by the charm: {', '.join(REQUIRED_USERNAMES)} not {username}"
+            )
+            return
 
         if username == ROOT_USERNAME:
             secret_key = ROOT_PASSWORD_KEY
