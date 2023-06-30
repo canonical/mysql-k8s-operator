@@ -527,7 +527,7 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = event.workload
-        if not self._prepare_configs(container, self.config.get("profile")):
+        if not self._prepare_configs(container, self.config["profile"]):
             return
 
         if self._mysql.is_data_dir_initialised():
