@@ -73,7 +73,6 @@ from k8s_helpers import KubernetesHelpers
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
-    MySQLForceRemoveUnitFromClusterError,
     MySQLGetInnoDBBufferPoolParametersError,
     MySQLInitialiseMySQLDError,
 )
@@ -96,6 +95,9 @@ class MySQLOperatorCharm(CharmBase):
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.update_status, self._on_update_status)
+        self.framework.observe(
+            self.on.database_storage_detaching, self._on_database_storage_detaching
+        )
 
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
@@ -395,37 +397,6 @@ class MySQLOperatorCharm(CharmBase):
             self.unit.status = WaitingStatus("waiting to join the cluster")
             logger.debug("waiting: failed to acquire lock when adding instance to cluster")
 
-    def _remove_scaled_down_units(self) -> None:
-        """Remove scaled down units from the cluster."""
-        current_units = 1 + len(self.peers.units)
-        cluster_status = self._mysql.get_cluster_status()
-        if not cluster_status:
-            self.unit.status = BlockedStatus("Failed to get cluster status")
-            return
-
-        try:
-            addresses_of_units_to_remove = [
-                member["address"]
-                for unit_name, member in cluster_status["defaultreplicaset"]["topology"].items()
-                if int(unit_name.split("-")[-1]) >= current_units
-            ]
-        except ValueError:
-            # exception can occur if unit is not yet labeled
-            return
-
-        if not addresses_of_units_to_remove:
-            return
-
-        self.unit.status = MaintenanceStatus("Removing scaled down units from cluster")
-
-        for unit_address in addresses_of_units_to_remove:
-            try:
-                self._mysql.force_remove_unit_from_cluster(unit_address)
-            except MySQLForceRemoveUnitFromClusterError:
-                self.unit.status = BlockedStatus("Failed to remove scaled down unit from cluster")
-                return
-        self.unit.status = ActiveStatus(self.active_status_message)
-
     def _reconcile_pebble_layer(self, container: Container) -> None:
         """Reconcile pebble layer."""
         current_layer = container.get_plan()
@@ -701,9 +672,6 @@ class MySQLOperatorCharm(CharmBase):
         if nodes > 0:
             self.app_peer_data["units-added-to-cluster"] = str(nodes)
 
-        # Check if there are any scaled down units that need to be removed from the cluster
-        self._remove_scaled_down_units()
-
         try:
             primary_address = self._mysql.get_cluster_primary_address()
         except MySQLGetClusterPrimaryAddressError:
@@ -726,6 +694,25 @@ class MySQLOperatorCharm(CharmBase):
 
         if self._is_unit_waiting_to_join_cluster():
             self._join_unit_to_cluster()
+
+    def _on_database_storage_detaching(self, _) -> None:
+        """Handle the database storage detaching event."""
+        # Only executes if the unit was initialised
+        if not self.unit_peer_data.get("unit-initialized"):
+            return
+
+        unit_label = self.unit.name.replace("/", "-")
+
+        # No need to remove the instance from the cluster if it is not a member of the cluster
+        if not self._mysql.is_instance_in_cluster(unit_label):
+            return
+
+        # The following operation uses locks to ensure that only one instance is removed
+        # from the cluster at a time (to avoid split-brain or lack of majority issues)
+        self._mysql.remove_instance(unit_label)
+
+        # Inform other hooks of current status
+        self.unit_peer_data["unit-status"] = "removing"
 
     # =========================================================================
     # Charm action handlers

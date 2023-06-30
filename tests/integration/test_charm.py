@@ -149,20 +149,15 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         ]
         assert len(online_member_addresses) == 5
 
+        logger.info("Scale down to one unit")
         await scale_application(ops_test, APP_NAME, 1, wait=False)
-
-        await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications[APP_NAME].units) == 1
-            and ops_test.model.applications[APP_NAME].units[0].workload_status
-            in ("maintenance", "error", "blocked")
-        )
-        assert ops_test.model.applications[APP_NAME].units[0].workload_status == "maintenance"
 
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME],
             status="active",
             raise_on_blocked=True,
             timeout=TIMEOUT,
+            wait_for_exact_units=1,
         )
 
         random_unit = ops_test.model.applications[APP_NAME].units[0]
