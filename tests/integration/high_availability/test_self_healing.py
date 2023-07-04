@@ -108,6 +108,7 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
 
 
 @pytest.mark.abort_on_fail
+@pytest.mark.unstable
 async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send a SIGSTOP to the primary db process and ensure that the cluster self heals."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
