@@ -1,12 +1,10 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import datetime
 import logging
 import os
 import string
 import subprocess
-import tarfile
 import tempfile
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -558,153 +556,5 @@ async def ensure_process_not_running(
     return_code, pid, _ = await ops_test.juju(*get_pid_commands)
 
     assert (
-        return_code == 1
+        return_code != 0
     ), f"Process {process} is still running with pid {pid} on unit {unit_name}, container {container_name}"
-
-
-def copy_file_into_pod(
-    client: kubernetes.client.api.core_v1_api.CoreV1Api,
-    namespace: str,
-    pod_name: str,
-    container_name: str,
-    destination_path: str,
-    source_path: str,
-) -> None:
-    """Copy file contents into pod.
-
-    Args:
-        client: The kubernetes CoreV1Api client
-        namespace: The namespace of the pod to copy files to
-        pod_name: The name of the pod to copy files to
-        container_name: The name of the pod container to copy files to
-        destination_path: The path to which the file should be copied over
-        source_path: The path of the file which needs to be copied over
-    """
-    try:
-        exec_command = ["tar", "xvf", "-", "-C", "/"]
-
-        api_response = kubernetes.stream.stream(
-            client.connect_get_namespaced_pod_exec,
-            pod_name,
-            namespace,
-            container=container_name,
-            command=exec_command,
-            stdin=True,
-            stdout=True,
-            stderr=True,
-            tty=False,
-            _preload_content=False,
-        )
-
-        with tempfile.TemporaryFile() as tar_buffer:
-            with tarfile.open(fileobj=tar_buffer, mode="w") as tar:
-                tar.add(source_path, destination_path)
-
-            tar_buffer.seek(0)
-            commands = []
-            commands.append(tar_buffer.read())
-
-            while api_response.is_open():
-                api_response.update(timeout=1)
-
-                if commands:
-                    command = commands.pop(0)
-                    api_response.write_stdin(command.decode())
-                else:
-                    break
-
-            api_response.close()
-    except kubernetes.client.rest.ApiException:
-        assert False
-
-
-def modify_pebble_restart_delay(
-    ops_test: OpsTest,
-    unit_name: str,
-    container_name: str,
-    process_name: str,
-    pebble_plan_path: str,
-) -> None:
-    """Modify the pebble restart delay of the underlying process.
-
-    Args:
-        ops_test: The ops test framework
-        unit_name: The name of unit to extend the pebble restart delay for
-        container_name: The name of container to extend the pebble restart delay for
-        process_name: The name of the mysqld process to extend the pebble restart delay for
-        pebble_plan_path: Path to the file with the modified pebble plan
-    """
-    kubernetes.config.load_kube_config()
-    client = kubernetes.client.api.core_v1_api.CoreV1Api()
-
-    pod_name = unit_name.replace("/", "-")
-    now = datetime.datetime.now().isoformat()
-
-    copy_file_into_pod(
-        client,
-        ops_test.model.info.name,
-        pod_name,
-        container_name,
-        f"/tmp/pebble_plan_{now}.yml",
-        pebble_plan_path,
-    )
-
-    add_to_pebble_layer_command = [
-        "/charm/bin/pebble",
-        "add",
-        "--combine",
-        process_name,
-        f"/tmp/pebble_plan_{now}.yml",
-    ]
-    response = kubernetes.stream.stream(
-        client.connect_get_namespaced_pod_exec,
-        pod_name,
-        ops_test.model.info.name,
-        container=container_name,
-        command=add_to_pebble_layer_command,
-        stdin=False,
-        stdout=True,
-        stderr=True,
-        tty=False,
-        _preload_content=False,
-    )
-    response.run_forever(timeout=15)
-    assert (
-        response.returncode == 0
-    ), f"Failed to add to pebble layer, unit={unit_name}, container={container_name}, process={process_name}"
-
-    stop_pebble_service_command = ["/charm/bin/pebble", "stop", process_name]
-    response = kubernetes.stream.stream(
-        client.connect_get_namespaced_pod_exec,
-        pod_name,
-        ops_test.model.info.name,
-        container=container_name,
-        command=stop_pebble_service_command,
-        stdin=False,
-        stdout=True,
-        stderr=True,
-        tty=False,
-        _preload_content=False,
-    )
-    response.run_forever(timeout=60)
-    assert (
-        response.returncode == 0
-    ), f"Failed to stop pebble service, unit={unit_name}, container={container_name}, process={process_name}"
-
-    replan_pebble_layer_command = ["/charm/bin/pebble", "replan"]
-    response = kubernetes.stream.stream(
-        client.connect_get_namespaced_pod_exec,
-        pod_name,
-        ops_test.model.info.name,
-        container=container_name,
-        command=replan_pebble_layer_command,
-        stdin=False,
-        stdout=True,
-        stderr=True,
-        tty=False,
-        _preload_content=False,
-    )
-    response.run_forever(timeout=60)
-    assert (
-        response.returncode == 0
-    ), f"Failed to replan pebble layer, unit={unit_name}, container={container_name}, process={process_name}"

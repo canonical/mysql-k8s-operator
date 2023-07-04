@@ -7,14 +7,10 @@ import logging
 import pytest
 from pytest_operator.plugin import OpsTest
 
-from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE
-
 from .high_availability_helpers import (
     APPLICATION_DEFAULT_APP_NAME,
     deploy_chaos_mesh,
     destroy_chaos_mesh,
-    get_application_name,
-    modify_pebble_restart_delay,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,51 +43,3 @@ async def chaos_mesh(ops_test: OpsTest) -> None:
 
     logger.info("Destroying chaos mesh")
     destroy_chaos_mesh(ops_test.model.info.name)
-
-
-@pytest.fixture()
-async def restart_policy(ops_test: OpsTest) -> None:
-    """Sets and resets service pebble restart policy on all units."""
-    mysql_application_name = get_application_name(ops_test, "mysql")
-
-    for unit in ops_test.model.applications[mysql_application_name].units:
-        logger.info(f"Extending pebble restart delay for {unit.name}")
-
-        modify_pebble_restart_delay(
-            ops_test,
-            unit.name,
-            CONTAINER_NAME,
-            MYSQLD_SAFE_SERVICE,
-            "tests/integration/high_availability/manifests/extend_pebble_restart_delay.yml",
-        )
-
-        async with ops_test.fast_forward():
-            await ops_test.model.wait_for_idle(
-                apps=[mysql_application_name],
-                status="active",
-                raise_on_blocked=True,
-                timeout=5 * 60,
-                idle_period=30,
-            )
-
-    yield
-
-    for unit in ops_test.model.applications[mysql_application_name].units:
-        logger.info(f"Reducing pebble restart delay for {unit.name}")
-
-        modify_pebble_restart_delay(
-            ops_test,
-            unit.name,
-            CONTAINER_NAME,
-            MYSQLD_SAFE_SERVICE,
-            "tests/integration/high_availability/manifests/reduce_pebble_restart_delay.yml",
-        )
-
-        async with ops_test.fast_forward():
-            await ops_test.model.wait_for_idle(
-                apps=[mysql_application_name],
-                status="active",
-                raise_on_blocked=True,
-                timeout=5 * 60,
-                idle_period=30,
-            )
