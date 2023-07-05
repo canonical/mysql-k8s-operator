@@ -356,6 +356,7 @@ async def test_network_cut_affecting_an_instance(
 
 
 @pytest.mark.abort_on_fail
+@pytest.mark.unstable
 async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
     mysql_application_name, application_name = await high_availability_test_setup(ops_test)
