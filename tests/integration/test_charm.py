@@ -41,7 +41,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     async with ops_test.fast_forward():
         charm = await ops_test.build_charm(".")
         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-        config = {"cluster-name": CLUSTER_NAME}
+        config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
         await ops_test.model.deploy(
             charm,
             resources=resources,

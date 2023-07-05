@@ -67,7 +67,8 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 resources=osm_pol_resources,
             ),
             ops_test.model.deploy(
-                "charmed-osm-kafka-k8s", application_name="osm-kafka", constraints="mem=1G"
+                "charmed-osm-kafka-k8s",
+                application_name="osm-kafka",
             ),
             ops_test.model.deploy("charmed-osm-zookeeper-k8s", application_name="osm-zookeeper"),
             ops_test.model.deploy("charmed-osm-mongodb-k8s", application_name="osm-mongodb"),

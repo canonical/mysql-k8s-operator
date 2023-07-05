@@ -19,7 +19,7 @@ from mysql.connector.errors import (
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from constants import SERVER_CONFIG_USERNAME
+from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE, SERVER_CONFIG_USERNAME
 
 from .connector import MySQLConnector
 
@@ -374,3 +374,27 @@ async def unit_file_md5(ops_test: OpsTest, unit_name: str, file_path: str) -> st
 
     except Exception:
         return None
+
+
+async def stop_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
+    """Stop the mysqld service.
+
+    Args:
+        ops_test: The ops test framework instance
+        unit_name: The name of the unit
+    """
+    await ops_test.juju(
+        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "stop", MYSQLD_SAFE_SERVICE
+    )
+
+
+async def start_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
+    """Start the mysqld service.
+
+    Args:
+        ops_test: The ops test framework instance
+        unit_name: The name of the unit
+    """
+    await ops_test.juju(
+        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "start", MYSQLD_SAFE_SERVICE
+    )

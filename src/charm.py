@@ -164,7 +164,7 @@ class MySQLOperatorCharm(CharmBase):
             self.get_secret("app", MONITORING_PASSWORD_KEY),
             BACKUPS_USERNAME,
             self.get_secret("app", BACKUPS_PASSWORD_KEY),
-            self.unit.get_container("mysql"),
+            self.unit.get_container(CONTAINER_NAME),
             self.k8s_helpers,
         )
 
@@ -289,7 +289,7 @@ class MySQLOperatorCharm(CharmBase):
         """Returns whether the unit is busy."""
         return self._is_cluster_blocked()
 
-    def _prepare_configs(self, container: Container) -> bool:
+    def _prepare_configs(self, container: Container, profile: str) -> bool:
         """Copies files to the workload container.
 
         Meant to be called from the pebble-ready handler.
@@ -298,14 +298,19 @@ class MySQLOperatorCharm(CharmBase):
         """
         if container.exists(MYSQLD_CONFIG_FILE):
             return True
-        try:
-            (
-                innodb_buffer_pool_size,
-                innodb_buffer_pool_chunk_size,
-            ) = self._mysql.get_innodb_buffer_pool_parameters()
-        except MySQLGetInnoDBBufferPoolParametersError:
-            self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
-            return False
+
+        if profile == "testing":
+            innodb_buffer_pool_size = 20971520
+            innodb_buffer_pool_chunk_size = 1048576
+        else:
+            try:
+                (
+                    innodb_buffer_pool_size,
+                    innodb_buffer_pool_chunk_size,
+                ) = self._mysql.get_innodb_buffer_pool_parameters()
+            except MySQLGetInnoDBBufferPoolParametersError:
+                self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
+                return False
 
         try:
             self._mysql.create_custom_config_file(
@@ -336,7 +341,8 @@ class MySQLOperatorCharm(CharmBase):
         # alternatively, we could check if the instance is configured
         # and have an empty performance_schema.replication_group_members table
         return (
-            self.unit_peer_data.get("member-state") == "waiting"
+            self.unit.get_container(CONTAINER_NAME)
+            and self.unit_peer_data.get("member-state") == "waiting"
             and self._mysql.is_data_dir_initialised()
             and not self.unit_peer_data.get("unit-initialized")
         )
@@ -522,7 +528,7 @@ class MySQLOperatorCharm(CharmBase):
             return
 
         container = event.workload
-        if not self._prepare_configs(container):
+        if not self._prepare_configs(container, self.config["profile"]):
             return
 
         if self._mysql.is_data_dir_initialised():

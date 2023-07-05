@@ -32,7 +32,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     # Build and deploy charm from local source folder
     db_charm = await ops_test.build_charm(".")
 
-    config = {"cluster-name": CLUSTER_NAME}
+    config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
     resources = {"mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     await asyncio.gather(

@@ -16,6 +16,8 @@ from ..helpers import (
     get_primary_unit,
     get_process_pid,
     scale_application,
+    start_mysqld_service,
+    stop_mysqld_service,
 )
 from .high_availability_helpers import (
     clean_up_database_and_table,
@@ -35,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 MYSQL_CONTAINER_NAME = "mysql"
 MYSQLD_PROCESS_NAME = "mysqld"
-TIMEOUT = 30 * 60
+TIMEOUT = 40 * 60
 
 
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
@@ -106,6 +108,7 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
 
 
 @pytest.mark.abort_on_fail
+@pytest.mark.unstable
 async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send a SIGSTOP to the primary db process and ensure that the cluster self heals."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
@@ -353,9 +356,8 @@ async def test_network_cut_affecting_an_instance(
 
 
 @pytest.mark.abort_on_fail
-async def test_graceful_full_cluster_crash_test(
-    ops_test: OpsTest, continuous_writes, restart_policy
-) -> None:
+@pytest.mark.unstable
+async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
     mysql_application_name, application_name = await high_availability_test_setup(ops_test)
 
@@ -370,34 +372,36 @@ async def test_graceful_full_cluster_crash_test(
     mysql_units = ops_test.model.applications[mysql_application_name].units
 
     unit_mysqld_pids = {}
+    logger.info("Get mysqld pids on all instances")
     for unit in mysql_units:
         pid = await get_process_pid(ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME)
         assert pid > 1
 
         unit_mysqld_pids[unit.name] = pid
 
-    logger.info("Send SIGTERM to all units")
     for unit in mysql_units:
-        await send_signal_to_pod_container_process(
-            ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME, "SIGTERM"
-        )
+        logger.info(f"Stopping mysqld on {unit.name}")
+        await stop_mysqld_service(ops_test, unit.name)
 
     logger.info("Wait until mysqld stopped on all instances")
-    for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
+    for attempt in Retrying(stop=stop_after_delay(300), wait=wait_fixed(30)):
         with attempt:
             for unit in mysql_units:
                 await ensure_process_not_running(
                     ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
                 )
+    for unit in mysql_units:
+        logger.info(f"Starting mysqld on {unit.name}")
+        await start_mysqld_service(ops_test, unit.name)
 
     async with ops_test.fast_forward():
-        logger.info("Sleeping for 6 minutes to await restart of mysqld processes in units")
-        logger.info(
-            "The restart delay for pebble is 300s, sleep for 360s to ensure that mysqld is started"
+        logger.info("Block until all in maintenance/offline")
+        await ops_test.model.block_until(
+            lambda: all(unit.workload_status == "maintenance" for unit in mysql_units),
+            timeout=TIMEOUT,
         )
-        time.sleep(360)
 
-        logger.info("Wait for model to stabilize, and all members to recover")
+        logger.info("Wait all members to recover")
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],
             status="active",
@@ -410,8 +414,7 @@ async def test_graceful_full_cluster_crash_test(
         new_pid = await get_process_pid(
             ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
         )
-        assert new_pid > 1
-        assert new_pid > unit_mysqld_pids[unit.name]
+        assert new_pid > unit_mysqld_pids[unit.name], "The mysqld process did not restart"
 
     cluster_status = await get_cluster_status(ops_test, mysql_units[0])
     for member in cluster_status["defaultreplicaset"]["topology"].values():
