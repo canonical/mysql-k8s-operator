@@ -426,7 +426,6 @@ async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_wr
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
     """Delete the pod in a single unit deployment and write data to new pod."""
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
@@ -453,5 +452,7 @@ async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
 
     logger.info("Write data to unit and verify that data was written")
     database_name, table_name = "test-single-pod-delete", "data"
-    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
+    await insert_data_into_mysql_and_validate_replication(
+        ops_test, database_name, table_name, mysql_application_substring="mysql-k8s"
+    )
     await clean_up_database_and_table(ops_test, database_name, table_name)

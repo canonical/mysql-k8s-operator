@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 35
+LIBPATCH = 36
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1393,8 +1393,8 @@ class MySQLBase(ABC):
             A tuple(str) with the MEMBER_STATE and MEMBER_ROLE within the cluster.
         """
         member_state_query = (
-            "SELECT MEMBER_STATE, MEMBER_ROLE FROM"
-            " performance_schema.replication_group_members WHERE MEMBER_ID = @@server_uuid"
+            "SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid"
+            " FROM performance_schema.replication_group_members"
         )
 
         try:
@@ -1414,9 +1414,19 @@ class MySQLBase(ABC):
         if len(lines) < 2:
             raise MySQLGetMemberStateError("No member state retrieved")
 
-        results = lines[1].split()
-        # no member role defined when member state is 'offline'
-        return results[0], results[1] if len(results) == 2 else "unknown"
+        for line in lines[1:]:
+            results = line.split("\t")
+            if results[2] == results[3]:
+                # filter server uuid
+                return results[0], results[1] or "unknown"
+
+        if len(lines) == 2:
+            # Instance just know it own state
+            # sometimes member_id is not populated
+            results = lines[1].split("\t")
+            return results[0], results[1] or "unknown"
+
+        raise MySQLGetMemberStateError("No member state retrieved")
 
     def reboot_from_complete_outage(self) -> None:
         """Wrapper for reboot_cluster_from_complete_outage command."""
