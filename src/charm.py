@@ -341,7 +341,7 @@ class MySQLOperatorCharm(CharmBase):
         # alternatively, we could check if the instance is configured
         # and have an empty performance_schema.replication_group_members table
         return (
-            self.unit.get_container(CONTAINER_NAME)
+            self.unit.get_container(CONTAINER_NAME).can_connect()
             and self.unit_peer_data.get("member-state") == "waiting"
             and self._mysql.is_data_dir_initialised()
             and not self.unit_peer_data.get("unit-initialized")
