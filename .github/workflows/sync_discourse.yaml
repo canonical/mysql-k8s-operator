@@ -1,8 +1,5 @@
 name: Detect changes on Discourse to raise PR
 
-env:
-  BRANCH: main
-
 on:
   workflow_dispatch:
   schedule:
