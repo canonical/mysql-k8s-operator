@@ -1,4 +1,4 @@
-name: Detect changes on Discourse to raise PR
+name: Sync docs from Discourse
 
 on:
   workflow_dispatch:
