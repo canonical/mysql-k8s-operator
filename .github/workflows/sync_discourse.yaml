@@ -23,7 +23,7 @@ jobs:
           dry_run: "true"
 
       - name: Show migrate output
-        run: echo '${{ steps.publishDocumentation.outputs.migrate }}'
+        run: echo '${{ steps.docs-pr.outputs.migrate }}'
       - name: Show reconcile output
-        run: echo '${{ steps.publishDocumentation.outputs.reconcile }}'
+        run: echo '${{ steps.docs-pr.outputs.reconcile }}'
 
