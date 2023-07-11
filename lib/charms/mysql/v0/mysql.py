@@ -73,6 +73,8 @@ import socket
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+import ops
+from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -80,6 +82,24 @@ from tenacity import (
     wait_fixed,
     wait_random,
 )
+
+from constants import (
+    BACKUPS_PASSWORD_KEY,
+    BACKUPS_USERNAME,
+    CLUSTER_ADMIN_PASSWORD_KEY,
+    CLUSTER_ADMIN_USERNAME,
+    COS_AGENT_RELATION_NAME,
+    MONITORING_PASSWORD_KEY,
+    MONITORING_USERNAME,
+    PASSWORD_LENGTH,
+    PEER,
+    ROOT_PASSWORD_KEY,
+    ROOT_USERNAME,
+    SECRET_ID_KEY,
+    SERVER_CONFIG_PASSWORD_KEY,
+    SERVER_CONFIG_USERNAME,
+)
+from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
 
@@ -91,14 +111,27 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 36
+LIBPATCH = 42
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
 
+BYTES_1GiB = 1073741824  # 1 gibibyte
+BYTES_1GB = 1000000000  # 1 gigabyte
+BYTES_1MiB = 1048576  # 1 mebibyte
+
 
 class Error(Exception):
     """Base class for exceptions in this module."""
+
+    def __init__(self, message: str = "") -> None:
+        """Initialize the Error class.
+
+        Args:
+            message: Optional message to pass to the exception.
+        """
+        super().__init__(message)
+        self.message = message
 
     def __repr__(self):
         """String representation of the Error class."""
@@ -108,11 +141,6 @@ class Error(Exception):
     def name(self):
         """Return a string representation of the model plus class."""
         return "<{}.{}>".format(type(self).__module__, type(self).__name__)
-
-    @property
-    def message(self):
-        """Return the message passed as an argument."""
-        return self.args[0]
 
 
 class MySQLConfigureMySQLUsersError(Error):
@@ -202,6 +230,10 @@ class MySQLGetMySQLVersionError(Error):
 
 class MySQLGetClusterPrimaryAddressError(Error):
     """Exception raised when there is an issue getting the primary instance."""
+
+
+class MySQLSetClusterPrimaryError(Error):
+    """Exception raised when there is an issue setting the primary instance."""
 
 
 class MySQLGrantPrivilegesToUserError(Error):
@@ -303,12 +335,322 @@ class MySQLRescanClusterError(Error):
     """Exception raised when there is an issue rescanning the cluster."""
 
 
+class MySQLSetVariableError(Error):
+    """Exception raised when there is an issue setting a variable."""
+
+
+class MySQLServerNotUpgradableError(Error):
+    """Exception raised when there is an issue checking for upgradeability."""
+
+
+class MySQLSecretError(Error):
+    """Exception raised when there is an issue setting/getting a secret."""
+
+
 @dataclasses.dataclass
 class RouterUser:
     """MySQL Router user."""
 
     username: str
     router_id: str
+
+
+class MySQLCharmBase(CharmBase):
+    """Base class to encapsulate charm related functionality.
+
+    Meant as a means to share common charm related code between the MySQL VM and
+    K8s charms.
+    """
+
+    def __init__(self, *args):
+        super().__init__(*args)
+
+        self.app_secrets, self.unit_secrets = None, None
+
+        self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
+        self.framework.observe(self.on.get_password_action, self._on_get_password)
+        self.framework.observe(self.on.set_password_action, self._on_set_password)
+
+        # Set in some event handlers in order to avoid passing event down a chain
+        # of methods
+        self.current_event = None
+
+    def _on_get_password(self, event: ActionEvent) -> None:
+        """Action used to retrieve the system user's password."""
+        username = event.params.get("username") or ROOT_USERNAME
+
+        valid_usernames = {
+            ROOT_USERNAME: ROOT_PASSWORD_KEY,
+            SERVER_CONFIG_USERNAME: SERVER_CONFIG_PASSWORD_KEY,
+            CLUSTER_ADMIN_USERNAME: CLUSTER_ADMIN_PASSWORD_KEY,
+            MONITORING_USERNAME: MONITORING_PASSWORD_KEY,
+            BACKUPS_USERNAME: BACKUPS_PASSWORD_KEY,
+        }
+
+        secret_key = valid_usernames.get(username)
+        if not secret_key:
+            event.fail(
+                f"The action can be run only for users used by the charm: {', '.join(valid_usernames.keys())} not {username}"
+            )
+            return
+
+        event.set_results({"username": username, "password": self.get_secret("app", secret_key)})
+
+    def _on_set_password(self, event: ActionEvent) -> None:
+        """Action used to update/rotate the system user's password."""
+        if not self.unit.is_leader():
+            event.fail("set-password action can only be run on the leader unit.")
+            return
+
+        username = event.params.get("username") or ROOT_USERNAME
+
+        valid_usernames = {
+            ROOT_USERNAME: ROOT_PASSWORD_KEY,
+            SERVER_CONFIG_USERNAME: SERVER_CONFIG_PASSWORD_KEY,
+            CLUSTER_ADMIN_USERNAME: CLUSTER_ADMIN_PASSWORD_KEY,
+            MONITORING_USERNAME: MONITORING_PASSWORD_KEY,
+            BACKUPS_USERNAME: BACKUPS_PASSWORD_KEY,
+        }
+
+        secret_key = valid_usernames.get(username)
+        if not secret_key:
+            event.fail(
+                f"The action can be run only for users used by the charm: {', '.join(valid_usernames.keys())} not {username}"
+            )
+            return
+
+        new_password = event.params.get("password") or generate_random_password(PASSWORD_LENGTH)
+
+        self._mysql.update_user_password(username, new_password)
+
+        self.set_secret("app", secret_key, new_password)
+
+        if username == MONITORING_USERNAME and self.has_cos_relation:
+            self._mysql.restart_mysql_exporter()
+
+    def _get_cluster_status(self, event: ActionEvent) -> None:
+        """Action used  to retrieve the cluster status."""
+        if status := self._mysql.get_cluster_status():
+            event.set_results(
+                {
+                    "success": True,
+                    "status": status,
+                }
+            )
+        else:
+            event.set_results(
+                {
+                    "success": False,
+                    "message": "Failed to read cluster status.  See logs for more information.",
+                }
+            )
+
+    @property
+    def peers(self) -> ops.model.Relation:
+        """Retrieve the peer relation."""
+        return self.model.get_relation(PEER)
+
+    @property
+    def cluster_initialized(self):
+        """Returns True if the cluster is initialized."""
+        return int(self.app_peer_data.get("units-added-to-cluster", "0")) >= 1
+
+    @property
+    def unit_initialized(self):
+        """Return True if the unit is initialized."""
+        return self.unit_peer_data.get("unit-initialized") == "True"
+
+    @property
+    def app_peer_data(self) -> Dict:
+        """Application peer relation data object."""
+        if self.peers is None:
+            return {}
+
+        return self.peers.data[self.app]
+
+    @property
+    def unit_peer_data(self) -> Dict:
+        """Unit peer relation data object."""
+        if self.peers is None:
+            return {}
+
+        return self.peers.data[self.unit]
+
+    @property
+    def unit_label(self):
+        """Return unit label."""
+        return self.unit.name.replace("/", "-")
+
+    @property
+    def _is_peer_data_set(self):
+        return bool(
+            self.app_peer_data.get("cluster-name")
+            and self.get_secret("app", ROOT_PASSWORD_KEY)
+            and self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY)
+            and self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
+            and self.get_secret("app", MONITORING_PASSWORD_KEY)
+            and self.get_secret("app", BACKUPS_PASSWORD_KEY)
+        )
+
+    @property
+    def has_cos_relation(self) -> bool:
+        """Returns a bool indicating whether a relation with COS is present."""
+        cos_relations = self.model.relations.get(COS_AGENT_RELATION_NAME, [])
+        active_cos_relations = list(
+            filter(
+                lambda relation: not (
+                    isinstance(self.current_event, RelationBrokenEvent)
+                    and self.current_event.relation.id == relation.id
+                ),
+                cos_relations,
+            )
+        )
+
+        return len(active_cos_relations) > 0
+
+    def _get_secret_from_juju(self, scope: str, key: str) -> Optional[str]:
+        """Retrieve and return the secret from the juju secret storage."""
+        if scope == "unit":
+            secret_id = self.unit_peer_data.get(SECRET_ID_KEY)
+
+            if not self.unit_secrets and not secret_id:
+                logger.debug("Getting a secret when no secrets added in juju")
+                return None
+
+            if not self.unit_secrets:
+                secret = self.model.get_secret(id=secret_id)
+                content = secret.get_content()
+                self.unit_secrets = content
+
+            logger.debug(f"Retrieved secret {key} for unit")
+            return self.unit_secrets.get(key)
+
+        secret_id = self.app_peer_data.get(SECRET_ID_KEY)
+
+        if not self.app_secrets and not secret_id:
+            logger.debug("Getting a secret when no secrets added in juju")
+            return None
+
+        if not self.app_secrets:
+            secret = self.model.get_secret(id=secret_id)
+            content = secret.get_content()
+            self.app_secrets = content
+
+        logger.debug(f"Retrieved secret {key} for app")
+        return self.app_secrets.get(key)
+
+    def _get_secret_from_databag(self, scope: str, key: Optional[str]) -> Optional[str]:
+        """Retrieve and return the secret from the peer relation databag."""
+        if scope == "unit":
+            return self.unit_peer_data.get(key)
+
+        return self.app_peer_data.get(key)
+
+    def get_secret(
+        self, scope: str, key: str, fallback_key: Optional[str] = None
+    ) -> Optional[str]:
+        """Get secret from the secret storage.
+
+        Retrieve secret from juju secrets backend if secret exists there.
+        Else retrieve from peer databag (with key or fallback_key). This is to
+        account for cases where secrets are stored in peer databag but the charm
+        is then refreshed to a newer revision.
+        """
+        if scope not in ["unit", "app"]:
+            raise MySQLSecretError(f"Invalid secret scope: {scope}")
+
+        if ops.jujuversion.JujuVersion.from_environ().has_secrets:
+            secret = self._get_secret_from_juju(scope, key)
+            if secret:
+                return secret
+
+        return self._get_secret_from_databag(scope, key) or self._get_secret_from_databag(
+            scope, fallback_key
+        )
+
+    def _set_secret_in_databag(self, scope: str, key: str, value: str) -> None:
+        """Set secret in the peer relation databag."""
+        if not value:
+            if scope == "unit":
+                del self.unit_peer_data[key]
+            else:
+                del self.app_peer_data[key]
+            return
+
+        if scope == "unit":
+            self.unit_peer_data[key] = value
+            return
+
+        self.app_peer_data[key] = value
+
+    def _set_secret_in_juju(self, scope: str, key: str, value: str) -> None:
+        """Set the secret in the juju secret storage."""
+        if scope == "unit":
+            secret_id = self.unit_peer_data.get(SECRET_ID_KEY)
+        else:
+            secret_id = self.app_peer_data.get(SECRET_ID_KEY)
+
+        if secret_id:
+            secret = self.model.get_secret(id=secret_id)
+
+            if scope == "unit":
+                content = self.unit_secrets or secret.get_content()
+            else:
+                content = self.app_secrets or secret.get_content()
+
+            if not value:
+                del content[key]
+            else:
+                content[key] = value
+
+            secret.set_content(content)
+            logger.debug(f"Updated {scope} secret {secret_id} for {key}")
+        elif not value:
+            return
+        else:
+            content = {
+                key: value,
+            }
+
+            if scope == "unit":
+                secret = self.unit.add_secret(content)
+                self.unit_peer_data[SECRET_ID_KEY] = secret.id
+            else:
+                secret = self.app.add_secret(content)
+                self.app_peer_data[SECRET_ID_KEY] = secret.id
+            logger.debug(f"Added {scope} secret {secret_id} for {key}")
+
+        if scope == "unit":
+            self.unit_secrets = content
+        else:
+            self.app_secrets = content
+
+    def set_secret(
+        self, scope: str, key: str, value: Optional[str], fallback_key: Optional[str] = None
+    ) -> None:
+        """Set a secret in the secret storage."""
+        if scope not in ["unit", "app"]:
+            raise MySQLSecretError(f"Invalid secret scope: {scope}")
+
+        if scope == "app" and not self.unit.is_leader():
+            raise MySQLSecretError("Can only set app secrets on the leader unit")
+
+        if ops.jujuversion.JujuVersion.from_environ().has_secrets:
+            self._set_secret_in_juju(scope, key, value)
+
+            # for refresh from juju <= 3.1.4 to >= 3.1.5, we need to clear out
+            # secrets from the databag as well
+            if self._get_secret_from_databag(scope, key):
+                self._set_secret_in_databag(scope, key, None)
+
+            if fallback_key and self._get_secret_from_databag(scope, fallback_key):
+                self._set_secret_in_databag(scope, key, None)
+
+            return
+
+        self._set_secret_in_databag(scope, key, value)
+        if fallback_key:
+            self._set_secret_in_databag(scope, fallback_key, None)
 
 
 class MySQLBase(ABC):
@@ -515,7 +857,7 @@ class MySQLBase(ABC):
         password: str,
         hostname: str,
         *,
-        unit_name: str = None,
+        unit_name: Optional[str] = None,
         create_database: bool = True,
     ) -> None:
         """Create an application database and a user scoped to the created database.
@@ -677,6 +1019,38 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.exception(f"Failed to remove router from metadata with ID {router_id}")
             raise MySQLRemoveRouterFromMetadataError(e.message)
+
+    def set_dynamic_variable(
+        self,
+        variable: str,
+        value: str,
+        persist: bool = False,
+        instance_address: Optional[str] = None,
+    ) -> None:
+        """Set a dynamic variable value for the instance.
+
+        Args:
+            variable: The name of the variable to set
+            value: The value to set the variable to
+            persist: Whether to persist the variable value across restarts
+            instance_address: instance address to set the variable, default to current
+
+        Raises:
+            MySQLSetVariableError
+        """
+        if not instance_address:
+            instance_address = self.instance_address
+        logger.debug(f"Setting {variable} to {value} on {instance_address}")
+        set_var_command = [
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{instance_address}')",
+            f"session.run_sql(\"SET {'PERSIST' if persist else 'GLOBAL'} {variable}={value}\")",
+        ]
+
+        try:
+            self._run_mysqlsh_script("\n".join(set_var_command))
+        except MySQLClientError:
+            logger.exception(f"Failed to set variable {variable} to {value}")
+            raise MySQLSetVariableError
 
     def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
@@ -979,7 +1353,7 @@ class MySQLBase(ABC):
             )
             return False
 
-    def get_cluster_status(self) -> Optional[dict]:
+    def get_cluster_status(self, extended: Optional[bool] = False) -> Optional[dict]:
         """Get the cluster status.
 
         Executes script to retrieve cluster status.
@@ -989,10 +1363,11 @@ class MySQLBase(ABC):
             Cluster status as a dictionary,
             or None if running the status script fails.
         """
+        options = {"extended": extended}
         status_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
-            "print(cluster.status())",
+            f"print(cluster.status({options}))",
         )
 
         try:
@@ -1125,7 +1500,9 @@ class MySQLBase(ABC):
                 f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
                 f"cluster = dba.get_cluster('{self.cluster_name}')",
                 "number_cluster_members = len(cluster.status()['defaultReplicaSet']['topology'])",
-                f"cluster.remove_instance('{self.cluster_admin_user}@{self.instance_address}', {json.dumps(remove_instance_options)}) if number_cluster_members > 1 else cluster.dissolve({json.dumps(dissolve_cluster_options)})",
+                f"cluster.remove_instance('{self.cluster_admin_user}@{self.instance_address}', "
+                f"{json.dumps(remove_instance_options)}) if number_cluster_members > 1 else"
+                f" cluster.dissolve({json.dumps(dissolve_cluster_options)})",
             )
             self._run_mysqlsh_script("\n".join(remove_instance_commands))
         except MySQLClientError as e:
@@ -1248,7 +1625,9 @@ class MySQLBase(ABC):
 
         return (member_addresses, "<MEMBER_ADDRESSES>" in output)
 
-    def get_cluster_primary_address(self, connect_instance_address: str = None) -> Optional[str]:
+    def get_cluster_primary_address(
+        self, connect_instance_address: Optional[str] = None
+    ) -> Optional[str]:
         """Get the cluster primary's address.
 
         Keyword args:
@@ -1280,6 +1659,37 @@ class MySQLBase(ABC):
 
         return matches.group(1)
 
+    def get_primary_label(self) -> Optional[str]:
+        """Get the label of the cluster's primary."""
+        status = self.get_cluster_status()
+        if not status:
+            return None
+        for label, value in status["defaultreplicaset"]["topology"].items():
+            if value["memberrole"] == "primary":
+                return label
+
+    def set_cluster_primary(self, new_primary_address: str) -> None:
+        """Set the cluster primary.
+
+        Args:
+            new_primary_address: Address of node to set as cluster's primary
+
+        Raises:
+            MySQLSetClusterPrimaryError: If the cluster primary could not be set
+        """
+        logger.debug(f"Setting cluster primary to {new_primary_address}")
+
+        set_cluster_primary_commands = (
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            f"cluster.set_primary_instance('{new_primary_address}')",
+        )
+        try:
+            self._run_mysqlsh_script("\n".join(set_cluster_primary_commands))
+        except MySQLClientError as e:
+            logger.exception("Failed to set cluster primary")
+            raise MySQLSetClusterPrimaryError(e.message)
+
     def get_cluster_members_addresses(self) -> Optional[Iterable[str]]:
         """Get the addresses of the cluster's members.
 
@@ -1305,6 +1715,39 @@ class MySQLBase(ABC):
             return None
 
         return set(matches.group(1).split(","))
+
+    def verify_server_upgradable(self, instance: Optional[str] = None) -> None:
+        """Wrapper for API check_for_server_upgrade.
+
+        Raises:
+            MySQLServerUpgradableError: If the server is not upgradable
+        """
+        check_command = [
+            f"shell.connect_to_primary('{self.server_config_user}"
+            f":{self.server_config_password}@{instance or self.instance_address}')",
+            "try:",
+            "    util.check_for_server_upgrade(options={'outputFormat': 'JSON'})",
+            "except ValueError:",  # ValueError is raised for same version check
+            "    print('SAME_VERSION')",
+        ]
+
+        def _strip_output(output: str):
+            # output may need first line stripped to
+            # remove information header text
+            if not output.split("\n")[0].startswith("{"):
+                return "\n".join(output.split("\n")[1:])
+            return output
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(check_command))
+            if "SAME_VERSION" in output:
+                return
+            result = json.loads(_strip_output(output))
+            if result["errorCount"] == 0:
+                return
+            raise MySQLServerNotUpgradableError(result.get("summary"))
+        except MySQLClientError:
+            raise MySQLServerNotUpgradableError("Failed to check for server upgrade")
 
     def get_mysql_version(self) -> Optional[str]:
         """Get the MySQL version.
@@ -1410,21 +1853,25 @@ class MySQLBase(ABC):
             )
             raise MySQLGetMemberStateError(e.message)
 
-        lines = output.lower().split("\n")
+        # output is like:
+        # 'MEMBER_STATE\tMEMBER_ROLE\tMEMBER_ID\t@@server_uuid\nONLINE\tPRIMARY\t<uuid>\t<uuid>\n'
+        lines = output.strip().lower().split("\n")
         if len(lines) < 2:
             raise MySQLGetMemberStateError("No member state retrieved")
-
-        for line in lines[1:]:
-            results = line.split("\t")
-            if results[2] == results[3]:
-                # filter server uuid
-                return results[0], results[1] or "unknown"
 
         if len(lines) == 2:
             # Instance just know it own state
             # sometimes member_id is not populated
             results = lines[1].split("\t")
             return results[0], results[1] or "unknown"
+
+        for line in lines[1:]:
+            # results will be like:
+            # ['online', 'primary', 'a6c00302-1c07-11ee-bca1-...', 'a6c00302-1c07-11ee-bca1-...']
+            results = line.split("\t")
+            if results[2] == results[3]:
+                # filter server uuid
+                return results[0], results[1] or "unknown"
 
         raise MySQLGetMemberStateError("No member state retrieved")
 
@@ -1512,32 +1959,36 @@ class MySQLBase(ABC):
 
         return matches.group(1) != "0"
 
-    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int]]:
+    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int], Optional[int]]:
         """Get innodb buffer pool parameters for the instance.
 
-        Returns: a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size))
+        Returns:
+            a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size),
+            optional(group_replication_message_cache))
         """
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
 
-        chunk_size_min = 1048576  # 1 mebibyte
-        chunk_size_default = 134217728  # 128 mebibytes
+        chunk_size_min = BYTES_1MiB
+        chunk_size_default = 128 * BYTES_1MiB
+        group_replication_message_cache_default = BYTES_1GiB
 
         try:
             innodb_buffer_pool_chunk_size = None
+            group_replication_message_cache = None
             total_memory = self._get_total_memory()
 
-            pool_size = int(total_memory * 0.75)
-            # 1000000000 = 1 gigabyte
-            if total_memory - pool_size < 1000000000:
+            pool_size = int(total_memory * 0.75) - group_replication_message_cache_default
+
+            if pool_size < 0 or total_memory - pool_size < BYTES_1GB:
+                group_replication_message_cache = 128 * BYTES_1MiB
                 pool_size = int(total_memory * 0.5)
 
             if pool_size % chunk_size_default != 0:
                 # round pool_size to be a multiple of chunk_size_default
                 pool_size += chunk_size_default - (pool_size % chunk_size_default)
 
-            # 1073741824 = 1 gibibyte
-            if pool_size > 1073741824:
+            if pool_size > BYTES_1GiB:
                 chunk_size = int(pool_size / 8)
 
                 if chunk_size % chunk_size_min != 0:
@@ -1548,7 +1999,7 @@ class MySQLBase(ABC):
 
                 innodb_buffer_pool_chunk_size = chunk_size
 
-            return (pool_size, innodb_buffer_pool_chunk_size)
+            return (pool_size, innodb_buffer_pool_chunk_size, group_replication_message_cache)
         except Exception:
             logger.exception("Failed to compute innodb buffer pool parameters")
             raise MySQLGetAutoTunningParametersError("Error computing buffer pool parameters")
@@ -1558,7 +2009,7 @@ class MySQLBase(ABC):
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L61-L70
 
-        bytes_per_connection = 12582912  # 12 Megabytes
+        bytes_per_connection = 12 * BYTES_1MiB
         total_memory = 0
 
         try:
@@ -1605,8 +2056,8 @@ Swap:     1027600384  1027600384           0
         mysqld_socket_file: str,
         tmp_base_directory: str,
         defaults_config_file: str,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Executes commands to create a backup with the given args."""
         nproc_command = "nproc".split()
@@ -1682,8 +2133,8 @@ Swap:     1027600384  1027600384           0
     def delete_temp_backup_directory(
         self,
         tmp_base_directory: str,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> None:
         """Delete the temp backup directory."""
         delete_temp_dir_command = f"find {tmp_base_directory} -wholename {tmp_base_directory}/xtra_backup_* -delete".split()
@@ -1788,7 +2239,7 @@ Swap:     1027600384  1027600384           0
     ) -> Tuple[str, str]:
         """Prepare the backup in the provided dir for restore."""
         try:
-            innodb_buffer_pool_size, _ = self.get_innodb_buffer_pool_parameters()
+            innodb_buffer_pool_size, _, _ = self.get_innodb_buffer_pool_parameters()
         except MySQLGetAutoTunningParametersError as e:
             raise MySQLPrepareBackupForRestoreError(e)
 
@@ -1906,8 +2357,8 @@ Swap:     1027600384  1027600384           0
         self,
         commands: List[str],
         bash: bool = False,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
         env: Dict = {},
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
@@ -1945,6 +2396,7 @@ Swap:     1027600384  1027600384           0
                 password=self.server_config_password,
             )
         except MySQLClientError:
+            logger.exception("Failed to set custom TLS configuration")
             raise MySQLTLSSetupError("Failed to set custom TLS configuration")
 
     def kill_unencrypted_sessions(self) -> None:
@@ -1988,6 +2440,11 @@ Swap:     1027600384  1027600384           0
         raise NotImplementedError
 
     @abstractmethod
+    def restart_mysql_exporter(self) -> None:
+        """Restart the mysqld exporter."""
+        raise NotImplementedError
+
+    @abstractmethod
     def wait_until_mysql_connection(self) -> None:
         """Wait until a connection to MySQL has been obtained.
 
@@ -2012,7 +2469,11 @@ Swap:     1027600384  1027600384           0
 
     @abstractmethod
     def _run_mysqlcli_script(
-        self, script: str, user: str = "root", password: str = None, timeout: Optional[int] = None
+        self,
+        script: str,
+        user: str = "root",
+        password: Optional[str] = None,
+        timeout: Optional[int] = None,
     ) -> str:
         """Execute a MySQL CLI script.
 

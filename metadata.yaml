@@ -19,8 +19,7 @@ website:
   - https://github.com/canonical/mysql-k8s-operator
   - https://chat.charmhub.io/charmhub/channels/data-platform
 maintainers:
-  - Paulo Machado <paulo.machado@canonical.com>
-  - Shayan Patel <shayan.patel@canonical.com>
+  - Canonical Data Platform <data-platform@lists.launchpad.net>
 
 containers:
   mysql:
@@ -33,11 +32,13 @@ resources:
   mysql-image:
     type: oci-image
     description: Ubuntu LTS Docker image for MySQL
-    upstream-source: ghcr.io/canonical/charmed-mysql@sha256:017605f168fcc569d10372bb74b29ef9041256bd066013dec39e9ceee8c88539
+    upstream-source: ghcr.io/canonical/charmed-mysql@sha256:753477ce39712221f008955b746fcf01a215785a215fe3de56f525380d14ad97
 
 peers:
   database-peers:
     interface: mysql_peers
+  upgrade:
+    interface: upgrade
 
 provides:
   database:

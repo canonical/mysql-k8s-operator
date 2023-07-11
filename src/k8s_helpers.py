@@ -11,11 +11,18 @@ from lightkube import Client
 from lightkube.core.exceptions import ApiError
 from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
-from lightkube.resources.core_v1 import Pod, Service
+from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.resources.core_v1 import Node, Pod, Service
 from ops.charm import CharmBase
 from tenacity import retry, stop_after_attempt, wait_fixed
 
+from utils import any_memory_to_bytes
+
 logger = logging.getLogger(__name__)
+
+# http{x,core} clutter the logs with debug messages
+logging.getLogger("httpcore").setLevel(logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.ERROR)
 
 
 class KubernetesClientError(Exception):
@@ -144,6 +151,28 @@ class KubernetesHelpers:
         except ApiError:
             raise KubernetesClientError
 
+    def _get_node_name_for_pod(self) -> str:
+        """Return the node name for a given pod."""
+        try:
+            pod = self.client.get(Pod, name=self.pod_name, namespace=self.namespace)
+            return pod.spec.nodeName
+        except ApiError:
+            raise KubernetesClientError
+
+    def get_node_allocable_memory(self) -> int:
+        """Return the allocable memory in bytes for a given node.
+
+        Args:
+            node_name: name of the node to get the allocable memory for
+        """
+        try:
+            node = self.client.get(
+                Node, name=self._get_node_name_for_pod(), namespace=self.namespace
+            )
+            return any_memory_to_bytes(node.status.allocatable["memory"])
+        except ApiError:
+            raise KubernetesClientError
+
     @retry(stop=stop_after_attempt(10), wait=wait_fixed(1), reraise=True)
     def wait_service_ready(self, service_endpoint: Tuple[str, int]) -> None:
         """Wait for a service to be listening on a given endpoint.
@@ -162,3 +191,20 @@ class KubernetesHelpers:
             logger.debug("Kubernetes service endpoint not ready yet")
             raise KubernetesClientError
         logger.debug("Kubernetes service endpoint ready")
+
+    def set_rolling_update_partition(self, partition: int) -> None:
+        """Patch the statefulSet's `spec.updateStrategy.rollingUpdate.partition`.
+
+        Args:
+            partition: partition to set
+        """
+        try:
+            patch = {"spec": {"updateStrategy": {"rollingUpdate": {"partition": partition}}}}
+            self.client.patch(StatefulSet, name=self.app_name, namespace=self.namespace, obj=patch)
+            logger.debug(f"Kubernetes statefulset partition set to {partition}")
+        except ApiError as e:
+            if e.status.code == 403:
+                logger.error("Kubernetes statefulset patch failed: `juju trust` needed")
+            else:
+                logger.exception("Kubernetes statefulset patch failed")
+            raise KubernetesClientError

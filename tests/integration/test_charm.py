@@ -22,8 +22,10 @@ from .helpers import (
     get_primary_unit,
     get_server_config_credentials,
     get_unit_address,
+    retrieve_database_variable_value,
     rotate_credentials,
     scale_application,
+    start_mysqld_exporter,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,6 +36,7 @@ CLUSTER_NAME = "test_cluster"
 TIMEOUT = 15 * 60
 
 
+@pytest.mark.group(1)
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
@@ -81,6 +84,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             assert output[0] == 3
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> None:
     """Confirm that data is replicated from the primary node to all the replicas."""
@@ -116,7 +120,7 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
 
     # Retry
     try:
-        for attempt in AsyncRetrying(stop=stop_after_delay(5), wait=wait_fixed(3)):
+        async for attempt in AsyncRetrying(stop=stop_after_delay(5), wait=wait_fixed(3)):
             with attempt:
                 # Confirm that the values are available on all units
                 for unit in ops_test.model.applications[APP_NAME].units:
@@ -133,6 +137,7 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
         assert False
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_scale_up_and_down(ops_test: OpsTest) -> None:
     """Confirm that a new primary is elected when the current primary is torn down."""
@@ -177,6 +182,7 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         assert len(not_online_member_addresses) == 0
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
     """Confirm storage reuse works."""
@@ -194,6 +200,7 @@ async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
         assert len(online_member_addresses) == 3
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_password_rotation(ops_test: OpsTest):
     """Rotate password and confirm changes."""
@@ -227,6 +234,7 @@ async def test_password_rotation(ops_test: OpsTest):
     )
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_password_rotation_silent(ops_test: OpsTest):
     """Rotate password and confirm changes."""
@@ -255,6 +263,7 @@ async def test_password_rotation_silent(ops_test: OpsTest):
     )
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
     """Rotate password and confirm changes."""
@@ -281,6 +290,7 @@ async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
     assert updated_credentials["password"] == updated_root_credentials["password"]
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_exporter_endpoints(ops_test: OpsTest) -> None:
     """Test that endpoints are running."""
@@ -288,6 +298,8 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
     http = urllib3.PoolManager()
 
     for unit in application.units:
+        await start_mysqld_exporter(ops_test, unit)
+
         unit_address = await get_unit_address(ops_test, unit.name)
         mysql_exporter_url = f"http://{unit_address}:9104/metrics"
 
@@ -297,3 +309,22 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
         assert "mysql_exporter_last_scrape_error 0" in resp.data.decode(
             "utf8"
         ), "Scrape error in mysql_exporter"
+
+
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
+async def test_custom_variables(ops_test: OpsTest) -> None:
+    """Query database for custom variables."""
+    application = ops_test.model.applications[APP_NAME]
+
+    custom_vars = {}
+    custom_vars["max_connections"] = 20
+    custom_vars["innodb_buffer_pool_size"] = 20971520
+    custom_vars["innodb_buffer_pool_chunk_size"] = 1048576
+    custom_vars["group_replication_message_cache_size"] = 134217728
+
+    for unit in application.units:
+        for k, v in custom_vars.items():
+            logger.info(f"Checking that {k} is set to {v} on {unit.name}")
+            value = await retrieve_database_variable_value(ops_test, unit, k)
+            assert int(value) == v, f"Variable {k} is not set to {v}"

@@ -52,7 +52,7 @@ LIBID = "eb73947deedd4380a3a90d527e0878eb"
 
 LIBAPI = 0
 
-LIBPATCH = 1
+LIBPATCH = 2
 
 SCOPE = "unit"
 
@@ -118,8 +118,8 @@ class MySQLTLS(Object):
         self.charm.set_secret(
             SCOPE, "chain", "\n".join(event.chain) if event.chain is not None else None
         )
-        self.charm.set_secret(SCOPE, "cert", event.certificate)
-        self.charm.set_secret(SCOPE, "ca", event.ca)
+        self.charm.set_secret(SCOPE, "certificate", event.certificate, fallback_key="cert")
+        self.charm.set_secret(SCOPE, "certificate-authority", event.ca, fallback_key="ca")
 
         self.push_tls_files_to_workload()
         try:
@@ -144,7 +144,7 @@ class MySQLTLS(Object):
 
     def _on_certificate_expiring(self, event: CertificateExpiringEvent) -> None:
         """Request the new certificate when old certificate is expiring."""
-        if event.certificate != self.charm.get_secret(SCOPE, "cert"):
+        if event.certificate != self.charm.get_secret(SCOPE, "certificate", fallback_key="cert"):
             logger.error("An unknown certificate expiring.")
             return
 
@@ -165,8 +165,8 @@ class MySQLTLS(Object):
     def _on_tls_relation_broken(self, _) -> None:
         """Disable TLS when TLS relation broken."""
         try:
-            self.charm.set_secret(SCOPE, "ca", None)
-            self.charm.set_secret(SCOPE, "cert", None)
+            self.charm.set_secret(SCOPE, "certificate-authority", None, fallback_key="ca")
+            self.charm.set_secret(SCOPE, "certificate", None, fallback_key="cert")
             self.charm.set_secret(SCOPE, "chain", None)
         except KeyError:
             # ignore key error for unit teardown
@@ -235,12 +235,12 @@ class MySQLTLS(Object):
         Returns:
             A tuple of strings with the content of server-key, ca and server-cert
         """
-        ca = self.charm.get_secret(SCOPE, "ca")
+        ca = self.charm.get_secret(SCOPE, "certificate-authority", fallback_key="ca")
         chain = self.charm.get_secret(SCOPE, "chain")
         ca_file = chain or ca
 
         key = self.charm.get_secret(SCOPE, "key")
-        cert = self.charm.get_secret(SCOPE, "cert")
+        cert = self.charm.get_secret(SCOPE, "certificate", fallback_key="cert")
         return key, ca_file, cert
 
     def push_tls_files_to_workload(self) -> None:

@@ -13,13 +13,6 @@ CLUSTER_ADMIN_USERNAME = "clusteradmin"
 SERVER_CONFIG_USERNAME = "serverconfig"
 MONITORING_USERNAME = "monitoring"
 BACKUPS_USERNAME = "backups"
-REQUIRED_USERNAMES = [
-    CLUSTER_ADMIN_USERNAME,
-    SERVER_CONFIG_USERNAME,
-    MONITORING_USERNAME,
-    ROOT_USERNAME,
-    BACKUPS_USERNAME,
-]
 DB_RELATION_NAME = "database"
 LEGACY_MYSQL = "mysql"
 LEGACY_MYSQL_ROOT = "mysql-root"
@@ -52,3 +45,6 @@ MYSQLD_DEFAULTS_CONFIG_FILE = "/etc/mysql/my.cnf"
 MYSQLD_EXPORTER_PORT = "9104"
 MYSQLD_EXPORTER_SERVICE = "mysqld_exporter"
 GR_MAX_MEMBERS = 9
+SECRET_ID_KEY = "secret-id"
+# TODO: should be changed when adopting cos-agent
+COS_AGENT_RELATION_NAME = "metrics-endpoint"

@@ -49,6 +49,7 @@ import datetime
 import logging
 import pathlib
 from typing import Dict, List, Optional, Tuple
+import typing
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
@@ -76,7 +77,7 @@ from charms.mysql.v0.s3_helpers import (
     list_backups_in_s3_path,
     upload_content_to_s3,
 )
-from ops.charm import ActionEvent, CharmBase
+from ops.charm import ActionEvent
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
 from ops.model import ActiveStatus, BlockedStatus
@@ -98,10 +99,14 @@ LIBAPI = 0
 LIBPATCH = 6
 
 
+if typing.TYPE_CHECKING:
+    from charm import MySQLOperatorCharm
+
+
 class MySQLBackups(Object):
     """Encapsulation of backups for MySQL."""
 
-    def __init__(self, charm: CharmBase, s3_integrator: S3Requirer) -> None:
+    def __init__(self, charm: "MySQLOperatorCharm", s3_integrator: S3Requirer) -> None:
         super().__init__(charm, MYSQL_BACKUPS)
 
         self.charm = charm
@@ -251,7 +256,7 @@ Stderr:
         can_unit_perform_backup, validation_message = self._can_unit_perform_backup()
         if not can_unit_perform_backup:
             logger.error(f"Backup failed: {validation_message}")
-            event.fail(validation_message)
+            event.fail(validation_message or "")
             return
 
         # Test uploading metadata to S3 to test credentials before backup
@@ -272,14 +277,14 @@ Juju Version: {str(juju_version)}
         success, error_message = self._pre_backup()
         if not success:
             logger.error(f"Backup failed: {error_message}")
-            event.fail(error_message)
+            event.fail(error_message or "")
             return
 
         # Perform the backup
         success, error_message = self._backup(backup_path, s3_parameters)
         if not success:
             logger.error(f"Backup failed: {error_message}")
-            event.fail(error_message)
+            event.fail(error_message or "")
 
             success, error_message = self._post_backup()
             if not success:
@@ -297,7 +302,7 @@ Juju Version: {str(juju_version)}
             self.charm.unit.status = BlockedStatus(
                 "Failed to create backup; instance in bad state"
             )
-            event.fail(error_message)
+            event.fail(error_message or "")
             return
 
         logger.info(f"Backup succeeded: with backup-id {datetime_backup_requested}")

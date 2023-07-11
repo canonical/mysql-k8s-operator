@@ -59,6 +59,7 @@ class TestMySQL(unittest.TestCase):
             "backupspassword",
             None,
             None,
+            None,
         )
 
     @patch("ops.pebble.ExecProcess")
@@ -335,16 +336,3 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLWaitUntilUnitRemovedFromClusterError):
             self.mysql._wait_until_unit_removed_from_cluster("mysql-0.mysql-endpoints")
-
-    @patch("ops.model.Container")
-    def test_safe_stop_mysqld_safe(self, _container):
-        """Test the successful execution of safe_stop_mysqld_safe."""
-        _container.exec.return_value = MagicMock()
-        _container.exec.return_value.wait_output.return_value = (
-            0,
-            b"stderr",
-        )
-        self.mysql.container = _container
-        self.mysql.safe_stop_mysqld_safe()
-
-        _container.exec.assert_called_once()

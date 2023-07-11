@@ -28,10 +28,14 @@ jobs:
       - lib-check
     uses: ./.github/workflows/ci.yaml
     secrets: inherit
+    permissions:
+      actions: write  # Needed to manage GitHub Actions cache
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm_without_cache.yaml@v2
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm_without_cache.yaml@v4.2.0
+    with:
+      charmcraft-snap-revision: 1349  # version 2.3.0
 
   release:
     name: Release charm
@@ -39,7 +43,7 @@ jobs:
       - lib-check
       - ci-tests
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v2
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v4.2.0
     with:
       channel: 8.0/edge
       artifact-name: ${{ needs.build.outputs.artifact-name }}

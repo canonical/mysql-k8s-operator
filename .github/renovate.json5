@@ -1,0 +1,16 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>canonical/data-platform//renovate_presets/charm.json5"],
+  "reviewers": ["team:data-platform-mysql"],
+  "packageRules": [
+    // Later rules override earlier rules
+
+    // MySQL 8.X does not follow semantic versioning (e.g. 8.0.1 -> 8.0.2 can include a breaking change)
+    // Therefore, use a separate Renovate group so that it has a separate PR
+    {
+      "matchManagers": ["poetry"],
+      "matchPackageNames": ["mysql-connector-python"],
+      "groupName": "MySQL Connector/Python"
+    }
+  ]
+}

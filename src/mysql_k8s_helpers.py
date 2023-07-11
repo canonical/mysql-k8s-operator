@@ -6,7 +6,6 @@
 
 import json
 import logging
-from time import sleep
 from typing import Dict, List, Optional, Tuple
 
 from charms.mysql.v0.mysql import (
@@ -18,6 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
+from ops.charm import CharmBase
 from ops.model import Container
 from ops.pebble import ChangeError, ExecError
 from tenacity import (
@@ -91,10 +91,6 @@ class MySQLExecuteBackupCommandsError(Error):
     """
 
 
-class MySQLGetInnoDBBufferPoolParametersError(Error):
-    """Exception raised when there is an error computing the innodb buffer pool parameters."""
-
-
 class MySQLRetrieveBackupWithXBCloudError(Error):
     """Exception raised when there is an error retrieving a backup from S3 with xbcloud."""
 
@@ -142,6 +138,7 @@ class MySQL(MySQLBase):
         backups_password: str,
         container: Container,
         k8s_helper: KubernetesHelpers,
+        charm: CharmBase,
     ):
         """Initialize the MySQL class.
 
@@ -160,6 +157,7 @@ class MySQL(MySQLBase):
             backups_password: password for the backups user
             container: workload container object
             k8s_helper: KubernetesHelpers object
+            charm: charm object
         """
         super().__init__(
             instance_address=instance_address,
@@ -177,6 +175,7 @@ class MySQL(MySQLBase):
         )
         self.container = container
         self.k8s_helper = k8s_helper
+        self.charm = charm
 
     def fix_data_dir(self, container: Container) -> None:
         """Ensure the data directory for mysql is writable for the "mysql" user.
@@ -282,9 +281,12 @@ class MySQL(MySQLBase):
 
     def create_custom_config_file(
         self,
+        *,
         report_host: str,
         innodb_buffer_pool_size: int,
-        innodb_buffer_pool_chunk_size: int,
+        innodb_buffer_pool_chunk_size: Optional[int],
+        gr_message_cache_size: Optional[int],
+        max_connections: int,
     ) -> None:
         """Create custom configuration file.
 
@@ -297,12 +299,16 @@ class MySQL(MySQLBase):
             "bind-address = 0.0.0.0",
             "mysqlx-bind-address = 0.0.0.0",
             f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
+            f"max_connections = {max_connections}",
         ]
 
         if innodb_buffer_pool_chunk_size:
             content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
-        content.append("")
 
+        if gr_message_cache_size:
+            content.append(f"loose-group_replication_message_cache_size = {gr_message_cache_size}")
+
+        content.append("")
         try:
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
         except Exception:
@@ -589,6 +595,10 @@ class MySQL(MySQLBase):
             logger.exception(error_message)
             raise MySQLStartMySQLDError(error_message)
 
+    def restart_mysql_exporter(self) -> None:
+        """Restarts the mysqld exporter service in pebble."""
+        self.charm._reconcile_pebble_layer(self.container)
+
     def stop_group_replication(self) -> None:
         """Stop Group replication if enabled on the instance."""
         stop_gr_command = (
@@ -606,8 +616,8 @@ class MySQL(MySQLBase):
         self,
         commands: List[str],
         bash: bool = False,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
         env: Dict = {},
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
@@ -622,7 +632,7 @@ class MySQL(MySQLBase):
                 environment=env,
             )
             stdout, stderr = process.wait_output()
-            return (stdout, stderr)
+            return (stdout, stderr or "")
         except ExecError as e:
             logger.debug(f"Failed command: {commands=}, {user=}, {group=}")
             raise MySQLExecError(e.stderr)
@@ -752,40 +762,19 @@ class MySQL(MySQLBase):
         except ExecError as e:
             raise MySQLClientError(e.stderr)
 
-    def safe_stop_mysqld_safe(self):
-        """Safely stop mysqld.
-
-        TODO: remove when https://github.com/canonical/pebble/pull/190 is merged/released
-        """
-
-        def get_mysqld_safe_pid(self):
-            try:
-                process = self.container.exec(["pgrep", "-x", MYSQLD_SAFE_SERVICE])
-                pid, _ = process.wait_output()
-                return pid
-            except ExecError:
-                return 0
-
-        logger.debug("Safe stopping mysqld safe")
-        pid = initial_pid = get_mysqld_safe_pid(self)
-        if pid == 0:
-            return
-        self.container.exec(["pkill", "-15", MYSQLD_SAFE_SERVICE])
-
-        # Wait for mysqld to stop
-        while initial_pid == pid:
-            pid = get_mysqld_safe_pid(self)
-            sleep(0.1)
-
     def _get_total_memory(self) -> int:
         """Get total memory of the container in bytes."""
+        allocable_memory = self.k8s_helper.get_node_allocable_memory()
         container_limits = self.k8s_helper.get_resources_limits(CONTAINER_NAME)
         if "memory" in container_limits:
-            mem_str = container_limits["memory"]
-            logger.debug(f"Memory constrained to {mem_str} from resource limit")
-            return any_memory_to_bytes(mem_str)
+            memory_str = container_limits["memory"]
+            constrained_memory = any_memory_to_bytes(memory_str)
+            if constrained_memory < allocable_memory:
+                logger.debug(f"Memory constrained to {memory_str} from resource limit")
+                return constrained_memory
 
-        return super()._get_total_memory()
+        logger.debug("Memory constrained by node allocable memory")
+        return allocable_memory
 
     def is_data_dir_initialised(self) -> bool:
         """Check if data dir is initialised.
