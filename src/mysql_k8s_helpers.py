@@ -284,7 +284,8 @@ class MySQL(MySQLBase):
         self,
         report_host: str,
         innodb_buffer_pool_size: int,
-        innodb_buffer_pool_chunk_size: int,
+        innodb_buffer_pool_chunk_size: Optional[int],
+        gr_message_cache_size: Optional[int],
     ) -> None:
         """Create custom configuration file.
 
@@ -301,9 +302,13 @@ class MySQL(MySQLBase):
 
         if innodb_buffer_pool_chunk_size:
             content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
-        content.append("")
+
+        # TODO: Enable after GR is enabled
+        # if gr_message_cache_size:
+        #    content.append(f"group_replication_message_cache_size = {gr_message_cache_size}")
 
         try:
+            content.append("")
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
         except Exception:
             raise MySQLCreateCustomConfigFileError()
@@ -779,13 +784,17 @@ class MySQL(MySQLBase):
 
     def _get_total_memory(self) -> int:
         """Get total memory of the container in bytes."""
+        allocable_memory = self.k8s_helper.get_node_allocable_memory()
         container_limits = self.k8s_helper.get_resources_limits(CONTAINER_NAME)
         if "memory" in container_limits:
-            mem_str = container_limits["memory"]
-            logger.debug(f"Memory constrained to {mem_str} from resource limit")
-            return any_memory_to_bytes(mem_str)
+            memory_str = container_limits["memory"]
+            constrained_memory = any_memory_to_bytes(memory_str)
+            if constrained_memory < allocable_memory:
+                logger.debug(f"Memory constrained to {memory_str} from resource limit")
+                return constrained_memory
 
-        return super()._get_total_memory()
+        logger.debug("Memory constrained by node allocable memory")
+        return allocable_memory
 
     def is_data_dir_initialised(self) -> bool:
         """Check if data dir is initialised.

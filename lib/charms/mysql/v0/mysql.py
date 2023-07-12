@@ -96,6 +96,9 @@ LIBPATCH = 36
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
 
+BYTES_1GB = 1073741824  # 1 gibibyte
+BYTES_1Gb = 1000000000  # 1 gigabyte
+BYTES_1MB = 1048576     # 1 mebibyte
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -1520,24 +1523,24 @@ class MySQLBase(ABC):
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
 
-        chunk_size_min = 1048576  # 1 mebibyte
-        chunk_size_default = 134217728  # 128 mebibytes
+        chunk_size_min = BYTES_1MB
+        chunk_size_default = 128 * BYTES_1MB
+        group_replication_message_cache = BYTES_1GB
 
         try:
             innodb_buffer_pool_chunk_size = None
             total_memory = self._get_total_memory()
 
-            pool_size = int(total_memory * 0.75)
-            # 1000000000 = 1 gigabyte
-            if total_memory - pool_size < 1000000000:
-                pool_size = int(total_memory * 0.5)
+            pool_size = int(total_memory * 0.75) - group_replication_message_cache
+
+            if total_memory - pool_size < BYTES_1Gb:
+                pool_size = int(total_memory * 0.5) - group_replication_message_cache
 
             if pool_size % chunk_size_default != 0:
                 # round pool_size to be a multiple of chunk_size_default
                 pool_size += chunk_size_default - (pool_size % chunk_size_default)
 
-            # 1073741824 = 1 gibibyte
-            if pool_size > 1073741824:
+            if pool_size > BYTES_1GB:
                 chunk_size = int(pool_size / 8)
 
                 if chunk_size % chunk_size_min != 0:
@@ -1558,7 +1561,7 @@ class MySQLBase(ABC):
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L61-L70
 
-        bytes_per_connection = 12582912  # 12 Megabytes
+        bytes_per_connection = 12 * BYTES_1MB  # 12 Megabytes
         total_memory = 0
 
         try:
