@@ -204,6 +204,7 @@ class MySQLOperatorCharm(CharmBase):
                         "startup": "enabled",
                         "user": MYSQL_SYSTEM_USER,
                         "group": MYSQL_SYSTEM_GROUP,
+                        "kill-delay": "2h",
                     },
                     MYSQLD_EXPORTER_SERVICE: {
                         "override": "replace",
@@ -472,7 +473,6 @@ class MySQLOperatorCharm(CharmBase):
             # Add the pebble layer
             logger.debug("Adding pebble layer")
             container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=False)
-            self._mysql.safe_stop_mysqld_safe()
             container.restart(MYSQLD_SAFE_SERVICE)
 
             logger.debug("Waiting for instance to be ready")

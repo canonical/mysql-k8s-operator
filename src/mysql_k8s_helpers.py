@@ -6,7 +6,6 @@
 
 import json
 import logging
-from time import sleep
 from typing import Dict, List, Optional, Tuple
 
 from charms.mysql.v0.mysql import (
@@ -751,31 +750,6 @@ class MySQL(MySQLBase):
             return True
         except ExecError as e:
             raise MySQLClientError(e.stderr)
-
-    def safe_stop_mysqld_safe(self):
-        """Safely stop mysqld.
-
-        TODO: remove when https://github.com/canonical/pebble/pull/190 is merged/released
-        """
-
-        def get_mysqld_safe_pid(self):
-            try:
-                process = self.container.exec(["pgrep", "-x", MYSQLD_SAFE_SERVICE])
-                pid, _ = process.wait_output()
-                return pid
-            except ExecError:
-                return 0
-
-        logger.debug("Safe stopping mysqld safe")
-        pid = initial_pid = get_mysqld_safe_pid(self)
-        if pid == 0:
-            return
-        self.container.exec(["pkill", "-15", MYSQLD_SAFE_SERVICE])
-
-        # Wait for mysqld to stop
-        while initial_pid == pid:
-            pid = get_mysqld_safe_pid(self)
-            sleep(0.1)
 
     def _get_total_memory(self) -> int:
         """Get total memory of the container in bytes."""
