@@ -17,6 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLGetAutoTunningParametersError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
@@ -73,7 +74,6 @@ from k8s_helpers import KubernetesHelpers
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
-    MySQLGetInnoDBBufferPoolParametersError,
     MySQLInitialiseMySQLDError,
 )
 from relations.mysql import MySQLRelation
@@ -302,13 +302,15 @@ class MySQLOperatorCharm(CharmBase):
         if profile == "testing":
             innodb_buffer_pool_size = 20971520
             innodb_buffer_pool_chunk_size = 1048576
+            max_connections = 20
         else:
             try:
                 (
                     innodb_buffer_pool_size,
                     innodb_buffer_pool_chunk_size,
                 ) = self._mysql.get_innodb_buffer_pool_parameters()
-            except MySQLGetInnoDBBufferPoolParametersError:
+                max_connections = self._mysql.get_max_connections()
+            except MySQLGetAutoTunningParametersError:
                 self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
                 return False
 
@@ -317,6 +319,7 @@ class MySQLOperatorCharm(CharmBase):
                 report_host=self._get_unit_fqdn(self.unit.name),
                 innodb_buffer_pool_size=innodb_buffer_pool_size,
                 innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
+                max_connections=max_connections,
             )
         except MySQLCreateCustomConfigFileError:
             self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
