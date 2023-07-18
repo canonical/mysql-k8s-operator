@@ -22,6 +22,7 @@ from .helpers import (
     get_primary_unit,
     get_server_config_credentials,
     get_unit_address,
+    retrieve_database_variable_value,
     rotate_credentials,
     scale_application,
 )
@@ -297,3 +298,20 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
         assert "mysql_exporter_last_scrape_error 0" in resp.data.decode(
             "utf8"
         ), "Scrape error in mysql_exporter"
+
+
+@pytest.mark.abort_on_fail
+async def test_custom_variables(ops_test: OpsTest) -> None:
+    """Query database for custom variables."""
+    application = ops_test.model.applications[APP_NAME]
+
+    custom_vars = {}
+    custom_vars["max_connections"] = 20
+    custom_vars["innodb_buffer_pool_size"] = 20971520
+    custom_vars["innodb_buffer_pool_chunk_size"] = 1048576
+
+    for unit in application.units:
+        for k, v in custom_vars.items():
+            logger.info(f"Checking that {k} is set to {v} on {unit.name}")
+            value = await retrieve_database_variable_value(ops_test, unit, k)
+            assert int(value) == v, f"Variable {k} is not set to {v}"

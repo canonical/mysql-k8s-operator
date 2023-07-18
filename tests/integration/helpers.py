@@ -398,3 +398,27 @@ async def start_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
     await ops_test.juju(
         "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "start", MYSQLD_SAFE_SERVICE
     )
+
+
+async def retrieve_database_variable_value(
+    ops_test: OpsTest, unit: Unit, variable_name: str
+) -> str:
+    """Retrieve a database variable value as a string.
+
+    Args:
+        ops_test: The ops test framework instance
+        unit: The unit to retrieve the variable
+        variable_name: The name of the variable to retrieve
+    Returns:
+        The variable value (str)
+    """
+    unit_ip = await get_unit_address(ops_test, unit.name)
+
+    server_config_creds = await get_server_config_credentials(unit)
+    queries = [f"SELECT @@{variable_name};"]
+
+    output = await execute_queries_on_unit(
+        unit_ip, server_config_creds["username"], server_config_creds["password"], queries
+    )
+
+    return output[0]
