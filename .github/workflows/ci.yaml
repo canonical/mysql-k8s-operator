@@ -32,7 +32,8 @@ jobs:
 
   build:
     name: Build charms
-    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v2
+    # TODO: switch to v3 after `remove-charms-built-output` merged
+    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@remove-charms-built-output
 
   integration-test:
     strategy:
@@ -83,4 +84,3 @@ jobs:
           AWS_SECRET_KEY: ${{ matrix.tox-environments != 'integration-backups' || secrets.AWS_SECRET_KEY }}
           GCP_ACCESS_KEY: ${{ matrix.tox-environments != 'integration-backups' || secrets.GCP_ACCESS_KEY }}
           GCP_SECRET_KEY: ${{ matrix.tox-environments != 'integration-backups' || secrets.GCP_SECRET_KEY }}
-          CI_PACKED_CHARMS: ${{ needs.build.outputs.charms }}
