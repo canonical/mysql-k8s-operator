@@ -16,7 +16,7 @@ def ops_test(ops_test: OpsTest) -> OpsTest:
         # Running in GitHub Actions; skip build step
         # (GitHub Actions uses a separate, cached build step. See .github/workflows/ci.yaml)
 
-        async def build_charm(charm_path, bases_index: int = None) -> pathlib.Path:
+        async def build_charm(charm_path, bases_index: int = None) -> str:
             charm_path = pathlib.Path(charm_path)
             if bases_index is not None:
                 charmcraft_yaml = yaml.safe_load((charm_path / "charmcraft.yaml").read_text())
@@ -29,7 +29,7 @@ def ops_test(ops_test: OpsTest) -> OpsTest:
             else:
                 packed_charms = list(charm_path.glob("*.charm"))
             if len(packed_charms) == 1:
-                return packed_charms[0]
+                return f"./{packed_charms[0]}"
             elif len(packed_charms) > 1:
                 message = (
                     f"More than one matching .charm file found at {charm_path=}: {packed_charms}."
