@@ -6,14 +6,16 @@
 
 import logging
 from socket import getfqdn
-from typing import Dict, Optional
+from typing import Optional
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
+    BYTES_1MiB,
     MySQLAddInstanceToClusterError,
+    MySQLCharmBase,
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
@@ -27,13 +29,7 @@ from charms.mysql.v0.mysql import (
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops.charm import (
-    ActionEvent,
-    CharmBase,
-    LeaderElectedEvent,
-    RelationChangedEvent,
-    UpdateStatusEvent,
-)
+from ops.charm import LeaderElectedEvent, RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
 from ops.model import (
     ActiveStatus,
@@ -63,9 +59,7 @@ from constants import (
     MYSQLD_SOCK_FILE,
     PASSWORD_LENGTH,
     PEER,
-    REQUIRED_USERNAMES,
     ROOT_PASSWORD_KEY,
-    ROOT_USERNAME,
     S3_INTEGRATOR_RELATION_NAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
@@ -84,7 +78,7 @@ from utils import generate_random_hash, generate_random_password
 logger = logging.getLogger(__name__)
 
 
-class MySQLOperatorCharm(CharmBase):
+class MySQLOperatorCharm(MySQLCharmBase):
     """Operator framework charm for MySQL."""
 
     def __init__(self, *args):
@@ -101,11 +95,6 @@ class MySQLOperatorCharm(CharmBase):
 
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
-
-        # Actions events
-        self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
-        self.framework.observe(self.on.get_password_action, self._on_get_password)
-        self.framework.observe(self.on.set_password_action, self._on_set_password)
 
         self.k8s_helpers = KubernetesHelpers(self)
         self.mysql_relation = MySQLRelation(self)
@@ -128,27 +117,6 @@ class MySQLOperatorCharm(CharmBase):
         )
 
     @property
-    def peers(self):
-        """Retrieve the peer relation (`ops.model.Relation`)."""
-        return self.model.get_relation(PEER)
-
-    @property
-    def app_peer_data(self) -> Dict:
-        """Application peer relation data object."""
-        if self.peers is None:
-            return {}
-
-        return self.peers.data[self.app]
-
-    @property
-    def unit_peer_data(self) -> Dict:
-        """Unit peer relation data object."""
-        if self.peers is None:
-            return {}
-
-        return self.peers.data[self.unit]
-
-    @property
     def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
@@ -169,27 +137,6 @@ class MySQLOperatorCharm(CharmBase):
         )
 
     @property
-    def _is_peer_data_set(self):
-        return (
-            self.app_peer_data.get("cluster-name")
-            and self.get_secret("app", ROOT_PASSWORD_KEY)
-            and self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY)
-            and self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY)
-            and self.get_secret("app", MONITORING_PASSWORD_KEY)
-            and self.get_secret("app", BACKUPS_PASSWORD_KEY)
-        )
-
-    @property
-    def cluster_initialized(self):
-        """Returns True if the cluster is initialized."""
-        return self.app_peer_data.get("units-added-to-cluster", "0") >= "1"
-
-    @property
-    def unit_initialized(self):
-        """Return True if the unit is initialized."""
-        return self.unit_peer_data.get("unit-initialized") == "True"
-
-    @property
     def _pebble_layer(self) -> Layer:
         """Return a layer for the mysqld pebble service."""
         return Layer(
@@ -204,6 +151,7 @@ class MySQLOperatorCharm(CharmBase):
                         "startup": "enabled",
                         "user": MYSQL_SYSTEM_USER,
                         "group": MYSQL_SYSTEM_GROUP,
+                        "kill-delay": "24h",
                     },
                     MYSQLD_EXPORTER_SERVICE: {
                         "override": "replace",
@@ -257,30 +205,6 @@ class MySQLOperatorCharm(CharmBase):
         """
         return getfqdn(self.get_unit_hostname(unit_name))
 
-    def get_secret(self, scope: str, key: str) -> Optional[str]:
-        """Get secret from the secret storage."""
-        if scope == "unit":
-            return self.unit_peer_data.get(key, None)
-        elif scope == "app":
-            return self.app_peer_data.get(key, None)
-        else:
-            raise RuntimeError("Unknown secret scope.")
-
-    def set_secret(self, scope: str, key: str, value: Optional[str]) -> None:
-        """Set secret in the secret storage."""
-        if scope == "unit":
-            if not value:
-                del self.unit_peer_data[key]
-                return
-            self.unit_peer_data.update({key: value})
-        elif scope == "app":
-            if not value:
-                del self.app_peer_data[key]
-                return
-            self.app_peer_data.update({key: value})
-        else:
-            raise RuntimeError("Unknown secret scope.")
-
     def s3_integrator_relation_exists(self) -> bool:
         """Returns whether a relation with the s3-integrator exists."""
         return bool(self.model.get_relation(S3_INTEGRATOR_RELATION_NAME))
@@ -300,15 +224,18 @@ class MySQLOperatorCharm(CharmBase):
             return True
 
         if profile == "testing":
-            innodb_buffer_pool_size = 20971520
-            innodb_buffer_pool_chunk_size = 1048576
+            innodb_buffer_pool_size = 20 * BYTES_1MiB
+            innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
+            group_replication_message_cache_size = 128 * BYTES_1MiB
             max_connections = 20
         else:
             try:
                 (
                     innodb_buffer_pool_size,
                     innodb_buffer_pool_chunk_size,
+                    group_replication_message_cache_size,
                 ) = self._mysql.get_innodb_buffer_pool_parameters()
+                group_replication_message_cache_size = None
                 max_connections = self._mysql.get_max_connections()
             except MySQLGetAutoTunningParametersError:
                 self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
@@ -319,6 +246,7 @@ class MySQLOperatorCharm(CharmBase):
                 report_host=self._get_unit_fqdn(self.unit.name),
                 innodb_buffer_pool_size=innodb_buffer_pool_size,
                 innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
+                gr_message_cache_size=group_replication_message_cache_size,
                 max_connections=max_connections,
             )
         except MySQLCreateCustomConfigFileError:
@@ -475,7 +403,6 @@ class MySQLOperatorCharm(CharmBase):
             # Add the pebble layer
             logger.debug("Adding pebble layer")
             container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=False)
-            self._mysql.safe_stop_mysqld_safe()
             container.restart(MYSQLD_SAFE_SERVICE)
 
             logger.debug("Waiting for instance to be ready")
@@ -722,81 +649,6 @@ class MySQLOperatorCharm(CharmBase):
 
         # Inform other hooks of current status
         self.unit_peer_data["unit-status"] = "removing"
-
-    # =========================================================================
-    # Charm action handlers
-    # =========================================================================
-    def _on_get_password(self, event: ActionEvent) -> None:
-        """Action used to retrieve the system user's password."""
-        username = event.params.get("username") or ROOT_USERNAME
-
-        if username not in REQUIRED_USERNAMES:
-            event.fail(
-                f"The action can be run only for users used by the charm: {', '.join(REQUIRED_USERNAMES)} not {username}"
-            )
-            return
-
-        if username == ROOT_USERNAME:
-            secret_key = ROOT_PASSWORD_KEY
-        elif username == SERVER_CONFIG_USERNAME:
-            secret_key = SERVER_CONFIG_PASSWORD_KEY
-        elif username == CLUSTER_ADMIN_USERNAME:
-            secret_key = CLUSTER_ADMIN_PASSWORD_KEY
-        elif username == BACKUPS_USERNAME:
-            secret_key = BACKUPS_PASSWORD_KEY
-        else:
-            raise RuntimeError("Invalid username.")
-
-        event.set_results({"username": username, "password": self.get_secret("app", secret_key)})
-
-    def _on_set_password(self, event: ActionEvent) -> None:
-        """Action used to update/rotate the system user's password."""
-        if not self.unit.is_leader():
-            event.fail("set-password action can only be run on the leader unit.")
-            return
-
-        username = event.params.get("username") or ROOT_USERNAME
-
-        if username not in REQUIRED_USERNAMES:
-            event.fail(
-                f"The action can be run only for users used by the charm: {', '.join(REQUIRED_USERNAMES)} not {username}"
-            )
-            return
-
-        if username == ROOT_USERNAME:
-            secret_key = ROOT_PASSWORD_KEY
-        elif username == SERVER_CONFIG_USERNAME:
-            secret_key = SERVER_CONFIG_PASSWORD_KEY
-        elif username == CLUSTER_ADMIN_USERNAME:
-            secret_key = CLUSTER_ADMIN_PASSWORD_KEY
-        elif username == BACKUPS_USERNAME:
-            secret_key = BACKUPS_PASSWORD_KEY
-        else:
-            raise RuntimeError("Invalid username.")
-
-        new_password = event.params.get("password") or generate_random_password(PASSWORD_LENGTH)
-
-        self._mysql.update_user_password(username, new_password)
-
-        self.set_secret("app", secret_key, new_password)
-
-    def _get_cluster_status(self, event: ActionEvent) -> None:
-        """Get the cluster status without topology."""
-        status = self._mysql.get_cluster_status()
-        if status:
-            event.set_results(
-                {
-                    "success": True,
-                    "status": status,
-                }
-            )
-        else:
-            event.set_results(
-                {
-                    "success": False,
-                    "message": "Failed to read cluster status.  See logs for more information.",
-                }
-            )
 
 
 if __name__ == "__main__":

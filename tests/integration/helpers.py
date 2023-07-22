@@ -5,7 +5,7 @@ import itertools
 import json
 import secrets
 import string
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import mysql.connector
 import yaml
@@ -70,7 +70,7 @@ async def get_primary_unit(
     ops_test: OpsTest,
     unit: Unit,
     app_name: str,
-) -> str:
+) -> Optional[Unit]:
     """Helper to retrieve the primary unit.
 
     Args:

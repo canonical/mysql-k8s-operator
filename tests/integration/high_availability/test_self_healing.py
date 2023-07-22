@@ -307,6 +307,8 @@ async def test_network_cut_affecting_an_instance(
     mysql_units = ops_test.model.applications[mysql_application_name].units
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
 
+    assert primary is not None, "No primary unit found"
+
     logger.info(
         f"Creating networkchaos policy to isolate instance {primary.name} from the cluster"
     )
@@ -336,6 +338,16 @@ async def test_network_cut_affecting_an_instance(
 
     logger.info("Remove networkchaos policy isolating instance from cluster")
     remove_instance_isolation(ops_test)
+
+    async with ops_test.fast_forward():
+        logger.info("Wait until returning instance enters recovery")
+        await ops_test.model.block_until(
+            lambda: primary.workload_status != "active", timeout=TIMEOUT
+        )
+        logger.info("Wait until returning instance become active")
+        await ops_test.model.block_until(
+            lambda: primary.workload_status == "active", timeout=TIMEOUT
+        )
 
     logger.info("Wait until all units are online")
     await wait_until_units_in_status(ops_test, mysql_units, mysql_units[0], "online")
