@@ -1,6 +1,6 @@
 # How to enable monitoring
 
-Creating and listing backups requires that you:
+Enable monitoring requires that you:
 * [Have a Charmed MySQL K8s deployed](/t/charmed-mysql-k8s-tutorial-overview/9677?channel=8.0)
 * [Deploy `cos-lite` bundle in a Kubernetes environment](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
 

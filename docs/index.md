@@ -1,3 +1,5 @@
+# Charmed MySQL K8s Documentation
+
 The Charmed MySQL K8s Operator delivers automated operations management from [day 0 to day 2](https://codilime.com/blog/day-0-day-1-day-2-the-software-lifecycle-in-the-cloud-age/) on the [MySQL Community Edition](https://www.mysql.com/products/community/) relational database. It is an open source, end-to-end, production-ready data platform [on top of Juju](https://juju.is/).
 
 MySQL is the world’s most popular open source database. A relational database stores data in separate tables rather than putting all the data in one big storeroom. The database structure is organized into physical files optimized for speed. The logical data model, with objects such as data tables, views, rows, and columns, offers a flexible programming environment.
@@ -7,7 +9,7 @@ This MySQL operator charm comes in two flavours to deploy and operate MySQL on [
 [note type="positive"]
 **"Charmed MySQL K8s", "MariaDB", "OSM MariaDB", "Percona Cluster" or "Mysql Innodb Cluster"?**
 
-This "Charmed MySQL K8s" operator is a new "[Charmed Operator SDK](https://juju.is/docs/sdk)"-based charm to replace a "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)" operators [providing](/t/charmed-mysql-k8s-explanations-interfaces-endpoints/10249) all juju-interfaces of legacy charms.
+This "Charmed MySQL K8s" operator is a new "[Charmed Operator SDK](https://juju.is/docs/sdk)"-based charm to replace a "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)" operators [providing](/t/charmed-mysql-k8s-explanations-interfaces-endpoints/10249) all juju-interfaces of [legacy charms](https://charmhub.io/postgresql-k8s/docs/e-legacy-charm).
 [/note]
 
 ## Project and community
@@ -38,6 +40,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2     | t-enable-security             | [7. Enable security](/t/charmed-mysql-k8s-tutorial-enable-security/9669)                       |
 | 2     | t-cleanup-environment         | [8. Cleanup your environment](/t/charmed-mysql-k8s-tutorial-cleanup-environment/9665)          |
 | 1     | how-to                        | [How To]()                                                                                     |
+| 2     | h-deploy-gke                | [Deploy on GKE](/t/charmed-mysql-k8s-how-to-deploy-on-gke/10875)                                  |
 | 2     | h-manage-units                | [Manage units](/t/charmed-mysql-k8s-how-to-manage-units/9659)                                  |
 | 2     | h-enable-encryption           | [Enable encryption](/t/charmed-mysql-k8s-how-to-enable-encryption/9655)                        |
 | 2     | h-manage-app                  | [Manage applications](/t/charmed-mysql-k8s-how-to-manage-app/9657)                             |
@@ -53,8 +56,9 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2     | r-libraries                   | [Libraries](https://charmhub.io/mysql-k8s/libraries/helpers)                                   |
 | 2     | r-integrations                   | [Integrations](https://charmhub.io/mysql-k8s/integrations)                                   |
 | 1     | explanation                    | [Explanation]()                                                                                                      |
-| 2     | e-interfaces                | [ Interfaces/endpoints](/t/charmed-mysql-k8s-explanations-interfaces-endpoints/10249) |
-| 2     | e-flowcharts                | [ Charm flowcharts](/t/charmed-mysql-k8s-explanation-charm-lifecycle-flowcharts/10031) |
+| 2     | e-interfaces                | [Interfaces/endpoints](/t/charmed-mysql-k8s-explanations-interfaces-endpoints/10249) |
+| 2     | e-flowcharts                | [Charm flowcharts](/t/charmed-mysql-k8s-explanation-charm-lifecycle-flowcharts/10031) |
+| 2     | e-legacy-charm  | [Legacy charm](/t/charmed-mysql-explanations-legacy-charm/10788) |
 
 # Redirects
 
