@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 import logging
-import os
 from pathlib import Path
 
 import boto3
@@ -38,16 +37,6 @@ CLOUD_CONFIGS = {
         "region": "",
     },
 }
-CLOUD_CREDENTIALS = {
-    "aws": {
-        "access-key": os.environ["AWS_ACCESS_KEY"],
-        "secret-key": os.environ["AWS_SECRET_KEY"],
-    },
-    "gcp": {
-        "access-key": os.environ["GCP_ACCESS_KEY"],
-        "secret-key": os.environ["GCP_SECRET_KEY"],
-    },
-}
 S3_INTEGRATOR = "s3-integrator"
 TIMEOUT = 10 * 60
 CLUSTER_ADMIN_PASSWORD = "clusteradminpassword"
@@ -60,8 +49,23 @@ backups_by_cloud = {}
 value_before_backup, value_after_backup = None, None
 
 
+@pytest.fixture(scope="session")
+def cloud_credentials(github_secrets) -> dict[str, dict[str, str]]:
+    """Read cloud credentials."""
+    return {
+        "aws": {
+            "access-key": github_secrets["AWS_ACCESS_KEY"],
+            "secret-key": github_secrets["AWS_SECRET_KEY"],
+        },
+        "gcp": {
+            "access-key": github_secrets["GCP_ACCESS_KEY"],
+            "secret-key": github_secrets["GCP_SECRET_KEY"],
+        },
+    }
+
+
 @pytest.fixture(scope="session", autouse=True)
-def clean_backups_from_buckets() -> None:
+def clean_backups_from_buckets(cloud_credentials) -> None:
     """Teardown to clean up created backups from clouds."""
     yield
 
@@ -73,8 +77,8 @@ def clean_backups_from_buckets() -> None:
             continue
 
         session = boto3.session.Session(
-            aws_access_key_id=CLOUD_CREDENTIALS[cloud_name]["access-key"],
-            aws_secret_access_key=CLOUD_CREDENTIALS[cloud_name]["secret-key"],
+            aws_access_key_id=cloud_credentials[cloud_name]["access-key"],
+            aws_secret_access_key=cloud_credentials[cloud_name]["secret-key"],
             region_name=config["region"],
         )
         s3 = session.resource("s3", endpoint_url=config["endpoint"])
@@ -86,6 +90,7 @@ def clean_backups_from_buckets() -> None:
             bucket_object.delete()
 
 
+@pytest.mark.group(1)
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
@@ -112,8 +117,9 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     )
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_backup(ops_test: OpsTest) -> None:
+async def test_backup(ops_test: OpsTest, cloud_credentials) -> None:
     """Test to create a backup and list backups."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
     mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
@@ -136,7 +142,7 @@ async def test_backup(ops_test: OpsTest) -> None:
 
         await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
         action = await ops_test.model.units[f"{S3_INTEGRATOR}/0"].run_action(
-            "sync-s3-credentials", **CLOUD_CREDENTIALS[cloud_name]
+            "sync-s3-credentials", **cloud_credentials[cloud_name]
         )
         await action.wait()
 
@@ -182,8 +188,9 @@ async def test_backup(ops_test: OpsTest) -> None:
     )
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
+async def test_restore_on_same_cluster(ops_test: OpsTest, cloud_credentials) -> None:
     """Test to restore a backup to the same mysql cluster."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
     mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
@@ -201,7 +208,7 @@ async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
         await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
         action = await ops_test.model.units[f"{S3_INTEGRATOR}/0"].run_action(
             "sync-s3-credentials",
-            **CLOUD_CREDENTIALS[cloud_name],
+            **cloud_credentials[cloud_name],
         )
         await action.wait()
 
@@ -269,8 +276,9 @@ async def test_restore_on_same_cluster(ops_test: OpsTest) -> None:
         assert sorted(values) == sorted([value_before_backup, value_after_restore])
 
 
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
+async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials) -> None:
     """Test to restore a backup on a new mysql cluster."""
     logger.info("Deploying a new mysql cluster")
 
@@ -315,7 +323,7 @@ async def test_restore_on_new_cluster(ops_test: OpsTest) -> None:
         await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
         action = await ops_test.model.units[f"{S3_INTEGRATOR}/0"].run_action(
             "sync-s3-credentials",
-            **CLOUD_CREDENTIALS[cloud_name],
+            **cloud_credentials[cloud_name],
         )
         await action.wait()
 

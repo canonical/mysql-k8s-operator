@@ -18,12 +18,16 @@ from ops.charm import (
     RelationCreatedEvent,
 )
 from ops.framework import Object
-from ops.model import BlockedStatus
+from ops.model import ActiveStatus, BlockedStatus
 
 from constants import CONTAINER_NAME, LEGACY_MYSQL, PASSWORD_LENGTH, PEER
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
+
+MYSQL_RELATION_DATA_KEY = "mysql_relation_data"
+MYSQL_RELATION_USER_KEY = "mysql-interface-user"
+MYSQL_RELATION_DATABASE_KEY = "mysql-interface-database"
 
 
 class MySQLRelation(Object):
@@ -47,8 +51,8 @@ class MySQLRelation(Object):
         )
         self.framework.observe(self.charm.on.update_status, self._update_status)
 
-    def _get_or_set_password_in_peer_databag(self, username: str) -> str:
-        """Get a user's password from the peer databag if it exists, else populate a password.
+    def _get_or_set_password_in_peer_secrets(self, username: str) -> str:
+        """Get a user's password from the peer secrets, if it exists, else populate a password.
 
         Args:
             username: The mysql username
@@ -56,13 +60,56 @@ class MySQLRelation(Object):
         Returns:
             a string representing the password for the mysql user
         """
-        if self.charm.app_peer_data.get(f"{username}_password"):
-            return self.charm.app_peer_data.get(f"{username}_password")
+        password_key = f"{username}_password"
+        password = self.charm.get_secret("app", password_key)
+        if password:
+            return password
 
         password = generate_random_password(PASSWORD_LENGTH)
-        self.charm.app_peer_data[f"{username}_password"] = password
-
+        self.charm.set_secret("app", password_key, password)
         return password
+
+    def _get_or_generate_username(self, event_relation_id: int) -> str:
+        """Retrieve username from databag or config or generate a new one.
+
+        Assumes that the caller is the leader unit.
+        """
+        return self.charm.app_peer_data.setdefault(
+            MYSQL_RELATION_USER_KEY,
+            self.charm.config.get(MYSQL_RELATION_USER_KEY) or f"relation-{event_relation_id}",
+        )
+
+    def _get_or_generate_database(self, event_relation_id: int) -> str:
+        """Retrieve database from databag or config or generate a new one.
+
+        Assumes that the caller is the leader unit.
+        """
+        return self.charm.app_peer_data.setdefault(
+            MYSQL_RELATION_DATABASE_KEY,
+            self.charm.config.get(MYSQL_RELATION_DATABASE_KEY) or f"database-{event_relation_id}",
+        )
+
+    def _on_config_changed(self, _) -> None:
+        """Handle the change of the username/database config."""
+        if not self.charm.unit.is_leader():
+            return
+
+        if not (
+            self.charm.app_peer_data.get(MYSQL_RELATION_USER_KEY)
+            and self.charm.app_peer_data.get(MYSQL_RELATION_DATABASE_KEY)
+        ):
+            return
+
+        if isinstance(self.charm.unit.status, ActiveStatus) and self.model.relations.get(
+            LEGACY_MYSQL
+        ):
+            for key in (MYSQL_RELATION_USER_KEY, MYSQL_RELATION_DATABASE_KEY):
+                config_value = self.charm.config.get(key)
+                if config_value and config_value != self.charm.app_peer_data[key]:
+                    self.charm.app.status = BlockedStatus(
+                        f"Remove `mysql` relations in order to change `{key}` config"
+                    )
+                    return
 
     def _on_leader_elected(self, _) -> None:
         """Handle the leader elected event.
@@ -78,22 +125,6 @@ class MySQLRelation(Object):
         leader_elected_count = int(self.charm.app_peer_data.get("leader_elected_count", "1"))
         self.charm.app_peer_data["leader_elected_count"] = str(leader_elected_count + 1)
 
-    def _on_config_changed(self, _) -> None:
-        """Handle the delayed setup of relation configuration."""
-        if not self.model.get_relation(LEGACY_MYSQL):
-            # skip if the relation is not present
-            return
-
-        if self.charm.app_peer_data.get("mysql_relation_data"):
-            # skip if the relation data is already set
-            return
-
-        username = self.charm.config.get("mysql-interface-user")
-        database = self.charm.config.get("mysql-interface-database")
-
-        if username and database:
-            self._on_mysql_relation_created(None)
-
     def _update_status(self, _) -> None:
         """Handle the update status event.
 
@@ -101,7 +132,7 @@ class MySQLRelation(Object):
         If they are different, changes a key in the peer relation databag in order
         to trigger the peer relation changed event.
         """
-        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) == "{}":
+        if not (relation_data := self.charm.app_peer_data.get(MYSQL_RELATION_DATA_KEY)):
             return
 
         if not self.charm.unit_peer_data.get("unit-initialized"):
@@ -141,7 +172,7 @@ class MySQLRelation(Object):
             event.defer()
             return
 
-        if (relation_data := self.charm.app_peer_data.get("mysql_relation_data", "{}")) == "{}":
+        if not (relation_data := self.charm.app_peer_data.get(MYSQL_RELATION_DATA_KEY)):
             logger.debug("No `mysql` relation data present")
             return
 
@@ -175,30 +206,20 @@ class MySQLRelation(Object):
             return
 
         # Wait until on-config-changed event is executed (for root password to have been set)
-        # and for the member to be online
+        # and for the member to be initialized and online
         if (
             not self.charm._is_peer_data_set
+            or not self.charm.unit_peer_data.get("unit-initialized")
             or self.charm.unit_peer_data.get("member-state") != "online"
         ):
             logger.info("Unit not ready to execute `mysql` relation created. Deferring")
-            if event:
-                # Only defer if event is not None (i.e. not called from config-changed)
-                event.defer()
+            event.defer()
             return
 
         logger.warning("DEPRECATION WARNING - `mysql` is a legacy interface")
 
-        username = self.charm.config.get("mysql-interface-user")
-        database = self.charm.config.get("mysql-interface-database")
-
-        # Only execute handler if config values are set
-        # else we'd be unable to create database and user
-        if not username or not database:
-            logger.warning("Missing mysql-interface-user or mysql-interface-database")
-            self.charm.unit.status = BlockedStatus(
-                "Missing config mysql-interface-{user,database}"
-            )
-            return
+        username = self._get_or_generate_username(event.relation.id)
+        database = self._get_or_generate_database(event.relation.id)
 
         user_exists = False
         try:
@@ -211,9 +232,14 @@ class MySQLRelation(Object):
         # Only execute if the application user does not exist
         if user_exists:
             logger.info(f"mysql user {username} exists. nooping")
+            mysql_relation_data = self.charm.app_peer_data[MYSQL_RELATION_DATA_KEY]
+
+            updates = json.loads(mysql_relation_data)
+            event.relation.data[self.charm.unit].update(updates)
+
             return
 
-        password = self._get_or_set_password_in_peer_databag(username)
+        password = self._get_or_set_password_in_peer_secrets(username)
 
         try:
             logger.info("Creating application database and scoped user")
@@ -244,7 +270,10 @@ class MySQLRelation(Object):
             "user": username,
         }
 
-        self.charm.app_peer_data["mysql_relation_data"] = json.dumps(updates)
+        self.charm.app_peer_data[MYSQL_RELATION_USER_KEY] = username
+        self.charm.app_peer_data[MYSQL_RELATION_DATABASE_KEY] = database
+
+        self.charm.app_peer_data[MYSQL_RELATION_DATA_KEY] = json.dumps(updates)
 
     def _on_mysql_relation_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the 'mysql' legacy relation broken event.
@@ -270,4 +299,14 @@ class MySQLRelation(Object):
         except MySQLDeleteUsersForUnitError:
             self.charm.unit.status = BlockedStatus("Failed to delete users for unit")
 
-        del self.charm.app_peer_data["mysql_relation_data"]
+        del self.charm.app_peer_data[MYSQL_RELATION_USER_KEY]
+        del self.charm.app_peer_data[MYSQL_RELATION_DATABASE_KEY]
+
+        del self.charm.app_peer_data[MYSQL_RELATION_DATA_KEY]
+
+        if isinstance(
+            self.charm.app.status, BlockedStatus
+        ) and self.charm.app.status.message.startswith(
+            "Remove `mysql` relations in order to change"
+        ):
+            self.charm.app.status = ActiveStatus()

@@ -6,6 +6,7 @@ import asyncio
 import logging
 from pathlib import Path
 
+import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 from tenacity import AsyncRetrying, RetryError, stop_after_attempt, wait_fixed
@@ -25,6 +26,7 @@ CLUSTER_NAME = "test_cluster"
 
 
 # TODO: deploy and relate osm-grafana once it can be use with MySQL Group Replication
+@pytest.mark.group(1)
 async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
     """Test the deployment and relation with osm bundle with mysql replacing mariadb."""
     async with ops_test.fast_forward():
@@ -33,6 +35,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         config = {
             "mysql-root-interface-user": "keystone",
             "mysql-root-interface-database": "keystone",
+            "profile": "testing",
         }
 
         osm_pol_resources = {
@@ -47,6 +50,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 config=config,
                 num_units=3,
                 series="jammy",
+                trust=True,
             ),
             # Deploy the osm-keystone charm
             # (using ops_test.juju instead of ops_test.deploy as the latter does
@@ -146,6 +150,8 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         )
 
 
+@pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_osm_pol_operations(ops_test: OpsTest) -> None:
     """Test the existence of databases and tables created by osm-pol's migrations."""
     show_databases_sql = [

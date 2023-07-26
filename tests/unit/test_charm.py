@@ -41,6 +41,7 @@ class TestCharm(unittest.TestCase):
                     "startup": "enabled",
                     "user": "mysql",
                     "group": "mysql",
+                    "kill-delay": "24h",
                 },
                 "mysqld_exporter": {
                     "override": "replace",
@@ -83,7 +84,6 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.create_cluster_set")
     @patch("mysql_k8s_helpers.MySQL.initialize_juju_units_operations_table")
-    @patch("mysql_k8s_helpers.MySQL.safe_stop_mysqld_safe")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.0")
     @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
     @patch("mysql_k8s_helpers.MySQL.configure_mysql_users")
@@ -95,7 +95,8 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster")
     @patch("mysql_k8s_helpers.MySQL.get_member_state", return_value=("online", "primary"))
     @patch(
-        "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters", return_value=(123456, None)
+        "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters",
+        return_value=(123456, None, None),
     )
     @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=(120, None))
     def test_mysql_pebble_ready(
@@ -112,7 +113,6 @@ class TestCharm(unittest.TestCase):
         _configure_mysql_users,
         _wait_until_mysql_connection,
         _get_mysql_version,
-        _safe_stop_mysqld_safe,
         _initialize_juju_units_operations_table,
         _is_data_dir_initialised,
         _create_cluster_set,
@@ -136,8 +136,6 @@ class TestCharm(unittest.TestCase):
         plan = self.harness.get_container_pebble_plan("mysql")
         self.assertEqual(plan.to_dict()["services"], self.layer_dict["services"])
 
-        _safe_stop_mysqld_safe.assert_called_once()
-
     @patch("charm.MySQLOperatorCharm._mysql", new_callable=PropertyMock)
     def test_mysql_pebble_ready_non_leader(self, _mysql_mock):
         # Test pebble ready when not leader
@@ -157,7 +155,7 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader()
         self.charm.on.config_changed.emit()
         self.charm._mysql = _mysql_mock
-        _mysql_mock.get_innodb_buffer_pool_parameters.return_value = (123456, None)
+        _mysql_mock.get_innodb_buffer_pool_parameters.return_value = (123456, None, None)
         _mysql_mock.initialise_mysqld.side_effect = MySQLInitialiseMySQLDError
         # Trigger pebble ready after leader election
         self.harness.container_pebble_ready("mysql")

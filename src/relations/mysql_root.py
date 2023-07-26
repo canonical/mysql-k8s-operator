@@ -12,7 +12,7 @@ from charms.mysql.v0.mysql import (
 )
 from ops.charm import CharmBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
-from ops.model import BlockedStatus
+from ops.model import ActiveStatus, BlockedStatus
 
 from constants import LEGACY_MYSQL_ROOT, PASSWORD_LENGTH
 from mysql_k8s_helpers import (
@@ -24,8 +24,12 @@ from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
 
+MYSQL_ROOT_RELATION_DATA_KEY = "mysql_root_relation_data"
+MYSQL_ROOT_RELATION_USER_KEY = "mysql-root-interface-user"
+MYSQL_ROOT_RELATION_DATABASE_KEY = "mysql-root-interface-database"
 
-class MySQLOSMRelation(Object):
+
+class MySQLRootRelation(Object):
     """Encapsulation of the legacy mysql-root relation."""
 
     def __init__(self, charm: CharmBase):
@@ -34,15 +38,16 @@ class MySQLOSMRelation(Object):
         self.charm = charm
 
         self.framework.observe(self.charm.on.leader_elected, self._on_leader_elected)
+        self.framework.observe(self.charm.on.config_changed, self._on_config_changed)
         self.framework.observe(
-            self.charm.on[LEGACY_MYSQL_ROOT].relation_created, self._on_osm_mysql_relation_created
+            self.charm.on[LEGACY_MYSQL_ROOT].relation_created, self._on_mysql_root_relation_created
         )
         self.framework.observe(
-            self.charm.on[LEGACY_MYSQL_ROOT].relation_broken, self._on_osm_mysql_relation_broken
+            self.charm.on[LEGACY_MYSQL_ROOT].relation_broken, self._on_mysql_root_relation_broken
         )
 
-    def _get_password_from_peer_databag(self, username: str) -> str:
-        """Get a user's password from the peer databag if it exists, else populate a password.
+    def _get_or_set_password_in_peer_secrets(self, username: str) -> str:
+        """Get a user's password from the peer secrets, if it exists, else populate a password.
 
         Args:
             username: The mysql username
@@ -50,13 +55,35 @@ class MySQLOSMRelation(Object):
         Returns:
             a string representing the password for the mysql user
         """
-        if self.charm.app_peer_data.get(f"{username}_password"):
-            return self.charm.app_peer_data.get(f"{username}_password")
+        password_key = f"{username}_password"
+        password = self.charm.get_secret("app", password_key)
+        if password:
+            return password
 
         password = generate_random_password(PASSWORD_LENGTH)
-        self.charm.app_peer_data[f"{username}_password"] = password
-
+        self.charm.set_secret("app", password_key, password)
         return password
+
+    def _get_or_generate_username(self, event_relation_id: int) -> str:
+        """Retrieve username from databag or config or generate a new one.
+
+        Assumes that the caller is the leader unit.
+        """
+        return self.charm.app_peer_data.setdefault(
+            MYSQL_ROOT_RELATION_USER_KEY,
+            self.charm.config.get(MYSQL_ROOT_RELATION_USER_KEY) or f"relation-{event_relation_id}",
+        )
+
+    def _get_or_generate_database(self, event_relation_id: int) -> str:
+        """Retrieve database from databag or config or generate a new one.
+
+        Assumes that the caller is the leader unit.
+        """
+        return self.charm.app_peer_data.setdefault(
+            MYSQL_ROOT_RELATION_DATABASE_KEY,
+            self.charm.config.get(MYSQL_ROOT_RELATION_DATABASE_KEY)
+            or f"database-{event_relation_id}",
+        )
 
     def _on_leader_elected(self, _) -> None:
         """Handle the leader elected event.
@@ -68,7 +95,9 @@ class MySQLOSMRelation(Object):
         if not self.charm._is_peer_data_set:
             return
 
-        relation_data = json.loads(self.charm.app_peer_data.get("osm_mysql_relation_data", "{}"))
+        relation_data = json.loads(
+            self.charm.app_peer_data.get(MYSQL_ROOT_RELATION_DATA_KEY, "{}")
+        )
 
         for relation in self.charm.model.relations.get(LEGACY_MYSQL_ROOT, []):
             relation_databag = relation.data
@@ -88,8 +117,30 @@ class MySQLOSMRelation(Object):
 
             relation_databag[self.charm.unit]["host"] = primary_address.split(":")[0]
 
-    def _on_osm_mysql_relation_created(self, event: RelationCreatedEvent) -> None:
-        """Handle the legacy 'mysql' relation created event.
+    def _on_config_changed(self, _) -> None:
+        """Handle the change of the username/database config."""
+        if not self.charm.unit.is_leader():
+            return
+
+        if not (
+            self.charm.app_peer_data.get(MYSQL_ROOT_RELATION_USER_KEY)
+            and self.charm.app_peer_data.get(MYSQL_ROOT_RELATION_DATABASE_KEY)
+        ):
+            return
+
+        if isinstance(self.charm.unit.status, ActiveStatus) and self.model.relations.get(
+            LEGACY_MYSQL_ROOT
+        ):
+            for key in (MYSQL_ROOT_RELATION_USER_KEY, MYSQL_ROOT_RELATION_DATABASE_KEY):
+                config_value = self.charm.config.get(key)
+                if config_value and config_value != self.charm.app_peer_data[key]:
+                    self.charm.app.status = BlockedStatus(
+                        f"Remove `mysql-root` relations in order to change `{key}` config"
+                    )
+                    return
+
+    def _on_mysql_root_relation_created(self, event: RelationCreatedEvent) -> None:
+        """Handle the legacy 'mysql-root' relation created event.
 
         Will set up the database and the scoped application user. The connection
         data (relation data) is then copied into the peer relation databag (to
@@ -100,20 +151,17 @@ class MySQLOSMRelation(Object):
             return
 
         # Wait until on-config-changed event is executed
-        # (wait for root password to have been set)
-        if not self.charm._is_peer_data_set:
+        # (wait for root password to have been set) or wait until the unit is initialized
+        if not self.charm._is_peer_data_set or not self.charm.unit_peer_data.get(
+            "unit-initialized"
+        ):
             event.defer()
             return
 
         logger.warning("DEPRECATION WARNING - `mysql-root` is a legacy interface")
 
-        username = self.charm.config.get("mysql-root-interface-user")
-        database = self.charm.config.get("mysql-root-interface-database")
-
-        # Ensure that config values exist, else we will be unable to create database and user
-        if not username or not database:
-            self.charm.unit.status = BlockedStatus("Missing `mysql-root` relation data")
-            return
+        username = self._get_or_generate_username(event.relation.id)
+        database = self._get_or_generate_database(event.relation.id)
 
         user_exists = False
         try:
@@ -123,15 +171,16 @@ class MySQLOSMRelation(Object):
             return
 
         # Only execute if the application user does not exist
+        # since it could have been created by another related app
         if user_exists:
-            osm_mysql_relation_data = self.charm.app_peer_data["osm_mysql_relation_data"]
+            mysql_root_relation_data = self.charm.app_peer_data[MYSQL_ROOT_RELATION_DATA_KEY]
 
-            updates = json.loads(osm_mysql_relation_data)
+            updates = json.loads(mysql_root_relation_data)
             event.relation.data[self.charm.unit].update(updates)
 
             return
 
-        password = self._get_password_from_peer_databag(username)
+        password = self._get_or_set_password_in_peer_secrets(username)
 
         try:
             self.charm._mysql.create_database(database)
@@ -153,17 +202,20 @@ class MySQLOSMRelation(Object):
             "host": primary_address.split(":")[0],
             "password": password,
             "port": "3306",
-            "root_password": self.charm.app_peer_data["root-password"],
+            "root_password": self.charm.get_secret("app", "root-password"),
             "user": username,
         }
 
         event.relation.data[self.charm.unit].update(updates)
 
-        # Store the relation data into the peer relation databag
-        self.charm.app_peer_data["osm_mysql_relation_data"] = json.dumps(updates)
+        self.charm.app_peer_data[MYSQL_ROOT_RELATION_USER_KEY] = username
+        self.charm.app_peer_data[MYSQL_ROOT_RELATION_DATABASE_KEY] = database
 
-    def _on_osm_mysql_relation_broken(self, event: RelationBrokenEvent) -> None:
-        """Handle the 'mysql' legacy relation broken event.
+        # Store the relation data into the peer relation databag
+        self.charm.app_peer_data[MYSQL_ROOT_RELATION_DATA_KEY] = json.dumps(updates)
+
+    def _on_mysql_root_relation_broken(self, event: RelationBrokenEvent) -> None:
+        """Handle the 'mysql-root' legacy relation broken event.
 
         Delete the application user created in the relation created
         event handler.
@@ -182,3 +234,15 @@ class MySQLOSMRelation(Object):
             self.charm._mysql.delete_users_with_label("label", "mysql-root-legacy-relation")
         except MySQLDeleteUsersForUnitError:
             self.charm.unit.status = BlockedStatus("Failed to delete database users")
+
+        del self.charm.app_peer_data[MYSQL_ROOT_RELATION_USER_KEY]
+        del self.charm.app_peer_data[MYSQL_ROOT_RELATION_DATABASE_KEY]
+
+        del self.charm.app_peer_data[MYSQL_ROOT_RELATION_DATA_KEY]
+
+        if isinstance(
+            self.charm.app.status, BlockedStatus
+        ) and self.charm.app.status.message.startswith(
+            "Remove `mysql-root` relations in order to change"
+        ):
+            self.charm.app.status = ActiveStatus()
