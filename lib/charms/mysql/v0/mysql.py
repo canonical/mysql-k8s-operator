@@ -91,7 +91,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 36
+LIBPATCH = 37
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1413,11 +1413,15 @@ class MySQLBase(ABC):
             )
             raise MySQLGetMemberStateError(e.message)
 
+        # output is like:
+        # 'MEMBER_STATE\tMEMBER_ROLE\tMEMBER_ID\t@@server_uuid\nONLINE\tPRIMARY\t<uuid>\t<uuid>\n'
         lines = output.lower().split("\n")
         if len(lines) < 2:
             raise MySQLGetMemberStateError("No member state retrieved")
 
         for line in lines[1:]:
+            # results will be like:
+            # ['online', 'primary', 'a6c00302-1c07-11ee-bca1-...', 'a6c00302-1c07-11ee-bca1-...']
             results = line.split("\t")
             if results[2] == results[3]:
                 # filter server uuid
