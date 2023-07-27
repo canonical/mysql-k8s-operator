@@ -20,7 +20,7 @@ The "modern" charm provides temporary support for the legacy interfaces:
 
 ```
   mysql:
-    charm: mysql
+    charm: mysql-k8s
     channel: 8.0/stable
     trust: true
 ```
@@ -33,12 +33,16 @@ The "modern" charm provides temporary support for the legacy interfaces:
 
 ## How to deploy old "legacy" mysql charm
 
-Deploy the charm using the proper charm/channel `latest/stable`:
+Deploy the charm using the proper charm/channel:
 
 ```
-  mariadb:
-    charm: mariadb
+  osm-mariadb:
+    charm: charmed-osm-mariadb-k8s
     channel: latest/stable
+
+  mysql:
+    charm: mysql-innodb-cluster
+    channel: 8.0/stable
 ```
 
 ## Supported MySQL versions by modern charm
