@@ -91,10 +91,6 @@ class MySQLExecuteBackupCommandsError(Error):
     """
 
 
-class MySQLGetInnoDBBufferPoolParametersError(Error):
-    """Exception raised when there is an error computing the innodb buffer pool parameters."""
-
-
 class MySQLRetrieveBackupWithXBCloudError(Error):
     """Exception raised when there is an error retrieving a backup from S3 with xbcloud."""
 
@@ -282,10 +278,12 @@ class MySQL(MySQLBase):
 
     def create_custom_config_file(
         self,
+        *,
         report_host: str,
         innodb_buffer_pool_size: int,
         innodb_buffer_pool_chunk_size: Optional[int],
         gr_message_cache_size: Optional[int],
+        max_connections: int,
     ) -> None:
         """Create custom configuration file.
 
@@ -298,6 +296,7 @@ class MySQL(MySQLBase):
             "bind-address = 0.0.0.0",
             "mysqlx-bind-address = 0.0.0.0",
             f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
+            f"max_connections = {max_connections}",
         ]
 
         if innodb_buffer_pool_chunk_size:

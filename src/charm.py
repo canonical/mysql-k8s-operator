@@ -18,6 +18,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLGetAutoTunningParametersError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
@@ -74,7 +75,6 @@ from k8s_helpers import KubernetesHelpers
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
-    MySQLGetInnoDBBufferPoolParametersError,
     MySQLInitialiseMySQLDError,
 )
 from relations.mysql import MySQLRelation
@@ -304,6 +304,7 @@ class MySQLOperatorCharm(CharmBase):
             innodb_buffer_pool_size = 20 * BYTES_1MB
             innodb_buffer_pool_chunk_size = 1 * BYTES_1MB
             group_replication_message_cache_size = 128 * BYTES_1MB
+            max_connections = 20
         else:
             try:
                 (
@@ -311,7 +312,8 @@ class MySQLOperatorCharm(CharmBase):
                     innodb_buffer_pool_chunk_size,
                 ) = self._mysql.get_innodb_buffer_pool_parameters()
                 group_replication_message_cache_size = None
-            except MySQLGetInnoDBBufferPoolParametersError:
+                max_connections = self._mysql.get_max_connections()
+            except MySQLGetAutoTunningParametersError:
                 self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
                 return False
 
@@ -321,6 +323,7 @@ class MySQLOperatorCharm(CharmBase):
                 innodb_buffer_pool_size=innodb_buffer_pool_size,
                 innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
                 gr_message_cache_size=group_replication_message_cache_size,
+                max_connections=max_connections,
             )
         except MySQLCreateCustomConfigFileError:
             self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
