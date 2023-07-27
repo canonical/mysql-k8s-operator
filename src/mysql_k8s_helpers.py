@@ -302,7 +302,6 @@ class MySQL(MySQLBase):
         if innodb_buffer_pool_chunk_size:
             content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
 
-        # TODO: Enable after GR is enabled
         if gr_message_cache_size:
             content.append(f"loose-group_replication_message_cache_size = {gr_message_cache_size}")
 
