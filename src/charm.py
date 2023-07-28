@@ -310,6 +310,7 @@ class MySQLOperatorCharm(CharmBase):
                 (
                     innodb_buffer_pool_size,
                     innodb_buffer_pool_chunk_size,
+                    group_replication_message_cache_size,
                 ) = self._mysql.get_innodb_buffer_pool_parameters()
                 group_replication_message_cache_size = None
                 max_connections = self._mysql.get_max_connections()

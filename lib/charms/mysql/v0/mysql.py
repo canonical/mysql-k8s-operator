@@ -98,7 +98,8 @@ UNIT_ADD_LOCKNAME = "unit-add"
 
 BYTES_1GiB = 1073741824  # 1 gibibyte
 BYTES_1GB = 1000000000  # 1 gigabyte
-BYTES_1MiB = 1048576     # 1 mebibyte
+BYTES_1MiB = 1048576  # 1 mebibyte
+
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -1519,26 +1520,30 @@ class MySQLBase(ABC):
 
         return matches.group(1) != "0"
 
-    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int]]:
+    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int], Optional[int]]:
         """Get innodb buffer pool parameters for the instance.
 
-        Returns: a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size))
+        Returns:
+            a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size),
+            optional(group_replication_message_cache))
         """
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
 
         chunk_size_min = BYTES_1MiB
         chunk_size_default = 128 * BYTES_1MiB
-        group_replication_message_cache = BYTES_1GiB
+        group_replication_message_cache_default = BYTES_1GiB
 
         try:
             innodb_buffer_pool_chunk_size = None
+            group_replication_message_cache = None
             total_memory = self._get_total_memory()
 
-            pool_size = int(total_memory * 0.75) - group_replication_message_cache
+            pool_size = int(total_memory * 0.75) - group_replication_message_cache_default
 
-            if total_memory - pool_size < BYTES_1GB:
-                pool_size = int(total_memory * 0.5) - group_replication_message_cache
+            if pool_size < 0 or total_memory - pool_size < BYTES_1GB:
+                group_replication_message_cache = 128 * BYTES_1MiB
+                pool_size = int(total_memory * 0.5)
 
             if pool_size % chunk_size_default != 0:
                 # round pool_size to be a multiple of chunk_size_default
@@ -1555,7 +1560,7 @@ class MySQLBase(ABC):
 
                 innodb_buffer_pool_chunk_size = chunk_size
 
-            return (pool_size, innodb_buffer_pool_chunk_size)
+            return (pool_size, innodb_buffer_pool_chunk_size, group_replication_message_cache)
         except Exception:
             logger.exception("Failed to compute innodb buffer pool parameters")
             raise MySQLGetAutoTunningParametersError("Error computing buffer pool parameters")
