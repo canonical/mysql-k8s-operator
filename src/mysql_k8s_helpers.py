@@ -305,8 +305,8 @@ class MySQL(MySQLBase):
         if gr_message_cache_size:
             content.append(f"loose-group_replication_message_cache_size = {gr_message_cache_size}")
 
+        content.append("")
         try:
-            content.append("")
             self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
         except Exception:
             raise MySQLCreateCustomConfigFileError()
