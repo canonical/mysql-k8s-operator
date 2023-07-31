@@ -519,7 +519,7 @@ class MySQLBase(ABC):
         password: str,
         hostname: str,
         *,
-        unit_name: str = None,
+        unit_name: Optional[str] = None,
         create_database: bool = True,
     ) -> None:
         """Create an application database and a user scoped to the created database.
@@ -1252,7 +1252,9 @@ class MySQLBase(ABC):
 
         return (member_addresses, "<MEMBER_ADDRESSES>" in output)
 
-    def get_cluster_primary_address(self, connect_instance_address: str = None) -> Optional[str]:
+    def get_cluster_primary_address(
+        self, connect_instance_address: Optional[str] = None
+    ) -> Optional[str]:
         """Get the cluster primary's address.
 
         Keyword args:
@@ -1617,8 +1619,8 @@ Swap:     1027600384  1027600384           0
         mysqld_socket_file: str,
         tmp_base_directory: str,
         defaults_config_file: str,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Executes commands to create a backup with the given args."""
         nproc_command = "nproc".split()
@@ -1694,8 +1696,8 @@ Swap:     1027600384  1027600384           0
     def delete_temp_backup_directory(
         self,
         tmp_base_directory: str,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> None:
         """Delete the temp backup directory."""
         delete_temp_dir_command = f"find {tmp_base_directory} -wholename {tmp_base_directory}/xtra_backup_* -delete".split()
@@ -1918,8 +1920,8 @@ Swap:     1027600384  1027600384           0
         self,
         commands: List[str],
         bash: bool = False,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
         env: Dict = {},
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
@@ -2024,7 +2026,11 @@ Swap:     1027600384  1027600384           0
 
     @abstractmethod
     def _run_mysqlcli_script(
-        self, script: str, user: str = "root", password: str = None, timeout: Optional[int] = None
+        self,
+        script: str,
+        user: str = "root",
+        password: Optional[str] = None,
+        timeout: Optional[int] = None,
     ) -> str:
         """Execute a MySQL CLI script.
 

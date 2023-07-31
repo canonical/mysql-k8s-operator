@@ -609,8 +609,8 @@ class MySQL(MySQLBase):
         self,
         commands: List[str],
         bash: bool = False,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
         env: Dict = {},
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
@@ -625,7 +625,7 @@ class MySQL(MySQLBase):
                 environment=env,
             )
             stdout, stderr = process.wait_output()
-            return (stdout, stderr)
+            return (stdout, stderr or "")
         except ExecError as e:
             logger.debug(f"Failed command: {commands=}, {user=}, {group=}")
             raise MySQLExecError(e.stderr)
