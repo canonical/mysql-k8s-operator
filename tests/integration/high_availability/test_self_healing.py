@@ -344,6 +344,10 @@ async def test_network_cut_affecting_an_instance(
         await ops_test.model.block_until(
             lambda: primary.workload_status == "maintenance", timeout=TIMEOUT
         )
+        logger.info("Wait until returning instance become active")
+        await ops_test.model.block_until(
+            lambda: primary.workload_status == "active", timeout=TIMEOUT
+        )
 
     logger.info("Wait until all units are online")
     await wait_until_units_in_status(ops_test, mysql_units, mysql_units[0], "online")
