@@ -1420,6 +1420,12 @@ class MySQLBase(ABC):
         if len(lines) < 2:
             raise MySQLGetMemberStateError("No member state retrieved")
 
+        if len(lines) == 2:
+            # Instance just know it own state
+            # sometimes member_id is not populated
+            results = lines[1].split("\t")
+            return results[0], results[1] or "unknown"
+
         for line in lines[1:]:
             # results will be like:
             # ['online', 'primary', 'a6c00302-1c07-11ee-bca1-...', 'a6c00302-1c07-11ee-bca1-...']
@@ -1427,12 +1433,6 @@ class MySQLBase(ABC):
             if results[2] == results[3]:
                 # filter server uuid
                 return results[0], results[1] or "unknown"
-
-        if len(lines) == 2:
-            # Instance just know it own state
-            # sometimes member_id is not populated
-            results = lines[1].split("\t")
-            return results[0], results[1] or "unknown"
 
         raise MySQLGetMemberStateError("No member state retrieved")
 
