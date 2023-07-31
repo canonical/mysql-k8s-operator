@@ -1800,7 +1800,7 @@ Swap:     1027600384  1027600384           0
     ) -> Tuple[str, str]:
         """Prepare the backup in the provided dir for restore."""
         try:
-            innodb_buffer_pool_size, _ = self.get_innodb_buffer_pool_parameters()
+            innodb_buffer_pool_size, _, _ = self.get_innodb_buffer_pool_parameters()
         except MySQLGetAutoTunningParametersError as e:
             raise MySQLPrepareBackupForRestoreError(e)
 
