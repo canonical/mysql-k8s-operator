@@ -77,7 +77,7 @@ from charms.mysql.v0.s3_helpers import (
     list_backups_in_s3_path,
     upload_content_to_s3,
 )
-from ops.charm import ActionEvent, CharmBase
+from ops.charm import ActionEvent
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
 from ops.model import ActiveStatus, BlockedStatus
