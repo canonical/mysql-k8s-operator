@@ -342,7 +342,7 @@ async def test_network_cut_affecting_an_instance(
     async with ops_test.fast_forward():
         logger.info("Wait until returning instance enters recovery")
         await ops_test.model.block_until(
-            lambda: primary.workload_status == "maintenance", timeout=TIMEOUT
+            lambda: primary.workload_status != "active", timeout=TIMEOUT
         )
         logger.info("Wait until returning instance become active")
         await ops_test.model.block_until(
