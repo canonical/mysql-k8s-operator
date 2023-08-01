@@ -96,8 +96,10 @@ class TestCharm(unittest.TestCase):
     @patch(
         "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters", return_value=(123456, None)
     )
+    @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=(120, None))
     def test_mysql_pebble_ready(
         self,
+        _get_max_connections,
         _get_innodb_buffer_pool_parameters,
         _get_member_state,
         _is_instance_in_cluster,
