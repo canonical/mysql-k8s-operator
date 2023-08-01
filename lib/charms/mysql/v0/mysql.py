@@ -91,10 +91,14 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 36
+LIBPATCH = 37
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
+
+BYTES_1GiB = 1073741824  # 1 gibibyte
+BYTES_1GB = 1000000000  # 1 gigabyte
+BYTES_1MiB = 1048576  # 1 mebibyte
 
 
 class Error(Exception):
@@ -515,7 +519,7 @@ class MySQLBase(ABC):
         password: str,
         hostname: str,
         *,
-        unit_name: str = None,
+        unit_name: Optional[str] = None,
         create_database: bool = True,
     ) -> None:
         """Create an application database and a user scoped to the created database.
@@ -1248,7 +1252,9 @@ class MySQLBase(ABC):
 
         return (member_addresses, "<MEMBER_ADDRESSES>" in output)
 
-    def get_cluster_primary_address(self, connect_instance_address: str = None) -> Optional[str]:
+    def get_cluster_primary_address(
+        self, connect_instance_address: Optional[str] = None
+    ) -> Optional[str]:
         """Get the cluster primary's address.
 
         Keyword args:
@@ -1410,21 +1416,25 @@ class MySQLBase(ABC):
             )
             raise MySQLGetMemberStateError(e.message)
 
-        lines = output.lower().split("\n")
+        # output is like:
+        # 'MEMBER_STATE\tMEMBER_ROLE\tMEMBER_ID\t@@server_uuid\nONLINE\tPRIMARY\t<uuid>\t<uuid>\n'
+        lines = output.strip().lower().split("\n")
         if len(lines) < 2:
             raise MySQLGetMemberStateError("No member state retrieved")
-
-        for line in lines[1:]:
-            results = line.split("\t")
-            if results[2] == results[3]:
-                # filter server uuid
-                return results[0], results[1] or "unknown"
 
         if len(lines) == 2:
             # Instance just know it own state
             # sometimes member_id is not populated
             results = lines[1].split("\t")
             return results[0], results[1] or "unknown"
+
+        for line in lines[1:]:
+            # results will be like:
+            # ['online', 'primary', 'a6c00302-1c07-11ee-bca1-...', 'a6c00302-1c07-11ee-bca1-...']
+            results = line.split("\t")
+            if results[2] == results[3]:
+                # filter server uuid
+                return results[0], results[1] or "unknown"
 
         raise MySQLGetMemberStateError("No member state retrieved")
 
@@ -1512,32 +1522,36 @@ class MySQLBase(ABC):
 
         return matches.group(1) != "0"
 
-    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int]]:
+    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int], Optional[int]]:
         """Get innodb buffer pool parameters for the instance.
 
-        Returns: a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size))
+        Returns:
+            a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size),
+            optional(group_replication_message_cache))
         """
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
 
-        chunk_size_min = 1048576  # 1 mebibyte
-        chunk_size_default = 134217728  # 128 mebibytes
+        chunk_size_min = BYTES_1MiB
+        chunk_size_default = 128 * BYTES_1MiB
+        group_replication_message_cache_default = BYTES_1GiB
 
         try:
             innodb_buffer_pool_chunk_size = None
+            group_replication_message_cache = None
             total_memory = self._get_total_memory()
 
-            pool_size = int(total_memory * 0.75)
-            # 1000000000 = 1 gigabyte
-            if total_memory - pool_size < 1000000000:
+            pool_size = int(total_memory * 0.75) - group_replication_message_cache_default
+
+            if pool_size < 0 or total_memory - pool_size < BYTES_1GB:
+                group_replication_message_cache = 128 * BYTES_1MiB
                 pool_size = int(total_memory * 0.5)
 
             if pool_size % chunk_size_default != 0:
                 # round pool_size to be a multiple of chunk_size_default
                 pool_size += chunk_size_default - (pool_size % chunk_size_default)
 
-            # 1073741824 = 1 gibibyte
-            if pool_size > 1073741824:
+            if pool_size > BYTES_1GiB:
                 chunk_size = int(pool_size / 8)
 
                 if chunk_size % chunk_size_min != 0:
@@ -1548,7 +1562,7 @@ class MySQLBase(ABC):
 
                 innodb_buffer_pool_chunk_size = chunk_size
 
-            return (pool_size, innodb_buffer_pool_chunk_size)
+            return (pool_size, innodb_buffer_pool_chunk_size, group_replication_message_cache)
         except Exception:
             logger.exception("Failed to compute innodb buffer pool parameters")
             raise MySQLGetAutoTunningParametersError("Error computing buffer pool parameters")
@@ -1558,7 +1572,7 @@ class MySQLBase(ABC):
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L61-L70
 
-        bytes_per_connection = 12582912  # 12 Megabytes
+        bytes_per_connection = 12 * BYTES_1MiB
         total_memory = 0
 
         try:
@@ -1605,8 +1619,8 @@ Swap:     1027600384  1027600384           0
         mysqld_socket_file: str,
         tmp_base_directory: str,
         defaults_config_file: str,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Executes commands to create a backup with the given args."""
         nproc_command = "nproc".split()
@@ -1682,8 +1696,8 @@ Swap:     1027600384  1027600384           0
     def delete_temp_backup_directory(
         self,
         tmp_base_directory: str,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> None:
         """Delete the temp backup directory."""
         delete_temp_dir_command = f"find {tmp_base_directory} -wholename {tmp_base_directory}/xtra_backup_* -delete".split()
@@ -1788,7 +1802,7 @@ Swap:     1027600384  1027600384           0
     ) -> Tuple[str, str]:
         """Prepare the backup in the provided dir for restore."""
         try:
-            innodb_buffer_pool_size, _ = self.get_innodb_buffer_pool_parameters()
+            innodb_buffer_pool_size, _, _ = self.get_innodb_buffer_pool_parameters()
         except MySQLGetAutoTunningParametersError as e:
             raise MySQLPrepareBackupForRestoreError(e)
 
@@ -1906,8 +1920,8 @@ Swap:     1027600384  1027600384           0
         self,
         commands: List[str],
         bash: bool = False,
-        user: str = None,
-        group: str = None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
         env: Dict = {},
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
@@ -2012,7 +2026,11 @@ Swap:     1027600384  1027600384           0
 
     @abstractmethod
     def _run_mysqlcli_script(
-        self, script: str, user: str = "root", password: str = None, timeout: Optional[int] = None
+        self,
+        script: str,
+        user: str = "root",
+        password: Optional[str] = None,
+        timeout: Optional[int] = None,
     ) -> str:
         """Execute a MySQL CLI script.
 

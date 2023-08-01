@@ -33,6 +33,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         config = {
             "mysql-root-interface-user": "keystone",
             "mysql-root-interface-database": "keystone",
+            "profile": "testing",
         }
 
         osm_pol_resources = {
@@ -47,6 +48,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 config=config,
                 num_units=3,
                 series="jammy",
+                trust=True,
             ),
             # Deploy the osm-keystone charm
             # (using ops_test.juju instead of ops_test.deploy as the latter does

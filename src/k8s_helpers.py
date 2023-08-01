@@ -11,9 +11,11 @@ from lightkube import Client
 from lightkube.core.exceptions import ApiError
 from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
-from lightkube.resources.core_v1 import Pod, Service
+from lightkube.resources.core_v1 import Node, Pod, Service
 from ops.charm import CharmBase
 from tenacity import retry, stop_after_attempt, wait_fixed
+
+from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +143,28 @@ class KubernetesHelpers:
                 if container.name == container_name:
                     return container.resources.limits or {}
             return {}
+        except ApiError:
+            raise KubernetesClientError
+
+    def _get_node_name_for_pod(self) -> str:
+        """Return the node name for a given pod."""
+        try:
+            pod = self.client.get(Pod, name=self.pod_name, namespace=self.namespace)
+            return pod.spec.nodeName
+        except ApiError:
+            raise KubernetesClientError
+
+    def get_node_allocable_memory(self) -> int:
+        """Return the allocable memory in bytes for a given node.
+
+        Args:
+            node_name: name of the node to get the allocable memory for
+        """
+        try:
+            node = self.client.get(
+                Node, name=self._get_node_name_for_pod(), namespace=self.namespace
+            )
+            return any_memory_to_bytes(node.status.allocatable["memory"])
         except ApiError:
             raise KubernetesClientError
 

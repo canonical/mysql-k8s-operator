@@ -95,7 +95,8 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster")
     @patch("mysql_k8s_helpers.MySQL.get_member_state", return_value=("online", "primary"))
     @patch(
-        "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters", return_value=(123456, None)
+        "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters",
+        return_value=(123456, None, None),
     )
     @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=(120, None))
     def test_mysql_pebble_ready(
@@ -154,7 +155,7 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader()
         self.charm.on.config_changed.emit()
         self.charm._mysql = _mysql_mock
-        _mysql_mock.get_innodb_buffer_pool_parameters.return_value = (123456, None)
+        _mysql_mock.get_innodb_buffer_pool_parameters.return_value = (123456, None, None)
         _mysql_mock.initialise_mysqld.side_effect = MySQLInitialiseMySQLDError
         # Trigger pebble ready after leader election
         self.harness.container_pebble_ready("mysql")
