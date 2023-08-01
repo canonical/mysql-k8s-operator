@@ -204,7 +204,7 @@ class MySQLOperatorCharm(CharmBase):
                         "startup": "enabled",
                         "user": MYSQL_SYSTEM_USER,
                         "group": MYSQL_SYSTEM_GROUP,
-                        "kill-delay": "2h",
+                        "kill-delay": "24h",
                     },
                     MYSQLD_EXPORTER_SERVICE: {
                         "override": "replace",

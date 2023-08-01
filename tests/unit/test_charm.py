@@ -41,6 +41,7 @@ class TestCharm(unittest.TestCase):
                     "startup": "enabled",
                     "user": "mysql",
                     "group": "mysql",
+                    "kill-delay": "24h",
                 },
                 "mysqld_exporter": {
                     "override": "replace",
