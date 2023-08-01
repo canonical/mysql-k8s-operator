@@ -34,7 +34,7 @@ As a last step, install the Debian package `google-cloud-sdk-gke-gcloud-auth-plu
 # Create new GKE cluster
 The following command will start three [compute engines](https://cloud.google.com/compute/) on Google Cloud (imagine them as three physical servers in clouds) and deploy K8s cluster there.  To simplify the manual, the following command will use high-availability zone `europe-west1` and compute engine type `n1-standard-4` (which can be adopted for your needs if necessary):
 ```shell
-gcloud container clusters create --zone europe-west1-c $USER-$RANDOM --cluster-version 1.25 --machine-type n1-standard-4 --preemptible --num-nodes=3 --no-enable-autoupgrade
+gcloud container clusters create --zone europe-west1-c $USER-$RANDOM --cluster-version 1.25 --machine-type n1-standard-4 --num-nodes=3 --no-enable-autoupgrade
 ```
 
 Now, let's assign our account as an admin of newly created K8s:
@@ -92,10 +92,10 @@ microk8s        0                      k8s   1            built-in  A local Kube
 To clean GKE clusters and juju clouds, use:
 ```shell
 > juju destroy-controller gke-jun-9-europe-west1 --yes --destroy-all-models --destroy-storage --force
-> juju remove-cloud gke-jun-9 # --client --controller gke-jun-9-europe-west1
+> juju remove-cloud gke-jun-9
 
 > gcloud container clusters list
-> gcloud container clusters delete <$USER-$RANDOM> --zone europe-west1-c
+> gcloud container clusters delete <cluster_name> --zone europe-west1-c
 ```
 Revoke the GCloud user credentials:
 ```shell
