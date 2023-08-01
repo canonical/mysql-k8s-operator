@@ -1418,7 +1418,7 @@ class MySQLBase(ABC):
 
         # output is like:
         # 'MEMBER_STATE\tMEMBER_ROLE\tMEMBER_ID\t@@server_uuid\nONLINE\tPRIMARY\t<uuid>\t<uuid>\n'
-        lines = output.lower().split("\n")
+        lines = output.strip().lower().split("\n")
         if len(lines) < 2:
             raise MySQLGetMemberStateError("No member state retrieved")
 
