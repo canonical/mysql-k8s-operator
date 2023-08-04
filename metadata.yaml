@@ -19,8 +19,7 @@ website:
   - https://github.com/canonical/mysql-k8s-operator
   - https://chat.charmhub.io/charmhub/channels/data-platform
 maintainers:
-  - Paulo Machado <paulo.machado@canonical.com>
-  - Shayan Patel <shayan.patel@canonical.com>
+  - "Canonical Data Platform <data-platform@lists.launchpad.net>"
 
 containers:
   mysql:
