@@ -28,6 +28,8 @@ jobs:
       - lib-check
     uses: ./.github/workflows/ci.yaml
     secrets: inherit
+    permissions:
+      actions: write  # Needed to manage GitHub Actions cache
 
   build:
     name: Build charm
