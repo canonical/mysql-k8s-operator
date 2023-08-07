@@ -60,3 +60,5 @@ jobs:
           "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
           "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}",
         }
+      docker-hub-username: ${{ secrets.DOCKER_HUB_USERNAME }}
+      docker-hub-password: ${{ secrets.DOCKER_HUB_TOKEN }}
