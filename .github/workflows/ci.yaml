@@ -40,82 +40,22 @@ jobs:
     permissions:
       actions: write  # Needed to manage GitHub Actions cache
 
-  gh-hosted-collect-integration-tests:
-    name: (GH hosted) Collect integration test groups
-    needs:
-      - lint
-      - unit-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install tox & poetry
-        run: |
-          pipx install tox
-          pipx install poetry
-      - name: Select test stability level
-        id: select-test-stability
-        run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]
-          then
-            echo Running unstable and stable tests
-            echo "mark_expression=" >> "$GITHUB_OUTPUT"
-          else
-            echo Skipping unstable tests
-            echo "mark_expression=not unstable" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Collect test groups
-        id: collect-groups
-        run: tox run -e integration -- tests/integration -m '${{ steps.select-test-stability.outputs.mark_expression }}' --collect-groups
-    outputs:
-      groups: ${{ steps.collect-groups.outputs.groups }}
-
-  gh-hosted-integration-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        groups: ${{ fromJSON(needs.gh-hosted-collect-integration-tests.outputs.groups) }}
-    name: (GH hosted) ${{ matrix.groups.job_name }}
+  integration-test:
+    name: Integration test charm
     needs:
       - lint
       - unit-test
       - build
-      - gh-hosted-collect-integration-tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install tox & poetry
-        run: |
-          pipx install tox
-          pipx install poetry
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-      - name: Download packed charm(s)
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.build.outputs.artifact-name }}
-      - name: Select test stability level
-        id: select-test-stability
-        run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]
-          then
-            echo Running unstable and stable tests
-            echo "mark_expression=" >> "$GITHUB_OUTPUT"
-          else
-            echo Skipping unstable tests
-            echo "mark_expression=not unstable" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Run integration tests
-        run: tox run -e integration -- "${{ matrix.groups.path_to_test_file }}" --group="${{ matrix.groups.group_number }}" -m '${{ steps.select-test-stability.outputs.mark_expression }}'
-        env:
-          SECRETS_FROM_GITHUB: |
-            {
-              "AWS_ACCESS_KEY": "${{ secrets.AWS_ACCESS_KEY }}",
-              "AWS_SECRET_KEY": "${{ secrets.AWS_SECRET_KEY }}",
-              "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
-              "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}",
-            }
+    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v4.2.0
+    with:
+      artifact-name: ${{ needs.build.outputs.artifact-name }}
+      cloud: microk8s
+      juju-agent-version: 2.9.44
+    secrets:
+      integration-test: |
+        {
+          "AWS_ACCESS_KEY": "${{ secrets.AWS_ACCESS_KEY }}",
+          "AWS_SECRET_KEY": "${{ secrets.AWS_SECRET_KEY }}",
+          "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
+          "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}",
+        }
