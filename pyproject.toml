@@ -18,6 +18,9 @@ boto3 = "^1.28.20"
 [tool.poetry.group.charm-libs.dependencies]
 # data_platform_libs/v0/data_interfaces.py
 ops = ">=2.0.0"
+# tls_certificates_interface/v1/tls_certificates.py
+cryptography = "*"
+jsonschema = "*"
 
 [tool.poetry.group.format]
 optional = true
