@@ -60,6 +60,7 @@ jobs:
     with:
       artifact-name: ${{ needs.build.outputs.artifact-name }}
       cloud: microk8s
+      microk8s-snap-channel: latest/stable
       juju-agent-version: 2.9.44
     secrets:
       integration-test: |
