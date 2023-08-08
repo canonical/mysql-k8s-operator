@@ -33,10 +33,9 @@ async def continuous_writes(ops_test: OpsTest) -> None:
     await clear_writes_action.wait()
 
 
-@pytest.fixture()
-async def chaos_mesh(ops_test: OpsTest) -> None:
+@pytest.fixture(scope="function")
+def chaos_mesh(ops_test: OpsTest) -> None:
     """Deploys chaos mesh to the namespace and uninstalls it at the end."""
-    logger.info("Deploying chaos mesh")
     deploy_chaos_mesh(ops_test.model.info.name)
 
     yield

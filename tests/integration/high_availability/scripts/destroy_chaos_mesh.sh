@@ -15,16 +15,16 @@ destroy_chaos_mesh() {
 	    timeout 30 kubectl delete "${i}" --all --all-namespaces || true
 	done
 
-	if kubectl -n "${chaos_mesh_ns}" get mutatingwebhookconfiguration | grep -q 'choas-mesh-mutation'; then
-		timeout 30 kubectl -n "${chaos_mesh_ns}" delete mutatingwebhookconfiguration chaos-mesh-mutation || true
+	if kubectl get mutatingwebhookconfiguration | grep -q 'chaos-mesh-mutation'; then
+		timeout 30 kubectl delete mutatingwebhookconfiguration chaos-mesh-mutation || true
 	fi
 
-	if kubectl -n "${chaos_mesh_ns}" get validatingwebhookconfiguration | grep -q 'chaos-mesh-validation'; then
-		timeout 30 kubectl -n "${chaos_mesh_ns}" delete validatingwebhookconfiguration chaos-mesh-validation || true
+	if kubectl get validatingwebhookconfiguration | grep -q 'chaos-mesh-validation-auth'; then
+		timeout 30 kubectl delete validatingwebhookconfiguration chaos-mesh-validation-auth || true
 	fi
 
-	if kubectl -n "${chaos_mesh_ns}" get validatingwebhookconfiguration | grep -q 'chaos-mesh-validate-auth'; then
-		timeout 30 kubectl -n "${chaos_mesh_ns}" delete validatingwebhookconfiguration chaos-mesh-validate-auth || true
+	if kubectl get validatingwebhookconfiguration | grep -q 'chaos-mesh-validation'; then
+		timeout 30 kubectl delete validatingwebhookconfiguration chaos-mesh-validation || true
 	fi
 
 	if kubectl get clusterrolebinding | grep -q 'chaos-mesh'; then
