@@ -49,7 +49,7 @@ backups_by_cloud = {}
 value_before_backup, value_after_backup = None, None
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def cloud_credentials(github_secrets) -> dict[str, dict[str, str]]:
     """Read cloud credentials."""
     return {
