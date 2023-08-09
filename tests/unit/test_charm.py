@@ -28,9 +28,8 @@ class TestCharm(unittest.TestCase):
         self.charm = self.harness.charm
         self.maxDiff = None
 
-    @property
-    def layer_dict(self):
-        return {
+    def layer_dict(self, with_mysqld_exporter: bool = False):
+        layer = {
             "summary": "mysqld services layer",
             "description": "pebble config layer for mysqld safe and exporter",
             "services": {
@@ -45,21 +44,29 @@ class TestCharm(unittest.TestCase):
                 },
                 "mysqld_exporter": {
                     "override": "replace",
-                    "summary": "mysqld exporter",
-                    "command": "/start-mysqld-exporter.sh",
-                    "startup": "enabled",
-                    "user": "mysql",
-                    "group": "mysql",
-                    "environment": {
-                        "DATA_SOURCE_NAME": (
-                            "monitoring:"
-                            f"{self.charm.get_secret('app', 'monitoring-password')}"
-                            "@unix(/var/run/mysqld/mysqld.sock)/"
-                        )
-                    },
+                    "command": "pwd",
                 },
             },
         }
+
+        if with_mysqld_exporter:
+            layer["services"]["mysqld_exporter"] = {
+                "override": "replace",
+                "summary": "mysqld exporter",
+                "command": "/start-mysqld-exporter.sh",
+                "startup": "enabled",
+                "user": "mysql",
+                "group": "mysql",
+                "environment": {
+                    "DATA_SOURCE_NAME": (
+                        "monitoring:"
+                        f"{self.charm.get_secret('app', 'monitoring-password')}"
+                        "@unix(/var/run/mysqld/mysqld.sock)/"
+                    )
+                },
+            }
+
+        return layer
 
     def tearDown(self) -> None:
         self.patcher.stop()
@@ -67,7 +74,7 @@ class TestCharm(unittest.TestCase):
     def test_mysqld_layer(self):
         # Test layer property
         # Comparing output dicts
-        self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict)
+        self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict())
 
     def test_on_leader_elected(self):
         # Test leader election setting of
@@ -134,7 +141,11 @@ class TestCharm(unittest.TestCase):
 
         # After configuration run, plan should be populated
         plan = self.harness.get_container_pebble_plan("mysql")
-        self.assertEqual(plan.to_dict()["services"], self.layer_dict["services"])
+        self.assertEqual(plan.to_dict()["services"], self.layer_dict()["services"])
+
+        self.harness.add_relation("metrics-endpoint", "test-cos-app")
+        plan = self.harness.get_container_pebble_plan("mysql")
+        self.assertEqual(plan.to_dict()["services"], self.layer_dict(with_mysqld_exporter=True)["services"])
 
     @patch("charm.MySQLOperatorCharm._mysql", new_callable=PropertyMock)
     def test_mysql_pebble_ready_non_leader(self, _mysql_mock):
