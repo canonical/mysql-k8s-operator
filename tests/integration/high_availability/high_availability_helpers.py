@@ -523,7 +523,7 @@ def isolate_instance_from_cluster(ops_test: OpsTest, unit_name: str) -> None:
         env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
 
         try:
-            subprocess.check_output(" ".join(["kubectl", "apply", "-f", temp_file.name]), env=env)
+            subprocess.check_output(["kubectl", "apply", "-f", temp_file.name], env=env)
         except subprocess.CalledProcessError as e:
             logger.error(e.output)
             logger.error(e.stderr)
