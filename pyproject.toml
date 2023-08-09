@@ -13,7 +13,7 @@ python = "^3.10"
 ops = "^2.5.0"
 lightkube = "^0.14.0"
 tenacity = "^8.2.2"
-boto3 = "^1.28.20"
+boto3 = "^1.28.22"
 
 [tool.poetry.group.charm-libs.dependencies]
 # data_platform_libs/v0/data_interfaces.py
@@ -57,7 +57,7 @@ pytest-operator-groups = {git = "https://github.com/canonical/data-platform-work
 juju = "^2.9.44.0"
 mysql-connector-python = "~8.0.33"
 tenacity = "^8.2.2"
-boto3 = "^1.28.20"
+boto3 = "^1.28.22"
 pyyaml = "^6.0.1"
 urllib3 = "^1.26.16"
 lightkube = "^0.14.0"
