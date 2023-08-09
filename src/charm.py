@@ -47,6 +47,7 @@ from constants import (
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
     GR_MAX_MEMBERS,
+    COS_AGENT_RELATION_NAME,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
     MYSQL_LOG_FILES,
@@ -96,6 +97,9 @@ class MySQLOperatorCharm(MySQLCharmBase):
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
 
+        self.framework.observe(self.on[COS_AGENT_RELATION_NAME].relation_created, self._reconcile_mysqld_exporter)
+        self.framework.observe(self.on[COS_AGENT_RELATION_NAME].relation_broken, self._reconcile_mysqld_exporter)
+
         self.k8s_helpers = KubernetesHelpers(self)
         self.mysql_relation = MySQLRelation(self)
         self.database_relation = MySQLProvider(self)
@@ -117,6 +121,11 @@ class MySQLOperatorCharm(MySQLCharmBase):
         )
 
     @property
+    def _has_cos_relation(self) -> bool:
+        """Returns a bool indicating whether a relation with COS is present."""
+        return len(self.model.relations.get(COS_AGENT_RELATION_NAME, [])) > 0
+
+    @property
     def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
@@ -134,43 +143,50 @@ class MySQLOperatorCharm(MySQLCharmBase):
             self.get_secret("app", BACKUPS_PASSWORD_KEY),
             self.unit.get_container(CONTAINER_NAME),
             self.k8s_helpers,
+            self,
         )
 
     @property
     def _pebble_layer(self) -> Layer:
         """Return a layer for the mysqld pebble service."""
-        return Layer(
-            {
-                "summary": "mysqld services layer",
-                "description": "pebble config layer for mysqld safe and exporter",
-                "services": {
-                    MYSQLD_SAFE_SERVICE: {
-                        "override": "replace",
-                        "summary": "mysqld safe",
-                        "command": MYSQLD_SAFE_SERVICE,
-                        "startup": "enabled",
-                        "user": MYSQL_SYSTEM_USER,
-                        "group": MYSQL_SYSTEM_GROUP,
-                        "kill-delay": "24h",
-                    },
-                    MYSQLD_EXPORTER_SERVICE: {
-                        "override": "replace",
-                        "summary": "mysqld exporter",
-                        "command": "/start-mysqld-exporter.sh",
-                        "startup": "enabled",
-                        "user": MYSQL_SYSTEM_USER,
-                        "group": MYSQL_SYSTEM_GROUP,
-                        "environment": {
-                            "DATA_SOURCE_NAME": (
-                                f"{MONITORING_USERNAME}:"
-                                f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
-                                f"@unix({MYSQLD_SOCK_FILE})/"
-                            ),
-                        },
-                    },
+        layer = {
+            "summary": "mysqld services layer",
+            "description": "pebble config layer for mysqld safe and exporter",
+            "services": {
+                MYSQLD_SAFE_SERVICE: {
+                    "override": "replace",
+                    "summary": "mysqld safe",
+                    "command": MYSQLD_SAFE_SERVICE,
+                    "startup": "enabled",
+                    "user": MYSQL_SYSTEM_USER,
+                    "group": MYSQL_SYSTEM_GROUP,
+                    "kill-delay": "24h",
+                },
+                MYSQLD_EXPORTER_SERVICE: {
+                    "override": "replace",
+                    "command": "pwd",  # a simple command that does nothing
+                },
+            },
+        }
+
+        if self._has_cos_relation:
+            layer["services"][MYSQLD_EXPORTER_SERVICE] = {
+                "override": "replace",
+                "summary": "mysqld exporter",
+                "command": "/start-mysqld-exporter.sh",
+                "startup": "enabled",
+                "user": MYSQL_SYSTEM_USER,
+                "group": MYSQL_SYSTEM_GROUP,
+                "environment": {
+                    "DATA_SOURCE_NAME": (
+                        f"{MONITORING_USERNAME}:"
+                        f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
+                        f"@unix({MYSQLD_SOCK_FILE})/"
+                    ),
                 },
             }
-        )
+
+        return Layer(layer)
 
     @property
     def active_status_message(self) -> str:
@@ -351,6 +367,11 @@ class MySQLOperatorCharm(MySQLCharmBase):
     # Charm event handlers
     # =========================================================================
 
+    def _reconcile_mysqld_exporter(self, _) -> None:
+        """Handle a COS relation created or broken event."""
+        container = self.unit.get_container(CONTAINER_NAME)
+        self._reconcile_pebble_layer(container)
+
     def _on_peer_relation_joined(self, _) -> None:
         """Handle the peer relation joined event."""
         # set some initial unit data
@@ -413,8 +434,13 @@ class MySQLOperatorCharm(MySQLCharmBase):
             self._mysql.configure_mysql_users()
             # Configure instance as a cluster node
             self._mysql.configure_instance()
-            # Restart exporter service after configuration
-            container.restart(MYSQLD_EXPORTER_SERVICE)
+
+            if self._has_cos_relation:
+                if container.get_services(MYSQLD_EXPORTER_SERVICE)[MYSQLD_EXPORTER_SERVICE].is_running():
+                    # Restart exporter service after configuration
+                    container.restart(MYSQLD_EXPORTER_SERVICE)
+                else:
+                    container.start(MYSQLD_EXPORTER_SERVICE)
         except (
             MySQLConfigureInstanceError,
             MySQLConfigureMySQLUsersError,

@@ -88,6 +88,7 @@ from constants import (
     BACKUPS_USERNAME,
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
+    COS_AGENT_RELATION_NAME,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
     PASSWORD_LENGTH,
@@ -110,7 +111,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 38
+LIBPATCH = 39
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -403,6 +404,12 @@ class MySQLCharmBase(CharmBase):
         self._mysql.update_user_password(username, new_password)
 
         self.set_secret("app", secret_key, new_password)
+
+        if (
+            username == MONITORING_USERNAME
+            and len(self.model.relations.get(COS_AGENT_RELATION_NAME, [])) > 0
+        ):
+            self._mysql.restart_mysql_exporter()
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Action used  to retrieve the cluster status."""
@@ -2293,6 +2300,11 @@ Swap:     1027600384  1027600384           0
     @abstractmethod
     def start_mysqld(self) -> None:
         """Starts the mysqld process."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def restart_mysql_exporter(self) -> None:
+        """Restart the mysqld exporter."""
         raise NotImplementedError
 
     @abstractmethod
