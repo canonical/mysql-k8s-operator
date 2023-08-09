@@ -90,7 +90,6 @@ def clean_backups_from_buckets(cloud_credentials) -> None:
             bucket_object.delete()
 
 
-@pytest.mark.group(1)
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
@@ -117,7 +116,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     )
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_backup(ops_test: OpsTest, cloud_credentials) -> None:
     """Test to create a backup and list backups."""
@@ -188,7 +186,6 @@ async def test_backup(ops_test: OpsTest, cloud_credentials) -> None:
     )
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_restore_on_same_cluster(ops_test: OpsTest, cloud_credentials) -> None:
     """Test to restore a backup to the same mysql cluster."""
@@ -276,7 +273,6 @@ async def test_restore_on_same_cluster(ops_test: OpsTest, cloud_credentials) -> 
         assert sorted(values) == sorted([value_before_backup, value_after_restore])
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials) -> None:
     """Test to restore a backup on a new mysql cluster."""

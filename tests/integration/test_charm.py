@@ -35,7 +35,6 @@ CLUSTER_NAME = "test_cluster"
 TIMEOUT = 15 * 60
 
 
-@pytest.mark.group(1)
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
@@ -83,7 +82,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             assert output[0] == 3
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> None:
     """Confirm that data is replicated from the primary node to all the replicas."""
@@ -136,7 +134,6 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
         assert False
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_scale_up_and_down(ops_test: OpsTest) -> None:
     """Confirm that a new primary is elected when the current primary is torn down."""
@@ -181,7 +178,6 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         assert len(not_online_member_addresses) == 0
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
     """Confirm storage reuse works."""
@@ -199,7 +195,6 @@ async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
         assert len(online_member_addresses) == 3
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_password_rotation(ops_test: OpsTest):
     """Rotate password and confirm changes."""
@@ -233,7 +228,6 @@ async def test_password_rotation(ops_test: OpsTest):
     )
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_password_rotation_silent(ops_test: OpsTest):
     """Rotate password and confirm changes."""
@@ -262,7 +256,6 @@ async def test_password_rotation_silent(ops_test: OpsTest):
     )
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
     """Rotate password and confirm changes."""
@@ -289,7 +282,6 @@ async def test_password_rotation_root_user_implicit(ops_test: OpsTest):
     assert updated_credentials["password"] == updated_root_credentials["password"]
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_exporter_endpoints(ops_test: OpsTest) -> None:
     """Test that endpoints are running."""
@@ -308,7 +300,6 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
         ), "Scrape error in mysql_exporter"
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_custom_variables(ops_test: OpsTest) -> None:
     """Query database for custom variables."""

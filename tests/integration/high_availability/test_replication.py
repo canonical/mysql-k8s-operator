@@ -32,13 +32,11 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 15 * 60
 
 
-@pytest.mark.group(1)
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
     await high_availability_test_setup(ops_test)
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
     """Test to write to primary, and read the same data back from replicas."""
@@ -54,7 +52,6 @@ async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writes) -> None:
     """Test to ensure that writes to one cluster do not replicate to another cluster."""
@@ -112,7 +109,6 @@ async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writ
     await clean_up_database_and_table(ops_test, database_name, table_name)
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_scaling_without_data_loss(ops_test: OpsTest) -> None:
     """Test to ensure that data is preserved when a unit is scaled up and then down.
@@ -193,7 +189,6 @@ async def test_scaling_without_data_loss(ops_test: OpsTest) -> None:
 
 # TODO: move test immediately after "test_build_and_deploy" once the following issue is resolved
 # https://github.com/canonical/mysql-k8s-operator/issues/102
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_writes) -> None:
     """Test to kill the primary under load and ensure re-election of primary."""
