@@ -119,7 +119,7 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
 
     # Retry
     try:
-        for attempt in AsyncRetrying(stop=stop_after_delay(5), wait=wait_fixed(3)):
+        async for attempt in AsyncRetrying(stop=stop_after_delay(5), wait=wait_fixed(3)):
             with attempt:
                 # Confirm that the values are available on all units
                 for unit in ops_test.model.applications[APP_NAME].units:
