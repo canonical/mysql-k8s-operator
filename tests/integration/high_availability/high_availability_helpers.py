@@ -242,6 +242,7 @@ def deploy_chaos_mesh(namespace: str) -> None:
     """
     env = os.environ
     env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
+    logger.info("Deploying Chaos Mesh")
 
     subprocess.check_output(
         " ".join(
@@ -253,6 +254,18 @@ def deploy_chaos_mesh(namespace: str) -> None:
         shell=True,
         env=env,
     )
+    logger.info("Ensure chaos mesh is ready")
+    try:
+        for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
+            with attempt:
+                output = subprocess.check_output(
+                    f"kubectl get pods --namespace {namespace} -l app.kubernetes.io/instance=chaos-mesh".split(),
+                    env=env,
+                )
+                assert output.decode().count("Running") == 4, "Chaos Mesh not ready"
+
+    except RetryError:
+        raise Exception("Chaos Mesh pods not found")
 
 
 def destroy_chaos_mesh(namespace: str) -> None:
@@ -493,7 +506,7 @@ async def ensure_all_units_continuous_writes_incrementing(
 
 def isolate_instance_from_cluster(ops_test: OpsTest, unit_name: str) -> None:
     """Apply a NetworkChaos file to use chaos-mesh to simulate a network cut."""
-    with tempfile.NamedTemporaryFile() as temp_file:
+    with tempfile.NamedTemporaryFile(dir=os.getenv("HOME")) as temp_file:
         with open(
             "tests/integration/high_availability/manifests/chaos_network_loss.yml", "r"
         ) as chaos_network_loss_file:
@@ -508,9 +521,13 @@ def isolate_instance_from_cluster(ops_test: OpsTest, unit_name: str) -> None:
 
         env = os.environ
         env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
-        subprocess.check_output(
-            " ".join(["kubectl", "apply", "-f", temp_file.name]), shell=True, env=env
-        )
+
+        try:
+            subprocess.check_output(["kubectl", "apply", "-f", temp_file.name], env=env)
+        except subprocess.CalledProcessError as e:
+            logger.error(e.output)
+            logger.error(e.stderr)
+            raise
 
 
 def remove_instance_isolation(ops_test: OpsTest) -> None:
