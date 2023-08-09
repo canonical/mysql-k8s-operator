@@ -145,7 +145,9 @@ class TestCharm(unittest.TestCase):
 
         self.harness.add_relation("metrics-endpoint", "test-cos-app")
         plan = self.harness.get_container_pebble_plan("mysql")
-        self.assertEqual(plan.to_dict()["services"], self.layer_dict(with_mysqld_exporter=True)["services"])
+        self.assertEqual(
+            plan.to_dict()["services"], self.layer_dict(with_mysqld_exporter=True)["services"]
+        )
 
     @patch("charm.MySQLOperatorCharm._mysql", new_callable=PropertyMock)
     def test_mysql_pebble_ready_non_leader(self, _mysql_mock):

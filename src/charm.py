@@ -46,8 +46,8 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
-    GR_MAX_MEMBERS,
     COS_AGENT_RELATION_NAME,
+    GR_MAX_MEMBERS,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
     MYSQL_LOG_FILES,
@@ -97,8 +97,12 @@ class MySQLOperatorCharm(MySQLCharmBase):
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
 
-        self.framework.observe(self.on[COS_AGENT_RELATION_NAME].relation_created, self._reconcile_mysqld_exporter)
-        self.framework.observe(self.on[COS_AGENT_RELATION_NAME].relation_broken, self._reconcile_mysqld_exporter)
+        self.framework.observe(
+            self.on[COS_AGENT_RELATION_NAME].relation_created, self._reconcile_mysqld_exporter
+        )
+        self.framework.observe(
+            self.on[COS_AGENT_RELATION_NAME].relation_broken, self._reconcile_mysqld_exporter
+        )
 
         self.k8s_helpers = KubernetesHelpers(self)
         self.mysql_relation = MySQLRelation(self)
@@ -436,7 +440,9 @@ class MySQLOperatorCharm(MySQLCharmBase):
             self._mysql.configure_instance()
 
             if self._has_cos_relation:
-                if container.get_services(MYSQLD_EXPORTER_SERVICE)[MYSQLD_EXPORTER_SERVICE].is_running():
+                if container.get_services(MYSQLD_EXPORTER_SERVICE)[
+                    MYSQLD_EXPORTER_SERVICE
+                ].is_running():
                     # Restart exporter service after configuration
                     container.restart(MYSQLD_EXPORTER_SERVICE)
                 else:

@@ -17,6 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
+from ops.charm import CharmBase
 from ops.model import Container
 from ops.pebble import ChangeError, ExecError
 from tenacity import (
@@ -137,7 +138,7 @@ class MySQL(MySQLBase):
         backups_password: str,
         container: Container,
         k8s_helper: KubernetesHelpers,
-        charm,
+        charm: CharmBase,
     ):
         """Initialize the MySQL class.
 
@@ -156,6 +157,7 @@ class MySQL(MySQLBase):
             backups_password: password for the backups user
             container: workload container object
             k8s_helper: KubernetesHelpers object
+            charm: charm object
         """
         super().__init__(
             instance_address=instance_address,
