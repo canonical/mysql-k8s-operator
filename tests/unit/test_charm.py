@@ -29,7 +29,7 @@ class TestCharm(unittest.TestCase):
         self.maxDiff = None
 
     def layer_dict(self, with_mysqld_exporter: bool = False):
-        layer = {
+        return {
             "summary": "mysqld services layer",
             "description": "pebble config layer for mysqld safe and exporter",
             "services": {
@@ -44,29 +44,21 @@ class TestCharm(unittest.TestCase):
                 },
                 "mysqld_exporter": {
                     "override": "replace",
-                    "command": "pwd",
+                    "summary": "mysqld exporter",
+                    "command": "/start-mysqld-exporter.sh",
+                    "startup": "enabled" if with_mysqld_exporter else "disabled",
+                    "user": "mysql",
+                    "group": "mysql",
+                    "environment": {
+                        "DATA_SOURCE_NAME": (
+                            "monitoring:"
+                            f"{self.charm.get_secret('app', 'monitoring-password')}"
+                            "@unix(/var/run/mysqld/mysqld.sock)/"
+                        )
+                    },
                 },
             },
         }
-
-        if with_mysqld_exporter:
-            layer["services"]["mysqld_exporter"] = {
-                "override": "replace",
-                "summary": "mysqld exporter",
-                "command": "/start-mysqld-exporter.sh",
-                "startup": "enabled",
-                "user": "mysql",
-                "group": "mysql",
-                "environment": {
-                    "DATA_SOURCE_NAME": (
-                        "monitoring:"
-                        f"{self.charm.get_secret('app', 'monitoring-password')}"
-                        "@unix(/var/run/mysqld/mysqld.sock)/"
-                    )
-                },
-            }
-
-        return layer
 
     def tearDown(self) -> None:
         self.patcher.stop()
