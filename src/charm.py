@@ -29,6 +29,7 @@ from charms.mysql.v0.mysql import (
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
+from ops import RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import LeaderElectedEvent, RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
 from ops.model import (
@@ -124,10 +125,23 @@ class MySQLOperatorCharm(MySQLCharmBase):
             container_name="mysql",
         )
 
+        self.current_event = None
+
     @property
     def _has_cos_relation(self) -> bool:
         """Returns a bool indicating whether a relation with COS is present."""
-        return len(self.model.relations.get(COS_AGENT_RELATION_NAME, [])) > 0
+        cos_relations = self.model.relations.get(COS_AGENT_RELATION_NAME, [])
+        active_cos_relations = list(
+            filter(
+                lambda relation: not (
+                    isinstance(self.current_event, RelationBrokenEvent)
+                    and self.current_event.relation.id == relation.id
+                ),
+                cos_relations,
+            )
+        )
+
+        return len(active_cos_relations) > 0
 
     @property
     def _mysql(self) -> MySQL:
@@ -168,28 +182,21 @@ class MySQLOperatorCharm(MySQLCharmBase):
                 },
                 MYSQLD_EXPORTER_SERVICE: {
                     "override": "replace",
-                    "command": "pwd",  # a simple command that does nothing
+                    "summary": "mysqld exporter",
+                    "command": "/start-mysqld-exporter.sh",
+                    "startup": "enabled" if self._has_cos_relation else "disabled",
+                    "user": MYSQL_SYSTEM_USER,
+                    "group": MYSQL_SYSTEM_GROUP,
+                    "environment": {
+                        "DATA_SOURCE_NAME": (
+                            f"{MONITORING_USERNAME}:"
+                            f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
+                            f"@unix({MYSQLD_SOCK_FILE})/"
+                        ),
+                    },
                 },
             },
         }
-
-        if self._has_cos_relation:
-            layer["services"][MYSQLD_EXPORTER_SERVICE] = {
-                "override": "replace",
-                "summary": "mysqld exporter",
-                "command": "/start-mysqld-exporter.sh",
-                "startup": "enabled",
-                "user": MYSQL_SYSTEM_USER,
-                "group": MYSQL_SYSTEM_GROUP,
-                "environment": {
-                    "DATA_SOURCE_NAME": (
-                        f"{MONITORING_USERNAME}:"
-                        f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
-                        f"@unix({MYSQLD_SOCK_FILE})/"
-                    ),
-                },
-            }
-
         return Layer(layer)
 
     @property
@@ -365,14 +372,27 @@ class MySQLOperatorCharm(MySQLCharmBase):
             container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
             container.replan()
             self._mysql.wait_until_mysql_connection()
+
+            if (
+                not self._has_cos_relation
+                and container.get_services(MYSQLD_EXPORTER_SERVICE)[
+                    MYSQLD_EXPORTER_SERVICE
+                ].is_running()
+            ):
+                container.stop(MYSQLD_EXPORTER_SERVICE)
+
             self._on_update_status(None)
 
     # =========================================================================
     # Charm event handlers
     # =========================================================================
 
-    def _reconcile_mysqld_exporter(self, _) -> None:
+    def _reconcile_mysqld_exporter(
+        self, event: RelationCreatedEvent | RelationBrokenEvent
+    ) -> None:
         """Handle a COS relation created or broken event."""
+        self.current_event = event
+
         container = self.unit.get_container(CONTAINER_NAME)
         self._reconcile_pebble_layer(container)
 
