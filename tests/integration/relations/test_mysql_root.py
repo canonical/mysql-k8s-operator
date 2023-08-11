@@ -6,6 +6,7 @@ import asyncio
 import logging
 from pathlib import Path
 
+import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 from tenacity import AsyncRetrying, RetryError, stop_after_attempt, wait_fixed
