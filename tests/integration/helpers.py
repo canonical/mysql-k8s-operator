@@ -422,3 +422,21 @@ async def retrieve_database_variable_value(
     )
 
     return output[0]
+
+
+async def start_mysqld_exporter(ops_test: OpsTest, unit: Unit) -> None:
+    """Start mysqld exporter pebble service on the provided unit.
+
+    Args:
+        ops_test: The ops test framework
+        unit: The unit to start mysqld exporter on
+    """
+    await ops_test.juju(
+        "ssh",
+        "--container",
+        CONTAINER_NAME,
+        unit.name,
+        "pebble",
+        "start",
+        "mysqld_exporter",
+    )
