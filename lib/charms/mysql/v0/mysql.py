@@ -74,7 +74,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import ops
-from ops.charm import ActionEvent, CharmBase
+from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -88,6 +88,7 @@ from constants import (
     BACKUPS_USERNAME,
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
+    COS_AGENT_RELATION_NAME,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
     PASSWORD_LENGTH,
@@ -110,7 +111,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 38
+LIBPATCH = 41
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -123,6 +124,15 @@ BYTES_1MiB = 1048576  # 1 mebibyte
 class Error(Exception):
     """Base class for exceptions in this module."""
 
+    def __init__(self, message: str = "") -> None:
+        """Initialize the Error class.
+
+        Args:
+            message: Optional message to pass to the exception.
+        """
+        super().__init__(message)
+        self.message = message
+
     def __repr__(self):
         """String representation of the Error class."""
         return "<{}.{} {}>".format(type(self).__module__, type(self).__name__, self.args)
@@ -131,11 +141,6 @@ class Error(Exception):
     def name(self):
         """Return a string representation of the model plus class."""
         return "<{}.{}>".format(type(self).__module__, type(self).__name__)
-
-    @property
-    def message(self):
-        """Return the message passed as an argument."""
-        return self.args[0]
 
 
 class MySQLConfigureMySQLUsersError(Error):
@@ -225,6 +230,10 @@ class MySQLGetMySQLVersionError(Error):
 
 class MySQLGetClusterPrimaryAddressError(Error):
     """Exception raised when there is an issue getting the primary instance."""
+
+
+class MySQLSetClusterPrimaryError(Error):
+    """Exception raised when there is an issue setting the primary instance."""
 
 
 class MySQLGrantPrivilegesToUserError(Error):
@@ -326,6 +335,14 @@ class MySQLRescanClusterError(Error):
     """Exception raised when there is an issue rescanning the cluster."""
 
 
+class MySQLSetVariableError(Error):
+    """Exception raised when there is an issue setting a variable."""
+
+
+class MySQLServerNotUpgradableError(Error):
+    """Exception raised when there is an issue checking for upgradeability."""
+
+
 class MySQLSecretError(Error):
     """Exception raised when there is an issue setting/getting a secret."""
 
@@ -353,6 +370,10 @@ class MySQLCharmBase(CharmBase):
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
         self.framework.observe(self.on.get_password_action, self._on_get_password)
         self.framework.observe(self.on.set_password_action, self._on_set_password)
+
+        # Set in some event handlers in order to avoid passing event down a chain
+        # of methods
+        self.current_event = None
 
     def _on_get_password(self, event: ActionEvent) -> None:
         """Action used to retrieve the system user's password."""
@@ -404,6 +425,9 @@ class MySQLCharmBase(CharmBase):
 
         self.set_secret("app", secret_key, new_password)
 
+        if username == MONITORING_USERNAME and self.has_cos_relation:
+            self._mysql.restart_mysql_exporter()
+
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Action used  to retrieve the cluster status."""
         if status := self._mysql.get_cluster_status():
@@ -453,6 +477,11 @@ class MySQLCharmBase(CharmBase):
         return self.peers.data[self.unit]
 
     @property
+    def unit_label(self):
+        """Return unit label."""
+        return self.unit.name.replace("/", "-")
+
+    @property
     def _is_peer_data_set(self):
         return bool(
             self.app_peer_data.get("cluster-name")
@@ -462,6 +491,22 @@ class MySQLCharmBase(CharmBase):
             and self.get_secret("app", MONITORING_PASSWORD_KEY)
             and self.get_secret("app", BACKUPS_PASSWORD_KEY)
         )
+
+    @property
+    def has_cos_relation(self) -> bool:
+        """Returns a bool indicating whether a relation with COS is present."""
+        cos_relations = self.model.relations.get(COS_AGENT_RELATION_NAME, [])
+        active_cos_relations = list(
+            filter(
+                lambda relation: not (
+                    isinstance(self.current_event, RelationBrokenEvent)
+                    and self.current_event.relation.id == relation.id
+                ),
+                cos_relations,
+            )
+        )
+
+        return len(active_cos_relations) > 0
 
     def _get_secret_from_juju(self, scope: str, key: str) -> Optional[str]:
         """Retrieve and return the secret from the juju secret storage."""
@@ -975,6 +1020,38 @@ class MySQLBase(ABC):
             logger.exception(f"Failed to remove router from metadata with ID {router_id}")
             raise MySQLRemoveRouterFromMetadataError(e.message)
 
+    def set_dynamic_variable(
+        self,
+        variable: str,
+        value: str,
+        persist: bool = False,
+        instance_address: Optional[str] = None,
+    ) -> None:
+        """Set a dynamic variable value for the instance.
+
+        Args:
+            variable: The name of the variable to set
+            value: The value to set the variable to
+            persist: Whether to persist the variable value across restarts
+            instance_address: instance address to set the variable, default to current
+
+        Raises:
+            MySQLSetVariableError
+        """
+        if not instance_address:
+            instance_address = self.instance_address
+        logger.debug(f"Setting {variable} to {value} on {instance_address}")
+        set_var_command = [
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{instance_address}')",
+            f"session.run_sql(\"SET {'PERSIST' if persist else 'GLOBAL'} {variable}={value}\")",
+        ]
+
+        try:
+            self._run_mysqlsh_script("\n".join(set_var_command))
+        except MySQLClientError:
+            logger.exception(f"Failed to set variable {variable} to {value}")
+            raise MySQLSetVariableError
+
     def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
 
@@ -1276,7 +1353,7 @@ class MySQLBase(ABC):
             )
             return False
 
-    def get_cluster_status(self) -> Optional[dict]:
+    def get_cluster_status(self, extended: Optional[bool] = False) -> Optional[dict]:
         """Get the cluster status.
 
         Executes script to retrieve cluster status.
@@ -1286,10 +1363,11 @@ class MySQLBase(ABC):
             Cluster status as a dictionary,
             or None if running the status script fails.
         """
+        options = {"extended": extended}
         status_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
-            "print(cluster.status())",
+            f"print(cluster.status({options}))",
         )
 
         try:
@@ -1422,7 +1500,9 @@ class MySQLBase(ABC):
                 f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
                 f"cluster = dba.get_cluster('{self.cluster_name}')",
                 "number_cluster_members = len(cluster.status()['defaultReplicaSet']['topology'])",
-                f"cluster.remove_instance('{self.cluster_admin_user}@{self.instance_address}', {json.dumps(remove_instance_options)}) if number_cluster_members > 1 else cluster.dissolve({json.dumps(dissolve_cluster_options)})",
+                f"cluster.remove_instance('{self.cluster_admin_user}@{self.instance_address}', "
+                f"{json.dumps(remove_instance_options)}) if number_cluster_members > 1 else"
+                f" cluster.dissolve({json.dumps(dissolve_cluster_options)})",
             )
             self._run_mysqlsh_script("\n".join(remove_instance_commands))
         except MySQLClientError as e:
@@ -1579,6 +1659,37 @@ class MySQLBase(ABC):
 
         return matches.group(1)
 
+    def get_primary_label(self) -> Optional[str]:
+        """Get the label of the cluster's primary."""
+        status = self.get_cluster_status()
+        if not status:
+            return None
+        for label, value in status["defaultreplicaset"]["topology"].items():
+            if value["memberrole"] == "primary":
+                return label
+
+    def set_cluster_primary(self, new_primary_address: str) -> None:
+        """Set the cluster primary.
+
+        Args:
+            new_primary_address: Address of node to set as cluster's primary
+
+        Raises:
+            MySQLSetClusterPrimaryError: If the cluster primary could not be set
+        """
+        logger.debug(f"Setting cluster primary to {new_primary_address}")
+
+        set_cluster_primary_commands = (
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            f"cluster.set_primary_instance('{new_primary_address}')",
+        )
+        try:
+            self._run_mysqlsh_script("\n".join(set_cluster_primary_commands))
+        except MySQLClientError as e:
+            logger.exception("Failed to set cluster primary")
+            raise MySQLSetClusterPrimaryError(e.message)
+
     def get_cluster_members_addresses(self) -> Optional[Iterable[str]]:
         """Get the addresses of the cluster's members.
 
@@ -1604,6 +1715,32 @@ class MySQLBase(ABC):
             return None
 
         return set(matches.group(1).split(","))
+
+    def verify_server_upgradable(self, instance: Optional[str] = None) -> None:
+        """Wrapper for API check_for_server_upgrade.
+
+        Raises:
+            MySQLServerUpgradableError: If the server is not upgradable
+        """
+        check_command = [
+            f"shell.connect_to_primary('{self.server_config_user}"
+            f":{self.server_config_password}@{instance or self.instance_address}')",
+            "try:",
+            "    util.check_for_server_upgrade(options={'outputFormat': 'JSON'})",
+            "except ValueError:",  # ValueError is raised for same version check
+            "    print('SAME_VERSION')",
+        ]
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(check_command))
+            if "SAME_VERSION" in output:
+                return
+            result = json.loads(output)
+            if result["errorCount"] == 0:
+                return
+            raise MySQLServerNotUpgradableError(result.get("summary"))
+        except MySQLClientError:
+            raise MySQLServerNotUpgradableError("Failed to check for server upgrade")
 
     def get_mysql_version(self) -> Optional[str]:
         """Get the MySQL version.
@@ -2293,6 +2430,11 @@ Swap:     1027600384  1027600384           0
     @abstractmethod
     def start_mysqld(self) -> None:
         """Starts the mysqld process."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def restart_mysql_exporter(self) -> None:
+        """Restart the mysqld exporter."""
         raise NotImplementedError
 
     @abstractmethod

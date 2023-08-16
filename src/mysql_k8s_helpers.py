@@ -17,6 +17,7 @@ from charms.mysql.v0.mysql import (
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
+from ops.charm import CharmBase
 from ops.model import Container
 from ops.pebble import ChangeError, ExecError
 from tenacity import (
@@ -137,6 +138,7 @@ class MySQL(MySQLBase):
         backups_password: str,
         container: Container,
         k8s_helper: KubernetesHelpers,
+        charm: CharmBase,
     ):
         """Initialize the MySQL class.
 
@@ -155,6 +157,7 @@ class MySQL(MySQLBase):
             backups_password: password for the backups user
             container: workload container object
             k8s_helper: KubernetesHelpers object
+            charm: charm object
         """
         super().__init__(
             instance_address=instance_address,
@@ -172,6 +175,7 @@ class MySQL(MySQLBase):
         )
         self.container = container
         self.k8s_helper = k8s_helper
+        self.charm = charm
 
     def fix_data_dir(self, container: Container) -> None:
         """Ensure the data directory for mysql is writable for the "mysql" user.
@@ -590,6 +594,10 @@ class MySQL(MySQLBase):
             error_message = f"Failed to start service {MYSQLD_SAFE_SERVICE}"
             logger.exception(error_message)
             raise MySQLStartMySQLDError(error_message)
+
+    def restart_mysql_exporter(self) -> None:
+        """Restarts the mysqld exporter service in pebble."""
+        self.charm._reconcile_pebble_layer(self.container)
 
     def stop_group_replication(self) -> None:
         """Stop Group replication if enabled on the instance."""

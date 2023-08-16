@@ -28,8 +28,7 @@ class TestCharm(unittest.TestCase):
         self.charm = self.harness.charm
         self.maxDiff = None
 
-    @property
-    def layer_dict(self):
+    def layer_dict(self, with_mysqld_exporter: bool = False):
         return {
             "summary": "mysqld services layer",
             "description": "pebble config layer for mysqld safe and exporter",
@@ -47,7 +46,7 @@ class TestCharm(unittest.TestCase):
                     "override": "replace",
                     "summary": "mysqld exporter",
                     "command": "/start-mysqld-exporter.sh",
-                    "startup": "enabled",
+                    "startup": "enabled" if with_mysqld_exporter else "disabled",
                     "user": "mysql",
                     "group": "mysql",
                     "environment": {
@@ -67,7 +66,7 @@ class TestCharm(unittest.TestCase):
     def test_mysqld_layer(self):
         # Test layer property
         # Comparing output dicts
-        self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict)
+        self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict())
 
     def test_on_leader_elected(self):
         # Test leader election setting of
@@ -134,7 +133,13 @@ class TestCharm(unittest.TestCase):
 
         # After configuration run, plan should be populated
         plan = self.harness.get_container_pebble_plan("mysql")
-        self.assertEqual(plan.to_dict()["services"], self.layer_dict["services"])
+        self.assertEqual(plan.to_dict()["services"], self.layer_dict()["services"])
+
+        self.harness.add_relation("metrics-endpoint", "test-cos-app")
+        plan = self.harness.get_container_pebble_plan("mysql")
+        self.assertEqual(
+            plan.to_dict()["services"], self.layer_dict(with_mysqld_exporter=True)["services"]
+        )
 
     @patch("charm.MySQLOperatorCharm._mysql", new_callable=PropertyMock)
     def test_mysql_pebble_ready_non_leader(self, _mysql_mock):
