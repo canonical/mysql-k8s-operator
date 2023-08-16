@@ -25,6 +25,7 @@ from .helpers import (
     retrieve_database_variable_value,
     rotate_credentials,
     scale_application,
+    start_mysqld_exporter,
 )
 
 logger = logging.getLogger(__name__)
@@ -297,6 +298,8 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
     http = urllib3.PoolManager()
 
     for unit in application.units:
+        await start_mysqld_exporter(ops_test, unit)
+
         unit_address = await get_unit_address(ops_test, unit.name)
         mysql_exporter_url = f"http://{unit_address}:9104/metrics"
 

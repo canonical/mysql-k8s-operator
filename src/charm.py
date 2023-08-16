@@ -29,6 +29,7 @@ from charms.mysql.v0.mysql import (
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
+from ops import RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import LeaderElectedEvent, RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
 from ops.model import (
@@ -46,6 +47,7 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     CONTAINER_NAME,
+    COS_AGENT_RELATION_NAME,
     GR_MAX_MEMBERS,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
@@ -96,6 +98,13 @@ class MySQLOperatorCharm(MySQLCharmBase):
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
 
+        self.framework.observe(
+            self.on[COS_AGENT_RELATION_NAME].relation_created, self._reconcile_mysqld_exporter
+        )
+        self.framework.observe(
+            self.on[COS_AGENT_RELATION_NAME].relation_broken, self._reconcile_mysqld_exporter
+        )
+
         self.k8s_helpers = KubernetesHelpers(self)
         self.mysql_relation = MySQLRelation(self)
         self.database_relation = MySQLProvider(self)
@@ -134,43 +143,43 @@ class MySQLOperatorCharm(MySQLCharmBase):
             self.get_secret("app", BACKUPS_PASSWORD_KEY),
             self.unit.get_container(CONTAINER_NAME),
             self.k8s_helpers,
+            self,
         )
 
     @property
     def _pebble_layer(self) -> Layer:
         """Return a layer for the mysqld pebble service."""
-        return Layer(
-            {
-                "summary": "mysqld services layer",
-                "description": "pebble config layer for mysqld safe and exporter",
-                "services": {
-                    MYSQLD_SAFE_SERVICE: {
-                        "override": "replace",
-                        "summary": "mysqld safe",
-                        "command": MYSQLD_SAFE_SERVICE,
-                        "startup": "enabled",
-                        "user": MYSQL_SYSTEM_USER,
-                        "group": MYSQL_SYSTEM_GROUP,
-                        "kill-delay": "24h",
-                    },
-                    MYSQLD_EXPORTER_SERVICE: {
-                        "override": "replace",
-                        "summary": "mysqld exporter",
-                        "command": "/start-mysqld-exporter.sh",
-                        "startup": "enabled",
-                        "user": MYSQL_SYSTEM_USER,
-                        "group": MYSQL_SYSTEM_GROUP,
-                        "environment": {
-                            "DATA_SOURCE_NAME": (
-                                f"{MONITORING_USERNAME}:"
-                                f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
-                                f"@unix({MYSQLD_SOCK_FILE})/"
-                            ),
-                        },
+        layer = {
+            "summary": "mysqld services layer",
+            "description": "pebble config layer for mysqld safe and exporter",
+            "services": {
+                MYSQLD_SAFE_SERVICE: {
+                    "override": "replace",
+                    "summary": "mysqld safe",
+                    "command": MYSQLD_SAFE_SERVICE,
+                    "startup": "enabled",
+                    "user": MYSQL_SYSTEM_USER,
+                    "group": MYSQL_SYSTEM_GROUP,
+                    "kill-delay": "24h",
+                },
+                MYSQLD_EXPORTER_SERVICE: {
+                    "override": "replace",
+                    "summary": "mysqld exporter",
+                    "command": "/start-mysqld-exporter.sh",
+                    "startup": "enabled" if self.has_cos_relation else "disabled",
+                    "user": MYSQL_SYSTEM_USER,
+                    "group": MYSQL_SYSTEM_GROUP,
+                    "environment": {
+                        "DATA_SOURCE_NAME": (
+                            f"{MONITORING_USERNAME}:"
+                            f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
+                            f"@unix({MYSQLD_SOCK_FILE})/"
+                        ),
                     },
                 },
-            }
-        )
+            },
+        }
+        return Layer(layer)
 
     @property
     def active_status_message(self) -> str:
@@ -345,11 +354,29 @@ class MySQLOperatorCharm(MySQLCharmBase):
             container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
             container.replan()
             self._mysql.wait_until_mysql_connection()
+
+            if (
+                not self.has_cos_relation
+                and container.get_services(MYSQLD_EXPORTER_SERVICE)[
+                    MYSQLD_EXPORTER_SERVICE
+                ].is_running()
+            ):
+                container.stop(MYSQLD_EXPORTER_SERVICE)
+
             self._on_update_status(None)
 
     # =========================================================================
     # Charm event handlers
     # =========================================================================
+
+    def _reconcile_mysqld_exporter(
+        self, event: RelationCreatedEvent | RelationBrokenEvent
+    ) -> None:
+        """Handle a COS relation created or broken event."""
+        self.current_event = event
+
+        container = self.unit.get_container(CONTAINER_NAME)
+        self._reconcile_pebble_layer(container)
 
     def _on_peer_relation_joined(self, _) -> None:
         """Handle the peer relation joined event."""
@@ -413,8 +440,15 @@ class MySQLOperatorCharm(MySQLCharmBase):
             self._mysql.configure_mysql_users()
             # Configure instance as a cluster node
             self._mysql.configure_instance()
-            # Restart exporter service after configuration
-            container.restart(MYSQLD_EXPORTER_SERVICE)
+
+            if self.has_cos_relation:
+                if container.get_services(MYSQLD_EXPORTER_SERVICE)[
+                    MYSQLD_EXPORTER_SERVICE
+                ].is_running():
+                    # Restart exporter service after configuration
+                    container.restart(MYSQLD_EXPORTER_SERVICE)
+                else:
+                    container.start(MYSQLD_EXPORTER_SERVICE)
         except (
             MySQLConfigureInstanceError,
             MySQLConfigureMySQLUsersError,
