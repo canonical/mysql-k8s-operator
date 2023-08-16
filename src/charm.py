@@ -125,24 +125,6 @@ class MySQLOperatorCharm(MySQLCharmBase):
             container_name="mysql",
         )
 
-        self.current_event = None
-
-    @property
-    def _has_cos_relation(self) -> bool:
-        """Returns a bool indicating whether a relation with COS is present."""
-        cos_relations = self.model.relations.get(COS_AGENT_RELATION_NAME, [])
-        active_cos_relations = list(
-            filter(
-                lambda relation: not (
-                    isinstance(self.current_event, RelationBrokenEvent)
-                    and self.current_event.relation.id == relation.id
-                ),
-                cos_relations,
-            )
-        )
-
-        return len(active_cos_relations) > 0
-
     @property
     def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
@@ -184,7 +166,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
                     "override": "replace",
                     "summary": "mysqld exporter",
                     "command": "/start-mysqld-exporter.sh",
-                    "startup": "enabled" if self._has_cos_relation else "disabled",
+                    "startup": "enabled" if self.has_cos_relation else "disabled",
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
                     "environment": {
@@ -374,7 +356,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
             self._mysql.wait_until_mysql_connection()
 
             if (
-                not self._has_cos_relation
+                not self.has_cos_relation
                 and container.get_services(MYSQLD_EXPORTER_SERVICE)[
                     MYSQLD_EXPORTER_SERVICE
                 ].is_running()
@@ -459,7 +441,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
             # Configure instance as a cluster node
             self._mysql.configure_instance()
 
-            if self._has_cos_relation:
+            if self.has_cos_relation:
                 if container.get_services(MYSQLD_EXPORTER_SERVICE)[
                     MYSQLD_EXPORTER_SERVICE
                 ].is_running():
