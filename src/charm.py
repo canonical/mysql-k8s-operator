@@ -74,7 +74,7 @@ from mysql_k8s_helpers import (
 )
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
-from relations.osm_mysql import MySQLOSMRelation
+from relations.mysql_root import MySQLRootRelation
 from utils import generate_random_hash, generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -108,7 +108,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
         self.k8s_helpers = KubernetesHelpers(self)
         self.mysql_relation = MySQLRelation(self)
         self.database_relation = MySQLProvider(self)
-        self.osm_mysql_relation = MySQLOSMRelation(self)
+        self.mysql_root_relation = MySQLRootRelation(self)
         self.tls = MySQLTLS(self)
         self.s3_integrator = S3Requirer(self, S3_INTEGRATOR_RELATION_NAME)
         self.backups = MySQLBackups(self, self.s3_integrator)

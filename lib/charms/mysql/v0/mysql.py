@@ -111,7 +111,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 41
+LIBPATCH = 42
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1731,11 +1731,18 @@ class MySQLBase(ABC):
             "    print('SAME_VERSION')",
         ]
 
+        def _strip_output(output: str):
+            # output may need first line stripped to
+            # remove information header text
+            if not output.split("\n")[0].startswith("{"):
+                return "\n".join(output.split("\n")[1:])
+            return output
+
         try:
             output = self._run_mysqlsh_script("\n".join(check_command))
             if "SAME_VERSION" in output:
                 return
-            result = json.loads(output)
+            result = json.loads(_strip_output(output))
             if result["errorCount"] == 0:
                 return
             raise MySQLServerNotUpgradableError(result.get("summary"))
