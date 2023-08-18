@@ -75,6 +75,7 @@ from mysql_k8s_helpers import (
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
+from upgrade import MySQLK8sUpgrade, get_mysql_k8s_dependencies_model
 from utils import generate_random_hash, generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -112,6 +113,12 @@ class MySQLOperatorCharm(MySQLCharmBase):
         self.tls = MySQLTLS(self)
         self.s3_integrator = S3Requirer(self, S3_INTEGRATOR_RELATION_NAME)
         self.backups = MySQLBackups(self, self.s3_integrator)
+        self.upgrade = MySQLK8sUpgrade(
+            self,
+            dependency_model=get_mysql_k8s_dependencies_model(),
+            relation_name="upgrade",
+            substrate="k8s",
+        )
         self.grafana_dashboards = GrafanaDashboardProvider(self)
         self.metrics_endpoint = MetricsEndpointProvider(
             self,
@@ -495,6 +502,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
         if not self._prepare_configs(container, self.config["profile"]):
             return
 
+        self.unit_peer_data["unit-status"] = "alive"
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration
             logger.debug("Data directory is already initialised, skipping configuration")
@@ -518,8 +526,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
         try:
             # Create the cluster when is the leader unit
             logger.info("Creating cluster on the leader unit")
-            unit_label = self.unit.name.replace("/", "-")
-            self._mysql.create_cluster(unit_label)
+            self._mysql.create_cluster(self.unit_label)
             self._mysql.create_cluster_set()
 
             self._mysql.initialize_juju_units_operations_table()
@@ -611,14 +618,15 @@ class MySQLOperatorCharm(MySQLCharmBase):
             logger.info(f"Unit state is {unit_member_state}")
             return True
 
+        if not self.upgrade.idle:
+            # avoid changing status while upgrade is in progress
+            logger.debug(f"Cluster upgrade state is {self.upgrade.cluster_state}. Skipping.")
+            return True
+
         return False
 
     def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
-        """Handle the update status event.
-
-        One purpose of this event handler is to ensure that scaled down units are
-        removed from the cluster.
-        """
+        """Handle the update status event."""
         if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
             # join cluster test takes precedence over blocked test
             # due to matching criteria
@@ -671,15 +679,13 @@ class MySQLOperatorCharm(MySQLCharmBase):
         if not self.unit_peer_data.get("unit-initialized"):
             return
 
-        unit_label = self.unit.name.replace("/", "-")
-
         # No need to remove the instance from the cluster if it is not a member of the cluster
-        if not self._mysql.is_instance_in_cluster(unit_label):
+        if not self._mysql.is_instance_in_cluster(self.unit_label):
             return
 
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)
-        self._mysql.remove_instance(unit_label)
+        self._mysql.remove_instance(self.unit_label)
 
         # Inform other hooks of current status
         self.unit_peer_data["unit-status"] = "removing"

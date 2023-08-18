@@ -239,8 +239,7 @@ class MySQLProvider(Object):
         if not isinstance(self.charm.unit.status, ActiveStatus):
             return
 
-        charm_unit_label = self.charm.unit.name.replace("/", "-")
-        if not self.charm._mysql.is_instance_in_cluster(charm_unit_label):
+        if not self.charm._mysql.is_instance_in_cluster(self.charm.unit_label):
             logger.debug(f"Unit {self.charm.unit.name} is not yet a member of the cluster")
             return
 
