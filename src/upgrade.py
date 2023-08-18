@@ -151,7 +151,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         for unit in self.app_units:
             unit_address = self.charm._get_unit_fqdn(unit.name)
             self.charm._mysql.set_dynamic_variable(
-                variable="innodb_fast_shutdown", value="0", instance=unit_address
+                variable="innodb_fast_shutdown", value="0", instance_address=unit_address
             )
 
         self.charm.k8s_helpers.set_rolling_update_partition(partition=self.highest_ordinal)
