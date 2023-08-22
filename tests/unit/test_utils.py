@@ -7,9 +7,6 @@ from utils import any_memory_to_bytes, generate_random_password, split_mem
 
 
 class TestUtils(unittest.TestCase):
-    def test_foo(self):
-        self.assertTrue(True)
-
     def test_generate_random_password(self):
         password = generate_random_password(16)
         self.assertEqual(len(password), 16)

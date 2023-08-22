@@ -21,6 +21,7 @@ ops = ">=2.0.0"
 # tls_certificates_interface/v1/tls_certificates.py
 cryptography = "*"
 jsonschema = "*"
+pydantic = "^1.10.7"
 
 [tool.poetry.group.format]
 optional = true
@@ -50,10 +51,10 @@ coverage = {extras = ["toml"], version = "^7.2.7"}
 
 [tool.poetry.group.integration.dependencies]
 pytest = "^7.4.0"
-pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v4.2.0", subdirectory = "python/pytest_plugins/github_secrets"}
+pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v4.2.3", subdirectory = "python/pytest_plugins/github_secrets"}
 pytest-operator = "^0.28.0"
-pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v4.2.0", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
-pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v4.2.0", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
+pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v4.2.3", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
+pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v4.2.3", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
 juju = "^2.9.44.0"
 mysql-connector-python = "~8.0.33"
 tenacity = "^8.2.2"

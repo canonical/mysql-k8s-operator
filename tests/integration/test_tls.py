@@ -48,6 +48,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     # Build and deploy charm from local source folder
     charm = await ops_test.build_charm(".")
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+    config = {"profile": "testing"}
     await ops_test.model.deploy(
         charm,
         resources=resources,
@@ -55,6 +56,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         num_units=3,
         series="jammy",
         trust=True,
+        config=config,
     )
 
     # Reduce the update_status frequency until the cluster is deployed

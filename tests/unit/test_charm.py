@@ -197,7 +197,6 @@ class TestCharm(unittest.TestCase):
         mysql = self.charm._mysql
         self.assertTrue(isinstance(mysql, MySQL))
 
-    # @patch_network_get(private_address="1.1.1.1")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
     def test_get_secret(self, _):
         self.harness.set_leader()
