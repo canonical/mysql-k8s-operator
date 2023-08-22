@@ -26,6 +26,7 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
+    MySQLSetClusterPrimaryError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -683,15 +684,18 @@ class MySQLOperatorCharm(MySQLCharmBase):
         if not self._mysql.is_instance_in_cluster(self.unit_label):
             return
 
-        # Preemptively switch primary to unit 0
         if (
             self._mysql.get_primary_label() == self.unit_label
             and self.unit.name.split("/")[1] != "0"
         ):
-            logger.debug("Switching primary to unit 0")
-            self._mysql.set_cluster_primary(
-                new_primary_address=self._get_unit_fqdn(f"{self.app.name}/0")
-            )
+            # Preemptively switch primary to unit 0
+            logger.info("Switching primary to unit 0")
+            try:
+                self._mysql.set_cluster_primary(
+                    new_primary_address=self._get_unit_fqdn(f"{self.app.name}/0")
+                )
+            except MySQLSetClusterPrimaryError:
+                logger.warning("Failed to switch primary to unit 0")
 
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)
