@@ -683,6 +683,16 @@ class MySQLOperatorCharm(MySQLCharmBase):
         if not self._mysql.is_instance_in_cluster(self.unit_label):
             return
 
+        # Preemptively switch primary to unit 0
+        if (
+            self._mysql.get_primary_label() == self.unit_label
+            and self.unit.name.split("/")[1] != "0"
+        ):
+            logger.debug("Switching primary to unit 0")
+            self._mysql.set_cluster_primary(
+                new_primary_address=self._get_unit_fqdn(f"{self.app.name}/0")
+            )
+
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)
         self._mysql.remove_instance(self.unit_label)
