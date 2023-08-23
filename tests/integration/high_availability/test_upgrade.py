@@ -107,6 +107,9 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
 
     logger.info("Build charm locally")
     charm = await ops_test.build_charm(".")
+    await application.local_refresh(path=charm, resources=resources)
+    async with ops_test.fast_forward("60s"):
+        await ops_test.model.wait_for_idle(apps=[mysql_app_name], status="active", timeout=TIMEOUT)
 
     logger.info("Refresh the charm")
     await application.refresh(path=charm, resources=resources)
@@ -127,7 +130,7 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
     await action.wait()
 
     logger.info("Wait for upgrade to complete")
-    async with ops_test.fast_forward("60s"):
+    async with ops_test.fast_forward("60s", fast_interval="60s"):
         await ops_test.model.wait_for_idle(
             apps=[MYSQL_APP_NAME], status="active", idle_period=30, timeout=TIMEOUT
         )
