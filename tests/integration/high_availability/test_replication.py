@@ -211,7 +211,7 @@ async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_write
 
     time.sleep(60)
 
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         # wait for model to stabilize, k8s will re-create the killed pod
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],
