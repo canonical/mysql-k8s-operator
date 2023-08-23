@@ -76,5 +76,5 @@ assumes:
           - juju >= 2.9.44
           - juju < 3
       - all-of:
-          - juju >= 3.1.6
+          - juju >= 3.1.5
           - juju < 4
