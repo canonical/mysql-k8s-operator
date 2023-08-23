@@ -92,7 +92,7 @@ async def test_upgrade_charms(ops_test: OpsTest, continuous_writes) -> None:
     action = await leader_unit.run_action("resume-upgrade")
     await action.wait()
     logger.info("Wait for upgrade to complete")
-    async with ops_test.fast_forward("60s", fast_interval="60s"):
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.wait_for_idle(
             apps=[mysql_app_name], status="active", idle_period=30, timeout=TIMEOUT
         )
