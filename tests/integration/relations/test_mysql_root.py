@@ -29,7 +29,7 @@ CLUSTER_NAME = "test_cluster"
 @pytest.mark.group(1)
 async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
     """Test the deployment and relation with osm bundle with mysql replacing mariadb."""
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         charm = await ops_test.build_charm(".")
         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
         config = {
