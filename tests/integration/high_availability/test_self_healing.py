@@ -213,7 +213,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     ), "mysql process id is not the same as it was before process was stopped"
 
     # wait for possible recovery of the old primary
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],
             status="active",
@@ -412,7 +412,7 @@ async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_wr
         logger.info(f"Starting mysqld on {unit.name}")
         await start_mysqld_service(ops_test, unit.name)
 
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         logger.info("Block until all in maintenance/offline")
         await ops_test.model.block_until(
             lambda: all(unit.workload_status == "maintenance" for unit in mysql_units),
@@ -450,7 +450,7 @@ async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
     mysql_application_name, _ = await high_availability_test_setup(ops_test)
 
     logger.info("Scale mysql application to 1 unit that is active")
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await scale_application(ops_test, mysql_application_name, 1)
     unit = ops_test.model.applications[mysql_application_name].units[0]
     assert unit.workload_status == "active"
@@ -460,7 +460,7 @@ async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
     client.delete(Pod, unit.name.replace("/", "-"), namespace=ops_test.model.info.name)
 
     logger.info("Wait for a new pod to be created by k8s")
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],
             status="active",

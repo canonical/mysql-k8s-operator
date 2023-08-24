@@ -55,7 +55,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # Reduce the update_status frequency until the cluster is deployed
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[DATABASE_APP_NAME].units) == 3
         )
@@ -93,7 +93,7 @@ async def test_relation_creation(ops_test: OpsTest):
     """Relate charms and wait for the expected changes in status."""
     await ops_test.model.relate(APPLICATION_APP_NAME, f"{DATABASE_APP_NAME}:{ENDPOINT}")
 
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.block_until(
             lambda: is_relation_joined(ops_test, ENDPOINT, ENDPOINT) == True  # noqa: E712
         )
@@ -113,7 +113,7 @@ async def test_relation_broken(ops_test: OpsTest):
         lambda: is_relation_broken(ops_test, ENDPOINT, ENDPOINT) == True  # noqa: E712
     )
 
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await asyncio.gather(
             ops_test.model.wait_for_idle(
                 apps=[DATABASE_APP_NAME], status="active", raise_on_blocked=True

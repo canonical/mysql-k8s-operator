@@ -135,7 +135,7 @@ async def deploy_and_scale_mysql(
 
     if check_for_existing_application and application_name:
         if len(ops_test.model.applications[application_name].units) != num_units:
-            async with ops_test.fast_forward():
+            async with ops_test.fast_forward("60s"):
                 await scale_application(ops_test, application_name, num_units)
 
         return application_name
@@ -149,7 +149,7 @@ async def deploy_and_scale_mysql(
     config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.deploy(
             mysql_charm,
             application_name=mysql_application_name,
@@ -182,12 +182,12 @@ async def deploy_and_scale_application(ops_test: OpsTest) -> str:
 
     if application_name:
         if len(ops_test.model.applications[application_name].units) != 1:
-            async with ops_test.fast_forward():
+            async with ops_test.fast_forward("60s"):
                 await scale_application(ops_test, application_name, 1)
 
         return application_name
 
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.deploy(
             APPLICATION_DEFAULT_APP_NAME,
             application_name=APPLICATION_DEFAULT_APP_NAME,
@@ -523,7 +523,7 @@ def isolate_instance_from_cluster(ops_test: OpsTest, unit_name: str) -> None:
         env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
 
         try:
-            subprocess.check_output(["kubectl", "apply", "-f", temp_file.name], env=env)
+            subprocess.check_output(["microk8s.kubectl", "apply", "-f", temp_file.name], env=env)
         except subprocess.CalledProcessError as e:
             logger.error(e.output)
             logger.error(e.stderr)
@@ -535,7 +535,7 @@ def remove_instance_isolation(ops_test: OpsTest) -> None:
     env = os.environ
     env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
     subprocess.check_output(
-        f"kubectl -n {ops_test.model.info.name} delete networkchaos network-loss-primary",
+        f"microk8s.kubectl -n {ops_test.model.info.name} delete networkchaos network-loss-primary",
         shell=True,
         env=env,
     )
