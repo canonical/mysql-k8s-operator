@@ -18,10 +18,11 @@ boto3 = "^1.28.22"
 [tool.poetry.group.charm-libs.dependencies]
 # data_platform_libs/v0/data_interfaces.py
 ops = ">=2.0.0"
+# data_platform_libs/v0/upgrade.py
+pydantic = "^1.10"
 # tls_certificates_interface/v1/tls_certificates.py
 cryptography = "*"
 jsonschema = "*"
-pydantic = "^1.10.7"
 
 [tool.poetry.group.format]
 optional = true
