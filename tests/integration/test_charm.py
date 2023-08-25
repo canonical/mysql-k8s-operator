@@ -41,7 +41,7 @@ TIMEOUT = 15 * 60
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Build the mysql charm and deploy it."""
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         charm = await ops_test.build_charm(".")
         resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
         config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
@@ -141,7 +141,7 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
 @pytest.mark.abort_on_fail
 async def test_scale_up_and_down(ops_test: OpsTest) -> None:
     """Confirm that a new primary is elected when the current primary is torn down."""
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         random_unit = ops_test.model.applications[APP_NAME].units[0]
 
         await scale_application(ops_test, APP_NAME, 5)
@@ -186,7 +186,7 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 @pytest.mark.abort_on_fail
 async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
     """Confirm storage reuse works."""
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         random_unit = ops_test.model.applications[APP_NAME].units[0]
 
         await scale_application(ops_test, APP_NAME, 3)
