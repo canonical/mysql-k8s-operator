@@ -9,6 +9,7 @@ import subprocess
 from socket import getfqdn
 from typing import Optional
 
+import ops
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
@@ -467,11 +468,12 @@ class MySQLOperatorCharm(MySQLCharmBase):
             logger.debug("Unable to configure instance: {}".format(e))
             return False
 
-        try:
-            subprocess.check_call(["open-port", "3306/tcp"])
-            subprocess.check_call(["open-port", "33060/tcp"])
-        except subprocess.CalledProcessError:
-            logger.exception("failed to open port")
+        if ops.JujuVersion.from_environ().supports_open_port_on_k8s:
+            try:
+                self.unit.open_port("tcp", 3306)
+                self.unit.open_port("tcp", 33060)
+            except ops.ModelError:
+                logger.exception("failed to open port")
 
         try:
             # Set workload version
