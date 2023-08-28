@@ -111,7 +111,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 42
+LIBPATCH = 44
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -420,8 +420,9 @@ class MySQLCharmBase(CharmBase):
             return
 
         new_password = event.params.get("password") or generate_random_password(PASSWORD_LENGTH)
+        host = "%" if username != ROOT_USERNAME else "localhost"
 
-        self._mysql.update_user_password(username, new_password)
+        self._mysql.update_user_password(username, new_password, host=host)
 
         self.set_secret("app", secret_key, new_password)
 
@@ -709,8 +710,8 @@ class MySQLBase(ABC):
     def configure_mysql_users(self):
         """Configure the MySQL users for the instance.
 
-        Creates base `root@%` and `<server_config>@%` users with the
-        appropriate privileges, and reconfigure `root@localhost` user password.
+        Create `<server_config>@%` user with the appropriate privileges, and
+        reconfigure `root@localhost` user password.
 
         Raises MySQLConfigureMySQLUsersError if the user creation fails.
         """
@@ -729,14 +730,6 @@ class MySQLBase(ABC):
             "CONNECTION_ADMIN",
         )
 
-        # commands  to create 'root'@'%' user
-        create_root_user_commands = (
-            f"CREATE USER 'root'@'%' IDENTIFIED BY '{self.root_password}'",
-            "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION",
-            "FLUSH PRIVILEGES",
-        )
-
-        # commands to be run from mysql client with root user and password set above
         # privileges for the backups user:
         #   https://docs.percona.com/percona-xtrabackup/8.0/using_xtrabackup/privileges.html#permissions-and-privileges-needed
         # CONNECTION_ADMIN added to provide it privileges to connect to offline_mode node
@@ -752,19 +745,15 @@ class MySQLBase(ABC):
             f"GRANT SELECT ON performance_schema.replication_group_members TO '{self.backups_user}'@'%'",
             "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost'",
             f"ALTER USER 'root'@'localhost' IDENTIFIED BY '{self.root_password}'",
-            f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM root@'%'",
-            f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM root@localhost",
+            f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'localhost'",
             "FLUSH PRIVILEGES",
         )
 
         try:
             logger.debug(f"Configuring MySQL users for {self.instance_address}")
             self._run_mysqlcli_script(
-                "; ".join(create_root_user_commands), password=self.root_password
-            )
-            # run configure users commands with newly created root user
-            self._run_mysqlcli_script(
-                "; ".join(configure_users_commands), password=self.root_password
+                "; ".join(configure_users_commands),
+                password=self.root_password,
             )
         except MySQLClientError as e:
             logger.exception(
@@ -1801,7 +1790,7 @@ class MySQLBase(ABC):
             logger.warning(f"Failed to grant privileges to user {username}@{hostname}", exc_info=e)
             raise MySQLGrantPrivilegesToUserError(e.message)
 
-    def update_user_password(self, username: str, new_password: str) -> None:
+    def update_user_password(self, username: str, new_password: str, host: str = "%") -> None:
         """Updates user password in MySQL database.
 
         Args:
@@ -1815,7 +1804,7 @@ class MySQLBase(ABC):
 
         update_user_password_commands = (
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-            f"session.run_sql(\"ALTER USER '{username}'@'%' IDENTIFIED BY '{new_password}';\")",
+            f"session.run_sql(\"ALTER USER '{username}'@'{host}' IDENTIFIED BY '{new_password}';\")",
             'session.run_sql("FLUSH PRIVILEGES;")',
         )
 
@@ -2116,7 +2105,7 @@ Swap:     1027600384  1027600384           0
                 bash=True,
                 user=user,
                 group=group,
-                env={
+                env_extra={
                     "ACCESS_KEY_ID": s3_parameters["access-key"],
                     "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
                 },
@@ -2214,7 +2203,7 @@ Swap:     1027600384  1027600384           0
             stdout, stderr = self._execute_commands(
                 retrieve_backup_command,
                 bash=True,
-                env={
+                env_extra={
                     "ACCESS_KEY_ID": s3_parameters["access-key"],
                     "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
                 },
@@ -2359,7 +2348,7 @@ Swap:     1027600384  1027600384           0
         bash: bool = False,
         user: Optional[str] = None,
         group: Optional[str] = None,
-        env: Dict = {},
+        env_extra: Dict = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         raise NotImplementedError
