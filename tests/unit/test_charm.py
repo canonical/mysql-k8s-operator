@@ -80,7 +80,6 @@ class TestCharm(unittest.TestCase):
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
 
-    @patch("subprocess.check_call")
     @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.create_cluster_set")
     @patch("mysql_k8s_helpers.MySQL.initialize_juju_units_operations_table")
@@ -116,7 +115,6 @@ class TestCharm(unittest.TestCase):
         _initialize_juju_units_operations_table,
         _is_data_dir_initialised,
         _create_cluster_set,
-        _check_call,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
