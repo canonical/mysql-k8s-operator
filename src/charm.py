@@ -5,7 +5,6 @@
 """Charm for MySQL."""
 
 import logging
-import subprocess
 from socket import getfqdn
 from typing import Optional
 
@@ -428,6 +427,18 @@ class MySQLOperatorCharm(MySQLCharmBase):
                     "app", required_password, generate_random_password(PASSWORD_LENGTH)
                 )
 
+    def _open_ports(self) -> None:
+        """Open ports if supported.
+
+        Used if `juju expose` ran on application
+        """
+        if ops.JujuVersion.from_environ().supports_open_port_on_k8s:
+            try:
+                self.unit.open_port("tcp", 3306)
+                self.unit.open_port("tcp", 33060)
+            except ops.ModelError:
+                logger.exception("failed to open port")
+
     def _configure_instance(self, container) -> bool:
         """Configure the instance for use in Group Replication."""
         try:
@@ -468,12 +479,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
             logger.debug("Unable to configure instance: {}".format(e))
             return False
 
-        if ops.JujuVersion.from_environ().supports_open_port_on_k8s:
-            try:
-                self.unit.open_port("tcp", 3306)
-                self.unit.open_port("tcp", 33060)
-            except ops.ModelError:
-                logger.exception("failed to open port")
+        self._open_ports()
 
         try:
             # Set workload version
