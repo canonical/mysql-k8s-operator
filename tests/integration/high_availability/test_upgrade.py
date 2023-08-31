@@ -69,7 +69,7 @@ async def test_upgrade_charms(ops_test: OpsTest, continuous_writes) -> None:
     logger.info("Ensure continuous_writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
-    # 8.0.33
+    # 8.0.34
     resources = {
         "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:3b6a4a63971acec3b71a0178cd093014a695ddf7c31d91d56ebb110eec6cdbe1"
     }
