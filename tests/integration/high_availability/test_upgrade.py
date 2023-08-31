@@ -71,7 +71,7 @@ async def test_upgrade_charms(ops_test: OpsTest, continuous_writes) -> None:
 
     # 8.0.33
     resources = {
-        "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:753477ce39712221f008955b746fcf01a215785a215fe3de56f525380d14ad97"
+        "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:3b6a4a63971acec3b71a0178cd093014a695ddf7c31d91d56ebb110eec6cdbe1"
     }
     logger.info("Refresh the charm")
     application = ops_test.model.applications[mysql_app_name]
