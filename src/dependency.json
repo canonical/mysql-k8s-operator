@@ -3,12 +3,12 @@
     "dependencies": {},
     "name": "mysql-k8s",
     "upgrade_supported": ">0",
-    "version": "1"
+    "version": "2"
   },
   "rock": {
     "dependencies": {},
     "name": "charmed-mysql",
     "upgrade_supported": ">8.0.31",
-    "version": "8.0.33"
+    "version": "8.0.34"
   }
 }
