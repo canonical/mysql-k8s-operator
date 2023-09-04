@@ -66,6 +66,51 @@ async def get_cluster_status(ops_test: OpsTest, unit: Unit) -> Dict:
     return cluster_status_results.results.get("status", {})
 
 
+async def get_leader_unit(ops_test: OpsTest, app_name: str) -> Optional[Unit]:
+    leader_unit = None
+    for unit in ops_test.model.applications[app_name].units:
+        if await unit.is_leader_from_status():
+            leader_unit = unit
+            break
+
+    return leader_unit
+
+
+async def get_relation_data(
+    ops_test: OpsTest,
+    application_name: str,
+    relation_name: str,
+) -> list:
+    """Returns a list that contains the relation-data.
+
+    Args:
+        ops_test: The ops test framework instance
+        application_name: The name of the application
+        relation_name: name of the relation to get connection data from
+    Returns:
+        a list that contains the relation-data
+    """
+    # get available unit id for the desired application
+    units_ids = [
+        app_unit.name.split("/")[1]
+        for app_unit in ops_test.model.applications[application_name].units
+    ]
+    assert len(units_ids) > 0
+    unit_name = f"{application_name}/{units_ids[0]}"
+    raw_data = (await ops_test.juju("show-unit", unit_name))[1]
+    if not raw_data:
+        raise ValueError(f"no unit info could be grabbed for {unit_name}")
+    data = yaml.safe_load(raw_data)
+    # Filter the data based on the relation name.
+    relation_data = [v for v in data[unit_name]["relation-info"] if v["endpoint"] == relation_name]
+    if len(relation_data) == 0:
+        raise ValueError(
+            f"no relation data could be grabbed on relation with endpoint {relation_name}"
+        )
+
+    return relation_data
+
+
 async def get_primary_unit(
     ops_test: OpsTest,
     unit: Unit,
