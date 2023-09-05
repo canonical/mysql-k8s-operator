@@ -208,7 +208,7 @@ async def scale_application(
     await ops_test.model.applications[application_name].scale(desired_count)
 
     if desired_count > 0 and wait:
-        async with ops_test.fast_forward():
+        async with ops_test.fast_forward("60s"):
             await ops_test.model.wait_for_idle(
                 apps=[application_name],
                 status="active",

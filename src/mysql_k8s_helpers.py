@@ -618,7 +618,7 @@ class MySQL(MySQLBase):
         bash: bool = False,
         user: Optional[str] = None,
         group: Optional[str] = None,
-        env: Dict = {},
+        env_extra: Optional[Dict] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         try:
@@ -629,7 +629,7 @@ class MySQL(MySQLBase):
                 commands,
                 user=user,
                 group=group,
-                environment=env,
+                environment=env_extra,
             )
             stdout, stderr = process.wait_output()
             return (stdout, stderr or "")

@@ -8,6 +8,7 @@ import logging
 from socket import getfqdn
 from typing import Optional
 
+import ops
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
@@ -26,6 +27,7 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
+    MySQLSetClusterPrimaryError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -425,6 +427,18 @@ class MySQLOperatorCharm(MySQLCharmBase):
                     "app", required_password, generate_random_password(PASSWORD_LENGTH)
                 )
 
+    def _open_ports(self) -> None:
+        """Open ports if supported.
+
+        Used if `juju expose` ran on application
+        """
+        if ops.JujuVersion.from_environ().supports_open_port_on_k8s:
+            try:
+                self.unit.open_port("tcp", 3306)
+                self.unit.open_port("tcp", 33060)
+            except ops.ModelError:
+                logger.exception("failed to open port")
+
     def _configure_instance(self, container) -> bool:
         """Configure the instance for use in Group Replication."""
         try:
@@ -464,6 +478,8 @@ class MySQLOperatorCharm(MySQLCharmBase):
         ) as e:
             logger.debug("Unable to configure instance: {}".format(e))
             return False
+
+        self._open_ports()
 
         try:
             # Set workload version
@@ -682,6 +698,19 @@ class MySQLOperatorCharm(MySQLCharmBase):
         # No need to remove the instance from the cluster if it is not a member of the cluster
         if not self._mysql.is_instance_in_cluster(self.unit_label):
             return
+
+        if (
+            self._mysql.get_primary_label() == self.unit_label
+            and self.unit.name.split("/")[1] != "0"
+        ):
+            # Preemptively switch primary to unit 0
+            logger.info("Switching primary to unit 0")
+            try:
+                self._mysql.set_cluster_primary(
+                    new_primary_address=self._get_unit_fqdn(f"{self.app.name}/0")
+                )
+            except MySQLSetClusterPrimaryError:
+                logger.warning("Failed to switch primary to unit 0")
 
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)

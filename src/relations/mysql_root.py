@@ -14,7 +14,7 @@ from ops.charm import CharmBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus
 
-from constants import LEGACY_MYSQL_ROOT, PASSWORD_LENGTH
+from constants import LEGACY_MYSQL_ROOT, PASSWORD_LENGTH, ROOT_PASSWORD_KEY
 from mysql_k8s_helpers import (
     MySQLCreateDatabaseError,
     MySQLCreateUserError,
@@ -55,13 +55,14 @@ class MySQLRootRelation(Object):
         Returns:
             a string representing the password for the mysql user
         """
-        password_key = f"{username}_password"
-        password = self.charm.get_secret("app", password_key)
+        password_key = f"{username}-password"
+        fallback_key = f"{username}_password"
+        password = self.charm.get_secret("app", password_key, fallback_key=fallback_key)
         if password:
             return password
 
         password = generate_random_password(PASSWORD_LENGTH)
-        self.charm.set_secret("app", password_key, password)
+        self.charm.set_secret("app", password_key, password, fallback_key=fallback_key)
         return password
 
     def _get_or_generate_username(self, event_relation_id: int) -> str:
@@ -202,7 +203,7 @@ class MySQLRootRelation(Object):
             "host": primary_address.split(":")[0],
             "password": password,
             "port": "3306",
-            "root_password": self.charm.get_secret("app", "root-password"),
+            "root_password": self.charm.get_secret("app", ROOT_PASSWORD_KEY),
             "user": username,
         }
 

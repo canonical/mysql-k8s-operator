@@ -215,7 +215,6 @@ class TestCharm(unittest.TestCase):
         )
         assert self.charm.get_secret("unit", "password") == "test-password"
 
-    # @patch_network_get(private_address="1.1.1.1")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
     def test_set_secret(self, _):
         self.harness.set_leader()
@@ -238,4 +237,30 @@ class TestCharm(unittest.TestCase):
         assert (
             self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)["password"]
             == "test-password"
+        )
+
+    @patch("mysql_k8s_helpers.MySQL.remove_instance")
+    @patch("mysql_k8s_helpers.MySQL.get_primary_label")
+    @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
+    def test_database_storage_detaching(
+        self, mock_is_instance_in_cluster, mock_get_primary_label, mock_remove_instance
+    ):
+        self.harness.update_relation_data(
+            self.peer_relation_id, self.charm.unit.name, {"unit-initialized": "True"}
+        )
+        self.harness.update_relation_data(
+            self.peer_relation_id,
+            self.charm.app.name,
+            {"cluster-name": "cluster-1", "cluster-set-domain-name": "cluster-1"},
+        )
+        mock_get_primary_label.return_value = self.charm.unit_label
+
+        self.charm._on_database_storage_detaching(None)
+        mock_remove_instance.assert_called_once_with(self.charm.unit_label)
+
+        self.assertEqual(
+            self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)[
+                "unit-status"
+            ],
+            "removing",
         )

@@ -69,15 +69,15 @@ async def test_upgrade_charms(ops_test: OpsTest, continuous_writes) -> None:
     logger.info("Ensure continuous_writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
-    # 8.0.33
+    # 8.0.34
     resources = {
-        "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:753477ce39712221f008955b746fcf01a215785a215fe3de56f525380d14ad97"
+        "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:3b6a4a63971acec3b71a0178cd093014a695ddf7c31d91d56ebb110eec6cdbe1"
     }
     logger.info("Refresh the charm")
     application = ops_test.model.applications[mysql_app_name]
     charm = await ops_test.build_charm(".")
     await application.local_refresh(path=charm, resources=resources)
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.wait_for_idle(apps=[mysql_app_name], status="active", timeout=TIMEOUT)
 
     mysql_units = ops_test.model.applications[mysql_app_name].units
@@ -92,7 +92,7 @@ async def test_upgrade_charms(ops_test: OpsTest, continuous_writes) -> None:
     action = await leader_unit.run_action("resume-upgrade")
     await action.wait()
     logger.info("Wait for upgrade to complete")
-    async with ops_test.fast_forward(fast_interval="60s"):
+    async with ops_test.fast_forward("60s"):
         await ops_test.model.wait_for_idle(
             apps=[mysql_app_name], status="active", idle_period=30, timeout=TIMEOUT
         )

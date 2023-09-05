@@ -20,7 +20,13 @@ from ops.charm import (
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus
 
-from constants import CONTAINER_NAME, LEGACY_MYSQL, PASSWORD_LENGTH, PEER
+from constants import (
+    CONTAINER_NAME,
+    LEGACY_MYSQL,
+    PASSWORD_LENGTH,
+    PEER,
+    ROOT_PASSWORD_KEY,
+)
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
@@ -60,13 +66,14 @@ class MySQLRelation(Object):
         Returns:
             a string representing the password for the mysql user
         """
-        password_key = f"{username}_password"
-        password = self.charm.get_secret("app", password_key)
+        password_key = f"{username}-password"
+        fallback_key = f"{username}_password"
+        password = self.charm.get_secret("app", password_key, fallback_key=fallback_key)
         if password:
             return password
 
         password = generate_random_password(PASSWORD_LENGTH)
-        self.charm.set_secret("app", password_key, password)
+        self.charm.set_secret("app", password_key, password, fallback_key=fallback_key)
         return password
 
     def _get_or_generate_username(self, event_relation_id: int) -> str:
@@ -266,7 +273,7 @@ class MySQLRelation(Object):
             "host": primary_address.split(":")[0],
             "password": password,
             "port": "3306",
-            "root_password": self.charm.app_peer_data["root-password"],
+            "root_password": self.charm.get_secret("app", ROOT_PASSWORD_KEY),
             "user": username,
         }
 
