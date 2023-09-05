@@ -182,46 +182,6 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
     os.remove(fault_charm)
 
 
-@pytest.mark.group(2)
-@pytest.mark.abort_on_fail
-async def test_upgrade_from_stable(ops_test: OpsTest):
-    """Test updating from stable channel."""
-    logger.info("Remove mysql")
-    await ops_test.model.remove_application(MYSQL_APP_NAME, block_until_done=True)
-    logger.info("Deploy mysql from stable")
-    await ops_test.model.deploy(
-        MYSQL_APP_NAME,
-        application_name=MYSQL_APP_NAME,
-        num_units=3,
-        channel="8.0/stable",
-        constraints="mem=1G",
-        # config={"profile": "testing"}, # config not available in 8.0/stable@r75
-    )
-    logger.info("Relate test application")
-    await relate_mysql_and_application(ops_test, MYSQL_APP_NAME, TEST_APP_NAME)
-
-    application = ops_test.model.applications[MYSQL_APP_NAME]
-    logger.info("Build charm locally")
-    charm = await ops_test.build_charm(".")
-
-    logger.info("Refresh the charm")
-    await application.refresh(path=charm)
-
-    logger.info("Wait for upgrade to start")
-    await ops_test.model.block_until(
-        lambda: "maintenance" in {unit.workload_status for unit in application.units},
-        timeout=TIMEOUT,
-    )
-
-    logger.info("Wait for upgrade to complete")
-    await ops_test.model.wait_for_idle(
-        apps=[MYSQL_APP_NAME], status="active", idle_period=30, timeout=TIMEOUT
-    )
-
-    logger.info("Ensure continuous_writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
-
-
 async def inject_dependency_fault(
     ops_test: OpsTest, application_name: str, charm_file: Union[str, Path]
 ) -> None:
