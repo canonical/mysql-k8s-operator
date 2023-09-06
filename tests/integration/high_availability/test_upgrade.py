@@ -44,6 +44,7 @@ async def test_deploy_latest(ops_test: OpsTest) -> None:
             application_name=MYSQL_APP_NAME,
             num_units=3,
             channel="8.0/edge",
+            trust=True,
             config={"profile": "testing"},
         ),
         ops_test.model.deploy(

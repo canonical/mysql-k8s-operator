@@ -30,6 +30,7 @@ async def test_deploy_latest(ops_test: OpsTest) -> None:
             num_units=3,
             channel="8.0/stable",
             constraints="mem=1G",
+            trust=True,
             # config={"profile": "testing"}, # config not available in 8.0/stable@r75
         ),
         ops_test.model.deploy(
