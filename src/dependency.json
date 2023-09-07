@@ -3,7 +3,7 @@
     "dependencies": {},
     "name": "mysql-k8s",
     "upgrade_supported": ">0",
-    "version": "2"
+    "version": "1"
   },
   "rock": {
     "dependencies": {},
