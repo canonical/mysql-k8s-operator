@@ -6,7 +6,7 @@
 
 import json
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from charms.mysql.v0.mysql import (
     Error,
@@ -14,10 +14,11 @@ from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureMySQLUsersError,
     MySQLExecError,
+    MySQLGetAutoTunningParametersError,
+    MySQLGetAvailableMemoryError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
-from ops.charm import CharmBase
 from ops.model import Container
 from ops.pebble import ChangeError, ExecError
 from tenacity import (
@@ -50,6 +51,9 @@ from k8s_helpers import KubernetesHelpers
 from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from charm import MySQLOperatorCharm
 
 
 class MySQLInitialiseMySQLDError(Error):
@@ -138,7 +142,7 @@ class MySQL(MySQLBase):
         backups_password: str,
         container: Container,
         k8s_helper: KubernetesHelpers,
-        charm: CharmBase,
+        charm: "MySQLOperatorCharm",
     ):
         """Initialize the MySQL class.
 
@@ -279,40 +283,20 @@ class MySQL(MySQLBase):
             logger.exception("Error configuring MySQL users", exc_info=e)
             raise MySQLConfigureMySQLUsersError(e.message)
 
-    def create_custom_config_file(
-        self,
-        *,
-        report_host: str,
-        innodb_buffer_pool_size: int,
-        innodb_buffer_pool_chunk_size: Optional[int],
-        gr_message_cache_size: Optional[int],
-        max_connections: int,
-    ) -> None:
-        """Create custom configuration file.
+    def write_mysqld_config(self, profile: str) -> None:
+        """Create custom mysql config file.
 
-        Necessary for k8s deployments.
-        Raises MySQLCreateCustomConfigFileError if the script gets a non-zero return code.
+        Raises MySQLCreateCustomMySQLDConfigError if there is an error creating the
+            custom mysqld config
         """
-        content = [
-            "[mysqld]",
-            f"report_host = {report_host}",
-            "bind-address = 0.0.0.0",
-            "mysqlx-bind-address = 0.0.0.0",
-            f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
-            f"max_connections = {max_connections}",
-        ]
-
-        if innodb_buffer_pool_chunk_size:
-            content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
-
-        if gr_message_cache_size:
-            content.append(f"loose-group_replication_message_cache_size = {gr_message_cache_size}")
-
-        content.append("")
+        logger.debug("Copying custom mysqld config")
         try:
-            self.container.push(MYSQLD_CONFIG_FILE, source="\n".join(content))
-        except Exception:
-            raise MySQLCreateCustomConfigFileError()
+            content = self.render_myqld_configuration(profile=profile)
+        except (MySQLGetAvailableMemoryError, MySQLGetAutoTunningParametersError):
+            logger.exception("Failed to get available memory or auto tuning parameters")
+            raise MySQLCreateCustomConfigFileError
+
+        self.write_content_to_file(MYSQLD_CONFIG_FILE, content)
 
     def execute_backup_commands(
         self,
@@ -762,8 +746,8 @@ class MySQL(MySQLBase):
         except ExecError as e:
             raise MySQLClientError(e.stderr)
 
-    def _get_total_memory(self) -> int:
-        """Get total memory of the container in bytes."""
+    def get_available_memory(self) -> int:
+        """Get available memory for the container in bytes."""
         allocable_memory = self.k8s_helper.get_node_allocable_memory()
         container_limits = self.k8s_helper.get_resources_limits(CONTAINER_NAME)
         if "memory" in container_limits:

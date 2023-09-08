@@ -14,13 +14,11 @@ from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
-    BYTES_1MiB,
     MySQLAddInstanceToClusterError,
     MySQLCharmBase,
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
-    MySQLGetAutoTunningParametersError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
@@ -56,7 +54,6 @@ from constants import (
     MYSQL_LOG_FILES,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
-    MYSQLD_CONFIG_FILE,
     MYSQLD_EXPORTER_PORT,
     MYSQLD_EXPORTER_SERVICE,
     MYSQLD_SAFE_SERVICE,
@@ -230,48 +227,6 @@ class MySQLOperatorCharm(MySQLCharmBase):
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
         return self._is_cluster_blocked()
-
-    def _prepare_configs(self, container: Container, profile: str) -> bool:
-        """Copies files to the workload container.
-
-        Meant to be called from the pebble-ready handler.
-
-        Returns: a boolean indicating if the method was successful.
-        """
-        if container.exists(MYSQLD_CONFIG_FILE):
-            return True
-
-        if profile == "testing":
-            innodb_buffer_pool_size = 20 * BYTES_1MiB
-            innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
-            group_replication_message_cache_size = 128 * BYTES_1MiB
-            max_connections = 20
-        else:
-            try:
-                (
-                    innodb_buffer_pool_size,
-                    innodb_buffer_pool_chunk_size,
-                    group_replication_message_cache_size,
-                ) = self._mysql.get_innodb_buffer_pool_parameters()
-                group_replication_message_cache_size = None
-                max_connections = self._mysql.get_max_connections()
-            except MySQLGetAutoTunningParametersError:
-                self.unit.status = BlockedStatus("Error computing innodb_buffer_pool_size")
-                return False
-
-        try:
-            self._mysql.create_custom_config_file(
-                report_host=self._get_unit_fqdn(self.unit.name),
-                innodb_buffer_pool_size=innodb_buffer_pool_size,
-                innodb_buffer_pool_chunk_size=innodb_buffer_pool_chunk_size,
-                gr_message_cache_size=group_replication_message_cache_size,
-                max_connections=max_connections,
-            )
-        except MySQLCreateCustomConfigFileError:
-            self.unit.status = BlockedStatus("Failed to copy custom mysql config file")
-            return False
-
-        return True
 
     def _get_primary_from_online_peer(self) -> Optional[str]:
         """Get the primary address from an online peer."""
@@ -522,8 +477,11 @@ class MySQLOperatorCharm(MySQLCharmBase):
             return
 
         container = event.workload
-        if not self._prepare_configs(container, self.config["profile"]):
-            return
+        try:
+            self._mysql.write_mysqld_config(profile=self.config["profile"])
+        except MySQLCreateCustomConfigFileError:
+            logger.exception("Unable to write custom config file")
+            raise
 
         self.unit_peer_data["unit-status"] = "alive"
         if self._mysql.is_data_dir_initialised():
