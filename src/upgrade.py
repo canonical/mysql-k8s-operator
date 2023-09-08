@@ -19,7 +19,7 @@ from charms.mysql.v0.mysql import (
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
 )
-from ops.model import BlockedStatus, MaintenanceStatus
+from ops.model import BlockedStatus, MaintenanceStatus, RelationDataContent
 from pydantic import BaseModel
 from tenacity import RetryError, Retrying
 from tenacity.stop import stop_after_attempt
@@ -64,11 +64,17 @@ class MySQLK8sUpgrade(DataUpgrade):
         self.framework.observe(
             self.charm.on[self.relation_name].relation_changed, self._on_upgrade_changed
         )
+        self.framework.observe(self.charm.on.upgrade_charm, self._on_upgrade_charm_check_legacy)
 
     @property
     def highest_ordinal(self) -> int:
         """Return the max ordinal."""
         return self.charm.app.planned_units() - 1
+
+    @property
+    def unit_upgrade_data(self) -> RelationDataContent:
+        """Return the application upgrade data."""
+        return self.peer_relation.data[self.charm.unit]
 
     @override
     def pre_upgrade_check(self) -> None:
@@ -206,6 +212,7 @@ class MySQLK8sUpgrade(DataUpgrade):
                 stop=stop_after_attempt(RECOVER_ATTEMPTS), wait=wait_fixed(10)
             ):
                 with attempt:
+                    self.charm._mysql.hold_if_recovering()
                     if not self.charm._mysql.is_instance_in_cluster(self.charm.unit_label):
                         logger.debug(
                             "Instance not yet back in the cluster."
@@ -251,3 +258,48 @@ class MySQLK8sUpgrade(DataUpgrade):
         instance = self.charm._get_unit_fqdn(f"{self.charm.app.name}/0")
         self.charm._mysql.verify_server_upgradable(instance=instance)
         logger.debug("MySQL server is upgradeable")
+
+    def _on_upgrade_charm_check_legacy(self, event) -> None:
+        if not self.peer_relation or len(self.app_units) < len(self.charm.app_units):
+            # defer case relation not ready or not all units joined it
+            event.defer()
+            logger.debug("Wait all units join the upgrade relation")
+            return
+
+        if self.state:
+            # Do nothing - if state set, upgrade is supported
+            return
+
+        if not self.charm.unit.is_leader():
+            # set ready state on non-leader units
+            self.unit_upgrade_data.update({"state": "ready"})
+            return
+
+        peers_state = list(filter(lambda state: state != "", self.unit_states))
+        if len(peers_state) == len(self.peer_relation.units) and set(peers_state) == {"ready"}:
+            # All peers have set the state to ready
+            self.unit_upgrade_data.update({"state": "ready"})
+            self._prepare_upgrade_from_legacy()
+        else:
+            logger.debug("Wait until all peers have set upgrade state to ready")
+            event.defer()
+
+    def _prepare_upgrade_from_legacy(self) -> None:
+        """Prepare upgrade from legacy charm without upgrade support.
+
+        Assumes run on leader unit only.
+        """
+        logger.warning("Upgrading from unsupported version")
+
+        # Populate app upgrade databag to allow upgrade procedure
+        logger.debug("Building upgrade stack")
+        upgrade_stack = sorted([int(unit.name.split("/")[1]) for unit in self.app_units])
+
+        logger.debug(f"Upgrade stack: {upgrade_stack}")
+        self.upgrade_stack = upgrade_stack
+        logger.debug("Persisting dependencies to upgrade relation data...")
+        self.peer_relation.data[self.charm.app].update(
+            {"dependencies": json.dumps(self.dependency_model.dict())}
+        )
+        self.charm._on_leader_elected(None)
+    

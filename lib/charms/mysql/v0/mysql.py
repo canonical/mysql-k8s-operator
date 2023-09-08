@@ -66,15 +66,18 @@ error handling on the subclass and in the charm code.
 """
 
 import dataclasses
+import enum
 import json
 import logging
 import re
 import socket
+import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import ops
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
+from ops.model import Unit
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -111,7 +114,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 44
+LIBPATCH = 46
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -119,6 +122,7 @@ UNIT_ADD_LOCKNAME = "unit-add"
 BYTES_1GiB = 1073741824  # 1 gibibyte
 BYTES_1GB = 1000000000  # 1 gigabyte
 BYTES_1MiB = 1048576  # 1 mebibyte
+RECOVERY_CHECK_TIME = 10  # seconds
 
 
 class Error(Exception):
@@ -478,6 +482,14 @@ class MySQLCharmBase(CharmBase):
         return self.peers.data[self.unit]
 
     @property
+    def app_units(self) -> set[Unit]:
+        """The peer-related units in the application."""
+        if not self.peers:
+            return set()
+
+        return {self.unit, *self.peers.units}
+
+    @property
     def unit_label(self):
         """Return unit label."""
         return self.unit.name.replace("/", "-")
@@ -522,8 +534,8 @@ class MySQLCharmBase(CharmBase):
                 secret = self.model.get_secret(id=secret_id)
                 content = secret.get_content()
                 self.unit_secrets = content
+                logger.debug(f"Retrieved secret {key} for unit from juju")
 
-            logger.debug(f"Retrieved secret {key} for unit")
             return self.unit_secrets.get(key)
 
         secret_id = self.app_peer_data.get(SECRET_ID_KEY)
@@ -536,8 +548,8 @@ class MySQLCharmBase(CharmBase):
             secret = self.model.get_secret(id=secret_id)
             content = secret.get_content()
             self.app_secrets = content
+            logger.debug(f"Retrieved secert {key} for app from juju")
 
-        logger.debug(f"Retrieved secret {key} for app")
         return self.app_secrets.get(key)
 
     def _get_secret_from_databag(self, scope: str, key: Optional[str]) -> Optional[str]:
@@ -619,7 +631,7 @@ class MySQLCharmBase(CharmBase):
             else:
                 secret = self.app.add_secret(content)
                 self.app_peer_data[SECRET_ID_KEY] = secret.id
-            logger.debug(f"Added {scope} secret {secret_id} for {key}")
+            logger.debug(f"Added {scope} secret {secret.id} for {key}")
 
         if scope == "unit":
             self.unit_secrets = content
@@ -652,6 +664,20 @@ class MySQLCharmBase(CharmBase):
         self._set_secret_in_databag(scope, key, value)
         if fallback_key:
             self._set_secret_in_databag(scope, fallback_key, None)
+
+
+class MySQLMemberState(str, enum.Enum):
+    """MySQL Cluster member state."""
+
+    # TODO: python 3.11 has new enum.StrEnum
+    #       that can remove str inheritance
+
+    ONLINE = "online"
+    RECOVERING = "recovering"
+    OFFLINE = "offline"
+    ERROR = "error"
+    UNREACHABLE = "unreachable"
+    UNKNOWN = "unknown"
 
 
 class MySQLBase(ABC):
@@ -1334,7 +1360,7 @@ class MySQLBase(ABC):
             logger.debug(f"Checking existence of unit {unit_label} in cluster {self.cluster_name}")
 
             output = self._run_mysqlsh_script("\n".join(commands))
-            return "ONLINE" in output
+            return MySQLMemberState.ONLINE in output.lower()
         except MySQLClientError:
             # confirmation can fail if the clusteradmin user does not yet exist on the instance
             logger.debug(
@@ -1419,15 +1445,17 @@ class MySQLBase(ABC):
         ro_endpoints = {
             _get_host_ip(v["address"]) if get_ips else v["address"]
             for v in topology.values()
-            if v["memberrole"] == "secondary" and v["status"] == "online"
+            if v["memberrole"] == "secondary" and v["status"] == MySQLMemberState.ONLINE
         }
         rw_endpoints = {
             _get_host_ip(v["address"]) if get_ips else v["address"]
             for v in topology.values()
-            if v["memberrole"] == "primary" and v["status"] == "online"
+            if v["memberrole"] == "primary" and v["status"] == MySQLMemberState.ONLINE
         }
         # won't get offline endpoints to IP as they maybe unreachable
-        no_endpoints = {v["address"] for v in topology.values() if v["status"] != "online"}
+        no_endpoints = {
+            v["address"] for v in topology.values() if v["status"] != MySQLMemberState.ONLINE
+        }
 
         return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
@@ -1876,6 +1904,19 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.exception("Failed to reboot cluster")
             raise MySQLRebootFromCompleteOutageError(e.message)
+
+    def hold_if_recovering(self) -> None:
+        """Hold execution if member is recovering."""
+        while True:
+            try:
+                member_state, _ = self.get_member_state()
+            except MySQLGetMemberStateError:
+                break
+            if member_state == MySQLMemberState.RECOVERING:
+                logger.debug("Unit is recovering")
+                time.sleep(RECOVERY_CHECK_TIME)
+            else:
+                break
 
     def set_instance_offline_mode(self, offline_mode: bool = False) -> None:
         """Sets the instance offline_mode.

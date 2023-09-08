@@ -32,7 +32,7 @@ from charms.mysql.v0.mysql import (
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops import RelationBrokenEvent, RelationCreatedEvent
-from ops.charm import LeaderElectedEvent, RelationChangedEvent, UpdateStatusEvent
+from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
 from ops.model import (
     ActiveStatus,
@@ -406,7 +406,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
         )
         self.app_peer_data.setdefault("cluster-set-domain-name", f"cluster-set-{common_hash}")
 
-    def _on_leader_elected(self, _: LeaderElectedEvent) -> None:
+    def _on_leader_elected(self, _) -> None:
         """Handle the leader elected event.
 
         Set config values in the peer relation databag if not already set.
@@ -643,6 +643,10 @@ class MySQLOperatorCharm(MySQLCharmBase):
 
     def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
         """Handle the update status event."""
+        if not self.upgrade.idle:
+            # avoid changing status while upgrade is in progress
+            logger.debug("Application is upgrading. Skipping.")
+            return
         if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
             # join cluster test takes precedence over blocked test
             # due to matching criteria
