@@ -382,6 +382,13 @@ class MySQLOperatorCharm(MySQLCharmBase):
         self, event: RelationCreatedEvent | RelationBrokenEvent
     ) -> None:
         """Handle a COS relation created or broken event."""
+        if not self.unit_peer_data.get("unit-initialized"):
+            # wait unit initialization to avoid messing
+            # with the pebble layer before the unit is initialized
+            logger.debug("Defer reconcile mysqld exporter")
+            event.defer()
+            return
+
         self.current_event = event
 
         container = self.unit.get_container(CONTAINER_NAME)
