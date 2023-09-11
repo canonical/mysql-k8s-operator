@@ -225,13 +225,18 @@ class MySQL(MySQLBase):
             raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
 
     @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
-    def wait_until_mysql_connection(self) -> None:
+    def wait_until_mysql_connection(self, check_port: bool = True) -> None:
         """Wait until a connection to MySQL daemon is possible.
 
         Retry every 5 seconds for 30 seconds if there is an issue obtaining a connection.
         """
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
+
+        if check_port and not self.check_mysqlsh_connection():
+            raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
+
+        logger.debug("MySQL connection possible")
 
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
