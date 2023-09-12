@@ -218,8 +218,7 @@ class MySQLK8sUpgrade(DataUpgrade):
                             f" Retry {attempt.retry_state.attempt_number}/{RECOVER_ATTEMPTS}"
                         )
                         raise Exception
-                    logger.debug("Upgraded unit is healthy. Set upgrade state to `completed`")
-                    self.set_unit_completed()
+                    self._complete_upgrade()
                     return
         except MySQLServerNotUpgradableError:
             failure_message = "Incompatible mysql server upgrade"
@@ -230,6 +229,19 @@ class MySQLK8sUpgrade(DataUpgrade):
         self.charm.unit.status = BlockedStatus(
             "upgrade failed. Check logs for rollback instruction"
         )
+
+    def _complete_upgrade(self):
+        # complete upgrade for the unit
+        logger.debug("Upgraded unit is healthy. Set upgrade state to `completed`")
+        self.set_unit_completed()
+        if self.charm.unit_label == f"{self.charm.app.name}/1":
+            # penultime unit, reset the primary for faster switchover
+            try:
+                self.charm._mysql.set_cluster_primary(
+                    self.charm._get_unit_fqdn(self.charm.unit.name)
+                )
+            except MySQLSetClusterPrimaryError:
+                logger.debug("Failed to set primary")
 
     @override
     def _set_rolling_update_partition(self, partition: int) -> None:
