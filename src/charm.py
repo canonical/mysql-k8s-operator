@@ -626,6 +626,10 @@ class MySQLOperatorCharm(MySQLCharmBase):
         if not self.unit.is_leader():
             return
 
+        self._set_app_status()
+
+    def _set_app_status(self) -> None:
+        """Set the application status based on the cluster state."""
         nodes = self._mysql.get_cluster_node_count()
         if nodes > 0:
             self.app_peer_data["units-added-to-cluster"] = str(nodes)

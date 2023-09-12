@@ -131,11 +131,16 @@ class TestUpgrade(unittest.TestCase):
         assert mock_set_dynamic_variable.call_count == 2
 
     @patch("upgrade.RECOVER_ATTEMPTS", 1)
+    @patch("mysql_k8s_helpers.MySQL.hold_if_recovering")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.33")
     @patch("mysql_k8s_helpers.MySQL.verify_server_upgradable")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
     def test_pebble_ready(
-        self, mock_is_instance_in_cluster, mock_is_server_upgradable, mock_get_mysql_version
+        self,
+        mock_is_instance_in_cluster,
+        mock_is_server_upgradable,
+        mock_get_mysql_version,
+        mock_hold_if_recovering,
     ):
         """Test the pebble ready."""
         self.charm.on.config_changed.emit()
