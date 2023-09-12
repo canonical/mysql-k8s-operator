@@ -416,7 +416,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
             container.restart(MYSQLD_SAFE_SERVICE)
 
             logger.debug("Waiting for instance to be ready")
-            self._mysql.wait_until_mysql_connection()
+            self._mysql.wait_until_mysql_connection(check_port=False)
 
             logger.info("Configuring instance")
             # Configure all base users and revoke privileges from the root users
