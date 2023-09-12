@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 15 * 60
 
 MYSQL_APP_NAME = "mysql-k8s"
-TEST_APP_NAME = "mysql-test-app"
+TEST_APP_NAME = "test-app"
 
 
 @pytest.mark.group(1)
@@ -48,7 +48,7 @@ async def test_deploy_latest(ops_test: OpsTest) -> None:
             config={"profile": "testing"},
         ),
         ops_test.model.deploy(
-            TEST_APP_NAME,
+            f"mysql-{TEST_APP_NAME}",
             application_name=TEST_APP_NAME,
             num_units=1,
             channel="latest/edge",
@@ -154,14 +154,23 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
     logger.info("Refresh the charm")
     await application.refresh(path=fault_charm)
 
-    logger.info("Wait for upgrade to fail on leader")
+    if leader_unit.name != f"{MYSQL_APP_NAME}/2":
+        logger.info("Get first upgrading unit")
+        for unit in application.units:
+            if unit.name == f"{MYSQL_APP_NAME}/2":
+                break
+    else:
+        unit = leader_unit
+
+    logger.info("Wait for upgrade to fail on first upgrading unit")
     await ops_test.model.block_until(
-        lambda: leader_unit.workload_status == "blocked",
+        lambda: unit.workload_status == "blocked",
         timeout=TIMEOUT,
     )
 
-    logger.info("Ensure continuous_writes while in failure state")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    logger.info("Ensure continuous_writes while in failure state on remaining units")
+    mysql_units = set(application.units) - {unit}
+    await ensure_all_units_continuous_writes_incrementing(ops_test, list(mysql_units))
 
     logger.info("Re-run pre-upgrade-check action")
     action = await leader_unit.run_action("pre-upgrade-check")
