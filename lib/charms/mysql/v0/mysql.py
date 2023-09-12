@@ -66,15 +66,18 @@ error handling on the subclass and in the charm code.
 """
 
 import dataclasses
+import enum
 import json
 import logging
 import re
 import socket
+import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import ops
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
+from ops.model import Unit
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -111,7 +114,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 44
+LIBPATCH = 48
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -119,6 +122,7 @@ UNIT_ADD_LOCKNAME = "unit-add"
 BYTES_1GiB = 1073741824  # 1 gibibyte
 BYTES_1GB = 1000000000  # 1 gigabyte
 BYTES_1MiB = 1048576  # 1 mebibyte
+RECOVERY_CHECK_TIME = 10  # seconds
 
 
 class Error(Exception):
@@ -347,6 +351,10 @@ class MySQLSecretError(Error):
     """Exception raised when there is an issue setting/getting a secret."""
 
 
+class MySQLGetAvailableMemoryError(Error):
+    """Exception raised when there is an issue getting the available memory."""
+
+
 @dataclasses.dataclass
 class RouterUser:
     """MySQL Router user."""
@@ -355,7 +363,7 @@ class RouterUser:
     router_id: str
 
 
-class MySQLCharmBase(CharmBase):
+class MySQLCharmBase(CharmBase, ABC):
     """Base class to encapsulate charm related functionality.
 
     Meant as a means to share common charm related code between the MySQL VM and
@@ -374,6 +382,12 @@ class MySQLCharmBase(CharmBase):
         # Set in some event handlers in order to avoid passing event down a chain
         # of methods
         self.current_event = None
+
+    @property
+    @abstractmethod
+    def _mysql(self) -> "MySQLBase":
+        """Return the MySQL instance."""
+        raise NotImplementedError
 
     def _on_get_password(self, event: ActionEvent) -> None:
         """Action used to retrieve the system user's password."""
@@ -447,7 +461,7 @@ class MySQLCharmBase(CharmBase):
             )
 
     @property
-    def peers(self) -> ops.model.Relation:
+    def peers(self) -> Optional[ops.model.Relation]:
         """Retrieve the peer relation."""
         return self.model.get_relation(PEER)
 
@@ -462,7 +476,7 @@ class MySQLCharmBase(CharmBase):
         return self.unit_peer_data.get("unit-initialized") == "True"
 
     @property
-    def app_peer_data(self) -> Dict:
+    def app_peer_data(self) -> Union[ops.RelationDataContent, dict]:
         """Application peer relation data object."""
         if self.peers is None:
             return {}
@@ -470,12 +484,20 @@ class MySQLCharmBase(CharmBase):
         return self.peers.data[self.app]
 
     @property
-    def unit_peer_data(self) -> Dict:
+    def unit_peer_data(self) -> Union[ops.RelationDataContent, dict]:
         """Unit peer relation data object."""
         if self.peers is None:
             return {}
 
         return self.peers.data[self.unit]
+
+    @property
+    def app_units(self) -> set[Unit]:
+        """The peer-related units in the application."""
+        if not self.peers:
+            return set()
+
+        return {self.unit, *self.peers.units}
 
     @property
     def unit_label(self):
@@ -522,8 +544,8 @@ class MySQLCharmBase(CharmBase):
                 secret = self.model.get_secret(id=secret_id)
                 content = secret.get_content()
                 self.unit_secrets = content
+                logger.debug(f"Retrieved secret {key} for unit from juju")
 
-            logger.debug(f"Retrieved secret {key} for unit")
             return self.unit_secrets.get(key)
 
         secret_id = self.app_peer_data.get(SECRET_ID_KEY)
@@ -536,11 +558,11 @@ class MySQLCharmBase(CharmBase):
             secret = self.model.get_secret(id=secret_id)
             content = secret.get_content()
             self.app_secrets = content
+            logger.debug(f"Retrieved secert {key} for app from juju")
 
-        logger.debug(f"Retrieved secret {key} for app")
         return self.app_secrets.get(key)
 
-    def _get_secret_from_databag(self, scope: str, key: Optional[str]) -> Optional[str]:
+    def _get_secret_from_databag(self, scope: str, key: str) -> Optional[str]:
         """Retrieve and return the secret from the peer relation databag."""
         if scope == "unit":
             return self.unit_peer_data.get(key)
@@ -569,7 +591,7 @@ class MySQLCharmBase(CharmBase):
             scope, fallback_key
         )
 
-    def _set_secret_in_databag(self, scope: str, key: str, value: str) -> None:
+    def _set_secret_in_databag(self, scope: str, key: str, value: Optional[str]) -> None:
         """Set secret in the peer relation databag."""
         if not value:
             if scope == "unit":
@@ -584,7 +606,7 @@ class MySQLCharmBase(CharmBase):
 
         self.app_peer_data[key] = value
 
-    def _set_secret_in_juju(self, scope: str, key: str, value: str) -> None:
+    def _set_secret_in_juju(self, scope: str, key: str, value: Optional[str]) -> None:
         """Set the secret in the juju secret storage."""
         if scope == "unit":
             secret_id = self.unit_peer_data.get(SECRET_ID_KEY)
@@ -619,7 +641,7 @@ class MySQLCharmBase(CharmBase):
             else:
                 secret = self.app.add_secret(content)
                 self.app_peer_data[SECRET_ID_KEY] = secret.id
-            logger.debug(f"Added {scope} secret {secret_id} for {key}")
+            logger.debug(f"Added {scope} secret {secret.id} for {key}")
 
         if scope == "unit":
             self.unit_secrets = content
@@ -654,8 +676,22 @@ class MySQLCharmBase(CharmBase):
             self._set_secret_in_databag(scope, fallback_key, None)
 
 
+class MySQLMemberState(str, enum.Enum):
+    """MySQL Cluster member state."""
+
+    # TODO: python 3.11 has new enum.StrEnum
+    #       that can remove str inheritance
+
+    ONLINE = "online"
+    RECOVERING = "recovering"
+    OFFLINE = "offline"
+    ERROR = "error"
+    UNREACHABLE = "unreachable"
+    UNKNOWN = "unknown"
+
+
 class MySQLBase(ABC):
-    """Abstract class to encapsulate all operations related to the MySQL instance and cluster.
+    """Abstract class to encapsulate all operations related to the MySQL workload.
 
     This class handles the configuration of MySQL instances, and also the
     creation and configuration of MySQL InnoDB clusters via Group Replication.
@@ -706,6 +742,58 @@ class MySQLBase(ABC):
         self.monitoring_password = monitoring_password
         self.backups_user = backups_user
         self.backups_password = backups_password
+
+    def render_myqld_configuration(
+        self,
+        *,
+        profile: str,
+    ) -> str:
+        """Render mysqld ini configuration file.
+
+        Args:
+            profile: profile to use for the configuration (testing, production)
+
+        Returns: mysqld ini file string content
+        """
+        disable_memory_instruments = ""
+        if profile == "testing":
+            innodb_buffer_pool_size = 20 * BYTES_1MiB
+            innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
+            group_replication_message_cache_size = 128 * BYTES_1MiB
+            max_connections = 20
+            disable_memory_instruments = "performance-schema-instrument = 'memory/%=OFF'"
+        else:
+            available_memory = self.get_available_memory()
+            (
+                innodb_buffer_pool_size,
+                innodb_buffer_pool_chunk_size,
+                group_replication_message_cache_size,
+            ) = self.get_innodb_buffer_pool_parameters(available_memory)
+            max_connections = self.get_max_connections(available_memory)
+            if available_memory < 2 * BYTES_1GiB:
+                # disable memory instruments if we have less than 2GiB of RAM
+                disable_memory_instruments = "performance-schema-instrument = 'memory/%=OFF'"
+
+        content = [
+            "[mysqld]",
+            "bind-address = 0.0.0.0",
+            "mysqlx-bind-address = 0.0.0.0",
+            f"report_host = {self.instance_address}",
+            f"max_connections = {max_connections}",
+            f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
+        ]
+        if innodb_buffer_pool_chunk_size:
+            content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
+
+        if disable_memory_instruments:
+            content.append(disable_memory_instruments)
+        if group_replication_message_cache_size:
+            content.append(
+                f"loose-group_replication_message_cache_size = {group_replication_message_cache_size}"
+            )
+
+        content.append("\n")
+        return "\n".join(content)
 
     def configure_mysql_users(self):
         """Configure the MySQL users for the instance.
@@ -1334,7 +1422,7 @@ class MySQLBase(ABC):
             logger.debug(f"Checking existence of unit {unit_label} in cluster {self.cluster_name}")
 
             output = self._run_mysqlsh_script("\n".join(commands))
-            return "ONLINE" in output
+            return MySQLMemberState.ONLINE in output.lower()
         except MySQLClientError:
             # confirmation can fail if the clusteradmin user does not yet exist on the instance
             logger.debug(
@@ -1419,15 +1507,17 @@ class MySQLBase(ABC):
         ro_endpoints = {
             _get_host_ip(v["address"]) if get_ips else v["address"]
             for v in topology.values()
-            if v["memberrole"] == "secondary" and v["status"] == "online"
+            if v["memberrole"] == "secondary" and v["status"] == MySQLMemberState.ONLINE
         }
         rw_endpoints = {
             _get_host_ip(v["address"]) if get_ips else v["address"]
             for v in topology.values()
-            if v["memberrole"] == "primary" and v["status"] == "online"
+            if v["memberrole"] == "primary" and v["status"] == MySQLMemberState.ONLINE
         }
         # won't get offline endpoints to IP as they maybe unreachable
-        no_endpoints = {v["address"] for v in topology.values() if v["status"] != "online"}
+        no_endpoints = {
+            v["address"] for v in topology.values() if v["status"] != MySQLMemberState.ONLINE
+        }
 
         return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
@@ -1877,6 +1967,19 @@ class MySQLBase(ABC):
             logger.exception("Failed to reboot cluster")
             raise MySQLRebootFromCompleteOutageError(e.message)
 
+    def hold_if_recovering(self) -> None:
+        """Hold execution if member is recovering."""
+        while True:
+            try:
+                member_state, _ = self.get_member_state()
+            except MySQLGetMemberStateError:
+                break
+            if member_state == MySQLMemberState.RECOVERING:
+                logger.debug("Unit is recovering")
+                time.sleep(RECOVERY_CHECK_TIME)
+            else:
+                break
+
     def set_instance_offline_mode(self, offline_mode: bool = False) -> None:
         """Sets the instance offline_mode.
 
@@ -1896,7 +1999,7 @@ class MySQLBase(ABC):
                 password=self.cluster_admin_password,
             )
         except MySQLClientError as e:
-            logger.exception(f"Failed to set instance state to offline_mode {mode}", exc_info=e)
+            logger.exception(f"Failed to set instance state to offline_mode {mode}")
             raise MySQLSetInstanceOfflineModeError(e.message)
 
     def set_instance_option(self, option: str, value: Any) -> None:
@@ -1917,9 +2020,9 @@ class MySQLBase(ABC):
 
         try:
             self._run_mysqlsh_script("\n".join(set_instance_option_commands))
-        except MySQLClientError as e:
-            logger.exception(f"Failed to set option {option} with value {value}", exc_info=e)
-            raise MySQLSetInstanceOptionError(e.message)
+        except MySQLClientError:
+            logger.exception(f"Failed to set option {option} with value {value}")
+            raise MySQLSetInstanceOptionError
 
     def offline_mode_and_hidden_instance_exists(self) -> bool:
         """Indicates whether an instance exists in offline_mode and hidden from router.
@@ -1938,8 +2041,8 @@ class MySQLBase(ABC):
         try:
             output = self._run_mysqlsh_script("\n".join(commands))
         except MySQLClientError as e:
-            logger.exception("Failed to query offline mode instances", exc_info=e)
-            raise MySQLOfflineModeAndHiddenInstanceExistsError(e)
+            logger.exception("Failed to query offline mode instances")
+            raise MySQLOfflineModeAndHiddenInstanceExistsError(e.message)
 
         matches = re.search(r"<OFFLINE_MODE_INSTANCES>(.*)</OFFLINE_MODE_INSTANCES>", output)
 
@@ -1948,12 +2051,17 @@ class MySQLBase(ABC):
 
         return matches.group(1) != "0"
 
-    def get_innodb_buffer_pool_parameters(self) -> Tuple[int, Optional[int], Optional[int]]:
+    def get_innodb_buffer_pool_parameters(
+        self, available_memory: int
+    ) -> Tuple[int, Optional[int], Optional[int]]:
         """Get innodb buffer pool parameters for the instance.
+
+        Args:
+            available_memory: The amount (bytes) of memory available to the instance
 
         Returns:
             a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size),
-            optional(group_replication_message_cache))
+            optional(group_replication_message_cache)) in bytes
         """
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
@@ -1965,13 +2073,12 @@ class MySQLBase(ABC):
         try:
             innodb_buffer_pool_chunk_size = None
             group_replication_message_cache = None
-            total_memory = self._get_total_memory()
 
-            pool_size = int(total_memory * 0.75) - group_replication_message_cache_default
+            pool_size = int(available_memory * 0.75) - group_replication_message_cache_default
 
-            if pool_size < 0 or total_memory - pool_size < BYTES_1GB:
+            if pool_size < 0 or available_memory - pool_size < BYTES_1GB:
                 group_replication_message_cache = 128 * BYTES_1MiB
-                pool_size = int(total_memory * 0.5)
+                pool_size = int(available_memory * 0.5)
 
             if pool_size % chunk_size_default != 0:
                 # round pool_size to be a multiple of chunk_size_default
@@ -1993,47 +2100,31 @@ class MySQLBase(ABC):
             logger.exception("Failed to compute innodb buffer pool parameters")
             raise MySQLGetAutoTunningParametersError("Error computing buffer pool parameters")
 
-    def get_max_connections(self) -> int:
-        """Calculate max_connections parameter for the instance."""
+    def get_max_connections(self, available_memory: int) -> int:
+        """Calculate max_connections parameter for the instance.
+
+        Args:
+            available_memory: The available memory for mysql-server.
+        """
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L61-L70
 
         bytes_per_connection = 12 * BYTES_1MiB
-        total_memory = 0
 
-        try:
-            total_memory = self._get_total_memory()
-        except Exception:
-            logger.exception("Failed to retrieve total memory")
-            raise MySQLGetAutoTunningParametersError("Error retrieving total memory")
-
-        if total_memory < bytes_per_connection:
-            logger.error(f"Not enough memory for running MySQL: {total_memory=}")
+        if available_memory < bytes_per_connection:
+            logger.error(f"Not enough memory for running MySQL: {available_memory=}")
             raise MySQLGetAutoTunningParametersError("Not enough memory for running MySQL")
 
-        return total_memory // bytes_per_connection
+        return available_memory // bytes_per_connection
 
-    def _get_total_memory(self) -> int:
-        """Retrieves the total memory of the server where mysql is running."""
-        try:
-            logger.info("Retrieving the total memory of the server")
+    @abstractmethod
+    def get_available_memory(self) -> int:
+        """Platform dependent method to get the available memory for mysql-server.
 
-            """Below is an example output of `free --bytes`:
-               total        used        free      shared  buff/cache   available
-Mem:     16484458496 11890454528   265670656  2906722304  4328333312  1321193472
-Swap:     1027600384  1027600384           0
-            """
-            # need to use sh -c to be able to use pipes
-            get_total_memory_command = "free --bytes | awk '/^Mem:/{print $2; exit}'".split()
-
-            total_memory, _ = self._execute_commands(
-                get_total_memory_command,
-                bash=True,
-            )
-            return int(total_memory)
-        except MySQLExecError:
-            logger.exception("Failed to execute commands to query total memory")
-            raise
+        Raises:
+            MySQLGetAvailableMemoryError: If the available memory cannot be determined.
+        """
+        raise NotImplementedError
 
     def execute_backup_commands(
         self,
@@ -2214,9 +2305,9 @@ Swap:     1027600384  1027600384           0
         except MySQLExecError as e:
             logger.exception("Failed to retrieve backup")
             raise MySQLRetrieveBackupWithXBCloudError(e.message)
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to retrieve backup")
-            raise MySQLRetrieveBackupWithXBCloudError(e)
+            raise MySQLRetrieveBackupWithXBCloudError
 
     def prepare_backup_for_restore(
         self,
@@ -2228,9 +2319,11 @@ Swap:     1027600384  1027600384           0
     ) -> Tuple[str, str]:
         """Prepare the backup in the provided dir for restore."""
         try:
-            innodb_buffer_pool_size, _, _ = self.get_innodb_buffer_pool_parameters()
+            innodb_buffer_pool_size, _, _ = self.get_innodb_buffer_pool_parameters(
+                self.get_available_memory()
+            )
         except MySQLGetAutoTunningParametersError as e:
-            raise MySQLPrepareBackupForRestoreError(e)
+            raise MySQLPrepareBackupForRestoreError(e.message)
 
         prepare_backup_command = f"""
 {xtrabackup_location} --prepare
@@ -2254,9 +2347,9 @@ Swap:     1027600384  1027600384           0
         except MySQLExecError as e:
             logger.exception("Failed to prepare backup for restore")
             raise MySQLPrepareBackupForRestoreError(e.message)
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to prepare backup for restore")
-            raise MySQLPrepareBackupForRestoreError(e)
+            raise MySQLPrepareBackupForRestoreError
 
     def empty_data_files(
         self,
@@ -2408,6 +2501,29 @@ Swap:     1027600384  1027600384           0
             logger.exception("Failed to kill external sessions")
             raise MySQLKillSessionError
 
+    def check_mysqlsh_connection(self) -> bool:
+        """Checks if it is possible to connect to the server with mysqlsh."""
+        connect_commands = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            'session.run_sql("SELECT 1")',
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(connect_commands))
+            return True
+        except MySQLClientError:
+            return False
+
+    def get_pid_of_port_3306(self) -> Optional[str]:
+        """Retrieves the PID of the process that is bound to port 3306."""
+        get_pid_command = ["fuser", "3306/tcp"]
+
+        try:
+            stdout, _ = self._execute_commands(get_pid_command)
+            return stdout
+        except MySQLExecError:
+            return None
+
     @abstractmethod
     def is_mysqld_running(self) -> bool:
         """Returns whether mysqld is running."""
@@ -2434,7 +2550,7 @@ Swap:     1027600384  1027600384           0
         raise NotImplementedError
 
     @abstractmethod
-    def wait_until_mysql_connection(self) -> None:
+    def wait_until_mysql_connection(self, check_port: bool = True) -> None:
         """Wait until a connection to MySQL has been obtained.
 
         Implemented in subclasses, test for socket file existence.
