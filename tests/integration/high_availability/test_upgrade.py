@@ -183,6 +183,12 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
         lambda: "waiting" in {unit.workload_status for unit in application.units},
         timeout=TIMEOUT,
     )
+
+    logger.info("Resume upgrade")
+    action = await leader_unit.run_action("resume-upgrade")
+    await action.wait()
+
+    logger.info("Wait for application to recover")
     await ops_test.model.wait_for_idle(apps=[MYSQL_APP_NAME], status="active", timeout=TIMEOUT)
 
     logger.info("Ensure continuous_writes after rollback procedure")
