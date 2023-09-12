@@ -4,16 +4,17 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '53 0 * * *' # Daily at 00:53 UTC
+  # Triggered on push to branch "main" by .github/workflows/release.yaml
+  workflow_call:
 
 jobs:
-
   sync-docs:
     name: Open PR with docs changes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Open PR with docs changes
-        uses: canonical/upload-charm-docs@main
+        uses: deusebio/discourse-gatekeeper@c8adb89ea1cbceca54d78da798658373615487ac
         id: docs-pr
         with:
           discourse_host: discourse.charmhub.io
@@ -26,4 +27,3 @@ jobs:
         run: echo '${{ steps.docs-pr.outputs.migrate }}'
       - name: Show reconcile output
         run: echo '${{ steps.docs-pr.outputs.reconcile }}'
-

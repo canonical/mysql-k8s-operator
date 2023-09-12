@@ -119,3 +119,11 @@ jobs:
               "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
               "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}",
             }
+
+  sync-docs:
+    uses: ./.github/workflows/sync_docs.yaml
+    secrets: inherit
+    permissions:
+      contents: write  # Needed to update tags
+      pull-requests: write # Need to create PR
+
