@@ -641,11 +641,6 @@ class MySQLOperatorCharm(MySQLCharmBase):
             logger.info(f"Unit state is {unit_member_state}")
             return True
 
-        if not self.upgrade.idle:
-            # avoid changing status while upgrade is in progress
-            logger.debug(f"Cluster upgrade state is {self.upgrade.cluster_state}. Skipping.")
-            return True
-
         return False
 
     def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
