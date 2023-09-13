@@ -4,10 +4,9 @@
 import asyncio
 import json
 import logging
-import os
+import shutil
 import zipfile
 from pathlib import Path
-from shutil import copy
 from typing import Union
 
 import pytest
@@ -112,8 +111,13 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
     logger.info("Refresh the charm")
     await application.refresh(path=charm, resources=resources)
 
-    async with ops_test.fast_forward("60s"):
-        await ops_test.model.wait_for_idle(apps=[MYSQL_APP_NAME], status="active", timeout=TIMEOUT)
+    logger.info("Wait for upgrade to complete on first upgrading unit")
+    # highest ordinal unit always the first to upgrade
+    unit = get_unit_by_index(application.units, 2)
+
+    await ops_test.model.block_until(
+        lambda: unit.workload_status_message == "upgrade completed", timeout=TIMEOUT
+    )
 
     leader_unit = await get_leader_unit(ops_test, MYSQL_APP_NAME)
     assert leader_unit is not None, "No leader unit found"
@@ -143,8 +147,8 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
     action = await leader_unit.run_action("pre-upgrade-check")
     await action.wait()
 
-    fault_charm = f"/tmp/{charm.name}"
-    copy(charm, fault_charm)
+    fault_charm = Path("/tmp/", charm.name)
+    shutil.copy(charm, fault_charm)
 
     logger.info("Inject dependency fault")
     await inject_dependency_fault(ops_test, MYSQL_APP_NAME, fault_charm)
@@ -154,13 +158,9 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
     logger.info("Refresh the charm")
     await application.refresh(path=fault_charm)
 
-    if leader_unit.name != f"{MYSQL_APP_NAME}/2":
-        logger.info("Get first upgrading unit")
-        for unit in application.units:
-            if unit.name == f"{MYSQL_APP_NAME}/2":
-                break
-    else:
-        unit = leader_unit
+    logger.info("Get first upgrading unit")
+    # highest ordinal unit always the first to upgrade
+    unit = get_unit_by_index(application.units, 2)
 
     logger.info("Wait for upgrade to fail on first upgrading unit")
     await ops_test.model.block_until(
@@ -169,8 +169,8 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
     )
 
     logger.info("Ensure continuous_writes while in failure state on remaining units")
-    mysql_units = set(application.units) - {unit}
-    await ensure_all_units_continuous_writes_incrementing(ops_test, list(mysql_units))
+    mysql_units = [unit_ for unit_ in application.units if unit_ != unit]
+    await ensure_all_units_continuous_writes_incrementing(ops_test, mysql_units)
 
     logger.info("Re-run pre-upgrade-check action")
     action = await leader_unit.run_action("pre-upgrade-check")
@@ -178,10 +178,10 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
 
     logger.info("Re-refresh the charm")
     await application.refresh(path=charm)
-    logger.info("Wait for upgrade to start")
+
+    logger.info("Wait for upgrade to complete on first upgrading unit")
     await ops_test.model.block_until(
-        lambda: "waiting" in {unit.workload_status for unit in application.units},
-        timeout=TIMEOUT,
+        lambda: unit.workload_status_message == "upgrade completed", timeout=TIMEOUT
     )
 
     logger.info("Resume upgrade")
@@ -195,7 +195,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
     # remove fault charm file
-    os.remove(fault_charm)
+    fault_charm.unlink()
 
 
 async def inject_dependency_fault(
@@ -211,8 +211,15 @@ async def inject_dependency_fault(
 
     loaded_dependency_dict = json.loads(relation_data[0]["application-data"]["dependencies"])
     loaded_dependency_dict["charm"]["upgrade_supported"] = f">{current_charm_version}"
-    loaded_dependency_dict["charm"]["version"] = f"{int(current_charm_version)+1}"
+    loaded_dependency_dict["charm"]["version"] = "999.999.999"
 
     # Overwrite dependency.json with incompatible version
     with zipfile.ZipFile(charm_file, mode="a") as charm_zip:
         charm_zip.writestr("src/dependency.json", json.dumps(loaded_dependency_dict))
+
+
+def get_unit_by_index(units: list, index: int):
+    """Get unit by index."""
+    for unit in units:
+        if unit.name == f"{MYSQL_APP_NAME}/{index}":
+            return unit
