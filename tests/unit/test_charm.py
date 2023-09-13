@@ -3,6 +3,7 @@
 #
 # Learn more about testing at: https://juju.is/docs/sdk/testing
 
+import os
 import unittest
 from unittest.mock import PropertyMock, patch
 
@@ -28,8 +29,8 @@ class TestCharm(unittest.TestCase):
         self.charm = self.harness.charm
         self.maxDiff = None
 
-    def layer_dict(self, with_mysqld_exporter: bool = False):
-        return {
+    def layer_dict(self, with_mysqld_exporter: bool = False, with_kill_delay: bool = False):
+        layer = {
             "summary": "mysqld services layer",
             "description": "pebble config layer for mysqld safe and exporter",
             "services": {
@@ -40,7 +41,6 @@ class TestCharm(unittest.TestCase):
                     "startup": "enabled",
                     "user": "mysql",
                     "group": "mysql",
-                    "kill-delay": "24h",
                 },
                 "mysqld_exporter": {
                     "override": "replace",
@@ -59,6 +59,9 @@ class TestCharm(unittest.TestCase):
                 },
             },
         }
+        if with_kill_delay:
+            layer["services"]["mysqld_safe"]["kill-delay"] = "24h"
+        return layer
 
     def tearDown(self) -> None:
         self.patcher.stop()
@@ -66,7 +69,14 @@ class TestCharm(unittest.TestCase):
     def test_mysqld_layer(self):
         # Test layer property
         # Comparing output dicts
-        self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict())
+        with patch.dict(os.environ, {"JUJU_VERSION": "2.9.43"}):
+            self.assertEqual(
+                self.charm._pebble_layer.to_dict(), self.layer_dict(with_kill_delay=False)
+            )
+        with patch.dict(os.environ, {"JUJU_VERSION": "2.9.44"}):
+            self.assertEqual(
+                self.charm._pebble_layer.to_dict(), self.layer_dict(with_kill_delay=True)
+            )
 
     def test_on_leader_elected(self):
         # Test leader election setting of

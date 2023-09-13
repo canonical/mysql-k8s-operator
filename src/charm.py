@@ -29,7 +29,7 @@ from charms.mysql.v0.mysql import (
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops import RelationBrokenEvent, RelationCreatedEvent
+from ops import JujuVersion, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import LeaderElectedEvent, RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
 from ops.model import (
@@ -166,7 +166,6 @@ class MySQLOperatorCharm(MySQLCharmBase):
                     "startup": "enabled",
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
-                    "kill-delay": "24h",
                 },
                 MYSQLD_EXPORTER_SERVICE: {
                     "override": "replace",
@@ -185,6 +184,9 @@ class MySQLOperatorCharm(MySQLCharmBase):
                 },
             },
         }
+        juju_version = JujuVersion.from_environ()
+        if (juju_version.major, juju_version.minor, juju_version.patch) >= (2, 9, 44):
+            layer["services"][MYSQLD_SAFE_SERVICE]["kill-delay"] = "24h"
         return Layer(layer)
 
     @property
