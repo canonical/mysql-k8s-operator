@@ -235,7 +235,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         logger.debug("Upgraded unit is healthy. Set upgrade state to `completed`")
         self.set_unit_completed()
         if self.charm.unit_label == f"{self.charm.app.name}/1":
-            # penultime unit, reset the primary for faster switchover
+            # penultimate unit, reset the primary for faster switchover
             try:
                 self.charm._mysql.set_cluster_primary(
                     self.charm._get_unit_fqdn(self.charm.unit.name)

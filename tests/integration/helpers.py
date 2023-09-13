@@ -91,22 +91,21 @@ async def get_relation_data(
         a list that contains the relation-data
     """
     # get available unit id for the desired application
-    units_ids = [
-        app_unit.name.split("/")[1]
-        for app_unit in ops_test.model.applications[application_name].units
+    unit_names = [
+        app_unit.name for app_unit in ops_test.model.applications[application_name].units
     ]
-    assert len(units_ids) > 0
-    unit_name = f"{application_name}/{units_ids[0]}"
+    assert len(unit_names) > 0
+    unit_name = unit_names[0]
+
     raw_data = (await ops_test.juju("show-unit", unit_name))[1]
-    if not raw_data:
-        raise ValueError(f"no unit info could be grabbed for {unit_name}")
+    assert raw_data, f"no unit info could be grabbed for {unit_name}"
+
     data = yaml.safe_load(raw_data)
     # Filter the data based on the relation name.
     relation_data = [v for v in data[unit_name]["relation-info"] if v["endpoint"] == relation_name]
-    if len(relation_data) == 0:
-        raise ValueError(
-            f"no relation data could be grabbed on relation with endpoint {relation_name}"
-        )
+    assert (
+        relation_data
+    ), f"no relation data could be grabbed on relation with endpoint {relation_name}"
 
     return relation_data
 
