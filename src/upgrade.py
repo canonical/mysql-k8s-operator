@@ -195,7 +195,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             event.defer()
             return
 
-        if self.state != "upgrading":
+        if self.state not in ["upgrading", "recovery"]:
             return
 
         try:
