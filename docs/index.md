@@ -9,7 +9,7 @@ This MySQL operator charm comes in two flavours to deploy and operate MySQL on [
 [note type="positive"]
 **"Charmed MySQL K8s", "MariaDB", "OSM MariaDB", "Percona Cluster" or "Mysql Innodb Cluster"?**
 
-This "Charmed MySQL K8s" operator is a new "[Charmed Operator SDK](https://juju.is/docs/sdk)"-based charm to replace a "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)" operators [providing](/t/charmed-mysql-k8s-explanations-interfaces-endpoints/10249) all juju-interfaces of [legacy charms](/t/charmed-mysql-k8s-explanations-legacy-charm/11236).
+This "Charmed MySQL K8s" operator is a new "[Charmed Operator SDK](https://juju.is/docs/sdk)"-based charm to replace a "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)" operators [providing](/t/10249) all juju-interfaces of [legacy charms](/t/11236).
 [/note]
 
 ## Project and community
@@ -23,5 +23,5 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 
 | | |
 |--|--|
-|  [Tutorials](/t/charmed-mysql-k8s-tutorial-overview/9677)</br>  Get started - a hands-on introduction to using Charmed MySQL operator for new users </br> |  [How-to guides](/t/charmed-mysql-k8s-how-to-manage-units/9659) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](https://charmhub.io/mysql-k8s/actions) </br> Technical information - specifications, APIs, architecture | [Explanation](/t/charmed-mysql-k8s-explanations-interfaces-endpoints/10249) </br> Concepts - discussion and clarification of key topics  |
+|  [Tutorials](/t/9677)</br>  Get started - a hands-on introduction to using Charmed MySQL operator for new users </br> |  [How-to guides](/t/9659) </br> Step-by-step guides covering key operations and common tasks |
+| [Reference](https://charmhub.io/mysql-k8s/actions) </br> Technical information - specifications, APIs, architecture | [Explanation](/t/10249) </br> Concepts - discussion and clarification of key topics  |

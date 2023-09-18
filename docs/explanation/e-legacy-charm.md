@@ -49,3 +49,13 @@ Deploy the charm using the proper charm/channel:
 
 At the moment, both K8s and VM modern charms support MySQL 8.0 (based on Jammy/22.04 series) only.
 Please [contact us](https://chat.charmhub.io/charmhub/channels/data-platform) if you need different versions/series.
+
+## Supported architectures: amd64, arm64, ...
+
+Currently, the charm supports architecture `amd64` only. See the technical details in "[Supported architectures](/t/11421)".
+
+## How to report issues and contact authors
+
+The "modern charm" (from `8.0/stable`) is stored on [GitHub](https://github.com/canonical/mysql-k8s-operator), here is the link to report [modern charm issues](https://github.com/canonical/mysql-k8s-operator/issues/new/choose).
+
+Do you have questions? [Contact us](https://chat.charmhub.io/charmhub/channels/data-platform)!
