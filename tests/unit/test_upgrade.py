@@ -104,9 +104,9 @@ class TestUpgrade(unittest.TestCase):
         calls = [
             call(
                 "Upgrade failed, follow the instructions below to rollback:\n"
-                f"  1 - Run `juju run-action {self.charm.app.name}/leader pre-upgrade-check` to configure rollback\n"
+                f"  1 - Run `juju run-action {self.charm.app.name}/leader pre-upgrade-check --wait` to configure rollback\n"
                 f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback\n"
-                f"  3 - Run `juju run-action {self.charm.app.name}/leader resume-upgrade` to resume the rollback"
+                f"  3 - Run `juju run-action {self.charm.app.name}/leader resume-upgrade --wait` to resume the rollback"
             ),
         ]
         mock_logging.assert_has_calls(calls)
