@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
+import pathlib
 
 import pytest
 from pytest_operator.plugin import OpsTest
@@ -42,3 +43,12 @@ def chaos_mesh(ops_test: OpsTest) -> None:
 
     logger.info("Destroying chaos mesh")
     destroy_chaos_mesh(ops_test.model.info.name)
+
+
+@pytest.fixture()
+def built_charm(ops_test: OpsTest) -> pathlib.Path:
+    """Return the path to the built charm."""
+    charms_dst_dir = ops_test.tmp_path / "charms"
+    packed_charm = list(charms_dst_dir.glob("*.charm"))
+    assert len(packed_charm) == 1, "More then one charm found"
+    return packed_charm[0].resolve(strict=True)

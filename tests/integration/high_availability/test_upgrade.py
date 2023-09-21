@@ -105,7 +105,6 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
     application = ops_test.model.applications[MYSQL_APP_NAME]
 
     logger.info("Build charm locally")
-    global charm
     charm = await ops_test.build_charm(".")
 
     logger.info("Refresh the charm")
@@ -138,7 +137,7 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
+async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> None:
     logger.info("Get leader unit")
     leader_unit = await get_leader_unit(ops_test, MYSQL_APP_NAME)
     assert leader_unit is not None, "No leader unit found"
@@ -147,8 +146,8 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
     action = await leader_unit.run_action("pre-upgrade-check")
     await action.wait()
 
-    fault_charm = Path("/tmp/", charm.name)
-    shutil.copy(charm, fault_charm)
+    fault_charm = Path("/tmp/", built_charm.name)
+    shutil.copy(built_charm, fault_charm)
 
     logger.info("Inject dependency fault")
     await inject_dependency_fault(ops_test, MYSQL_APP_NAME, fault_charm)
@@ -177,7 +176,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes) -> None:
     await action.wait()
 
     logger.info("Re-refresh the charm")
-    await application.refresh(path=charm)
+    await application.refresh(path=built_charm)
 
     logger.info("Wait for upgrade to complete on first upgrading unit")
     await ops_test.model.block_until(
