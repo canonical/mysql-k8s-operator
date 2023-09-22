@@ -5,6 +5,12 @@ import asyncio
 import logging
 
 import pytest
+from integration.helpers import (
+    get_leader_unit,
+    get_primary_unit,
+    get_unit_by_index,
+    retrieve_database_variable_value,
+)
 from integration.high_availability.high_availability_helpers import (
     METADATA,
     ensure_all_units_continuous_writes_incrementing,
@@ -13,13 +19,6 @@ from integration.high_availability.high_availability_helpers import (
 from lightkube import Client
 from lightkube.resources.apps_v1 import StatefulSet
 from pytest_operator.plugin import OpsTest
-
-from integration.helpers import (
-    get_leader_unit,
-    get_primary_unit,
-    retrieve_database_variable_value,
-)
-from integration.high_availability.test_upgrade import get_unit_by_index
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +109,7 @@ async def test_upgrade_from_stable(ops_test: OpsTest):
 
     logger.info("Wait for upgrade to complete on first upgrading unit")
     # highest ordinal unit always the first to upgrade
-    unit = get_unit_by_index(application.units, 2)
+    unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
 
     await ops_test.model.block_until(
         lambda: unit.workload_status_message == "upgrade completed", timeout=TIMEOUT

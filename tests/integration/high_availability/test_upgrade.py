@@ -14,6 +14,7 @@ from integration.helpers import (
     get_leader_unit,
     get_primary_unit,
     get_relation_data,
+    get_unit_by_index,
     retrieve_database_variable_value,
 )
 from integration.high_availability.high_availability_helpers import (
@@ -112,7 +113,7 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
 
     logger.info("Wait for upgrade to complete on first upgrading unit")
     # highest ordinal unit always the first to upgrade
-    unit = get_unit_by_index(application.units, 2)
+    unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
 
     await ops_test.model.block_until(
         lambda: unit.workload_status_message == "upgrade completed", timeout=TIMEOUT
@@ -159,7 +160,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
 
     logger.info("Get first upgrading unit")
     # highest ordinal unit always the first to upgrade
-    unit = get_unit_by_index(application.units, 2)
+    unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
 
     logger.info("Wait for upgrade to fail on first upgrading unit")
     await ops_test.model.block_until(
@@ -215,10 +216,3 @@ async def inject_dependency_fault(
     # Overwrite dependency.json with incompatible version
     with zipfile.ZipFile(charm_file, mode="a") as charm_zip:
         charm_zip.writestr("src/dependency.json", json.dumps(loaded_dependency_dict))
-
-
-def get_unit_by_index(units: list, index: int):
-    """Get unit by index."""
-    for unit in units:
-        if unit.name == f"{MYSQL_APP_NAME}/{index}":
-            return unit

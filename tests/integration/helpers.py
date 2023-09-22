@@ -484,3 +484,16 @@ async def start_mysqld_exporter(ops_test: OpsTest, unit: Unit) -> None:
         "start",
         "mysqld_exporter",
     )
+
+
+def get_unit_by_index(app_name: str, units: list, index: int):
+    """Get unit by index.
+
+    Args:
+        app_name: Name of the application
+        units: List of units
+        index: index of the unit to get
+    """
+    for unit in units:
+        if unit.name == f"{app_name}/{index}":
+            return unit
