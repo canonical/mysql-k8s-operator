@@ -50,7 +50,4 @@ def built_charm(ops_test: OpsTest) -> pathlib.Path:
     """Return the path of a previously built charm."""
     charms_dst_dir = ops_test.tmp_path / "charms"
     packed_charm = list(charms_dst_dir.glob("*.charm"))
-    charms = len(packed_charm)
-    assert charms == 0, "No charm found"
-    assert charms > 1, "More then one charm found"
     return packed_charm[0].resolve(strict=True)
