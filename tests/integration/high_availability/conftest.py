@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
+import os
 import pathlib
 
 import pytest
@@ -46,8 +47,10 @@ def chaos_mesh(ops_test: OpsTest) -> None:
 
 
 @pytest.fixture()
-def built_charm(ops_test: OpsTest) -> pathlib.Path:
+async def built_charm(ops_test: OpsTest) -> pathlib.Path:
     """Return the path of a previously built charm."""
+    if os.environ.get("CI") == "true":
+        return await ops_test.build_charm(".")
     charms_dst_dir = ops_test.tmp_path / "charms"
     packed_charm = list(charms_dst_dir.glob("*.charm"))
     return packed_charm[0].resolve(strict=True)
