@@ -4,6 +4,7 @@
 import asyncio
 import json
 import logging
+import os
 import shutil
 import zipfile
 from pathlib import Path
@@ -147,7 +148,14 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     action = await leader_unit.run_action("pre-upgrade-check")
     await action.wait()
 
-    fault_charm = Path("/tmp/", built_charm.name)
+    if os.environ.get("CI") == "true":
+        # on CI built charm is cached and returned with build_charm
+        # by the pytest-operator-cache plugin
+        charm = await ops_test.build_charm(".")
+        fault_charm = Path("/tmp/", charm.name)
+    else:
+        # return the built charm from the test
+        fault_charm = Path("/tmp/", built_charm.name)
     shutil.copy(built_charm, fault_charm)
 
     logger.info("Inject dependency fault")
