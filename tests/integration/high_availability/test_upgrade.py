@@ -153,10 +153,11 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
         # by the pytest-operator-cache plugin
         charm = await ops_test.build_charm(".")
         fault_charm = Path("/tmp/", charm.name)
+        shutil.copy(charm, fault_charm)
     else:
         # return the built charm from the test
         fault_charm = Path("/tmp/", built_charm.name)
-    shutil.copy(built_charm, fault_charm)
+        shutil.copy(built_charm, fault_charm)
 
     logger.info("Inject dependency fault")
     await inject_dependency_fault(ops_test, MYSQL_APP_NAME, fault_charm)
