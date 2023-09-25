@@ -4,7 +4,6 @@
 import asyncio
 import json
 import logging
-import os
 import shutil
 import zipfile
 from pathlib import Path
@@ -148,16 +147,15 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     action = await leader_unit.run_action("pre-upgrade-check")
     await action.wait()
 
-    if os.environ.get("CI") == "true":
+    if not built_charm:
         # on CI built charm is cached and returned with build_charm
         # by the pytest-operator-cache plugin
-        charm = await ops_test.build_charm(".")
-        fault_charm = Path("/tmp/", charm.name)
-        shutil.copy(charm, fault_charm)
+        local_charm = await ops_test.build_charm(".")
     else:
         # return the built charm from the test
-        fault_charm = Path("/tmp/", built_charm.name)
-        shutil.copy(built_charm, fault_charm)
+        local_charm = built_charm
+    fault_charm = Path("/tmp/", local_charm.name)
+    shutil.copy(local_charm, fault_charm)
 
     logger.info("Inject dependency fault")
     await inject_dependency_fault(ops_test, MYSQL_APP_NAME, fault_charm)
@@ -186,7 +184,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     await action.wait()
 
     logger.info("Re-refresh the charm")
-    await application.refresh(path=built_charm)
+    await application.refresh(path=local_charm)
 
     logger.info("Wait for upgrade to complete on first upgrading unit")
     await ops_test.model.block_until(
