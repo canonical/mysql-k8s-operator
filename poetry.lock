@@ -889,12 +889,12 @@ referencing = ">=0.28.0"
 
 [[package]]
 name = "juju"
-version = "2.9.44.0"
+version = "2.9.44.1"
 description = "Python library for Juju"
 optional = false
 python-versions = "*"
 files = [
-    {file = "juju-2.9.44.0.tar.gz", hash = "sha256:bc71fe0c8fd59ee00f0c3b03066682cd2273f299c36135451abb1a81289e68f9"},
+    {file = "juju-2.9.44.1.tar.gz", hash = "sha256:ece49d708025602c9ad8e875dc47ac5ede8229e3d3ab82616da78973189846e3"},
 ]
 
 [package.dependencies]
@@ -1291,6 +1291,17 @@ dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
+name = "poetry-core"
+version = "1.7.0"
+description = "Poetry PEP 517 Build Backend"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "poetry_core-1.7.0-py3-none-any.whl", hash = "sha256:38e174cdb00a84ee4a1cab66a378b435747f72414f5573bc18cfc3850a94df38"},
+    {file = "poetry_core-1.7.0.tar.gz", hash = "sha256:8f679b83bd9c820082637beca1204124d5d2a786e4818da47ec8acefd0353b74"},
+]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.39"
 description = "Library for building powerful interactive command lines in Python"
@@ -1623,8 +1634,8 @@ develop = false
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v4.2.3"
-resolved_reference = "7a5223ad320058036ef8e7dac644db55e8ec16b4"
+reference = "v5.0.0"
+resolved_reference = "3ffc460ad9d3a1280e29e32a4419456f4772c385"
 subdirectory = "python/pytest_plugins/github_secrets"
 
 [[package]]
@@ -1661,8 +1672,8 @@ pyyaml = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v4.2.3"
-resolved_reference = "7a5223ad320058036ef8e7dac644db55e8ec16b4"
+reference = "v5.0.0"
+resolved_reference = "3ffc460ad9d3a1280e29e32a4419456f4772c385"
 subdirectory = "python/pytest_plugins/pytest_operator_cache"
 
 [[package]]
@@ -1680,8 +1691,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v4.2.3"
-resolved_reference = "7a5223ad320058036ef8e7dac644db55e8ec16b4"
+reference = "v5.0.0"
+resolved_reference = "3ffc460ad9d3a1280e29e32a4419456f4772c385"
 subdirectory = "python/pytest_plugins/pytest_operator_groups"
 
 [[package]]
@@ -2247,4 +2258,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "6115059fef5018ac42b31fc8a55eff9e1bfdf01401ffbb4d923e26dfab1a9147"
+content-hash = "e08e722e71c7f21baa7a60224c7f7e07dbb5f55d7d197507f0df11a35e40c978"

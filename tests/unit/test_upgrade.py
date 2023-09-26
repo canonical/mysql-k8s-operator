@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import os
 import unittest
 from unittest.mock import call, patch
 
@@ -98,12 +99,26 @@ class TestUpgrade(unittest.TestCase):
     @patch("upgrade.logger.critical")
     def test_log_rollback(self, mock_logging):
         """Test roolback logging."""
-        self.charm.upgrade.log_rollback_instructions()
+        with patch.dict(os.environ, {"JUJU_VERSION": "2.9.44"}):
+            self.charm.upgrade.log_rollback_instructions()
         calls = [
             call(
                 "Upgrade failed, follow the instructions below to rollback:\n"
-                f"  1 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback\n"
-                f"  2 - Run `juju run-action {self.charm.app.name}/leader resume-upgrade` to resume the rollback"
+                f"  1 - Run `juju run-action {self.charm.app.name}/leader pre-upgrade-check --wait` to configure rollback\n"
+                f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback\n"
+                f"  3 - Run `juju run-action {self.charm.app.name}/leader resume-upgrade --wait` to resume the rollback"
+            ),
+        ]
+        mock_logging.assert_has_calls(calls)
+        mock_logging.reset_mock()
+        with patch.dict(os.environ, {"JUJU_VERSION": "3.1.5"}):
+            self.charm.upgrade.log_rollback_instructions()
+        calls = [
+            call(
+                "Upgrade failed, follow the instructions below to rollback:\n"
+                f"  1 - Run `juju run {self.charm.app.name}/leader pre-upgrade-check` to configure rollback\n"
+                f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback\n"
+                f"  3 - Run `juju run {self.charm.app.name}/leader resume-upgrade` to resume the rollback"
             ),
         ]
         mock_logging.assert_has_calls(calls)
@@ -131,11 +146,16 @@ class TestUpgrade(unittest.TestCase):
         assert mock_set_dynamic_variable.call_count == 2
 
     @patch("upgrade.RECOVER_ATTEMPTS", 1)
+    @patch("mysql_k8s_helpers.MySQL.hold_if_recovering")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.33")
     @patch("mysql_k8s_helpers.MySQL.verify_server_upgradable")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
     def test_pebble_ready(
-        self, mock_is_instance_in_cluster, mock_is_server_upgradable, mock_get_mysql_version
+        self,
+        mock_is_instance_in_cluster,
+        mock_is_server_upgradable,
+        mock_get_mysql_version,
+        mock_hold_if_recovering,
     ):
         """Test the pebble ready."""
         self.charm.on.config_changed.emit()

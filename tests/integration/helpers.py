@@ -66,6 +66,50 @@ async def get_cluster_status(ops_test: OpsTest, unit: Unit) -> Dict:
     return cluster_status_results.results.get("status", {})
 
 
+async def get_leader_unit(ops_test: OpsTest, app_name: str) -> Optional[Unit]:
+    leader_unit = None
+    for unit in ops_test.model.applications[app_name].units:
+        if await unit.is_leader_from_status():
+            leader_unit = unit
+            break
+
+    return leader_unit
+
+
+async def get_relation_data(
+    ops_test: OpsTest,
+    application_name: str,
+    relation_name: str,
+) -> list:
+    """Returns a list that contains the relation-data.
+
+    Args:
+        ops_test: The ops test framework instance
+        application_name: The name of the application
+        relation_name: name of the relation to get connection data from
+    Returns:
+        a list that contains the relation-data
+    """
+    # get available unit id for the desired application
+    unit_names = [
+        app_unit.name for app_unit in ops_test.model.applications[application_name].units
+    ]
+    assert len(unit_names) > 0
+    unit_name = unit_names[0]
+
+    raw_data = (await ops_test.juju("show-unit", unit_name))[1]
+    assert raw_data, f"no unit info could be grabbed for {unit_name}"
+
+    data = yaml.safe_load(raw_data)
+    # Filter the data based on the relation name.
+    relation_data = [v for v in data[unit_name]["relation-info"] if v["endpoint"] == relation_name]
+    assert (
+        relation_data
+    ), f"no relation data could be grabbed on relation with endpoint {relation_name}"
+
+    return relation_data
+
+
 async def get_primary_unit(
     ops_test: OpsTest,
     unit: Unit,
@@ -440,3 +484,16 @@ async def start_mysqld_exporter(ops_test: OpsTest, unit: Unit) -> None:
         "start",
         "mysqld_exporter",
     )
+
+
+def get_unit_by_index(app_name: str, units: list, index: int):
+    """Get unit by index.
+
+    Args:
+        app_name: Name of the application
+        units: List of units
+        index: index of the unit to get
+    """
+    for unit in units:
+        if unit.name == f"{app_name}/{index}":
+            return unit

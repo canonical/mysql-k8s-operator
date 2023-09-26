@@ -19,7 +19,8 @@ from charms.mysql.v0.mysql import (
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
 )
-from ops.model import BlockedStatus, MaintenanceStatus
+from ops import JujuVersion
+from ops.model import BlockedStatus, MaintenanceStatus, RelationDataContent
 from pydantic import BaseModel
 from tenacity import RetryError, Retrying
 from tenacity.stop import stop_after_attempt
@@ -69,6 +70,11 @@ class MySQLK8sUpgrade(DataUpgrade):
     def highest_ordinal(self) -> int:
         """Return the max ordinal."""
         return self.charm.app.planned_units() - 1
+
+    @property
+    def unit_upgrade_data(self) -> RelationDataContent:
+        """Return the application upgrade data."""
+        return self.peer_relation.data[self.charm.unit]
 
     @override
     def pre_upgrade_check(self) -> None:
@@ -125,12 +131,20 @@ class MySQLK8sUpgrade(DataUpgrade):
     @override
     def log_rollback_instructions(self) -> None:
         """Log rollback instructions."""
+        juju_version = JujuVersion.from_environ()
+        if juju_version.major > 2:
+            run_action = "run"
+            wait = ""
+        else:
+            run_action = "run-action"
+            wait = " --wait"
         logger.critical(
             "\n".join(
                 (
                     "Upgrade failed, follow the instructions below to rollback:",
-                    f"  1 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback",
-                    f"  2 - Run `juju run-action {self.charm.app.name}/leader resume-upgrade` to resume the rollback",
+                    f"  1 - Run `juju {run_action} {self.charm.app.name}/leader pre-upgrade-check{wait}` to configure rollback",
+                    f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback",
+                    f"  3 - Run `juju {run_action} {self.charm.app.name}/leader resume-upgrade{wait}` to resume the rollback",
                 )
             )
         )
@@ -190,7 +204,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             event.defer()
             return
 
-        if self.state != "upgrading":
+        if self.state not in ["upgrading", "recovery"]:
             return
 
         try:
@@ -206,14 +220,14 @@ class MySQLK8sUpgrade(DataUpgrade):
                 stop=stop_after_attempt(RECOVER_ATTEMPTS), wait=wait_fixed(10)
             ):
                 with attempt:
+                    self.charm._mysql.hold_if_recovering()
                     if not self.charm._mysql.is_instance_in_cluster(self.charm.unit_label):
                         logger.debug(
                             "Instance not yet back in the cluster."
                             f" Retry {attempt.retry_state.attempt_number}/{RECOVER_ATTEMPTS}"
                         )
                         raise Exception
-                    logger.debug("Upgraded unit is healthy. Set upgrade state to `completed`")
-                    self.set_unit_completed()
+                    self._complete_upgrade()
                     return
         except MySQLServerNotUpgradableError:
             failure_message = "Incompatible mysql server upgrade"
@@ -224,6 +238,19 @@ class MySQLK8sUpgrade(DataUpgrade):
         self.charm.unit.status = BlockedStatus(
             "upgrade failed. Check logs for rollback instruction"
         )
+
+    def _complete_upgrade(self):
+        # complete upgrade for the unit
+        logger.debug("Upgraded unit is healthy. Set upgrade state to `completed`")
+        self.set_unit_completed()
+        if self.charm.unit_label == f"{self.charm.app.name}/1":
+            # penultimate unit, reset the primary for faster switchover
+            try:
+                self.charm._mysql.set_cluster_primary(
+                    self.charm._get_unit_fqdn(self.charm.unit.name)
+                )
+            except MySQLSetClusterPrimaryError:
+                logger.debug("Failed to set primary")
 
     @override
     def _set_rolling_update_partition(self, partition: int) -> None:
