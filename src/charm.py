@@ -5,6 +5,7 @@
 """Charm for MySQL."""
 
 import logging
+import subprocess
 from socket import getfqdn
 from typing import Optional
 
@@ -74,6 +75,7 @@ from mysql_k8s_helpers import (
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
+from rotate_mysql_logs import RotateMySQLLogs, RotateMySQLLogsCharmEvents
 from upgrade import MySQLK8sUpgrade, get_mysql_k8s_dependencies_model
 from utils import generate_random_hash, generate_random_password
 
@@ -82,6 +84,11 @@ logger = logging.getLogger(__name__)
 
 class MySQLOperatorCharm(MySQLCharmBase):
     """Operator framework charm for MySQL."""
+
+    # RotateMySQLLogsCharmEvents needs to be defined on the charm object for
+    # the log rotate manager process (which runs juju-run/juju-exec to dispatch
+    # a custom event)
+    on = RotateMySQLLogsCharmEvents()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -130,6 +137,8 @@ class MySQLOperatorCharm(MySQLCharmBase):
             relation_name="logging",
             container_name="mysql",
         )
+
+        self.rotate_mysql_logs = RotateMySQLLogs(self)
 
     @property
     def _mysql(self) -> MySQL:
@@ -424,6 +433,12 @@ class MySQLOperatorCharm(MySQLCharmBase):
             # Configure instance as a cluster node
             self._mysql.configure_instance()
 
+            logger.info("Setting up the logrotate configurations")
+            self._mysql.setup_logrotate_config()
+
+            logger.info("Adding log rotate dispatcher script to the pebble plan")
+            self.rotate_mysql_logs._setup_logrotate_dispatcher()
+
             if self.has_cos_relation:
                 if container.get_services(MYSQLD_EXPORTER_SERVICE)[
                     MYSQLD_EXPORTER_SERVICE
@@ -432,6 +447,9 @@ class MySQLOperatorCharm(MySQLCharmBase):
                     container.restart(MYSQLD_EXPORTER_SERVICE)
                 else:
                     container.start(MYSQLD_EXPORTER_SERVICE)
+        except subprocess.CalledProcessError:
+            logger.exception("Unable to set up logrotate dispatcher")
+            return False
         except (
             MySQLConfigureInstanceError,
             MySQLConfigureMySQLUsersError,

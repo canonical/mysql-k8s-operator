@@ -1,0 +1,34 @@
+# Use system user
+su {{ system_user }} {{ system_group }}
+
+# Create dedicated subdirectory for rotated files
+createolddir 770 {{ system_user }} {{ system_group }}
+
+# Frequency of logs rotation
+hourly
+maxage 7
+rotate 10800
+
+# Naming of rotated files should be in the format:
+dateext
+dateformat -%V_%H%M
+
+# Settings to prevent misconfigurations and unwanted behaviours
+ifempty
+missingok
+nocompress
+nomail
+nosharedscripts
+nocopytruncate
+
+/var/log/mysql/error.log {
+    olddir archive_error
+}
+
+/var/log/mysql/general.log {
+    olddir archive_general
+}
+
+/var/log/mysql/slowquery.log {
+    olddir archive_slowquery
+}

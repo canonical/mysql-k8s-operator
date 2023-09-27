@@ -1,0 +1,6 @@
+summary: Layer for logrotate
+services:
+  logrotate:
+    override: replace
+    command: /usr/bin/python3 {{ charm_directory }}/scripts/log_rotate_dispatcher.py {{ unit_name }} {{ charm_directory }}
+    startup: enabled
