@@ -791,6 +791,8 @@ class MySQLBase(ABC):
 
         config = configparser.ConfigParser(interpolation=None)
 
+        # do not enable slow query logs, but specify a log file path in case
+        # the admin enables them manually
         config["mysqld"] = {
             "bind-address": "0.0.0.0",
             "mysqlx-bind-address": "0.0.0.0",
@@ -801,7 +803,6 @@ class MySQLBase(ABC):
             "log_error": f"{snap_common}/var/log/mysql/error.log",
             "general_log": "ON",
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
-            "slow_query_log": "ON",
             "slow_query_log_file": f"{snap_common}/var/log/mysql/slowquery.log",
         }
 
