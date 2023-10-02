@@ -5,7 +5,6 @@
 """Charm for MySQL."""
 
 import logging
-import subprocess
 from socket import getfqdn
 from typing import Optional
 
@@ -67,6 +66,7 @@ from constants import (
     SERVER_CONFIG_USERNAME,
 )
 from k8s_helpers import KubernetesHelpers
+from log_rotate_manager import LogRotateManager
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
@@ -137,6 +137,9 @@ class MySQLOperatorCharm(MySQLCharmBase):
             relation_name="logging",
             container_name="mysql",
         )
+
+        self.log_rotate_manager = LogRotateManager(self)
+        self.log_rotate_manager.start_log_rotate_manager()
 
         self.rotate_mysql_logs = RotateMySQLLogs(self)
 
@@ -436,9 +439,6 @@ class MySQLOperatorCharm(MySQLCharmBase):
             logger.info("Setting up the logrotate configurations")
             self._mysql.setup_logrotate_config()
 
-            logger.info("Adding log rotate dispatcher script to the pebble plan")
-            self.rotate_mysql_logs._setup_logrotate_dispatcher()
-
             if self.has_cos_relation:
                 if container.get_services(MYSQLD_EXPORTER_SERVICE)[
                     MYSQLD_EXPORTER_SERVICE
@@ -447,9 +447,6 @@ class MySQLOperatorCharm(MySQLCharmBase):
                     container.restart(MYSQLD_EXPORTER_SERVICE)
                 else:
                     container.start(MYSQLD_EXPORTER_SERVICE)
-        except subprocess.CalledProcessError:
-            logger.exception("Unable to set up logrotate dispatcher")
-            return False
         except (
             MySQLConfigureInstanceError,
             MySQLConfigureMySQLUsersError,

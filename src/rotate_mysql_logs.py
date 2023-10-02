@@ -4,11 +4,8 @@
 """Custom event for flushing mysql logs."""
 
 import logging
-import subprocess
-import tempfile
 import typing
 
-import jinja2
 from charms.mysql.v0.mysql import MySQLExecError, MySQLTextLogs
 from ops.charm import CharmEvents
 from ops.framework import EventBase, EventSource, Object
@@ -55,24 +52,3 @@ class RotateMySQLLogs(Object):
         self.charm._mysql.flush_mysql_logs(MySQLTextLogs.ERROR)
         self.charm._mysql.flush_mysql_logs(MySQLTextLogs.GENERAL)
         self.charm._mysql.flush_mysql_logs(MySQLTextLogs.SLOW)
-
-    def _setup_logrotate_dispatcher(self) -> None:
-        """Helper method to help set up a pebble plan for the log rotate dispatcher."""
-        with open("templates/logrotate.yaml.j2", "r") as file:
-            template = jinja2.Template(file.read())
-
-        rendered = template.render(
-            charm_directory=self.charm.charm_dir,
-            unit_name=self.charm.unit.name,
-        )
-
-        with tempfile.NamedTemporaryFile(mode="w") as file:
-            file.write(rendered)
-            file.flush()
-
-            subprocess.run(
-                ["/charm/bin/pebble", "add", "logrotate", file.name],
-                check=True,
-            )
-
-        subprocess.run(["/charm/bin/pebble", "replan"], check=True)
