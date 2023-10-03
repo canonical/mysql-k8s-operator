@@ -17,9 +17,6 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# File path where log rotate manager exceptions will be stored
-LOG_FILE_PATH = "/var/log/log_rotate_manager.log"
-
 
 class LogRotateManager(Object):
     """Manages log rotation for the charm.
@@ -50,8 +47,7 @@ class LogRotateManager(Object):
         # We need to trick Juju into thinking that we are not running
         # in a hook context, as Juju will disallow use of juju-run.
         new_env = os.environ.copy()
-        if "JUJU_CONTEXT_ID" in new_env:
-            new_env.pop("JUJU_CONTEXT_ID")
+        new_env.pop("JUJU_CONTEXT_ID", None)
 
         process = subprocess.Popen(
             [
@@ -60,8 +56,8 @@ class LogRotateManager(Object):
                 self.charm.unit.name,
                 self.charm.charm_dir,
             ],
-            stdout=open(LOG_FILE_PATH, "a"),
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             env=new_env,
         )
 
