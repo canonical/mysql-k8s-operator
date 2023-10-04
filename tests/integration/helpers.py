@@ -653,12 +653,12 @@ async def stop_running_log_rotate_dispatcher(ops_test: OpsTest, unit_name: str):
         ops_test: The ops test object passed into every test case
         unit_name: The name of the unit to be tested
     """
-    # send TERM signal to mysql daemon, which trigger shutdown process
+    # send KILL signal to log rotate dispatcher, which trigger shutdown process
     await ops_test.juju(
         "ssh",
         unit_name,
         "pkill",
-        "-15",
+        "-9",
         "-f",
         "/usr/bin/python3 scripts/log_rotate_dispatcher.py",
     )
@@ -674,14 +674,14 @@ async def stop_running_flush_mysql_job(
         unit_name: The name of the unit to be tested
         container_name: The name of the container to be tested
     """
-    # send TERM signal to mysql daemon, which trigger shutdown process
+    # send KILL signal to log rotate process, which trigger shutdown process
     await ops_test.juju(
         "ssh",
         "--container",
         container_name,
         unit_name,
         "pkill",
-        "-15",
+        "-9",
         "-f",
         "logrotate -f /etc/logrotate.d/flush_mysql_logs",
     )

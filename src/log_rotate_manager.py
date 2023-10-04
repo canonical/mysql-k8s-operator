@@ -37,6 +37,7 @@ class LogRotateManager(Object):
         if "log-rotate-manager-pid" in self.charm.unit_peer_data:
             pid = int(self.charm.unit_peer_data["log-rotate-manager-pid"])
             try:
+                # No-op if the process exists, else fork a new log rotate dispatcher process
                 os.kill(pid, 0)
                 return
             except OSError:
@@ -49,6 +50,8 @@ class LogRotateManager(Object):
         new_env = os.environ.copy()
         new_env.pop("JUJU_CONTEXT_ID", None)
 
+        # Use Popen instead of run as the log rotate dispatcher is a long running
+        # process that shouldn't block the event handler
         process = subprocess.Popen(
             [
                 "/usr/bin/python3",
