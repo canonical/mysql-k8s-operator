@@ -1,0 +1,8 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+options:
+  auto_start_writes:
+    description: "Whether to auto start continuous writes on relation events."
+    type: boolean
+    default: true

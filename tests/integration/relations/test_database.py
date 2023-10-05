@@ -32,6 +32,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
     # Build and deploy charm from local source folder
     db_charm = await ops_test.build_charm(".")
+    app_charm = await ops_test.build_charm("./tests/integration/relations/mysql-test-app/")
 
     config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
     resources = {"mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"]}
@@ -47,11 +48,18 @@ async def test_build_and_deploy(ops_test: OpsTest):
             trust=True,
         ),
         ops_test.model.deploy(
-            APPLICATION_APP_NAME,
+            app_charm,
             application_name=APPLICATION_APP_NAME,
             num_units=2,
-            channel="latest/edge",
+            series="jammy",
+            trust=True,
         ),
+        # ops_test.model.deploy(
+        #     APPLICATION_APP_NAME,
+        #     application_name=APPLICATION_APP_NAME,
+        #     num_units=1,
+        #     channel="latest/edge",
+        # ),
     )
 
     # Reduce the update_status frequency until the cluster is deployed

@@ -1,0 +1,31 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+clear-continuous-writes:
+  description: Clear the written data.
+
+start-continuous-writes:
+  description: Start continuous writes.
+
+stop-continuous-writes:
+  description: Stop continuous writes.
+
+get-inserted-data:
+  description: Get the randomly inserted data in the database by the charm.
+
+get-session-ssl-cipher:
+  description: Get ssl ciphers.
+  params:
+    use-ssl:
+      type: string
+      enum:
+        - "enabled"
+        - "disabled"
+      description: Use ssl for connection
+      default: enabled
+
+get-server-certificate:
+  description: Retrieve server certificate in pem format
+
+get-legacy-mysql-credentials:
+  description: Get the credentials for the legacy mysql user

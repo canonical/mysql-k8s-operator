@@ -1,0 +1,30 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: mysql-test-app
+summary: MySQL Test App
+description: |
+  MySQL application charm used in various tests.
+
+docs: https://discourse.charmhub.io/t/11731
+source: https://github.com/canonical/mysql-test-app
+issues: https://github.com/canonical/mysql-test-app/issues
+website:
+  - https://ubuntu.com/data/mysql
+  - https://charmhub.io/mysql
+  - https://github.com/canonical/mysql-operator
+  - https://github.com/canonical/mysql-k8s-operator
+  - https://chat.charmhub.io/charmhub/channels/data-platform
+maintainers:
+  - Canonical Data Platform <data-platform@lists.launchpad.net>
+
+requires:
+  database:
+    interface: mysql_client
+    limit: 1
+  mysql:
+    interface: mysql
+
+peers:
+  application-peers:
+    interface: application-peers
