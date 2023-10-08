@@ -523,7 +523,7 @@ def isolate_instance_from_cluster(ops_test: OpsTest, unit_name: str) -> None:
         env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
 
         try:
-            subprocess.check_output(["kubectl", "apply", "-f", temp_file.name], env=env)
+            subprocess.check_output(["microk8s.kubectl", "apply", "-f", temp_file.name], env=env)
         except subprocess.CalledProcessError as e:
             logger.error(e.output)
             logger.error(e.stderr)
@@ -535,7 +535,7 @@ def remove_instance_isolation(ops_test: OpsTest) -> None:
     env = os.environ
     env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
     subprocess.check_output(
-        f"kubectl -n {ops_test.model.info.name} delete networkchaos network-loss-primary",
+        f"microk8s.kubectl -n {ops_test.model.info.name} delete networkchaos network-loss-primary",
         shell=True,
         env=env,
     )
