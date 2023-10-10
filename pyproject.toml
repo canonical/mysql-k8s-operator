@@ -20,7 +20,7 @@ boto3 = "^1.28.22"
 ops = ">=2.0.0"
 # data_platform_libs/v0/upgrade.py
 poetry-core = "*"
-pydantic = "^1.10"
+pydantic = "^1.10, <2"
 # tls_certificates_interface/v1/tls_certificates.py
 cryptography = "*"
 jsonschema = "*"
