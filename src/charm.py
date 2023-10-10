@@ -9,11 +9,13 @@ from socket import getfqdn
 from typing import Optional
 
 import ops
+from charms.data_platform_libs.v0.data_models import TypedCharmBase
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
+    BYTES_1MB,
     MySQLAddInstanceToClusterError,
     MySQLCharmBase,
     MySQLConfigureInstanceError,
@@ -29,7 +31,7 @@ from charms.mysql.v0.mysql import (
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops import RelationBrokenEvent, RelationCreatedEvent
+from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
 from ops.model import (
@@ -40,6 +42,8 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.pebble import Layer
+from charms.rolling_ops.v0.rollingops import RollingOpsManager
+from config import CharmConfig, MySQLConfig
 
 from constants import (
     BACKUPS_PASSWORD_KEY,
@@ -54,6 +58,7 @@ from constants import (
     MYSQL_LOG_FILES,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
+    MYSQLD_CONFIG_FILE,
     MYSQLD_EXPORTER_PORT,
     MYSQLD_EXPORTER_SERVICE,
     MYSQLD_SAFE_SERVICE,
@@ -75,13 +80,15 @@ from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
 from upgrade import MySQLK8sUpgrade, get_mysql_k8s_dependencies_model
-from utils import generate_random_hash, generate_random_password
+from utils import compare_dictionaries, generate_random_hash, generate_random_password
 
 logger = logging.getLogger(__name__)
 
 
-class MySQLOperatorCharm(MySQLCharmBase):
+class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     """Operator framework charm for MySQL."""
+
+    config_type = CharmConfig
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -105,6 +112,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
             self.on[COS_AGENT_RELATION_NAME].relation_broken, self._reconcile_mysqld_exporter
         )
 
+        self.mysql_config = MySQLConfig()
         self.k8s_helpers = KubernetesHelpers(self)
         self.mysql_relation = MySQLRelation(self)
         self.database_relation = MySQLProvider(self)
@@ -130,6 +138,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
             relation_name="logging",
             container_name="mysql",
         )
+        self.restart = RollingOpsManager(self, relation="restart", callback=self._restart)
 
     @property
     def _mysql(self) -> MySQL:
@@ -193,6 +202,11 @@ class MySQLOperatorCharm(MySQLCharmBase):
         if self.unit_peer_data.get("member-role") == "primary":
             return "Primary"
         return ""
+
+    @property
+    def restart_peers(self) -> Optional[ops.model.Relation]:
+        """Retrieve the peer relation."""
+        return self.model.get_relation("restart")
 
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
@@ -329,6 +343,24 @@ class MySQLOperatorCharm(MySQLCharmBase):
 
             self._on_update_status(None)
 
+    def _restart(self, event: EventBase) -> None:
+        """Restart the service."""
+        if self._mysql.is_unit_primary(self.unit_label):
+            restart_states = {
+                self.restart_peers.data[unit].get("state", "unset") for unit in self.peers.units
+            }
+            if restart_states != {"release"}:
+                # Wait other units restart first to minimize primary switchover
+                message = "Primary is waiting for other units to restart"
+                logger.debug(message)
+                self.unit.status = WaitingStatus(message)
+                event.defer()
+                return
+        self.unit.status = MaintenanceStatus("restarting MySQL")
+        container = self.unit.get_container(CONTAINER_NAME)
+        if container.can_connect():
+            container.restart(MYSQLD_SAFE_SERVICE)
+
     # =========================================================================
     # Charm event handlers
     # =========================================================================
@@ -355,18 +387,53 @@ class MySQLOperatorCharm(MySQLCharmBase):
         self.unit_peer_data.setdefault("member-role", "unknown")
         self.unit_peer_data.setdefault("member-state", "waiting")
 
-    def _on_config_changed(self, _) -> None:
+    def _on_config_changed(self, event: EventBase) -> None:
         """Handle the config changed event."""
-        # Only execute on unit leader
-        if not self.unit.is_leader():
+        if not self._is_peer_data_set:
+            # skip when not initialized
             return
 
-        # Create and set cluster and cluster-set names in the peer relation databag
-        common_hash = generate_random_hash()
-        self.app_peer_data.setdefault(
-            "cluster-name", self.config.get("cluster-name", f"cluster-{common_hash}")
+        if not self.upgrade.idle:
+            # skip when upgrade is in progress
+            # the upgrade already restart the daemon
+            return
+
+        if not self._mysql.is_mysqld_running:
+            # defer config-changed event until MySQL is running
+            logger.debug("Deferring config-changed event until MySQL is running")
+            event.defer()
+            return
+
+        config_content = self._mysql.read_file_content(MYSQLD_CONFIG_FILE)
+        if not config_content:
+            # empty config means not initialized, skipping
+            return
+
+        previous_config_dict = self.mysql_config.custom_config(config_content)
+
+        # render the new config
+        memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
+        new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
+            profile=self.config.profile,
+            memory_limit=memory_limit_bytes,
         )
-        self.app_peer_data.setdefault("cluster-set-domain-name", f"cluster-set-{common_hash}")
+
+        changed_config = compare_dictionaries(previous_config_dict, new_config_dict)
+
+        if self.mysql_config.keys_requires_restart(changed_config):
+            # there are static configurations in changed keys
+            logger.info("Configuration change requires restart")
+
+            # persist config to file
+            self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
+            self.on[f"{self.restart.name}"].acquire_lock.emit()
+            return
+
+        if dynamic_config := self.mysql_config.filter_static_keys(changed_config):
+            # if only dynamic config changed, apply it
+            logger.info("Configuration does not requires restart")
+            for config in dynamic_config:
+                self._mysql.set_dynamic_variable(config, new_config_dict[config])
 
     def _on_leader_elected(self, _) -> None:
         """Handle the leader elected event.
@@ -388,6 +455,13 @@ class MySQLOperatorCharm(MySQLCharmBase):
                 self.set_secret(
                     "app", required_password, generate_random_password(PASSWORD_LENGTH)
                 )
+
+        # Create and set cluster and cluster-set names in the peer relation databag
+        common_hash = generate_random_hash()
+        self.app_peer_data.setdefault(
+            "cluster-name", self.config.cluster_name or f"cluster-{common_hash}"
+        )
+        self.app_peer_data.setdefault("cluster-set-domain-name", f"cluster-set-{common_hash}")
 
     def _open_ports(self) -> None:
         """Open ports if supported.
@@ -478,7 +552,12 @@ class MySQLOperatorCharm(MySQLCharmBase):
 
         container = event.workload
         try:
-            self._mysql.write_mysqld_config(profile=self.config["profile"])
+            memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
+            new_config_content, _ = self._mysql.render_mysqld_configuration(
+                profile=self.config.profile,
+                memory_limit=memory_limit_bytes,
+            )
+            self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
         except MySQLCreateCustomConfigFileError:
             logger.exception("Unable to write custom config file")
             raise
@@ -615,6 +694,9 @@ class MySQLOperatorCharm(MySQLCharmBase):
 
         if self._is_cluster_blocked():
             return
+
+        # unset restart control flag
+        del self.restart_peers.data[self.unit]["state"]
 
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():

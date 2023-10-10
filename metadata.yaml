@@ -39,6 +39,8 @@ peers:
     interface: mysql_peers
   upgrade:
     interface: upgrade
+  restart:
+    interface: rolling_op
 
 provides:
   database:

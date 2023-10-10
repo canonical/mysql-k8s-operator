@@ -6,12 +6,18 @@ options:
     description: "Optional - Name of the MySQL InnoDB cluster"
     type: "string"
   profile:
-   description: |
+    description: |
       profile representing the scope of deployment, and used to be able to enable high-level
       high-level customisation of sysconfigs, resource checks/allocation, warning levels, etc.
       Allowed values are: “production” and “testing”.
-   type: string
-   default: production
+    type: string
+    default: production
+  profile-limit-memory:
+    type: int
+    description: |
+      Amount of memory in Megabytes to limit MySQL and associated process to.
+      If unset, this will be decided according to the default memory limit in the selected profile.
+      Only comes into effect when the `production` profile is selected.
 # Config options for the legacy 'mysql' interface
   mysql-interface-user:
     description: "The database username for the legacy 'mysql' interface"

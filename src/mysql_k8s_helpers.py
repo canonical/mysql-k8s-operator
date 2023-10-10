@@ -14,8 +14,6 @@ from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureMySQLUsersError,
     MySQLExecError,
-    MySQLGetAutoTunningParametersError,
-    MySQLGetAvailableMemoryError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
@@ -38,7 +36,6 @@ from constants import (
     MYSQL_DATA_DIR,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
-    MYSQLD_CONFIG_FILE,
     MYSQLD_DEFAULTS_CONFIG_FILE,
     MYSQLD_LOCATION,
     MYSQLD_SAFE_SERVICE,
@@ -287,21 +284,6 @@ class MySQL(MySQLBase):
         except MySQLClientError as e:
             logger.exception("Error configuring MySQL users", exc_info=e)
             raise MySQLConfigureMySQLUsersError(e.message)
-
-    def write_mysqld_config(self, profile: str) -> None:
-        """Create custom mysql config file.
-
-        Raises MySQLCreateCustomMySQLDConfigError if there is an error creating the
-            custom mysqld config
-        """
-        logger.debug("Copying custom mysqld config")
-        try:
-            content = self.render_myqld_configuration(profile=profile)
-        except (MySQLGetAvailableMemoryError, MySQLGetAutoTunningParametersError):
-            logger.exception("Failed to get available memory or auto tuning parameters")
-            raise MySQLCreateCustomConfigFileError
-
-        self.write_content_to_file(MYSQLD_CONFIG_FILE, content)
 
     def execute_backup_commands(
         self,
@@ -723,6 +705,21 @@ class MySQL(MySQLBase):
             permission: file permission
         """
         self.container.push(path, content, permissions=permission, user=owner, group=group)
+
+    def read_file_content(self, path: str) -> Optional[str]:
+        """Read file content.
+
+        Args:
+            path: filesystem full path (with filename)
+
+        Returns:
+            file content
+        """
+        if not self.container.exists(path):
+            return None
+
+        content = self.container.pull(path, encoding="utf8")
+        return content.read()
 
     def remove_file(self, path: str) -> None:
         """Remove a file (if it exists) from container workload.
