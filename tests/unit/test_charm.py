@@ -69,7 +69,7 @@ class TestCharm(unittest.TestCase):
         # Comparing output dicts
         self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict())
 
-    @pytest.mark.usefixtures("only_without_juju_secrets")
+    @pytest.mark.usefixtures("without_juju_secrets")
     def test_on_leader_elected(self):
         # Test leader election setting of
         # peer relation data
@@ -82,7 +82,7 @@ class TestCharm(unittest.TestCase):
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
 
-    @pytest.mark.usefixtures("only_with_juju_secrets")
+    @pytest.mark.usefixtures("with_juju_secrets")
     def test_on_leader_elected_secrets(self):
         # Test leader election setting of secret data
         self.harness.set_leader()
@@ -234,7 +234,7 @@ class TestCharm(unittest.TestCase):
         )
         assert self.charm.get_secret("unit", "password") == "test-password"
 
-    @pytest.mark.usefixtures("only_without_juju_secrets")
+    @pytest.mark.usefixtures("without_juju_secrets")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
     def test_set_secret_databag(self, _):
         self.harness.set_leader()
@@ -259,7 +259,7 @@ class TestCharm(unittest.TestCase):
             == "test-password"
         )
 
-    @pytest.mark.usefixtures("only_with_juju_secrets")
+    @pytest.mark.usefixtures("with_juju_secrets")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
     def test_set_secret(self, _):
         self.harness.set_leader()

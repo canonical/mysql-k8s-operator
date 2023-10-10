@@ -21,8 +21,6 @@ jobs:
   unit-test:
     strategy:
       fail-fast: false
-      matrix:
-        juju-version:  ["2.9", "3.1"]
     name: Unit test charm
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -35,10 +33,6 @@ jobs:
           pipx install poetry
       - name: Run tests
         run: tox run -e unit
-        env:
-          # This env var is only to indicate Juju version to "simulate" in the unit tests
-          # No libjuju is being actually used in unit testing
-          LIBJUJU_VERSION_SPECIFIER: ${{ matrix.juju-version }}
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v3
 
