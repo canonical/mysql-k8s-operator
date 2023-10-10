@@ -35,8 +35,7 @@ class MySQLConfig:
 
     @staticmethod
     def custom_config(config_content: str) -> dict:
-        """Convert config to dict dict."""
-
+        """Convert config content to dict."""
         cp = configparser.ConfigParser(interpolation=None)
         cp.read_string(config_content)
 

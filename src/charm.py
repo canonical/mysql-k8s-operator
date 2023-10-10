@@ -31,6 +31,7 @@ from charms.mysql.v0.mysql import (
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
+from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
@@ -42,9 +43,8 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.pebble import Layer
-from charms.rolling_ops.v0.rollingops import RollingOpsManager
-from config import CharmConfig, MySQLConfig
 
+from config import CharmConfig, MySQLConfig
 from constants import (
     BACKUPS_PASSWORD_KEY,
     BACKUPS_USERNAME,
@@ -351,8 +351,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             }
             if restart_states != {"release"}:
                 # Wait other units restart first to minimize primary switchover
-                message = "Primary is waiting for other units to restart"
-                logger.debug(message)
+                message = "Primary restart deferred after other units"
+                logger.info(message)
                 self.unit.status = WaitingStatus(message)
                 event.defer()
                 return
@@ -694,8 +694,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         if self._is_cluster_blocked():
             return
-
-        # unset restart control flag
         del self.restart_peers.data[self.unit]["state"]
 
         container = self.unit.get_container(CONTAINER_NAME)
