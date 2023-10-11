@@ -91,7 +91,7 @@ jobs:
             agent-version: "3.1.6"
             libjuju-version:  "3.2.2"
           - juju-snap-channel: "2.9/stable"
-            agent-version: "2.9.44"
+            agent-version: "2.9.45"
             libjuju-version:  "2.9.44.1"
         exclude:
           # Disabling HA tests, as long as we want to have a limited pipeline on Juju3
