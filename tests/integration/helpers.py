@@ -724,3 +724,14 @@ async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str)
     )
 
     assert return_code == 0
+
+
+async def get_secret_data(ops_test: OpsTest, secret_uri: str) -> Dict[str, str]:
+    """Retrieving secret data."""
+    secret_id = secret_uri.split("/")[-1]
+
+    command = f"show-secret {secret_uri} --reveal --format=json"
+    _, stdout, _ = await ops_test.juju(*command.split())
+    data = json.loads(stdout)
+
+    return data[secret_id]["content"]["Data"]

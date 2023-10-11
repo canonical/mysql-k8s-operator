@@ -10,7 +10,13 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
-from ..helpers import get_relation_data, is_relation_broken, is_relation_joined
+from ..helpers import (
+    get_relation_data,
+    get_secret_data,
+    is_relation_broken,
+    is_relation_joined,
+    scale_application,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +126,50 @@ async def test_relation_creation(ops_test: OpsTest):
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
     assert not set(["password", "username"]) <= set(relation_data[0]["application-data"])
     assert "secret-user" in relation_data[0]["application-data"]
+
+
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("only_without_juju_secrets")
+async def test_password_preserved_in_relation(ops_test: OpsTest):
+    """Check if an empty relation is caching password."""
+    relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
+    old_password = relation_data[0]["application-data"]["password"]
+
+    async with ops_test.fast_forward("60s"):
+        await scale_application(ops_test, DATABASE_APP_NAME, 0)
+
+    async with ops_test.fast_forward("60s"):
+        await scale_application(ops_test, DATABASE_APP_NAME, 2)
+
+    relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
+    new_password = relation_data[0]["application-data"]["password"]
+
+    assert new_password == old_password
+
+
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("only_with_juju_secrets")
+async def test_password_preserved_in_relation_secrets(ops_test: OpsTest):
+    """Check if an empty relation is caching password."""
+    relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
+    secret_uri = relation_data[0]["application-data"]["secret-user"]
+    secret_data = await get_secret_data(ops_test, secret_uri)
+    old_password = secret_data["password"]
+
+    async with ops_test.fast_forward("60s"):
+        await scale_application(ops_test, DATABASE_APP_NAME, 0)
+
+    async with ops_test.fast_forward("60s"):
+        await scale_application(ops_test, DATABASE_APP_NAME, 2)
+
+    relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
+    secret_uri = relation_data[0]["application-data"]["secret-user"]
+    secret_data = await get_secret_data(ops_test, secret_uri)
+    new_password = secret_data["password"]
+
+    assert new_password == old_password
 
 
 @pytest.mark.group(1)
