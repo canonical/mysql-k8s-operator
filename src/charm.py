@@ -398,7 +398,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             # the upgrade already restart the daemon
             return
 
-        if not self._mysql.is_mysqld_running:
+        if not self._mysql.is_mysqld_running():
             # defer config-changed event until MySQL is running
             logger.debug("Deferring config-changed event until MySQL is running")
             event.defer()

@@ -116,7 +116,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 50
+LIBPATCH = 51
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1150,14 +1150,10 @@ class MySQLBase(ABC):
         if not instance_address:
             instance_address = self.instance_address
 
-        # escape variable values when needed
-        if not re.match(r"^[0-9,a-z,A-Z$_]+$", value):
-            value = f"`{value}`"
-
         logger.debug(f"Setting {variable} to {value} on {instance_address}")
         set_var_command = [
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{instance_address}')",
-            f"session.run_sql(\"SET {'PERSIST' if persist else 'GLOBAL'} {variable}={value}\")",
+            f"session.run_sql(\"SET {'PERSIST' if persist else 'GLOBAL'} {variable}=`{value}`\")",
         ]
 
         try:
@@ -2574,7 +2570,9 @@ class MySQLBase(ABC):
         """Flushes the specified logs_type logs."""
         flush_logs_commands = (
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            'session.run_sql("SET sql_log_bin = 0")',
             f'session.run_sql("FLUSH {logs_type.value}")',
+            'session.run_sql("SET sql_log_bin = 1")',
         )
 
         try:
