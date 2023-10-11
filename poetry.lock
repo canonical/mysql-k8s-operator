@@ -1639,6 +1639,23 @@ resolved_reference = "3ffc460ad9d3a1280e29e32a4419456f4772c385"
 subdirectory = "python/pytest_plugins/github_secrets"
 
 [[package]]
+name = "pytest-mock"
+version = "3.11.1"
+description = "Thin-wrapper around the mock package for easier use with pytest"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pytest-mock-3.11.1.tar.gz", hash = "sha256:7f6b125602ac6d743e523ae0bfa71e1a697a2f5534064528c6ff84c2f7c2fc7f"},
+    {file = "pytest_mock-3.11.1-py3-none-any.whl", hash = "sha256:21c279fff83d70763b05f8874cc9cfb3fcacd6d354247a976f9529d19f9acf39"},
+]
+
+[package.dependencies]
+pytest = ">=5.0"
+
+[package.extras]
+dev = ["pre-commit", "pytest-asyncio", "tox"]
+
+[[package]]
 name = "pytest-operator"
 version = "0.28.0"
 description = "Fixtures for Operators"
@@ -2258,4 +2275,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "840934d33987d81fcfac43ec243d3304f269d0c75980a4550d982dcbd5816cbb"
+content-hash = "fdc23432aa20c5c4fd18125309fc40dab58fad32f8df95da68fd9ebe7d97acf7"

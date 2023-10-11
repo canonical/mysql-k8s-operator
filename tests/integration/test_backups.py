@@ -7,6 +7,7 @@ from pathlib import Path
 
 import boto3
 import pytest
+from ops import JujuVersion
 from pytest_operator.plugin import OpsTest
 
 from .helpers import (
@@ -225,7 +226,10 @@ async def test_restore_on_same_cluster(ops_test: OpsTest, cloud_credentials) -> 
             action_name="restore", **{"backup-id": backups_by_cloud[cloud_name]}
         )
         result = await action.wait()
-        assert result.results.get("Code") == "0"
+        if JujuVersion.from_environ().has_secrets:
+            assert result.results.get("return-code") == 0
+        else:
+            assert result.results.get("Code") == "0"
 
         # ensure the correct inserted values exist
         logger.info(
@@ -340,7 +344,10 @@ async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials) -> N
             action_name="restore", **{"backup-id": backups_by_cloud[cloud_name]}
         )
         result = await action.wait()
-        assert result.results.get("Code") == "0"
+        if JujuVersion.from_environ().has_secrets:
+            assert result.results.get("return-code") == 0
+        else:
+            assert result.results.get("Code") == "0"
 
         # ensure the correct inserted values exist
         logger.info(
