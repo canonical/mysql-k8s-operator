@@ -571,11 +571,6 @@ async def write_content_to_file_in_unit(
             check=True,
         )
 
-    # return_code, _, _ = await ops_test.juju(
-    #     "ssh", unit.name, "chown", f"{MYSQL_SYSTEM_USER}:root", path
-    # )
-    # assert return_code == 0
-
 
 async def read_contents_from_file_in_unit(
     ops_test: OpsTest, unit: Unit, path: str, container_name: str = CONTAINER_NAME
