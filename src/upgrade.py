@@ -216,6 +216,23 @@ class MySQLK8sUpgrade(DataUpgrade):
             failure_message = "unknown error"
             self._check_server_upgradeability()
             self.charm.unit.status = MaintenanceStatus("recovering unit after upgrade")
+            if self.charm.app.planned_units() > 1:
+                self._recover_multi_unit_cluster()
+            else:
+                self._recover_single_unit_cluster()
+            self._complete_upgrade()
+            return
+        except RetryError:
+            failure_message = "Unit failed to rejoin the cluster after upgrade"
+        logger.error(failure_message)
+        self.set_unit_failed()
+        self.charm.unit.status = BlockedStatus(
+            "upgrade failed. Check logs for rollback instruction"
+        )
+
+    def _recover_multi_unit_cluster(self) -> None:
+        logger.debug("Recovering multi units cluster")
+        try:
             for attempt in Retrying(
                 stop=stop_after_attempt(RECOVER_ATTEMPTS), wait=wait_fixed(10)
             ):
@@ -227,17 +244,15 @@ class MySQLK8sUpgrade(DataUpgrade):
                             f" Retry {attempt.retry_state.attempt_number}/{RECOVER_ATTEMPTS}"
                         )
                         raise Exception
-                    self._complete_upgrade()
-                    return
-        except MySQLServerNotUpgradableError:
-            failure_message = "Incompatible mysql server upgrade"
         except RetryError:
-            failure_message = "Unit failed to rejoin the cluster after upgrade"
-        logger.error(failure_message)
-        self.set_unit_failed()
-        self.charm.unit.status = BlockedStatus(
-            "upgrade failed. Check logs for rollback instruction"
-        )
+            raise
+
+    def _recover_single_unit_cluster(self) -> None:
+        """Recover single unit cluster."""
+        logger.debug("Recovering single unit cluster")
+        self.charm._mysql.set_dynamic_variable(variable="super_read_only", value="OFF")
+        self.charm._mysql.drop_metadata_schema()
+        self.charm._mysql.create_cluster(self.charm.unit_label)
 
     def _complete_upgrade(self):
         # complete upgrade for the unit
