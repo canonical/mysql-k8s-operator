@@ -43,6 +43,9 @@ class RotateMySQLLogs(Object):
 
     def _rotate_mysql_logs(self, _) -> None:
         """Rotate the mysql logs."""
+        if self.charm.peers is None or self.charm.unit_peer_data.get("unit-initialized") != "True":
+            return
+
         try:
             self.charm._mysql._execute_commands(["logrotate", "-f", LOG_ROTATE_CONFIG_FILE])
         except MySQLExecError:
