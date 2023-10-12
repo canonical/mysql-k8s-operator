@@ -66,6 +66,7 @@ from constants import (
     SERVER_CONFIG_USERNAME,
 )
 from k8s_helpers import KubernetesHelpers
+from log_rotate_manager import LogRotateManager
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
@@ -74,6 +75,7 @@ from mysql_k8s_helpers import (
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
+from rotate_mysql_logs import RotateMySQLLogs, RotateMySQLLogsCharmEvents
 from upgrade import MySQLK8sUpgrade, get_mysql_k8s_dependencies_model
 from utils import generate_random_hash, generate_random_password
 
@@ -82,6 +84,11 @@ logger = logging.getLogger(__name__)
 
 class MySQLOperatorCharm(MySQLCharmBase):
     """Operator framework charm for MySQL."""
+
+    # RotateMySQLLogsCharmEvents needs to be defined on the charm object for
+    # the log rotate manager process (which runs juju-run/juju-exec to dispatch
+    # a custom event)
+    on = RotateMySQLLogsCharmEvents()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -130,6 +137,11 @@ class MySQLOperatorCharm(MySQLCharmBase):
             relation_name="logging",
             container_name="mysql",
         )
+
+        self.log_rotate_manager = LogRotateManager(self)
+        self.log_rotate_manager.start_log_rotate_manager()
+
+        self.rotate_mysql_logs = RotateMySQLLogs(self)
 
     @property
     def _mysql(self) -> MySQL:
@@ -423,6 +435,9 @@ class MySQLOperatorCharm(MySQLCharmBase):
             self._mysql.configure_mysql_users()
             # Configure instance as a cluster node
             self._mysql.configure_instance()
+
+            logger.info("Setting up the logrotate configurations")
+            self._mysql.setup_logrotate_config()
 
             if self.has_cos_relation:
                 if container.get_services(MYSQLD_EXPORTER_SERVICE)[

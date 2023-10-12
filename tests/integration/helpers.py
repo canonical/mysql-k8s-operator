@@ -5,6 +5,8 @@ import itertools
 import json
 import secrets
 import string
+import subprocess
+import tempfile
 from typing import Dict, List, Optional
 
 import mysql.connector
@@ -17,7 +19,7 @@ from mysql.connector.errors import (
     ProgrammingError,
 )
 from pytest_operator.plugin import OpsTest
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import RetryError, Retrying, retry, stop_after_attempt, wait_fixed
 
 from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE, SERVER_CONFIG_USERNAME
 
@@ -338,7 +340,7 @@ def is_connection_possible(credentials: Dict, **extra_opts) -> bool:
 
 async def get_process_pid(
     ops_test: OpsTest, unit_name: str, container_name: str, process: str
-) -> int:
+) -> Optional[int]:
     """Return the pid of a process running in a given unit.
 
     Args:
@@ -360,6 +362,9 @@ async def get_process_pid(
         process,
     ]
     return_code, pid, _ = await ops_test.juju(*get_pid_commands)
+
+    if return_code == 1:
+        return None
 
     assert (
         return_code == 0
@@ -411,7 +416,7 @@ async def unit_file_md5(ops_test: OpsTest, unit_name: str, file_path: str) -> st
     """
     try:
         _, md5sum_raw, _ = await ops_test.juju(
-            "ssh", "--container", "mysql", unit_name, "md5sum", file_path
+            "ssh", "--container", CONTAINER_NAME, unit_name, "md5sum", file_path
         )
 
         return md5sum_raw.strip().split()[0]
@@ -497,3 +502,225 @@ def get_unit_by_index(app_name: str, units: list, index: int):
     for unit in units:
         if unit.name == f"{app_name}/{index}":
             return unit
+
+
+async def delete_file_or_directory_in_unit(
+    ops_test: OpsTest, unit_name: str, path: str, container_name: str = CONTAINER_NAME
+) -> bool:
+    """Delete a file in the provided unit.
+
+    Args:
+        ops_test: The ops test framework
+        unit_name: The name unit on which to delete the file from
+        container_name: The name of the container where the file or directory is
+        path: The path of file or directory to delete
+
+    Returns:
+        boolean indicating success
+    """
+    if path.strip() in ["/", "."]:
+        return
+
+    try:
+        return_code, _, _ = await ops_test.juju(
+            "ssh",
+            "--container",
+            container_name,
+            unit_name,
+            "find",
+            path,
+            "-maxdepth",
+            "1",
+            "-delete",
+        )
+
+        return return_code == 0
+    except Exception:
+        return False
+
+
+async def write_content_to_file_in_unit(
+    ops_test: OpsTest, unit: Unit, path: str, content: str, container_name: str = CONTAINER_NAME
+) -> None:
+    """Write content to the file in the provided unit.
+
+    Args:
+        ops_test: The ops test framework
+        unit: THe unit in which to write to file in
+        path: The path at which to write the content to
+        content: The content to write to the file
+        container_name: The container where to write the file
+    """
+    pod_name = unit.name.replace("/", "-")
+
+    with tempfile.NamedTemporaryFile(mode="w") as temp_file:
+        temp_file.write(content)
+        temp_file.flush()
+
+        subprocess.run(
+            [
+                "kubectl",
+                "cp",
+                "-n",
+                ops_test.model.info.name,
+                "-c",
+                container_name,
+                temp_file.name,
+                f"{pod_name}:{path}",
+            ],
+            check=True,
+        )
+
+
+async def read_contents_from_file_in_unit(
+    ops_test: OpsTest, unit: Unit, path: str, container_name: str = CONTAINER_NAME
+) -> str:
+    """Read contents from file in the provided unit.
+
+    Args:
+        ops_test: The ops test framework
+        unit: The unit in which to read file from
+        path: The path from which to read content from
+        container_name: The container where the file exists
+
+    Returns:
+        the contents of the file
+    """
+    pod_name = unit.name.replace("/", "-")
+
+    with tempfile.NamedTemporaryFile(mode="r+") as temp_file:
+        subprocess.run(
+            [
+                "kubectl",
+                "cp",
+                "-n",
+                ops_test.model.info.name,
+                "-c",
+                container_name,
+                f"{pod_name}:{path}",
+                temp_file.name,
+            ],
+            check=True,
+        )
+
+        temp_file.seek(0)
+
+        contents = ""
+        for line in temp_file:
+            contents += line
+            contents += "\n"
+
+    return contents
+
+
+async def ls_la_in_unit(
+    ops_test: OpsTest, unit_name: str, directory: str, container_name: str = CONTAINER_NAME
+) -> list[str]:
+    """Returns the output of ls -la in unit.
+
+    Args:
+        ops_test: The ops test framework
+        unit_name: The name of unit in which to run ls -la
+        path: The path from which to run ls -la
+        container_name: The container where to run ls -la
+
+    Returns:
+        a list of files returned by ls -la
+    """
+    return_code, output, _ = await ops_test.juju(
+        "ssh", "--container", container_name, unit_name, "ls", "-la", directory
+    )
+    assert return_code == 0
+
+    ls_output = output.split("\n")[1:]
+
+    return [
+        line.strip("\r")
+        for line in ls_output
+        if len(line.strip()) > 0 and line.split()[-1] not in [".", ".."]
+    ]
+
+
+async def stop_running_log_rotate_dispatcher(ops_test: OpsTest, unit_name: str):
+    """Stop running the log rotate dispatcher script.
+
+    Args:
+        ops_test: The ops test object passed into every test case
+        unit_name: The name of the unit to be tested
+    """
+    # send KILL signal to log rotate dispatcher, which trigger shutdown process
+    await ops_test.juju(
+        "ssh",
+        unit_name,
+        "pkill",
+        "-9",
+        "-f",
+        "/usr/bin/python3 scripts/log_rotate_dispatcher.py",
+    )
+
+
+async def stop_running_flush_mysql_job(
+    ops_test: OpsTest, unit_name: str, container_name: str = CONTAINER_NAME
+) -> None:
+    """Stop running any logrotate jobs that may have been triggered by cron.
+
+    Args:
+        ops_test: The ops test object passed into every test case
+        unit_name: The name of the unit to be tested
+        container_name: The name of the container to be tested
+    """
+    # send KILL signal to log rotate process, which trigger shutdown process
+    await ops_test.juju(
+        "ssh",
+        "--container",
+        container_name,
+        unit_name,
+        "pkill",
+        "-9",
+        "-f",
+        "logrotate -f /etc/logrotate.d/flush_mysql_logs",
+    )
+
+    # hold execution until process is stopped
+    try:
+        for attempt in Retrying(stop=stop_after_attempt(45), wait=wait_fixed(2)):
+            with attempt:
+                if await get_process_pid(ops_test, unit_name, container_name, "logrotate"):
+                    raise Exception
+    except RetryError:
+        raise Exception("Failed to stop the flush_mysql_logs logrotate process.")
+
+
+async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str) -> None:
+    """Dispatch the custom event to run logrotate.
+
+    Args:
+        ops_test: The ops test object passed into every test case
+        unit_name: The name of the unit to be tested
+    """
+    _, juju_run, _ = await ops_test.juju(
+        "ssh",
+        unit_name,
+        "which",
+        "juju-run",
+    )
+
+    _, juju_exec, _ = await ops_test.juju(
+        "ssh",
+        unit_name,
+        "which",
+        "juju-exec",
+    )
+
+    dispatch_command = juju_exec.strip() or juju_run.strip()
+    unit_label = unit_name.replace("/", "-")
+
+    return_code, stdout, stderr = await ops_test.juju(
+        "ssh",
+        unit_name,
+        dispatch_command,
+        "JUJU_DISPATCH_PATH=hooks/rotate_mysql_logs",
+        f"/var/lib/juju/agents/unit-{unit_label}/charm/dispatch",
+    )
+
+    assert return_code == 0
