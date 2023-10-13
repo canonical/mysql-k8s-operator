@@ -4,6 +4,9 @@ This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overv
 
 ## Deploy Charmed MySQL K8s
 To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=8.0) and deploy it to your model:
+
+> **:information_source:** *Info: the miminum juju version supported is 2.9.44*
+
 ```shell
 juju deploy mysql-k8s --channel 8.0 --trust
 ```
@@ -17,7 +20,7 @@ juju status --watch 1s
 This command is useful for checking the status of Charmed MySQL K8s and gathering information about the machines hosting Charmed MySQL. Some of the helpful information it displays include IP addresses, ports, state, etc. The command updates the status of Charmed MySQL K8s every second and as the application starts you can watch the status and messages of Charmed MySQL K8s change. Wait until the application is ready - when it is ready, `juju status` will show:
 ```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:33:45+01:00
+tutorial  overlord    microk8s/localhost  2.9.44   unsupported  22:33:45+01:00
 
 App        Version   Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
 mysql-k8s  8.0.31    active      1  mysql-k8s  8.0/stable  36   10.152.183.234  no       Unit is ready: Mode: RW

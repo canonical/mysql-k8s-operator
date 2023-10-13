@@ -24,6 +24,7 @@ This shows there are 2 containers in the pod: `charm` and `workload` mentioned a
 
 And if you run `kubectl describe pod mysql-k8s-0`, all the containers will have as Command `/charm/bin/pebble`. That’s because Pebble is responsible for the processes startup as explained above.
 
+<a name="hld"></a>
 ## HLD (High Level Design)
 
 The "Charmed MySQL K8s" (`workload` container) based on `mysql-image` resource defined in the [charm metadata.yaml](https://github.com/canonical/mysql-k8s-operator/blob/main/metadata.yaml). It is an official Canonical "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock)" [OCI/ROCK](https://ubuntu.com/server/docs/rock-images/introduction) image, which is recursively based on Canonical SNAP “[charmed-mysql](https://snapcraft.io/charmed-mysql)” (read more about the SNAP details [here](/t/11756)).
@@ -87,6 +88,7 @@ The ROCK "charmed-mysql" also ships list of tools used by charm:
 The `mysql` and `mysqlsh` are well known and popular tools to manage MySQL.
 The `xtrabackup (xbcloud+xbstream)` used for [MySQL Backups](/t/9653) only to store backups on S3 compatible storage.
 
+<a name="integrations"></a>
 ## Integrations
 
 ### MySQL Router
@@ -121,6 +123,7 @@ Loki is an open-source fully-featured logging system. This charms is shipped wit
 
 Prometheus is an open-source systems monitoring and alerting toolkit with a dimensional data model, flexible query language, efficient time series database and modern alerting approach. This charm is shipped with a Prometheus exporters, alerts and support for integrating with the [Prometheus Operator](https://charmhub.io/prometheus-k8s) to automatically scrape the targets. Please follow [COS Monitoring](/t/9981) setup.
 
+<a name="lld"></a>
 ## LLD (Low Level Design)
 
 Please check the charm state machines displayed on [workflow diagrams](/t/10031). The low-level logic is mostly common for both VM and K8s charm flavors.

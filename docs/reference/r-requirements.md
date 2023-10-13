@@ -22,6 +22,7 @@ Make sure your machine meets the following requirements:
 
 The charm is based on [ROCK OCI](https://github.com/canonical/charmed-mysql-rock) named "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock/pkgs/container/charmed-mysql)", which is recursively based on SNAP "[charmed-mysql](https://snapcraft.io/charmed-mysql)", which is currently available for `amd64` only! The architecture `arm64` support is planned. Please [contact us](https://chat.charmhub.io/charmhub/channels/data-platform) if you are interested in new architecture!
 
+<a name="mysql-gr-limits"></a>
 ## MySQL Group Replication requirements
 * In order to integrate with this charm, every table created by the integrated application [u]must[/u] have a [u]primary key[/u]. This is required by the [group replication plugin](https://dev.mysql.com/doc/refman/8.0/en/group-replication-requirements.html) enabled in this charm.
 * the count of [Charmed MySQL K8s units](https://dev.mysql.com/doc/refman/8.0/en/group-replication-limitations.html) in a single Juju application is [u]limited to 9[/u]. Unit 10+ will start; however, they will not join the cluster but sleep in a hot-swap reserve.

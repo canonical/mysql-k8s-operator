@@ -4,6 +4,7 @@ There are two types of users in MySQL:
 * Internal users (used by charm operator)
 * Relation/integration users (used by related applications)
 
+<a name="internal-users"></a>
 ## Internal users explanations:
 
 The operator uses the following internal DB users:
@@ -82,6 +83,7 @@ To set a predefined password for the specific user, run:
 ```
 **Note**: the action `set-password` must be executed on juju leader unit (to update peer relation data with new value).
 
+<a name="relation-users"></a>
 ## Relation/integration users explanations:
 
 The operator created a dedicated user for every application related/integrated with database. Those users are removed on the juju relation/integration removal request. However, DB data stays in place and can be reused on re-created relations (using new user credentials):

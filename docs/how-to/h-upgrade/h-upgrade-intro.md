@@ -1,7 +1,5 @@
 # Charmed MySQL K8s Upgrade
 
-> **:warning: WARNING**: it is an internal article. Do NOT use it in production!<br/>Contact [Canonical Data Platform team](https://chat.charmhub.io/charmhub/channels/data-platform) if you are interested in the topic.
-
 Please choose the appropriate upgrade/rollback tutorial.
 
 Migration:
@@ -13,7 +11,7 @@ Migration:
 In-place minor upgrade:
 
 * [Minor upgrade](/t/11752), e.g. MySQL 8.0.33 -> MySQL 8.0.34<br/>
-(including charm revision bump 42 -> 43).
+(including charm revision bump 99 -> 102).
 
 * [Minor rollback](/t/11753), e.g. MySQL 8.0.34 -> MySQL 8.0.33<br/>
-(including charm revision return 43 -> 42).
+(including charm revision return 102 -> 99).

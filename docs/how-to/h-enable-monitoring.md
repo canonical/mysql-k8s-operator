@@ -42,9 +42,14 @@ juju consume k8s:admin/cos.prometheus
 Now, deploy '[grafana-agent-k8s](https://charmhub.io/grafana-agent-k8s)' and integrate (relate) it with Charmed MySQL K8s, later integrate (relate) `grafana-agent-k8s` with consumed COS offers:
 ```shell
 juju deploy grafana-agent-k8s --trust
-juju relate mysql-k8s grafana
-juju relate mysql-k8s loki
-juju relate mysql-k8s prometheus
+
+juju relate grafana-agent-k8s grafana
+juju relate grafana-agent-k8s loki
+juju relate grafana-agent-k8s prometheus
+
+juju relate grafana-agent-k8s mysql-k8s:grafana-dashboard
+juju relate grafana-agent-k8s mysql-k8s:logging
+juju relate grafana-agent-k8s mysql-k8s:metrics-endpoint
 ```
 
 After this is complete, Grafana will show the new dashboards: `MySQL Exporter` and allows access for Charmed MySQL logs on Loki.

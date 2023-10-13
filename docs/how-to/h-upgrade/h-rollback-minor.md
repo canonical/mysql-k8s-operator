@@ -1,9 +1,7 @@
 # Minor Rollback
 
-Example: MySQL 8.0.34 -> MySQL 8.0.33<br/>
-including simple charm revision bump (from revision 43 to revision 42).
-
-> **:warning: WARNING**: it is an internal article. Do NOT use it in production! Contact [Canonical Data Platform team](https://chat.charmhub.io/charmhub/channels/data-platform) if you are interested in the topic.
+> :information_source: **Example**: MySQL 8.0.34 -> MySQL 8.0.33<br/>
+(including simple charm revision bump: from revision 43 to revision 42)
 
 > **:warning: WARNING**: do NOT trigger `rollback` during the running `upgrade` action! It may cause unpredictable MySQL Cluster state!
 
@@ -24,7 +22,11 @@ To execute a rollback we take the same procedure as the upgrade, the difference 
 
 ## Step 1: Prepare
 
-TODO: No prepare? P.S. remove from steps above too!
+It is necessary to re-run `pre-upgrade-check` action on the leader unit, to enter the upgrade recovery state:
+
+```
+juju run mysql-k8s/leader pre-upgrade-check
+```
 
 ## Step 2: Rollback
 
@@ -57,4 +59,4 @@ This will rollout the Pods in the remaining units, but to the same charm revisio
 
 ## Step 4: Check
 
-TODO: add / describe `goss`?
+The future [improvement is planned](https://warthogs.atlassian.net/browse/DPE-2620) to check the state on pod/cluster on a low level. At the moment check `juju status` to make sure the cluster [state](/t/11866) is OK.
