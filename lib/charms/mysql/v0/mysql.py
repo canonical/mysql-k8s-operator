@@ -1189,18 +1189,6 @@ class MySQLBase(ABC):
             )
             raise MySQLCreateClusterError(e.message)
 
-    def drop_metadata_schema(self) -> None:
-        """Drops cluster metadata schema."""
-        drop_metadata_schema_command = [
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-            "dba.drop_metadata_schema({'force': True})",
-        ]
-        try:
-            self._run_mysqlsh_script("\n".join(drop_metadata_schema_command))
-        except MySQLClientError as e:
-            logger.exception("Failed to drop metadata schema")
-            raise
-
     def create_cluster_set(self) -> None:
         """Create a cluster set for the cluster on cluster primary.
 
