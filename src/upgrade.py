@@ -15,7 +15,6 @@ from charms.data_platform_libs.v0.upgrade import (
 )
 from charms.mysql.v0.mysql import (
     MySQLGetMySQLVersionError,
-    MySQLServerNotUpgradableError,
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
 )

@@ -65,8 +65,10 @@ error handling on the subclass and in the charm code.
 
 """
 
+import configparser
 import dataclasses
 import enum
+import io
 import json
 import logging
 import re
@@ -114,7 +116,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 48
+LIBPATCH = 50
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -690,6 +692,17 @@ class MySQLMemberState(str, enum.Enum):
     UNKNOWN = "unknown"
 
 
+class MySQLTextLogs(str, enum.Enum):
+    """MySQL Text logs."""
+
+    # TODO: python 3.11 has new enum.StrEnum
+    #       that can remove str inheritance
+
+    ERROR = "ERROR LOGS"
+    GENERAL = "GENERAL LOGS"
+    SLOW = "SLOW LOGS"
+
+
 class MySQLBase(ABC):
     """Abstract class to encapsulate all operations related to the MySQL workload.
 
@@ -747,21 +760,23 @@ class MySQLBase(ABC):
         self,
         *,
         profile: str,
+        snap_common: str = "",
     ) -> str:
         """Render mysqld ini configuration file.
 
         Args:
             profile: profile to use for the configuration (testing, production)
+            snap_common: snap common directory (for log files locations in vm)
 
         Returns: mysqld ini file string content
         """
-        disable_memory_instruments = ""
+        performance_schema_instrument = ""
         if profile == "testing":
             innodb_buffer_pool_size = 20 * BYTES_1MiB
             innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
             group_replication_message_cache_size = 128 * BYTES_1MiB
             max_connections = 20
-            disable_memory_instruments = "performance-schema-instrument = 'memory/%=OFF'"
+            performance_schema_instrument = "'memory/%=OFF'"
         else:
             available_memory = self.get_available_memory()
             (
@@ -772,28 +787,37 @@ class MySQLBase(ABC):
             max_connections = self.get_max_connections(available_memory)
             if available_memory < 2 * BYTES_1GiB:
                 # disable memory instruments if we have less than 2GiB of RAM
-                disable_memory_instruments = "performance-schema-instrument = 'memory/%=OFF'"
+                performance_schema_instrument = "'memory/%=OFF'"
 
-        content = [
-            "[mysqld]",
-            "bind-address = 0.0.0.0",
-            "mysqlx-bind-address = 0.0.0.0",
-            f"report_host = {self.instance_address}",
-            f"max_connections = {max_connections}",
-            f"innodb_buffer_pool_size = {innodb_buffer_pool_size}",
-        ]
+        config = configparser.ConfigParser(interpolation=None)
+
+        # do not enable slow query logs, but specify a log file path in case
+        # the admin enables them manually
+        config["mysqld"] = {
+            "bind-address": "0.0.0.0",
+            "mysqlx-bind-address": "0.0.0.0",
+            "report_host": self.instance_address,
+            "max_connections": str(max_connections),
+            "innodb_buffer_pool_size": str(innodb_buffer_pool_size),
+            "log_error_services": "log_filter_internal;log_sink_internal",
+            "log_error": f"{snap_common}/var/log/mysql/error.log",
+            "general_log": "ON",
+            "general_log_file": f"{snap_common}/var/log/mysql/general.log",
+            "slow_query_log_file": f"{snap_common}/var/log/mysql/slowquery.log",
+        }
+
         if innodb_buffer_pool_chunk_size:
-            content.append(f"innodb_buffer_pool_chunk_size = {innodb_buffer_pool_chunk_size}")
-
-        if disable_memory_instruments:
-            content.append(disable_memory_instruments)
+            config["mysqld"]["innodb_buffer_pool_chunk_size"] = str(innodb_buffer_pool_chunk_size)
+        if performance_schema_instrument:
+            config["mysqld"]["performance-schema-instrument"] = performance_schema_instrument
         if group_replication_message_cache_size:
-            content.append(
-                f"loose-group_replication_message_cache_size = {group_replication_message_cache_size}"
+            config["mysqld"]["loose-group_replication_message_cache_size"] = str(
+                group_replication_message_cache_size
             )
 
-        content.append("\n")
-        return "\n".join(content)
+        with io.StringIO() as string_io:
+            config.write(string_io)
+            return string_io.getvalue()
 
     def configure_mysql_users(self):
         """Configure the MySQL users for the instance.
@@ -2526,6 +2550,20 @@ class MySQLBase(ABC):
             return stdout
         except MySQLExecError:
             return None
+
+    def flush_mysql_logs(self, logs_type: MySQLTextLogs) -> None:
+        """Flushes the specified logs_type logs."""
+        flush_logs_commands = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            'session.run_sql("SET sql_log_bin = 0")',
+            f'session.run_sql("FLUSH {logs_type.value}")',
+            'session.run_sql("SET sql_log_bin = 1")',
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(flush_logs_commands))
+        except MySQLClientError:
+            logger.exception(f"Failed to flush {logs_type} logs.")
 
     @abstractmethod
     def is_mysqld_running(self) -> bool:

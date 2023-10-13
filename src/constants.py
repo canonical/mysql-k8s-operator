@@ -48,3 +48,5 @@ GR_MAX_MEMBERS = 9
 SECRET_ID_KEY = "secret-id"
 # TODO: should be changed when adopting cos-agent
 COS_AGENT_RELATION_NAME = "metrics-endpoint"
+LOG_ROTATE_CONFIG_FILE = "/etc/logrotate.d/flush_mysql_logs"
+ROOT_SYSTEM_USER = "root"

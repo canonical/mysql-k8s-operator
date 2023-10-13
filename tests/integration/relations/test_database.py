@@ -10,7 +10,7 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
-from ..helpers import is_relation_broken, is_relation_joined
+from ..helpers import get_relation_data, is_relation_broken, is_relation_joined
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,24 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("only_without_juju_secrets")
+async def test_relation_creation_databag(ops_test: OpsTest):
+    """Relate charms and wait for the expected changes in status."""
+    await ops_test.model.relate(APPLICATION_APP_NAME, f"{DATABASE_APP_NAME}:{ENDPOINT}")
+
+    async with ops_test.fast_forward("60s"):
+        await ops_test.model.block_until(
+            lambda: is_relation_joined(ops_test, ENDPOINT, ENDPOINT) == True  # noqa: E712
+        )
+
+        await ops_test.model.wait_for_idle(apps=APPS, status="active")
+    relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
+    assert set(["password", "username"]) <= set(relation_data[0]["application-data"])
+
+
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
+@pytest.mark.usefixtures("only_with_juju_secrets")
 async def test_relation_creation(ops_test: OpsTest):
     """Relate charms and wait for the expected changes in status."""
     await ops_test.model.relate(APPLICATION_APP_NAME, f"{DATABASE_APP_NAME}:{ENDPOINT}")
@@ -99,6 +117,9 @@ async def test_relation_creation(ops_test: OpsTest):
         )
 
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
+    relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
+    assert not set(["password", "username"]) <= set(relation_data[0]["application-data"])
+    assert "secret-user" in relation_data[0]["application-data"]
 
 
 @pytest.mark.group(1)
