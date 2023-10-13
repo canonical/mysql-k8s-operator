@@ -74,10 +74,10 @@ class MySQLProvider(Object):
         Returns:
             str: The password.
         """
-        if password := relation.data[self.charm.app].get("password"):
+        if password := self.database.fetch_my_relation_field(relation.id, "password"):
             return password
         password = generate_random_password(PASSWORD_LENGTH)
-        relation.data[self.charm.app]["password"] = password
+        self.database.update_relation_data(relation.id, {"password": password})
         return password
 
     @staticmethod
