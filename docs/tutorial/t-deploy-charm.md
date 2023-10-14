@@ -3,9 +3,9 @@
 This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overview/9677). Please refer to this page for more information and the overview of the content.
 
 ## Deploy Charmed MySQL K8s
-To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=8.0) and deploy it to your model:
+> :information_source: **Info**: [the minimum Juju version supported is 2.9.44](/t/11421)
 
-> **:information_source:** *Info: the miminum juju version supported is 2.9.44*
+To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=8.0) and deploy it to your model:
 
 ```shell
 juju deploy mysql-k8s --channel 8.0 --trust
