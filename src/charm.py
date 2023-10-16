@@ -71,6 +71,7 @@ from constants import (
     SERVER_CONFIG_USERNAME,
 )
 from k8s_helpers import KubernetesHelpers
+from log_rotate_manager import LogRotateManager
 from mysql_k8s_helpers import (
     MySQL,
     MySQLCreateCustomConfigFileError,
@@ -79,6 +80,7 @@ from mysql_k8s_helpers import (
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
+from rotate_mysql_logs import RotateMySQLLogs, RotateMySQLLogsCharmEvents
 from upgrade import MySQLK8sUpgrade, get_mysql_k8s_dependencies_model
 from utils import compare_dictionaries, generate_random_hash, generate_random_password
 
@@ -89,6 +91,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     """Operator framework charm for MySQL."""
 
     config_type = CharmConfig
+    # RotateMySQLLogsCharmEvents needs to be defined on the charm object for
+    # the log rotate manager process (which runs juju-run/juju-exec to dispatch
+    # a custom event)
+    on = RotateMySQLLogsCharmEvents()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -139,6 +145,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             container_name="mysql",
         )
         self.restart = RollingOpsManager(self, relation="restart", callback=self._restart)
+
+        self.log_rotate_manager = LogRotateManager(self)
+        self.log_rotate_manager.start_log_rotate_manager()
+
+        self.rotate_mysql_logs = RotateMySQLLogs(self)
 
     @property
     def _mysql(self) -> MySQL:
@@ -561,6 +572,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         except MySQLCreateCustomConfigFileError:
             logger.exception("Unable to write custom config file")
             raise
+
+        logger.info("Setting up the logrotate configurations")
+        self._mysql.setup_logrotate_config()
 
         self.unit_peer_data["unit-status"] = "alive"
         if self._mysql.is_data_dir_initialised():

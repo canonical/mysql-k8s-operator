@@ -117,8 +117,10 @@ class TestCharm(unittest.TestCase):
         return_value=(123456, None, None),
     )
     @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=(120, None))
+    @patch("mysql_k8s_helpers.MySQL.setup_logrotate_config")
     def test_mysql_pebble_ready(
         self,
+        _,
         _get_max_connections,
         _get_innodb_buffer_pool_parameters,
         _get_member_state,

@@ -8,6 +8,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
+import jinja2
 from charms.mysql.v0.mysql import (
     Error,
     MySQLBase,
@@ -32,6 +33,7 @@ from constants import (
     CHARMED_MYSQL_XBSTREAM_LOCATION,
     CHARMED_MYSQL_XTRABACKUP_LOCATION,
     CONTAINER_NAME,
+    LOG_ROTATE_CONFIG_FILE,
     MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
     MYSQL_SYSTEM_GROUP,
@@ -42,6 +44,7 @@ from constants import (
     MYSQLD_SOCK_FILE,
     MYSQLSH_LOCATION,
     MYSQLSH_SCRIPT_FILE,
+    ROOT_SYSTEM_USER,
     XTRABACKUP_PLUGIN_DIR,
 )
 from k8s_helpers import KubernetesHelpers
@@ -234,6 +237,26 @@ class MySQL(MySQLBase):
             raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
 
         logger.debug("MySQL connection possible")
+
+    def setup_logrotate_config(self) -> None:
+        """Set up logrotate config in the workload container."""
+        logger.debug("Creating the logrotate config file")
+
+        with open("templates/logrotate.j2", "r") as file:
+            template = jinja2.Template(file.read())
+
+        rendered = template.render(
+            system_user=MYSQL_SYSTEM_USER,
+            system_group=MYSQL_SYSTEM_GROUP,
+        )
+
+        logger.debug("Writing the logrotate config file to the workload container")
+        self.write_content_to_file(
+            LOG_ROTATE_CONFIG_FILE,
+            rendered,
+            owner=ROOT_SYSTEM_USER,
+            group=ROOT_SYSTEM_USER,
+        )
 
     def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance.
