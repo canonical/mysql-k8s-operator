@@ -31,14 +31,17 @@ class LogRotateManager(Object):
 
     def start_log_rotate_manager(self):
         """Forks off a process that periodically dispatch a custom event to rotate logs."""
-        if not isinstance(self.charm.unit.status, ActiveStatus) or self.charm.peers is None:
+        if (
+            not isinstance(self.charm.unit.status, ActiveStatus)
+            or self.charm.peers is None
+            or self.charm.unit_peer_data.get("unit-initialized") != "True"
+        ):
             return
 
         if "log-rotate-manager-pid" in self.charm.unit_peer_data:
             pid = int(self.charm.unit_peer_data["log-rotate-manager-pid"])
             try:
-                # No-op if the process exists, else fork a new log rotate dispatcher process
-                os.kill(pid, 0)
+                os.kill(pid, 0)  # Check if the process exists
                 return
             except OSError:
                 pass
