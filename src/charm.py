@@ -436,9 +436,6 @@ class MySQLOperatorCharm(MySQLCharmBase):
             # Configure instance as a cluster node
             self._mysql.configure_instance()
 
-            logger.info("Setting up the logrotate configurations")
-            self._mysql.setup_logrotate_config()
-
             if self.has_cos_relation:
                 if container.get_services(MYSQLD_EXPORTER_SERVICE)[
                     MYSQLD_EXPORTER_SERVICE
@@ -497,6 +494,9 @@ class MySQLOperatorCharm(MySQLCharmBase):
         except MySQLCreateCustomConfigFileError:
             logger.exception("Unable to write custom config file")
             raise
+
+        logger.info("Setting up the logrotate configurations")
+        self._mysql.setup_logrotate_config()
 
         self.unit_peer_data["unit-status"] = "alive"
         if self._mysql.is_data_dir_initialised():

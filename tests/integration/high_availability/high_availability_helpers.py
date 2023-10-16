@@ -108,7 +108,7 @@ async def ensure_n_online_mysql_members(
                 online_members = [
                     label
                     for label, member in cluster_status["defaultreplicaset"]["topology"].items()
-                    if member["status"] == "online" and not member.get("instanceerrors", [])
+                    if member["status"] == "online" and not member.get("instanceerrors")
                 ]
                 assert len(online_members) == number_online_members
                 return True
