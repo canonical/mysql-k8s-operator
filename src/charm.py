@@ -147,7 +147,7 @@ class MySQLOperatorCharm(MySQLCharmBase):
     def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
-            self.get_unit_hostname(self.unit.name),
+            self._get_unit_fqdn(),
             self.app_peer_data["cluster-name"],
             self.app_peer_data["cluster-set-domain-name"],
             self.get_secret("app", ROOT_PASSWORD_KEY),
