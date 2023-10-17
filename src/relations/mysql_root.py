@@ -5,12 +5,13 @@
 
 import json
 import logging
+import typing
 
 from charms.mysql.v0.mysql import (
     MySQLCheckUserExistenceError,
     MySQLDeleteUsersForUnitError,
 )
-from ops.charm import CharmBase, RelationBrokenEvent, RelationCreatedEvent
+from ops.charm import RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus
 
@@ -28,11 +29,14 @@ MYSQL_ROOT_RELATION_DATA_KEY = "mysql_root_relation_data"
 MYSQL_ROOT_RELATION_USER_KEY = "mysql-root-interface-user"
 MYSQL_ROOT_RELATION_DATABASE_KEY = "mysql-root-interface-database"
 
+if typing.TYPE_CHECKING:
+    from charm import MySQLOperatorCharm
+
 
 class MySQLRootRelation(Object):
     """Encapsulation of the legacy mysql-root relation."""
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: "MySQLOperatorCharm"):
         super().__init__(charm, LEGACY_MYSQL_ROOT)
 
         self.charm = charm
@@ -72,7 +76,7 @@ class MySQLRootRelation(Object):
         """
         return self.charm.app_peer_data.setdefault(
             MYSQL_ROOT_RELATION_USER_KEY,
-            self.charm.config.get(MYSQL_ROOT_RELATION_USER_KEY) or f"relation-{event_relation_id}",
+            self.charm.config.mysql_root_interface_user or f"relation-{event_relation_id}",
         )
 
     def _get_or_generate_database(self, event_relation_id: int) -> str:
@@ -82,8 +86,7 @@ class MySQLRootRelation(Object):
         """
         return self.charm.app_peer_data.setdefault(
             MYSQL_ROOT_RELATION_DATABASE_KEY,
-            self.charm.config.get(MYSQL_ROOT_RELATION_DATABASE_KEY)
-            or f"database-{event_relation_id}",
+            self.charm.config.mysql_root_interface_database or f"database-{event_relation_id}",
         )
 
     def _on_leader_elected(self, _) -> None:
@@ -132,13 +135,15 @@ class MySQLRootRelation(Object):
         if isinstance(self.charm.unit.status, ActiveStatus) and self.model.relations.get(
             LEGACY_MYSQL_ROOT
         ):
-            for key in (MYSQL_ROOT_RELATION_USER_KEY, MYSQL_ROOT_RELATION_DATABASE_KEY):
-                config_value = self.charm.config.get(key)
-                if config_value and config_value != self.charm.app_peer_data[key]:
-                    self.charm.app.status = BlockedStatus(
-                        f"Remove `mysql-root` relations in order to change `{key}` config"
-                    )
-                    return
+            if (
+                self.charm.config.mysql_root_interface_database
+                != self.charm.app_peer_data[MYSQL_ROOT_RELATION_DATABASE_KEY]
+                or self.charm.config.mysql_root_interface_user
+                != self.charm.app_peer_data[MYSQL_ROOT_RELATION_USER_KEY]
+            ):
+                self.charm.app.status = BlockedStatus(
+                    "Remove and re-relate `mysql` relations in order to change config"
+                )
 
     def _on_mysql_root_relation_created(self, event: RelationCreatedEvent) -> None:
         """Handle the legacy 'mysql-root' relation created event.
