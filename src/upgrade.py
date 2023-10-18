@@ -15,7 +15,6 @@ from charms.data_platform_libs.v0.upgrade import (
 )
 from charms.mysql.v0.mysql import (
     MySQLGetMySQLVersionError,
-    MySQLServerNotUpgradableError,
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
 )
@@ -216,6 +215,22 @@ class MySQLK8sUpgrade(DataUpgrade):
             failure_message = "unknown error"
             self._check_server_upgradeability()
             self.charm.unit.status = MaintenanceStatus("recovering unit after upgrade")
+            if self.charm.app.planned_units() > 1:
+                self._recover_multi_unit_cluster()
+            else:
+                self._recover_single_unit_cluster()
+            self._complete_upgrade()
+        except Exception:
+            failure_message = "Unit failed to rejoin the cluster after upgrade"
+            logger.error(failure_message)
+            self.set_unit_failed()
+            self.charm.unit.status = BlockedStatus(
+                "upgrade failed. Check logs for rollback instruction"
+            )
+
+    def _recover_multi_unit_cluster(self) -> None:
+        logger.debug("Recovering unit")
+        try:
             for attempt in Retrying(
                 stop=stop_after_attempt(RECOVER_ATTEMPTS), wait=wait_fixed(10)
             ):
@@ -227,17 +242,13 @@ class MySQLK8sUpgrade(DataUpgrade):
                             f" Retry {attempt.retry_state.attempt_number}/{RECOVER_ATTEMPTS}"
                         )
                         raise Exception
-                    self._complete_upgrade()
-                    return
-        except MySQLServerNotUpgradableError:
-            failure_message = "Incompatible mysql server upgrade"
         except RetryError:
-            failure_message = "Unit failed to rejoin the cluster after upgrade"
-        logger.error(failure_message)
-        self.set_unit_failed()
-        self.charm.unit.status = BlockedStatus(
-            "upgrade failed. Check logs for rollback instruction"
-        )
+            raise
+
+    def _recover_single_unit_cluster(self) -> None:
+        """Recover single unit cluster."""
+        logger.debug("Recovering single unit cluster")
+        self.charm._mysql.reboot_from_complete_outage()
 
     def _complete_upgrade(self):
         # complete upgrade for the unit
