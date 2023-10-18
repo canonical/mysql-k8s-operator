@@ -16,7 +16,7 @@ on:
 jobs:
   lint:
     name: Lint
-    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v4.2.3
+    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@add-aproxy-snap
 
   unit-test:
     strategy:
