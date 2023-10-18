@@ -18,30 +18,6 @@ jobs:
     name: Lint
     uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@add-aproxy-snap
 
-  unit-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        juju-version:  ["2.9", "3.1"]
-    name: Unit test charm
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install tox & poetry
-        run: |
-          pipx install tox
-          pipx install poetry
-      - name: Run tests
-        run: tox run -e unit
-        env:
-          # This env var is only to indicate Juju version to "simulate" in the unit tests
-          # No libjuju is being actually used in unit testing
-          LIBJUJU_VERSION_SPECIFIER: ${{ matrix.juju-version }}
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v3
-
   build:
     name: Build charm
     uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@add-aproxy-snap
@@ -50,23 +26,161 @@ jobs:
     permissions:
       actions: write  # Needed to manage GitHub Actions cache
 
+  collect-integration-tests:
+    name: Collect integration test groups
+    runs-on: [self-hosted, linux, X64, large, jammy]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install venv and pipx
+        run: |
+          sudo apt-get install python3-pip python3-venv -y
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+      - name: Install tox & poetry
+        run: |
+          pipx install tox
+          pipx install poetry
+      - name: Select test stability level
+        id: select-test-stability
+        shell: python
+        run: |
+          import os
+
+          if "${{ github.event_name }}" == "schedule":
+              print("Running unstable and stable tests")
+              output = "mark_expression="
+          else:
+              print("Skipping unstable tests")
+              output = "mark_expression=not unstable"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as file:
+              file.write(output)
+      - name: Collect test groups
+        id: collect-groups
+        run: tox run -e integration -- tests/integration -m '${{ steps.select-test-stability.outputs.mark_expression }}' --collect-groups
+    outputs:
+      groups: ${{ steps.collect-groups.outputs.groups }}
+
   integration-test:
-    name: Integration test charm
+    strategy:
+      fail-fast: false
+      matrix:
+        groups: ${{ fromJSON(needs.gh-hosted-collect-integration-tests.outputs.groups) }}
+        juju-snap-channel:  ["2.9/stable", "3.1/stable"]
+        include:
+          - juju-snap-channel: "3.1/stable"
+            agent-version: "3.1.6"
+            libjuju-version:  "3.2.2"
+          - juju-snap-channel: "2.9/stable"
+            agent-version: "2.9.45"
+            libjuju-version:  "2.9.44.1"
+        exclude:
+          # Disabling HA tests, as long as we want to have a limited pipeline on Juju3
+          - juju-snap-channel: "3.1/stable"
+            groups:
+              job_name: "high_availability/test_replication.py | group 1"
+          - juju-snap-channel: "3.1/stable"
+            groups:
+              job_name: "high_availability/test_self_healing.py | group 1"
+          - juju-snap-channel: "3.1/stable"
+            groups:
+              job_name: "high_availability/test_upgrade.py | group 1"
+          - juju-snap-channel: "3.1/stable"
+            groups:
+              job_name: "high_availability/test_upgrade_from_stable.py | group 1"
+    name: ${{ matrix.juju-snap-channel }} - (self hosted) ${{ matrix.groups.job_name }}
     needs:
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@add-aproxy-snap
-    with:
-      artifact-name: ${{ needs.build.outputs.artifact-name }}
-      cloud: microk8s
-      microk8s-snap-channel: latest/stable
-      juju-agent-version: 2.9.44
-    secrets:
-      integration-test: |
-        {
-          "AWS_ACCESS_KEY": "${{ secrets.AWS_ACCESS_KEY }}",
-          "AWS_SECRET_KEY": "${{ secrets.AWS_SECRET_KEY }}",
-          "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
-          "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}",
-        }
-      docker-hub-username: ${{ secrets.DOCKER_HUB_USERNAME }}
-      docker-hub-password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - collect-integration-tests
+    runs-on: [self-hosted, linux, X64, xlarge, jammy]
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Check environment resources
+        run: |
+          sudo df -h
+          sudo free
+          sudo cat /proc/cpuinfo
+      - name: Set up aproxy
+        run: |
+          sudo snap install aproxy --edge
+          sudo snap set aproxy proxy=squid.internal:3128
+          sudo nft -f - << EOF
+          define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
+          define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
+          table ip aproxy
+          flush table ip aproxy
+          table ip aproxy {
+                chain prerouting {
+                        type nat hook prerouting priority dstnat; policy accept;
+                        ip daddr != \$private-ips tcp dport { 80, 443 } counter dnat to \$default-ip:8443
+                }
+
+                chain output {
+                        type nat hook output priority -100; policy accept;
+                        ip daddr != \$private-ips tcp dport { 80, 443 } counter dnat to \$default-ip:8443
+                }
+          }
+          EOF
+      - name: Install venv and pipx
+        run: |
+          sudo apt-get install python3-pip python3-venv -y
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+
+      - name: Install tox & poetry
+        run: |
+          pipx install tox
+          pipx install poetry
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          channel: "1.28-strict/stable"
+          bootstrap-options: "--agent-version ${{ matrix.agent-version }}"
+          juju-channel: ${{ matrix.juju-snap-channel }}
+      - name: Update python-libjuju version
+        if: ${{ matrix.libjuju-version == '2.9.44.1' }}
+        run: poetry add --lock --group integration juju@'${{ matrix.libjuju-version }}'
+      - name: Download packed charm(s)
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+      - name: Select test stability level
+        id: select-test-stability
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]
+          then
+            echo Running unstable and stable tests
+            echo "mark_expression=" >> "$GITHUB_OUTPUT"
+          else
+            echo Skipping unstable tests
+            echo "mark_expression=not unstable" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run integration tests
+        run: tox run -e integration -- "${{ matrix.groups.path_to_test_file }}" --group="${{ matrix.groups.group_number }}" -m '${{ steps.select-test-stability.outputs.mark_expression }}'
+        env:
+          LIBJUJU_VERSION_SPECIFIER: ${{ matrix.libjuju-version }}
+
+#  integration-test:
+#    name: Integration test charm
+#    needs:
+#      - build
+#    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@add-aproxy-snap
+#    with:
+#      artifact-name: ${{ needs.build.outputs.artifact-name }}
+#      cloud: microk8s
+#      microk8s-snap-channel: latest/stable
+#      juju-agent-version: 2.9.44
+#    secrets:
+#      integration-test: |
+#        {
+#          "AWS_ACCESS_KEY": "${{ secrets.AWS_ACCESS_KEY }}",
+#          "AWS_SECRET_KEY": "${{ secrets.AWS_SECRET_KEY }}",
+#          "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
+#          "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}",
+#        }
+#      docker-hub-username: ${{ secrets.DOCKER_HUB_USERNAME }}
+#      docker-hub-password: ${{ secrets.DOCKER_HUB_TOKEN }}
