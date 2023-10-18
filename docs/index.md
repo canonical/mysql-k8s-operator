@@ -82,6 +82,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
   1. [Profiles](reference/r-profiles.md)
   1. [Libraries](https://charmhub.io/mysql-k8s/libraries/helpers)
   1. [Integrations](https://charmhub.io/mysql-k8s/integrations)
+  1. [Resources](https://charmhub.io/mysql-k8s/resources)
   1. [Contacts](reference/r-contacts.md)
 1. [Explanation](explanation)
   1. [Architecture](explanation/e-architecture.md)

@@ -1,3 +1,5 @@
+# Charm Testing reference
+
 There are [a lot of test types](https://en.wikipedia.org/wiki/Software_testing) available and most of them are well applicable for Charmed MySQL K8s. Here is a list prepared by Canonical:
 
 * Smoke test
