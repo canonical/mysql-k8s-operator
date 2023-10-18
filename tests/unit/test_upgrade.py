@@ -61,14 +61,18 @@ class TestUpgrade(unittest.TestCase):
         """Test the highest ordinal."""
         self.assertEqual(1, self.charm.upgrade.highest_ordinal)
 
+    @patch("mysql_k8s_helpers.MySQL.rescan_cluster")
     @patch("upgrade.MySQLK8sUpgrade._pre_upgrade_prepare")
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=MOCK_STATUS_ONLINE)
-    def test_pre_upgrade_check(self, mock_get_cluster_status, mock_pre_upgrade_prepare):
+    def test_pre_upgrade_check(
+        self, mock_get_cluster_status, mock_pre_upgrade_prepare, mock_rescan_cluster
+    ):
         """Test the pre upgrade check."""
         self.harness.set_leader(True)
         self.charm.on.config_changed.emit()
 
         self.charm.upgrade.pre_upgrade_check()
+        mock_rescan_cluster.assert_called_once()
         mock_pre_upgrade_prepare.assert_called_once()
         mock_get_cluster_status.assert_called_once()
 
