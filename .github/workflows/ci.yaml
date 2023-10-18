@@ -118,7 +118,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        groups: ${{ fromJSON(needs.gh-hosted-collect-integration-tests.outputs.groups) }}
+        groups: ${{ fromJSON(needs.collect-integration-tests.outputs.groups) }}
         juju-snap-channel:  ["2.9/stable", "3.1/stable"]
         include:
           - juju-snap-channel: "3.1/stable"
