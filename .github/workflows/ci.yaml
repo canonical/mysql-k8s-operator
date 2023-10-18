@@ -66,8 +66,9 @@ jobs:
           # This env var is only to indicate Juju version to "simulate" in the unit tests
           # No libjuju is being actually used in unit testing
           LIBJUJU_VERSION_SPECIFIER: ${{ matrix.juju-version }}
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v3
+       # Seems not to work atm for self-hosted, investigate better later
+#      - name: Upload Coverage to Codecov
+#        uses: codecov/codecov-action@v3
 
   build:
     name: Build charm
