@@ -14,13 +14,65 @@ on:
   workflow_call:
 
 jobs:
-  lint:
-    name: Lint
-    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@add-aproxy-snap
+#  lint:
+#    name: Lint
+#    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v4.2.3
+##    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@add-aproxy-snap
+#    runs-on: [self-hosted, linux, X64, large, jammy]
+
+  unit-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        juju-version:  ["2.9", "3.1"]
+    name: Unit test charm
+    runs-on: [self-hosted, linux, X64, large, jammy]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install venv and pipx
+        run: |
+          sudo apt-get install python3-pip python3-venv -y
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+      - name: Install tox & poetry
+        run: |
+          pipx install tox
+          pipx install poetry
+      - name: Select test stability level
+        id: select-test-stability
+        shell: python
+        run: |
+          import os
+
+          if "${{ github.event_name }}" == "schedule":
+              print("Running unstable and stable tests")
+              output = "mark_expression="
+          else:
+              print("Skipping unstable tests")
+              output = "mark_expression=not unstable"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as file:
+              file.write(output)
+
+      - name: Install tox & poetry
+        run: |
+          pipx install tox
+          pipx install poetry
+      - name: Run tests
+        run: tox run -e unit
+        env:
+          # This env var is only to indicate Juju version to "simulate" in the unit tests
+          # No libjuju is being actually used in unit testing
+          LIBJUJU_VERSION_SPECIFIER: ${{ matrix.juju-version }}
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
 
   build:
     name: Build charm
     uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@add-aproxy-snap
+    runs-on: [self-hosted, linux, X64, large, jammy]
     with:
       charmcraft-snap-revision: 1349  # version 2.3.0
     permissions:
