@@ -40,7 +40,7 @@ import httpx
 from urllib.parse import urlparse
 
 
-def NoProxyExtendClient(config: SingleConfig, timeout: httpx.Timeout) -> httpx.Client:
+def NoProxyExtendClient(config: SingleConfig, timeout: httpx.Timeout, trust_env=True) -> httpx.Client:
     """Reviews the NO_PROXY setting: it must contain the base_url's IP/hostname, otherwise add it."""
     if "HTTP_PROXY" in os.environ.keys() or "HTTPS_PROXY" in os.environ.keys():
         # urlparse returns an <ip>|<hostname>:<port>, we do not need the port
@@ -49,7 +49,7 @@ def NoProxyExtendClient(config: SingleConfig, timeout: httpx.Timeout) -> httpx.C
         if host not in os.environ["NO_PROXY"].split(","):  # compare with a list, as we want to avoid matching "192.168.0.1" "192.168.0.1/24,10.0.0.0/8" string
             os.environ["NO_PROXY"] = ",".join([host, os.environ["NO_PROXY"] ])
         print("TESTING" + os.environ["NO_PROXY"])
-        return httpx.Client(**httpx_parameters(config, timeout))
+        return httpx.Client(**httpx_parameters(config, timeout, trust_env))
 
 # Override the AdapterClient
 GenericClient.AdapterClient = staticmethod(NoProxyExtendClient)
