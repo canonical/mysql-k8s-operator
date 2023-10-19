@@ -150,8 +150,8 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         )
 
 
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@pytest.mark.abort_on_fail
 async def test_osm_pol_operations(ops_test: OpsTest) -> None:
     """Test the existence of databases and tables created by osm-pol's migrations."""
     show_databases_sql = [

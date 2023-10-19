@@ -3,7 +3,7 @@
 name: Tests
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-large
   cancel-in-progress: true
 
 on:
@@ -14,9 +14,11 @@ on:
   workflow_call:
 
 jobs:
-  lint:
-    name: Lint
-    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v4.2.3
+#  lint:
+#    name: Lint
+#    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v4.2.3
+##    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@add-aproxy-snap
+#    runs-on: [self-hosted, linux, X64, large, jammy]
 
   unit-test:
     strategy:
@@ -24,11 +26,36 @@ jobs:
       matrix:
         juju-version:  ["2.9", "3.1"]
     name: Unit test charm
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64, large, jammy]
     timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install venv and pipx
+        run: |
+          sudo apt-get install python3-pip python3-venv -y
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+      - name: Install tox & poetry
+        run: |
+          pipx install tox
+          pipx install poetry
+      - name: Select test stability level
+        id: select-test-stability
+        shell: python
+        run: |
+          import os
+
+          if "${{ github.event_name }}" == "schedule":
+              print("Running unstable and stable tests")
+              output = "mark_expression="
+          else:
+              print("Skipping unstable tests")
+              output = "mark_expression=not unstable"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as file:
+              file.write(output)
+
       - name: Install tox & poetry
         run: |
           pipx install tox
@@ -39,52 +66,59 @@ jobs:
           # This env var is only to indicate Juju version to "simulate" in the unit tests
           # No libjuju is being actually used in unit testing
           LIBJUJU_VERSION_SPECIFIER: ${{ matrix.juju-version }}
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v3
+       # Seems not to work atm for self-hosted, investigate better later
+#      - name: Upload Coverage to Codecov
+#        uses: codecov/codecov-action@v3
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v4.2.3
+    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@add-aproxy-snap
     with:
       charmcraft-snap-revision: 1349  # version 2.3.0
     permissions:
       actions: write  # Needed to manage GitHub Actions cache
 
-  gh-hosted-collect-integration-tests:
-    name: (GH hosted) Collect integration test groups
-    needs:
-      - lint
-      - unit-test
-    runs-on: ubuntu-latest
+  collect-integration-tests:
+    name: Collect integration test groups
+    runs-on: [self-hosted, linux, X64, large, jammy]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install venv and pipx
+        run: |
+          sudo apt-get install python3-pip python3-venv -y
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
       - name: Install tox & poetry
         run: |
           pipx install tox
           pipx install poetry
       - name: Select test stability level
         id: select-test-stability
+        shell: python
         run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]
-          then
-            echo Running unstable and stable tests
-            echo "mark_expression=" >> "$GITHUB_OUTPUT"
-          else
-            echo Skipping unstable tests
-            echo "mark_expression=not unstable" >> "$GITHUB_OUTPUT"
-          fi
+          import os
+
+          if "${{ github.event_name }}" == "schedule":
+              print("Running unstable and stable tests")
+              output = "mark_expression="
+          else:
+              print("Skipping unstable tests")
+              output = "mark_expression=not unstable"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as file:
+              file.write(output)
       - name: Collect test groups
         id: collect-groups
         run: tox run -e integration -- tests/integration -m '${{ steps.select-test-stability.outputs.mark_expression }}' --collect-groups
     outputs:
       groups: ${{ steps.collect-groups.outputs.groups }}
 
-  gh-hosted-integration-test:
+  integration-test:
     strategy:
       fail-fast: false
       matrix:
-        groups: ${{ fromJSON(needs.gh-hosted-collect-integration-tests.outputs.groups) }}
+        groups: ${{ fromJSON(needs.collect-integration-tests.outputs.groups) }}
         juju-snap-channel:  ["2.9/stable", "3.1/stable"]
         include:
           - juju-snap-channel: "3.1/stable"
@@ -107,17 +141,47 @@ jobs:
           - juju-snap-channel: "3.1/stable"
             groups:
               job_name: "high_availability/test_upgrade_from_stable.py | group 1"
-    name: ${{ matrix.juju-snap-channel }} - (GH hosted) ${{ matrix.groups.job_name }}
+    name: ${{ matrix.juju-snap-channel }} - (self hosted) ${{ matrix.groups.job_name }}
     needs:
-      - lint
-      - unit-test
       - build
-      - gh-hosted-collect-integration-tests
-    runs-on: ubuntu-latest
+      - collect-integration-tests
+    runs-on: [self-hosted, linux, X64, xlarge, jammy]
     timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Check environment resources
+        run: |
+          sudo df -h
+          sudo free
+          sudo cat /proc/cpuinfo
+      - name: Set up aproxy
+        run: |
+          sudo snap install aproxy --edge
+          sudo snap set aproxy proxy=squid.internal:3128
+          sudo nft -f - << EOF
+          define default-ip = $(ip route get $(ip route show 0.0.0.0/0 | grep -oP 'via \K\S+') | grep -oP 'src \K\S+')
+          define private-ips = { 10.0.0.0/8, 127.0.0.1/8, 172.16.0.0/12, 192.168.0.0/16 }
+          table ip aproxy
+          flush table ip aproxy
+          table ip aproxy {
+                chain prerouting {
+                        type nat hook prerouting priority dstnat; policy accept;
+                        ip daddr != \$private-ips tcp dport { 80, 443 } counter dnat to \$default-ip:8443
+                }
+
+                chain output {
+                        type nat hook output priority -100; policy accept;
+                        ip daddr != \$private-ips tcp dport { 80, 443 } counter dnat to \$default-ip:8443
+                }
+          }
+          EOF
+      - name: Install venv and pipx
+        run: |
+          sudo apt-get install python3-pip python3-venv -y
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+
       - name: Install tox & poetry
         run: |
           pipx install tox
@@ -151,10 +215,24 @@ jobs:
         run: tox run -e integration -- "${{ matrix.groups.path_to_test_file }}" --group="${{ matrix.groups.group_number }}" -m '${{ steps.select-test-stability.outputs.mark_expression }}'
         env:
           LIBJUJU_VERSION_SPECIFIER: ${{ matrix.libjuju-version }}
-          SECRETS_FROM_GITHUB: |
-            {
-              "AWS_ACCESS_KEY": "${{ secrets.AWS_ACCESS_KEY }}",
-              "AWS_SECRET_KEY": "${{ secrets.AWS_SECRET_KEY }}",
-              "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
-              "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}",
-            }
+
+#  integration-test:
+#    name: Integration test charm
+#    needs:
+#      - build
+#    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@add-aproxy-snap
+#    with:
+#      artifact-name: ${{ needs.build.outputs.artifact-name }}
+#      cloud: microk8s
+#      microk8s-snap-channel: latest/stable
+#      juju-agent-version: 2.9.44
+#    secrets:
+#      integration-test: |
+#        {
+#          "AWS_ACCESS_KEY": "${{ secrets.AWS_ACCESS_KEY }}",
+#          "AWS_SECRET_KEY": "${{ secrets.AWS_SECRET_KEY }}",
+#          "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
+#          "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}",
+#        }
+#      docker-hub-username: ${{ secrets.DOCKER_HUB_USERNAME }}
+#      docker-hub-password: ${{ secrets.DOCKER_HUB_TOKEN }}
