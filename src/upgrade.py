@@ -15,6 +15,7 @@ from charms.data_platform_libs.v0.upgrade import (
 )
 from charms.mysql.v0.mysql import (
     MySQLGetMySQLVersionError,
+    MySQLRescanClusterError,
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
 )
@@ -87,6 +88,17 @@ class MySQLK8sUpgrade(DataUpgrade):
                 for item in status_dict["defaultreplicaset"]["topology"].values()
                 if not item.get("instanceerrors", [])
             ].count("online")
+
+        try:
+            # ensure cluster node addresses are consistent in cluster metadata
+            # https://github.com/canonical/mysql-k8s-operator/issues/327
+            self.charm._mysql.rescan_cluster()
+        except MySQLRescanClusterError:
+            raise ClusterNotReadyError(
+                message=fail_message,
+                cause="Failed to rescan cluster",
+                resolution="Check the cluster status",
+            )
 
         if cluster_status := self.charm._mysql.get_cluster_status(extended=True):
             if _count_online_instances(cluster_status) < self.charm.app.planned_units():
