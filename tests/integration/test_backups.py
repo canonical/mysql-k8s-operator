@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
+import os
 from pathlib import Path
 
 import boto3
@@ -37,6 +38,12 @@ CLOUD_CONFIGS = {
         "path": "mysql-k8s",
         "region": "",
     },
+    "ceph": {
+        "endpoint": os.environ["S3_SERVER_URL"],
+        "bucket": os.environ["S3_BUCKET"],
+        "path": "mysql-k8s",
+        "region": os.environ["S3_REGION"],
+    },
 }
 S3_INTEGRATOR = "s3-integrator"
 TIMEOUT = 10 * 60
@@ -61,6 +68,10 @@ def cloud_credentials(github_secrets) -> dict[str, dict[str, str]]:
         "gcp": {
             "access-key": github_secrets["GCP_ACCESS_KEY"],
             "secret-key": github_secrets["GCP_SECRET_KEY"],
+        },
+        "ceph": {
+            "access-key": os.environ["S3_ACCESS_KEY"],
+            "secret-key": os.environ["S3_SECRET_KEY"],
         },
     }
 
