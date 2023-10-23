@@ -116,15 +116,17 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 50
+LIBPATCH = 51
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
 
 BYTES_1GiB = 1073741824  # 1 gibibyte
 BYTES_1GB = 1000000000  # 1 gigabyte
+BYTES_1MB = 1000000  # 1 megabyte
 BYTES_1MiB = 1048576  # 1 mebibyte
 RECOVERY_CHECK_TIME = 10  # seconds
+GET_MEMBER_STATE_TIME = 10  # seconds
 
 
 class Error(Exception):
@@ -560,7 +562,7 @@ class MySQLCharmBase(CharmBase, ABC):
             secret = self.model.get_secret(id=secret_id)
             content = secret.get_content()
             self.app_secrets = content
-            logger.debug(f"Retrieved secert {key} for app from juju")
+            logger.debug(f"Retrieved secret {key} for app from juju")
 
         return self.app_secrets.get(key)
 
@@ -756,19 +758,21 @@ class MySQLBase(ABC):
         self.backups_user = backups_user
         self.backups_password = backups_password
 
-    def render_myqld_configuration(
+    def render_mysqld_configuration(
         self,
         *,
         profile: str,
+        memory_limit: Optional[int] = None,
         snap_common: str = "",
-    ) -> str:
+    ) -> tuple[str, dict]:
         """Render mysqld ini configuration file.
 
         Args:
             profile: profile to use for the configuration (testing, production)
+            memory_limit: memory limit to use for the configuration in bytes
             snap_common: snap common directory (for log files locations in vm)
 
-        Returns: mysqld ini file string content
+        Returns: a tuple with mysqld ini file string content and a the config dict
         """
         performance_schema_instrument = ""
         if profile == "testing":
@@ -779,6 +783,10 @@ class MySQLBase(ABC):
             performance_schema_instrument = "'memory/%=OFF'"
         else:
             available_memory = self.get_available_memory()
+            if memory_limit:
+                # when memory limit is set, we need to use the minimum
+                # between the available memory and the limit
+                available_memory = min(available_memory, memory_limit)
             (
                 innodb_buffer_pool_size,
                 innodb_buffer_pool_chunk_size,
@@ -817,7 +825,7 @@ class MySQLBase(ABC):
 
         with io.StringIO() as string_io:
             config.write(string_io)
-            return string_io.getvalue()
+            return string_io.getvalue(), dict(config["mysqld"])
 
     def configure_mysql_users(self):
         """Configure the MySQL users for the instance.
@@ -1141,6 +1149,11 @@ class MySQLBase(ABC):
         """
         if not instance_address:
             instance_address = self.instance_address
+
+        # escape variable values when needed
+        if not re.match(r"^[0-9,a-z,A-Z$_]+$", value):
+            value = f"`{value}`"
+
         logger.debug(f"Setting {variable} to {value} on {instance_address}")
         set_var_command = [
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{instance_address}')",
@@ -1771,6 +1784,15 @@ class MySQLBase(ABC):
             if value["memberrole"] == "primary":
                 return label
 
+    def is_unit_primary(self, unit_label: str) -> bool:
+        """Test if a given unit is the cluster primary.
+
+        Args:
+            unit_label: The label of the unit to test
+        """
+        primary_label = self.get_primary_label()
+        return primary_label == unit_label
+
     def set_cluster_primary(self, new_primary_address: str) -> None:
         """Set the cluster primary.
 
@@ -1934,7 +1956,7 @@ class MySQLBase(ABC):
             )
             raise MySQLCheckUserExistenceError(e.message)
 
-    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(10))
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(GET_MEMBER_STATE_TIME))
     def get_member_state(self) -> Tuple[str, str]:
         """Get member status in cluster.
 

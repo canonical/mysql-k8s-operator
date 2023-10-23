@@ -69,7 +69,6 @@ class TestUpgrade(unittest.TestCase):
     ):
         """Test the pre upgrade check."""
         self.harness.set_leader(True)
-        self.charm.on.config_changed.emit()
 
         self.charm.upgrade.pre_upgrade_check()
         mock_rescan_cluster.assert_called_once()
@@ -140,7 +139,6 @@ class TestUpgrade(unittest.TestCase):
     ):
         """Test the pre upgrade prepare."""
         self.harness.set_leader(True)
-        self.charm.on.config_changed.emit()
 
         self.charm.upgrade._pre_upgrade_prepare()
 

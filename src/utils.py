@@ -71,3 +71,18 @@ def any_memory_to_bytes(mem_str) -> int:
 
         num = int(memory)
         return int(num * units[unit])
+
+
+def compare_dictionaries(dict1: dict, dict2: dict) -> set:
+    """Compare two dictionaries and return a set of keys that are different."""
+    different_keys = set()
+
+    # exiting keys with different values
+    for key in dict1.keys():
+        if key in dict2 and dict1[key] != dict2[key]:
+            different_keys.add(key)
+
+    # non existent keys
+    different_keys = different_keys | dict2.keys() ^ dict1.keys()
+
+    return different_keys

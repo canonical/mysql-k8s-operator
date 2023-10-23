@@ -127,10 +127,10 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
     await action.wait()
 
     logger.info("Wait for upgrade to complete")
-    async with ops_test.fast_forward("60s"):
-        await ops_test.model.wait_for_idle(
-            apps=[MYSQL_APP_NAME], status="active", idle_period=30, timeout=TIMEOUT
-        )
+    await ops_test.model.block_until(
+        lambda: all(unit.workload_status == "active" for unit in application.units),
+        timeout=TIMEOUT,
+    )
 
     logger.info("Ensure continuous_writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test)
@@ -196,7 +196,10 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     await action.wait()
 
     logger.info("Wait for application to recover")
-    await ops_test.model.wait_for_idle(apps=[MYSQL_APP_NAME], status="active", timeout=TIMEOUT)
+    await ops_test.model.block_until(
+        lambda: all(unit.workload_status == "active" for unit in application.units),
+        timeout=TIMEOUT,
+    )
 
     logger.info("Ensure continuous_writes after rollback procedure")
     await ensure_all_units_continuous_writes_incrementing(ops_test)

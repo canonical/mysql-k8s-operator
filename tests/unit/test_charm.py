@@ -99,6 +99,7 @@ class TestCharm(unittest.TestCase):
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("mysql_k8s_helpers.MySQL.write_content_to_file")
     @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.create_cluster_set")
     @patch("mysql_k8s_helpers.MySQL.initialize_juju_units_operations_table")
@@ -107,7 +108,6 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.configure_mysql_users")
     @patch("mysql_k8s_helpers.MySQL.configure_instance")
     @patch("mysql_k8s_helpers.MySQL.create_cluster")
-    @patch("mysql_k8s_helpers.MySQL.write_mysqld_config")
     @patch("mysql_k8s_helpers.MySQL.initialise_mysqld")
     @patch("mysql_k8s_helpers.MySQL.fix_data_dir")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster")
@@ -127,7 +127,6 @@ class TestCharm(unittest.TestCase):
         _is_instance_in_cluster,
         _initialise_mysqld,
         _fix_data_dir,
-        _create_custom_confir_file,
         _create_cluster,
         _configure_instance,
         _configure_mysql_users,
@@ -136,6 +135,7 @@ class TestCharm(unittest.TestCase):
         _initialize_juju_units_operations_table,
         _is_data_dir_initialised,
         _create_cluster_set,
+        _write_content_to_file,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -147,7 +147,6 @@ class TestCharm(unittest.TestCase):
         self.assertTrue(isinstance(self.charm.unit.status, WaitingStatus))
 
         self.harness.set_leader()
-        self.charm.on.config_changed.emit()
         # Trigger pebble ready after leader election
         self.harness.container_pebble_ready("mysql")
         self.assertTrue(isinstance(self.charm.unit.status, ActiveStatus))
@@ -169,7 +168,6 @@ class TestCharm(unittest.TestCase):
         self.harness.update_relation_data(
             self.peer_relation_id, f"{APP_NAME}/1", {"configured": "True"}
         )
-
         _mysql_mock.get_mysql_version.return_value = "8.0.25"
         self.charm._mysql = _mysql_mock
         self.harness.container_pebble_ready("mysql")
@@ -179,8 +177,8 @@ class TestCharm(unittest.TestCase):
     def test_mysql_pebble_ready_exception(self, _mysql_mock):
         # Test exception raised in bootstrapping
         self.harness.set_leader()
-        self.charm.on.config_changed.emit()
         self.charm._mysql = _mysql_mock
+        _mysql_mock.render_mysqld_configuration.return_value = ("content", {"config": "data"})
         _mysql_mock.get_innodb_buffer_pool_parameters.return_value = (123456, None, None)
         _mysql_mock.initialise_mysqld.side_effect = MySQLInitialiseMySQLDError
         # Trigger pebble ready after leader election
@@ -203,7 +201,6 @@ class TestCharm(unittest.TestCase):
         # Test mysql property instance of mysql_k8s_helpers.MySQL
         # set leader and populate peer relation data
         self.harness.set_leader()
-        self.charm.on.config_changed.emit()
         self.harness.update_relation_data(
             self.peer_relation_id,
             f"{APP_NAME}/1",
