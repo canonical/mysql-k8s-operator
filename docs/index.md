@@ -47,6 +47,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
     1. [Manage units](how-to/h-setup/h-manage-units.md)
     1. [Enable encryption](how-to/h-setup/h-enable-encryption.md)
     1. [Manage applications](how-to/h-setup/h-manage-app.md)
+    1. [Async replication](how-to/h-setup/h-async-replication.md)
   1. [Backup](how-to/h-to-manage-backups)
     1. [Configure S3 AWS](how-to/h-to-manage-backups/h-configure-s3-aws.md)
     1. [Configure S3 RadosGW](how-to/h-to-manage-backups/h-configure-s3-radosgw.md)
