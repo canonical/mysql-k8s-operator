@@ -2,6 +2,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import base64
 import logging
 import os
 from pathlib import Path
@@ -25,6 +26,9 @@ from .high_availability.high_availability_helpers import (
 
 logger = logging.getLogger(__name__)
 
+with open(os.environ["S3_CA_BUNDLE_PATH"]) as f:
+    s3_ca_chain = base64.b64encode(f.read().encode("utf-8")).decode("utf-8")
+
 CLOUD_CONFIGS = {
     "aws": {
         "endpoint": "https://s3.amazonaws.com",
@@ -43,6 +47,7 @@ CLOUD_CONFIGS = {
         "bucket": os.environ["S3_BUCKET"],
         "path": "mysql-k8s",
         "region": os.environ["S3_REGION"],
+        "tls-ca-chain": s3_ca_chain,
     },
 }
 S3_INTEGRATOR = "s3-integrator"
@@ -77,7 +82,7 @@ def cloud_credentials(github_secrets) -> dict[str, dict[str, str]]:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def clean_backups_from_buckets(cloud_credentials) -> None:
+def clean_backups_from_buckets(cloud_credentials):
     """Teardown to clean up created backups from clouds."""
     yield
 
@@ -116,9 +121,9 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     await rotate_credentials(mysql_unit, username="root", password=ROOT_PASSWORD)
 
     # deploy and relate to s3-integrator
-    logger.info("Deploying s3 integrator")
+    logger.info("Deploying s3 integrator and tls operator")
 
-    await ops_test.model.deploy(S3_INTEGRATOR, channel="edge")
+    await ops_test.model.deploy(S3_INTEGRATOR, channel="stable")
     await ops_test.model.relate(mysql_application_name, S3_INTEGRATOR)
 
     await ops_test.model.wait_for_idle(
@@ -150,9 +155,10 @@ async def test_backup(ops_test: OpsTest, cloud_credentials) -> None:
 
     for cloud_name, config in CLOUD_CONFIGS.items():
         # set the s3 config and credentials
-        logger.info(f"Syncing credentials for {cloud_name}")
 
+        logger.info(f"Setting s3 config for {cloud_name}")
         await ops_test.model.applications[S3_INTEGRATOR].set_config(config)
+        logger.info(f"Syncing credentials for {cloud_name}")
         action = await ops_test.model.units[f"{S3_INTEGRATOR}/0"].run_action(
             "sync-s3-credentials", **cloud_credentials[cloud_name]
         )
