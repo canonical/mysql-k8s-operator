@@ -2338,15 +2338,18 @@ class MySQLBase(ABC):
 
         try:
             logger.debug(f"Command to retrieve backup: {' '.join(retrieve_backup_command)}")
+            env_extra = {
+                "ACCESS_KEY_ID": s3_parameters["access-key"],
+                "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
+            }
+            if s3_parameters.get("tls-ca-chain"):
+                env_extra["AWS_CA_BUNDLE"] = s3_parameters["tls-ca-chain"][0]
 
             # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
             stdout, stderr = self._execute_commands(
                 retrieve_backup_command,
                 bash=True,
-                env_extra={
-                    "ACCESS_KEY_ID": s3_parameters["access-key"],
-                    "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
-                },
+                env_extra=env_extra,
                 user=user,
                 group=group,
             )
