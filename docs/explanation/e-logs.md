@@ -2,9 +2,9 @@
 
 ## Overview
 
-The charm stores its logs in `/var/log/mysql`.
+The charm stores its logs in `/var/log/mysql`. It is recommended to set up a COS integration so that these log files can be streamed to Loki. This leads to better persistence and security of the logs.
 
-```
+```shell
 root@mysql-k8s-0:/# ls -lahR /var/log/mysql
 /var/log/mysql:
 total 28K
@@ -13,7 +13,7 @@ drwxr-xr-x 1 root root 4.0K Sep 27 20:55 ..
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_error
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_general
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:45 archive_slowquery
--rw-r----- 1 mysql mysql 0 Oct 23 20:46 error.log
+-rw-r----- 1 mysql mysql 1.2K Oct 23 20:46 error.log
 -rw-r----- 1 mysql mysql 1.7K Oct 23 20:46 general.log
 
 /var/log/mysql/archive_error:
@@ -21,7 +21,7 @@ total 20K
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 .
 drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 ..
 -rw-r----- 1 mysql mysql 8.7K Oct 23 20:44 error.log-43_2045
--rw-r----- 1 mysql mysql 0 Oct 23 20:45 error.log-43_2046
+-rw-r----- 1 mysql mysql 1.1K Oct 23 20:45 error.log-43_2046
 
 /var/log/mysql/archive_general:
 total 8.0M
@@ -38,7 +38,7 @@ drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 ..
 
 The following is a sample of the error logs, with format `time thread [label] [err_code] [subsystem] msg`:
 
-```
+```shell
 2023-10-23T11:57:44.924594Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.34-0ubuntu0.22.04.1) initializing of server in progress as process 16                                              
 2023-10-23T11:57:44.935004Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.         
 2023-10-23T11:57:50.420672Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.         
@@ -73,7 +73,7 @@ tory.
 
 The following is a sample of the general logs, with format `time thread_id command_type query_body`:
 
-```
+```shell
 Time                 Id Command    Argument                                                          
 2023-10-23T20:50:02.023329Z        94 Quit                                                        
 2023-10-23T20:50:02.667063Z        95 Connect                                                       
@@ -91,7 +91,7 @@ mode_and_not_super_user`, `ssl_type`, `ssl_cipher`, `x509_issuer`, `x509_subject
 
 The following is a sample of the slowquery log:
 
-```
+```shell
 Time                 Id Command    Argument
 # Time: 2023-10-23T22:22:47.564327Z
 # User@Host: serverconfig[serverconfig] @ localhost [127.0.0.1]  Id:    21
