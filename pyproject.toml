@@ -63,7 +63,7 @@ pytest-operator-groups = {git = "https://github.com/canonical/data-platform-work
 juju = "^3.2.2"
 ops = "^2.5.0"
 pytest-mock = "^3.11.1"
-mysql-connector-python = "~8.0.33"
+mysql-connector-python = "~8.2.0"
 tenacity = "^8.2.2"
 boto3 = "^1.28.22"
 pyyaml = "^6.0.1"
