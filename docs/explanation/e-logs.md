@@ -2,7 +2,7 @@
 
 ## Overview
 
-The charm stores its logs in `/var/log/mysql`. It is recommended to set up a COS integration so that these log files can be streamed to Loki. This leads to better persistence and security of the logs.
+The charm stores its logs in `/var/log/mysql`. It is recommended to set up a [COS integration](/t/9981) so that these log files can be streamed to Loki. This leads to better persistence and security of the logs.
 
 ```shell
 root@mysql-k8s-0:/# ls -lahR /var/log/mysql
