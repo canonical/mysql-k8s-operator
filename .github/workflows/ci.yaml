@@ -74,7 +74,10 @@ jobs:
           fi
       - name: Collect test groups
         id: collect-groups
-        run: tox run -e integration -- tests/integration -m '${{ steps.select-test-stability.outputs.mark_expression }}' --collect-groups
+        run: |
+          # touch microceph variables file to allow tox run
+          touch microceph.source
+          tox run -e integration -- tests/integration -m '${{ steps.select-test-stability.outputs.mark_expression }}' --collect-groups
     outputs:
       groups: ${{ steps.collect-groups.outputs.groups }}
 
