@@ -2,9 +2,9 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import base64
 import logging
 import os
+import socket
 from pathlib import Path
 
 import boto3
@@ -26,8 +26,7 @@ from .high_availability.high_availability_helpers import (
 
 logger = logging.getLogger(__name__)
 
-with open(os.environ["S3_CA_BUNDLE_PATH"]) as f:
-    s3_ca_chain = base64.b64encode(f.read().encode("utf-8")).decode("utf-8")
+host_ip = socket.gethostbyname(socket.gethostname())
 
 CLOUD_CONFIGS = {
     "aws": {
@@ -43,11 +42,10 @@ CLOUD_CONFIGS = {
         "region": "",
     },
     "ceph": {
-        "endpoint": os.environ["S3_SERVER_URL"],
+        "endpoint": f"http://{host_ip}",
         "bucket": os.environ["S3_BUCKET"],
         "path": "mysql-k8s",
         "region": os.environ["S3_REGION"],
-        "tls-ca-chain": s3_ca_chain,
     },
 }
 S3_INTEGRATOR = "s3-integrator"
