@@ -133,14 +133,14 @@ jobs:
         if: ${{ matrix.libjuju-version == '2.9.44.1' }}
         run: poetry add --lock --group integration juju@'${{ matrix.libjuju-version }}'
       - name: Setup microceph
-        uses: phvalguima/microceph-action@v0.3
+        uses: phvalguima/microceph-action@v0.3.1
         with:
           channel: 'latest/edge'
           devname: '/dev/sdi'
           accesskey: 'accesskey'
           secretkey: 'secretkey'
           bucket: 'testbucket'
-          osdsize: '5G'
+          osdsize: '1G'
       - name: Download packed charm(s)
         uses: actions/download-artifact@v3
         with:
