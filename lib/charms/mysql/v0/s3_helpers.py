@@ -59,9 +59,7 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
             region_name=s3_parameters["region"] or None,
         )
 
-        s3 = session.resource(
-            "s3", endpoint_url=s3_parameters["endpoint"], verify=_tls_ca_chain_path(s3_parameters)
-        )
+        s3 = session.resource("s3", endpoint_url=s3_parameters["endpoint"])
 
         bucket = s3.Bucket(s3_parameters["bucket"])
 
@@ -78,22 +76,6 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
         return False
 
     return True
-
-
-def _tls_ca_chain_path(s3_parameters: Dict) -> Optional[str]:
-    """Return the path to the CA certificate if it exists.
-
-    Returns: The path to the CA certificate if it exists, None otherwise.
-    """
-    if content := s3_parameters.get("tls-ca-chain"):
-        with tempfile.NamedTemporaryFile(
-            mode="w", dir="/tmp", encoding="utf-8", delete=False
-        ) as temp_file:
-            temp_file.write(content[0])
-            temp_file.flush()
-            return temp_file.name
-
-    return None
 
 
 def _compile_backups_from_file_ids(
@@ -135,7 +117,6 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
             aws_secret_access_key=s3_parameters["secret-key"],
             endpoint_url=s3_parameters["endpoint"],
             region_name=s3_parameters["region"] or None,
-            verify=_tls_ca_chain_path(s3_parameters),
         )
         list_objects_v2_paginator = s3_client.get_paginator("list_objects_v2")
         s3_path_directory = (
@@ -208,7 +189,6 @@ def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str
         aws_secret_access_key=s3_parameters["secret-key"],
         endpoint_url=s3_parameters["endpoint"],
         region_name=s3_parameters["region"] or None,
-        verify=_tls_ca_chain_path(s3_parameters),
     )
 
     try:
