@@ -156,6 +156,16 @@ jobs:
             echo Skipping unstable tests
             echo "mark_expression=not unstable" >> "$GITHUB_OUTPUT"
           fi
+      - name: Setup microceph
+        # setup microceph before tests
+        uses: phvalguima/microceph-action@v0.3.1
+        with:
+          channel: 'latest/edge'
+          devname: '/dev/sdi'
+          accesskey: 'accesskey'
+          secretkey: 'secretkey'
+          bucket: 'testbucket'
+          osdsize: '1G'
       - name: Run integration tests
         run: tox run -e integration -- "${{ matrix.groups.path_to_test_file }}" --group="${{ matrix.groups.group_number }}" -m '${{ steps.select-test-stability.outputs.mark_expression }}'
         env:
