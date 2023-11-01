@@ -123,7 +123,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 53
+LIBPATCH = 54
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -2338,6 +2338,7 @@ class MySQLBase(ABC):
 
         try:
             logger.debug(f"Command to retrieve backup: {' '.join(retrieve_backup_command)}")
+
             # ACCESS_KEY_ID and SECRET_ACCESS_KEY envs auto picked by xbcloud
             stdout, stderr = self._execute_commands(
                 retrieve_backup_command,
