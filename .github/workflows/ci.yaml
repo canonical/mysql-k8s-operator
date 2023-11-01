@@ -72,12 +72,20 @@ jobs:
             echo Skipping unstable tests
             echo "mark_expression=not unstable" >> "$GITHUB_OUTPUT"
           fi
+      - name: Setup microceph
+        # setup microceph before any tox call due to it writing a file
+        # used by tox
+        uses: phvalguima/microceph-action@v0.3.1
+        with:
+          channel: 'latest/edge'
+          devname: '/dev/sdi'
+          accesskey: 'accesskey'
+          secretkey: 'secretkey'
+          bucket: 'testbucket'
+          osdsize: '1G'
       - name: Collect test groups
         id: collect-groups
-        run: |
-          # touch microceph variables file to allow tox run
-          touch microceph.source
-          tox run -e integration -- tests/integration -m '${{ steps.select-test-stability.outputs.mark_expression }}' --collect-groups
+        run: tox run -e integration -- tests/integration -m '${{ steps.select-test-stability.outputs.mark_expression }}' --collect-groups
     outputs:
       groups: ${{ steps.collect-groups.outputs.groups }}
 
@@ -133,15 +141,6 @@ jobs:
       - name: Update python-libjuju version
         if: ${{ matrix.libjuju-version == '2.9.44.1' }}
         run: poetry add --lock --group integration juju@'${{ matrix.libjuju-version }}'
-      - name: Setup microceph
-        uses: phvalguima/microceph-action@v0.3.1
-        with:
-          channel: 'latest/edge'
-          devname: '/dev/sdi'
-          accesskey: 'accesskey'
-          secretkey: 'secretkey'
-          bucket: 'testbucket'
-          osdsize: '1G'
       - name: Download packed charm(s)
         uses: actions/download-artifact@v3
         with:
