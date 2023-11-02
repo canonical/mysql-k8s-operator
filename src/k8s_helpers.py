@@ -15,6 +15,7 @@ from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.resources.core_v1 import Node, Pod, Service
 from ops.charm import CharmBase
 from tenacity import retry, stop_after_attempt, wait_fixed
+from constants import CONTAINER_NAME
 
 from utils import any_memory_to_bytes
 
@@ -23,6 +24,8 @@ logger = logging.getLogger(__name__)
 # http{x,core} clutter the logs with debug messages
 logging.getLogger("httpcore").setLevel(logging.ERROR)
 logging.getLogger("httpx").setLevel(logging.ERROR)
+
+SIDECAR_MEM = "250Mi"
 
 
 class KubernetesClientError(Exception):
@@ -208,3 +211,29 @@ class KubernetesHelpers:
             else:
                 logger.exception("Kubernetes statefulset patch failed")
             raise KubernetesClientError
+
+    def init_statefulset_patch(self):
+        """Patch the statefulSet's `spec.template.spec` with custom values."""
+        try:
+            statefulset = self.client.get(
+                StatefulSet, name=self.app_name, namespace=self.namespace
+            )
+            # Default terminationGracePeriodSeconds to 24h
+            statefulset.spec.template.spec.terminationGracePeriodSeconds = 86400
+            # runtime containers patch
+            for container in statefulset.spec.template.spec.containers:
+                if container.name == "charm":
+                    container.resources.limits = {"memory": SIDECAR_MEM}
+                    container.resources.requests = {"memory": SIDECAR_MEM}
+                if container.name == CONTAINER_NAME:
+                    container.resources.limits = {"memory": "4Gi"}
+                    container.resources.requests = {"memory": "4Gi"}
+
+            # init containers patch
+            for container in statefulset.spec.template.spec.initContainers:
+                container.resources.limits = {"memory": SIDECAR_MEM}
+                container.resources.requests = {"memory": SIDECAR_MEM}
+
+            self.client.patch(StatefulSet, name=self.app_name, obj=statefulset)
+        except ApiError:
+            logger.exception("FAILED TO PATCH")
