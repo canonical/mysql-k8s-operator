@@ -26,6 +26,7 @@ logging.getLogger("httpcore").setLevel(logging.ERROR)
 logging.getLogger("httpx").setLevel(logging.ERROR)
 
 SIDECAR_MEM = "250Mi"
+SECONDS_DAY = 86400
 
 
 class KubernetesClientError(Exception):
@@ -225,46 +226,58 @@ class KubernetesHelpers:
                 StatefulSet, name=self.app_name, namespace=self.namespace
             )
             # Default terminationGracePeriodSeconds to 24h
-            statefulset.spec.template.spec.terminationGracePeriodSeconds = 86400
+            statefulset.spec.template.spec.terminationGracePeriodSeconds = SECONDS_DAY
 
-            # node total cpu count
-            cpu_count = self.get_node_allocable_cpu()
+            constraints = self.get_resources_limits(CONTAINER_NAME)
+            # user set constraints
+            workload_mem = constraints.get("memory")
+            workload_cpu = constraints.get("cpu")
 
-            # runtime containers patch
-            for container in statefulset.spec.template.spec.containers:
-                if container.name == "charm":
-                    container.resources.limits = container.resources.requests = {
-                        "memory": SIDECAR_MEM,
-                        "cpu": 0.1,
-                    }
-                if container.name == CONTAINER_NAME:
-                    # workload container
-                    if constrained_mem := self.get_resources_limits(container.name).get("memory"):
-                        # memory already constrained by the user set constraint
-                        workload_mem = constrained_mem
-                    else:
-                        # use allocatable memory as workload memory
-                        workload_mem = f"{int(self.get_node_allocable_memory()/1000)}k"
+            if workload_cpu and workload_mem:
+                # both constraints set, use them to patch the statefulSet
+                # and get Garanteed QoS Class
+                for container in statefulset.spec.template.spec.containers:
+                    if container.name == "charm":
+                        container.resources.limits = container.resources.requests = {
+                            "memory": SIDECAR_MEM,
+                            "cpu": 0.1,
+                        }
+                    if container.name == CONTAINER_NAME:
+                        # workload container
+                        container.resources.limits = container.resources.requests = {
+                            "memory": workload_mem,
+                            "cpu": workload_cpu,
+                        }
 
-                    container.resources.limits = container.resources.requests = {
-                        "memory": workload_mem,
-                        "cpu": cpu_count / 4,
-                    }
-
-            # init containers patch
-            for container in statefulset.spec.template.spec.initContainers:
-                container.resources.limits = container.resources.requests = {
-                    "memory": SIDECAR_MEM,
-                    "cpu": 0.1,
-                }
+            # always patch init container to get Burstable QoS Class
+            init_container = statefulset.spec.template.spec.initContainers[0]
+            init_container.resources.limits = init_container.resources.requests = {
+                "memory": SIDECAR_MEM,
+                "cpu": 0.1,
+            }
 
             self.client.patch(StatefulSet, name=self.app_name, obj=statefulset)
         except ApiError as e:
             if e.status.code == 409:
-                logger.warning("Kubernetes statefulset patch failed: already patched")
+                logger.warning(
+                    "Kubernetes statefulset patch failed: already patched, wait rolling update"
+                )
                 return
             elif e.status.code == 403:
                 logger.critical(
                     f"Application is not trusted. To fix it run `juju trust {self.app_name} --scope=cluster`"
                 )
-            raise
+            raise KubernetesClientError
+
+    def is_pod_best_effort(self) -> bool:
+        """Return True if the statefulSet's `spec.template.spec` is patched."""
+        try:
+            pod = self.client.get(Pod, name=self.pod_name, namespace=self.namespace)
+
+            return pod.status.qosClass == "BestEffort"
+        except ApiError as e:
+            if e.status.code == 403:
+                logger.critical(
+                    f"Application is not trusted. To fix it run `juju trust {self.app_name} --scope=cluster`"
+                )
+            raise KubernetesClientError

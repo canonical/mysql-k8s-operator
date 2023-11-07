@@ -379,6 +379,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _on_install(self, _) -> None:
         """Handle the install event."""
+        logger.info("Initial statefulset patch")
         self.k8s_helpers.init_statefulset_patch()
 
     def _reconcile_mysqld_exporter(
@@ -545,6 +546,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _mysql_pebble_ready_checks(self, event) -> bool:
         """Executes some checks to see if it is safe to execute the pebble ready handler."""
+        if self.k8s_helpers.is_pod_best_effort():
+            logger.debug("Pod is best-effort, skipping pebble ready handler")
+            return True
+
         if not self._is_peer_data_set:
             self.unit.status = WaitingStatus("Waiting for leader election.")
             logger.debug("Leader not ready yet, waiting...")
