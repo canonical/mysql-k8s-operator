@@ -202,6 +202,8 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         Run update status for every unit when the upgrade is completed.
         """
+        if not self.charm._is_peer_data_set:
+            return
         if not self.upgrade_stack and self.idle:
             self.charm._on_update_status(None)
 

@@ -100,6 +100,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         super().__init__(*args)
 
         # Lifecycle events
+        self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
         self.framework.observe(self.on.leader_elected, self._on_leader_elected)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -375,6 +376,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     # =========================================================================
     # Charm event handlers
     # =========================================================================
+
+    def _on_install(self, _) -> None:
+        """Handle the install event."""
+        self.k8s_helpers.init_statefulset_patch()
 
     def _reconcile_mysqld_exporter(
         self, event: RelationCreatedEvent | RelationBrokenEvent

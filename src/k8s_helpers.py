@@ -163,16 +163,22 @@ class KubernetesHelpers:
             raise KubernetesClientError
 
     def get_node_allocable_memory(self) -> int:
-        """Return the allocable memory in bytes for a given node.
-
-        Args:
-            node_name: name of the node to get the allocable memory for
-        """
+        """Return the allocable memory in bytes for a given node."""
         try:
             node = self.client.get(
                 Node, name=self._get_node_name_for_pod(), namespace=self.namespace
             )
             return any_memory_to_bytes(node.status.allocatable["memory"])
+        except ApiError:
+            raise KubernetesClientError
+
+    def get_node_allocable_cpu(self) -> int:
+        """Return the allocable cpu count for a given node."""
+        try:
+            node = self.client.get(
+                Node, name=self._get_node_name_for_pod(), namespace=self.namespace
+            )
+            return any_memory_to_bytes(node.status.allocatable["cpu"])
         except ApiError:
             raise KubernetesClientError
 
@@ -220,20 +226,45 @@ class KubernetesHelpers:
             )
             # Default terminationGracePeriodSeconds to 24h
             statefulset.spec.template.spec.terminationGracePeriodSeconds = 86400
+
+            # node total cpu count
+            cpu_count = self.get_node_allocable_cpu()
+
             # runtime containers patch
             for container in statefulset.spec.template.spec.containers:
                 if container.name == "charm":
-                    container.resources.limits = {"memory": SIDECAR_MEM}
-                    container.resources.requests = {"memory": SIDECAR_MEM}
+                    container.resources.limits = container.resources.requests = {
+                        "memory": SIDECAR_MEM,
+                        "cpu": 0.1,
+                    }
                 if container.name == CONTAINER_NAME:
-                    container.resources.limits = {"memory": "4Gi"}
-                    container.resources.requests = {"memory": "4Gi"}
+                    # workload container
+                    if constrained_mem := self.get_resources_limits(container.name).get("memory"):
+                        # memory already constrained by the user set constraint
+                        workload_mem = constrained_mem
+                    else:
+                        # use allocatable memory as workload memory
+                        workload_mem = f"{int(self.get_node_allocable_memory()/1000)}k"
+
+                    container.resources.limits = container.resources.requests = {
+                        "memory": workload_mem,
+                        "cpu": cpu_count / 4,
+                    }
 
             # init containers patch
             for container in statefulset.spec.template.spec.initContainers:
-                container.resources.limits = {"memory": SIDECAR_MEM}
-                container.resources.requests = {"memory": SIDECAR_MEM}
+                container.resources.limits = container.resources.requests = {
+                    "memory": SIDECAR_MEM,
+                    "cpu": 0.1,
+                }
 
             self.client.patch(StatefulSet, name=self.app_name, obj=statefulset)
-        except ApiError:
-            logger.exception("FAILED TO PATCH")
+        except ApiError as e:
+            if e.status.code == 409:
+                logger.warning("Kubernetes statefulset patch failed: already patched")
+                return
+            elif e.status.code == 403:
+                logger.critical(
+                    f"Application is not trusted. To fix it run `juju trust {self.app_name} --scope=cluster`"
+                )
+            raise
