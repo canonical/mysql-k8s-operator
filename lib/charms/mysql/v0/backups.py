@@ -48,8 +48,8 @@ class MySQL(MySQLBase):
 import datetime
 import logging
 import pathlib
-from typing import Dict, List, Optional, Tuple
 import typing
+from typing import Dict, List, Optional, Tuple
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (

@@ -95,7 +95,7 @@ def _compile_backups_from_file_ids(
     return backups
 
 
-def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
+def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # noqa: C901
     """Retrieve subdirectories in an S3 path.
 
     Args:
