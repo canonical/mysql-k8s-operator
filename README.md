@@ -1,4 +1,8 @@
 # Charmed MySQL K8s operator
+[![CharmHub Badge](https://charmhub.io/mysql-k8s/badge.svg)](https://charmhub.io/mysql-k8s)
+[![Release](https://github.com/canonical/mysql-k8s-operator/actions/workflows/release.yaml/badge.svg)](https://github.com/canonical/mysql-k8s-operator/actions/workflows/release.yaml)
+[![Tests](https://github.com/canonical/mysql-k8s-operator/actions/workflows/ci.yaml/badge.svg)](https://github.com/canonical/mysql-k8s-operator/actions/workflows/ci.yaml)
+[![Docs](https://github.com/canonical/mysql-k8s-operator/actions/workflows/sync_docs.yaml/badge.svg)](https://github.com/canonical/mysql-k8s-operator/actions/workflows/sync_docs.yaml)
 
 ## Description
 
