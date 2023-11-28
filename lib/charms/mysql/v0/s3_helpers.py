@@ -31,7 +31,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 4
+LIBPATCH = 5
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -131,7 +131,7 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
             for content in page.get("Contents", []):
                 key = content["Key"]
 
-                filename = key.lstrip(s3_path_directory).split("/")[0]
+                filename = key.removeprefix(s3_path_directory)
 
                 if ".metadata" in filename:
                     try:
