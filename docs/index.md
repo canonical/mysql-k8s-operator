@@ -9,7 +9,7 @@ This MySQL operator charm comes in two flavours to deploy and operate MySQL on [
 [note type="positive"]
 **"Charmed MySQL K8s", "MariaDB", "OSM MariaDB", "Percona Cluster" or "Mysql Innodb Cluster"?**
 
-This "Charmed MySQL K8s" operator is a new "[Charmed Operator SDK](https://juju.is/docs/sdk)"-based charm to replace a "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)" operators [providing](/t/10249) all juju-interfaces of [legacy charms](/t/11236).
+This "Charmed MySQL K8s" operator is a new "[Charmed SDK](https://juju.is/docs/sdk)"-based charm to replace a "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)" operators.<br/>Read more about [legacy charms here](https://discourse.charmhub.io/t/11236).
 [/note]
 
 ## Project and community
