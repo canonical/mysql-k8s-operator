@@ -16,10 +16,11 @@ While this tutorial intends to guide and teach you as you deploy Charmed MySQL K
 ## Step-by-step guide
 
 Here’s an overview of the steps required with links to our separate tutorials that deal with each individual step:
-* [Set up the environment](/t/charmed-mysql-k8s-tutorial-setup-environment/9679)
-* [Deploy MySQL](/t/charmed-mysql-k8s-tutorial-deploy-mysql/9667)
-* [Managing your units](/t/charmed-mysql-k8s-tutorial-managing-units/9675)
-* [Manage passwords](/t/charmed-mysql-k8s-tutorial-manage-passwords/9673)
-* [Relate your MySQL to other applications](/t/charmed-mysql-k8s-tutorial-integrations/9671)
-* [Enable security](/t/charmed-mysql-k8s-tutorial-enable-security/9669)
-* [Cleanup your environment](/t/charmed-mysql-k8s-tutorial-cleanup-environment/9665)
+* [Set up the environment](/t/9679)
+* [Deploy MySQL](/t/9667)
+* [Managing your units](/t/9675)
+* [Manage passwords](/t/9673)
+* [Relate your MySQL to other applications](/t/9671)
+* [Enable security](/t/9669)
+* [Upgrade charm](/t/11754)
+* [Cleanup your environment](/t/9665)

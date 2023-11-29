@@ -34,3 +34,5 @@ You can also update your S3 configuration options after relating, using:
 juju config s3-integrator <option>=<value>
 ```
 The s3-integrator charm [accepts many configurations](https://charmhub.io/s3-integrator/configure) - enter whatever configurations are necessary for your S3 storage.
+
+> :tipping_hand_man: **[MicroCeph TIP](https://github.com/canonical/microceph)**: make sure the `region` for `s3-integrator` matches `"sudo microceph.radosgw-admin zonegroup list"` output (use `region="default"` by default).
