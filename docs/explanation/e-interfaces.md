@@ -29,12 +29,13 @@ juju status --relations
 # > Relation provider      Requirer                 Interface     Type
 # > mysql-k8s:database     mysql-test-app:database  mysql_client  regular
 ```
+Find all details about default and extra DB user roles in “[Charm Users explanations](/t/10791)”.
 
 **Note:** In order to relate with this charm, every table created by the related application must have a primary key. This is required by the [group replication plugin](https://dev.mysql.com/doc/refman/8.0/en/group-replication-requirements.html) enabled in this charm.
 
 ## Legacy interfaces
 
-**Note:** Legacy relations are deprecated and will be discontinued on future releases. Usage should be avoided.
+**Note:** Legacy relations are deprecated and will be discontinued on future releases. Usage should be avoided. Check the legacy interface implementation limitations in the "[Legacy charm](/t/11236)" document.
 
 ### Legacy `mysql` interface (`mysql` and `mysql-root` endpoints):
 
