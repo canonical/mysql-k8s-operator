@@ -21,7 +21,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 - [Join the Discourse forum](https://discourse.charmhub.io/tag/mysql)
 - [Contribute](https://github.com/canonical/mysql-k8s-operator/blob/main/CONTRIBUTING.md) and report [issues](https://github.com/canonical/mysql-k8s-operator/issues/new/choose)
 - Explore [Canonical Data Fabric solutions](https://canonical.com/data)
--  [Contacts us](/t/11868) for all further questions
+- [Contacts us](/t/11868) for all further questions
 
 ## In this documentation
 
