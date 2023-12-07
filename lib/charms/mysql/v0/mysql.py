@@ -78,6 +78,13 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import ops
+from charms.data_platform_libs.v0.data_secrets import (
+    APP_SCOPE,
+    UNIT_SCOPE,
+    Scopes,
+    SecretCache,
+    generate_secret_label,
+)
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from ops.model import Unit
 from tenacity import (
@@ -116,7 +123,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 52
+LIBPATCH = 53
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -377,7 +384,7 @@ class MySQLCharmBase(CharmBase, ABC):
     def __init__(self, *args):
         super().__init__(*args)
 
-        self.app_secrets, self.unit_secrets = None, None
+        self.secrets = SecretCache(self)
 
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
         self.framework.observe(self.on.get_password_action, self._on_get_password)
@@ -535,36 +542,44 @@ class MySQLCharmBase(CharmBase, ABC):
 
         return len(active_cos_relations) > 0
 
-    def _get_secret_from_juju(self, scope: str, key: str) -> Optional[str]:
+    def _scope_obj(self, scope: Scopes):
+        if scope == APP_SCOPE:
+            return self.app
+        if scope == UNIT_SCOPE:
+            return self.unit
+
+    def _peer_data(self, scope: Scopes) -> Dict:
+        """Return corresponding databag for app/unit."""
+        if self.peers is None:
+            return {}
+        return self.peers.data[self._scope_obj(scope)]
+
+    def _safe_get_secret(self, scope: Scopes, label: str) -> SecretCache:
+        """Safety measure, for upgrades between versions.
+
+        Based on secret URI usage to others with labels usage.
+        If the secret can't be retrieved by label, we search for the uri -- and
+        if found, we "stick" the label on the secret for further usage.
+        """
+        secret_uri = self._peer_data(scope).get(SECRET_ID_KEY, None)
+        secret = self.secrets.get(label, secret_uri)
+
+        # Since now we switched to labels, the databag reference can be removed
+        if secret_uri and secret and scope == APP_SCOPE and self.unit.is_leader():
+            self._peer_data(scope).pop(SECRET_ID_KEY, None)
+        return secret
+
+    def _get_secret_from_juju(self, scope: Scopes, key: str) -> Optional[str]:
         """Retrieve and return the secret from the juju secret storage."""
-        if scope == "unit":
-            secret_id = self.unit_peer_data.get(SECRET_ID_KEY)
+        label = generate_secret_label(self, scope)
+        secret = self._safe_get_secret(scope, label)
 
-            if not self.unit_secrets and not secret_id:
-                logger.debug("Getting a secret when no secrets added in juju")
-                return None
+        if not secret:
+            logger.debug("Getting a secret when secret is not added in juju")
+            return
 
-            if not self.unit_secrets:
-                secret = self.model.get_secret(id=secret_id)
-                content = secret.get_content()
-                self.unit_secrets = content
-                logger.debug(f"Retrieved secret {key} for unit from juju")
-
-            return self.unit_secrets.get(key)
-
-        secret_id = self.app_peer_data.get(SECRET_ID_KEY)
-
-        if not self.app_secrets and not secret_id:
-            logger.debug("Getting a secret when no secrets added in juju")
-            return None
-
-        if not self.app_secrets:
-            secret = self.model.get_secret(id=secret_id)
-            content = secret.get_content()
-            self.app_secrets = content
-            logger.debug(f"Retrieved secret {key} for app from juju")
-
-        return self.app_secrets.get(key)
+        value = secret.get_content().get(key)
+        return value
 
     def _get_secret_from_databag(self, scope: str, key: str) -> Optional[str]:
         """Retrieve and return the secret from the peer relation databag."""
@@ -574,7 +589,7 @@ class MySQLCharmBase(CharmBase, ABC):
         return self.app_peer_data.get(key)
 
     def get_secret(
-        self, scope: str, key: str, fallback_key: Optional[str] = None
+        self, scope: Scopes, key: str, fallback_key: Optional[str] = None
     ) -> Optional[str]:
         """Get secret from the secret storage.
 
@@ -583,7 +598,7 @@ class MySQLCharmBase(CharmBase, ABC):
         account for cases where secrets are stored in peer databag but the charm
         is then refreshed to a newer revision.
         """
-        if scope not in ["unit", "app"]:
+        if scope not in ["app", "unit"]:
             raise MySQLSecretError(f"Invalid secret scope: {scope}")
 
         if ops.jujuversion.JujuVersion.from_environ().has_secrets:
@@ -595,68 +610,53 @@ class MySQLCharmBase(CharmBase, ABC):
             scope, fallback_key
         )
 
-    def _set_secret_in_databag(self, scope: str, key: str, value: Optional[str]) -> None:
+    def _set_secret_in_databag(self, scope: Scopes, key: str, value: Optional[str]) -> None:
         """Set secret in the peer relation databag."""
         if not value:
-            if scope == "unit":
-                del self.unit_peer_data[key]
-            else:
-                del self.app_peer_data[key]
-            return
+            try:
+                self._peer_data(scope).pop(key)
+                return
+            except KeyError:
+                logger.error(f"Non-existing secret {scope}:{key} was attempted to be removed.")
+                return
 
-        if scope == "unit":
-            self.unit_peer_data[key] = value
-            return
+        self._peer_data(scope)[key] = value
 
-        self.app_peer_data[key] = value
-
-    def _set_secret_in_juju(self, scope: str, key: str, value: Optional[str]) -> None:
+    def _set_secret_in_juju(self, scope: Scopes, key: str, value: Optional[str]) -> None:
         """Set the secret in the juju secret storage."""
-        if scope == "unit":
-            secret_id = self.unit_peer_data.get(SECRET_ID_KEY)
-        else:
-            secret_id = self.app_peer_data.get(SECRET_ID_KEY)
+        # Charm could have been upgraded since last run
+        # We make an attempt to remove potential traces from the databag
+        self._peer_data(scope).pop(key, None)
 
-        if secret_id:
-            secret = self.model.get_secret(id=secret_id)
-
-            if scope == "unit":
-                content = self.unit_secrets or secret.get_content()
-            else:
-                content = self.app_secrets or secret.get_content()
-
-            if not value:
-                del content[key]
-            else:
-                content[key] = value
-
-            secret.set_content(content)
-            logger.debug(f"Updated {scope} secret {secret_id} for {key}")
-        elif not value:
+        label = generate_secret_label(self, scope)
+        secret = self._safe_get_secret(scope, label)
+        if not secret and value:
+            self.secrets.add(label, {key: value}, scope)
             return
-        else:
-            content = {
-                key: value,
-            }
 
-            if scope == "unit":
-                secret = self.unit.add_secret(content)
-                self.unit_peer_data[SECRET_ID_KEY] = secret.id
+        content = secret.get_content() if secret else None
+
+        if not value:
+            if content and key in content:
+                content.pop(key, None)
             else:
-                secret = self.app.add_secret(content)
-                self.app_peer_data[SECRET_ID_KEY] = secret.id
-            logger.debug(f"Added {scope} secret {secret.id} for {key}")
-
-        if scope == "unit":
-            self.unit_secrets = content
+                logger.error(f"Non-existing secret {scope}:{key} was attempted to be removed.")
+                return
         else:
-            self.app_secrets = content
+            content.update({key: value})
+
+        # Temporary solution: this should come from the shared lib
+        # Improved after https://warthogs.atlassian.net/browse/DPE-3056 is resolved
+        if content:
+            secret.set_content(content)
+        else:
+            secret.meta.remove_all_revisions()
 
     def set_secret(
-        self, scope: str, key: str, value: Optional[str], fallback_key: Optional[str] = None
+        self, scope: Scopes, key: str, value: Optional[str], fallback_key: Optional[str] = None
     ) -> None:
         """Set a secret in the secret storage."""
-        if scope not in ["unit", "app"]:
+        if scope not in ["app", "unit"]:
             raise MySQLSecretError(f"Invalid secret scope: {scope}")
 
         if scope == "app" and not self.unit.is_leader():

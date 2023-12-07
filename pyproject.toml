@@ -53,6 +53,7 @@ shellcheck-py = "^0.9.0.5"
 pytest = "^7.4.0"
 pytest-mock = "^3.11.1"
 coverage = {extras = ["toml"], version = "^7.2.7"}
+parameterized = "^0.9.0"
 
 [tool.poetry.group.integration.dependencies]
 pytest = "^7.4.0"

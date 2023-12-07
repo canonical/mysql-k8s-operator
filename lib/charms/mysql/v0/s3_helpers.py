@@ -35,8 +35,8 @@ LIBPATCH = 5
 
 
 # botocore/urllib3 clutter the logs when on debug
-logging.getLogger("botocore").setLevel(logging.ERROR)
-logging.getLogger("urllib3").setLevel(logging.ERROR)
+logging.getLogger("botocore").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -137,7 +137,7 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # no
             for content in page.get("Contents", []):
                 key = content["Key"]
 
-                filename = key.lstrip(s3_path_directory).split("/")[0]
+                filename = key.removeprefix(s3_path_directory)
 
                 if ".metadata" in filename:
                     try:
