@@ -3,6 +3,11 @@
 
 get-cluster-status:
   description: Get cluster status information without topology
+  params:
+    status-type:
+      type: string
+      description: Wether to fetch the cluster or cluster-set status.
+        Possible values are cluster (default) or cluster-set.
 
 get-password:
   description: Fetch the system user's password, which is used by charm.

@@ -77,6 +77,8 @@ from mysql_k8s_helpers import (
     MySQLCreateCustomConfigFileError,
     MySQLInitialiseMySQLDError,
 )
+from relations.async_primary import MySQLAsyncReplicationPrimary
+from relations.async_replica import MySQLAsyncReplicationReplica
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
@@ -150,6 +152,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.log_rotate_manager.start_log_rotate_manager()
 
         self.rotate_mysql_logs = RotateMySQLLogs(self)
+        self.async_primary = MySQLAsyncReplicationPrimary(self)
+        self.async_replica = MySQLAsyncReplicationReplica(self)
 
     @property
     def _mysql(self) -> MySQL:
@@ -690,6 +694,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if unit_member_state in ["waiting", "restarting"]:
             # avoid changing status while tls is being set up or charm is being initialized
             logger.info(f"Unit state is {unit_member_state}")
+            return True
+
+        if not (self.async_replica.idle or self.async_primary.idle):
+            # avoid changing status while async replication
+            # is setting up
             return True
 
         return False

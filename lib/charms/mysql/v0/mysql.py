@@ -366,6 +366,10 @@ class MySQLGetAvailableMemoryError(Error):
     """Exception raised when there is an issue getting the available memory."""
 
 
+class MySQLCreateReplicaClusterError(Error):
+    """Exception raised when there is an issue creating a replica cluster."""
+
+
 @dataclasses.dataclass
 class RouterUser:
     """MySQL Router user."""
@@ -456,7 +460,12 @@ class MySQLCharmBase(CharmBase, ABC):
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Action used  to retrieve the cluster status."""
-        if status := self._mysql.get_cluster_status():
+        if event.params.get("status-type", "cluster") == "cluster":
+            status = self._mysql.get_cluster_status()
+        else:
+            status = self._mysql.get_cluster_set_status()
+
+        if status:
             event.set_results(
                 {
                     "success": True,
@@ -1244,6 +1253,42 @@ class MySQLBase(ABC):
             logger.exception("Failed to add instance to cluster set on instance")
             raise MySQLCreateClusterSetError
 
+    def create_replica_cluster(
+        self, endpoint: str, replica_cluster_name: str, donor: Optional[str] = None
+    ) -> None:
+        """Create a replica cluster on the primary cluster.
+
+        Args:
+            endpoint: The endpoint of the replica cluster leader unit
+            replica_cluster_name: The name of the replica cluster
+            donor: The donor instance to clone from
+
+        Raises:
+            MySQLCreateReplicaClusterError
+        """
+        options = {
+            "recoveryProgress": 0,
+            "recoveryMethod": "clone",
+            "timeout": 3600,
+            "communicationStack": "MySQL",
+        }
+
+        if donor:
+            options["cloneDonor"] = donor
+
+        commands = (
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            "cs = dba.get_cluster_set()",
+            f"cs.create_replica_cluster('{endpoint}','{replica_cluster_name}', {options})",
+        )
+
+        try:
+            logger.debug(f"Creating replica cluster {replica_cluster_name}")
+            self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError:
+            logger.exception("Failed to create replica cluster")
+            raise MySQLCreateReplicaClusterError
+
     def initialize_juju_units_operations_table(self) -> None:
         """Initialize the mysql.juju_units_operations table using the serverconfig user.
 
@@ -1491,6 +1536,53 @@ class MySQLBase(ABC):
         except MySQLClientError:
             logger.error(f"Failed to get cluster status for {self.cluster_name}")
 
+    def get_cluster_set_status(self, extended: Optional[int] = 1) -> Optional[dict]:
+        """Get the cluster-set status.
+
+        Executes script to retrieve cluster-set status.
+        Won't raise errors.
+
+        Returns:
+            Cluster-set status as a dictionary,
+            or None if running the status script fails.
+        """
+        options = {"extended": extended}
+        status_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"cs = dba.get_cluster_set()",
+            f"print(cs.status({options}))",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(status_commands), timeout=30)
+            output_dict = json.loads(output.lower())
+            return output_dict
+        except MySQLClientError:
+            logger.error("Failed to get cluster-set status")
+
+    def get_replica_cluster_status(self, replica_cluster_name: str) -> str:
+        """Get the replica cluster status.
+
+        Executes script to retrieve replica cluster status.
+        Won't raise errors.
+
+        Returns:
+            Replica cluster status as a string,
+            or None if running the status script fails.
+        """
+        status_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            "cs = dba.get_cluster_set()",
+            f"print(cs.status(extended=1)['clusters']['{replica_cluster_name}']['globalStatus'])",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(status_commands), timeout=30)
+            return output.lower()
+        except MySQLClientError:
+            logger.error(f"Failed to get replica cluster status for {replica_cluster_name}")
+            return "unknown"
+
     def get_cluster_node_count(self, from_instance: Optional[str] = None) -> int:
         """Retrieve current count of cluster nodes.
 
@@ -1653,6 +1745,15 @@ class MySQLBase(ABC):
                 f"Failed to release lock on {unit_label} with error {e.message}", exc_info=e
             )
             raise MySQLRemoveInstanceError(e.message)
+
+    def dissolve_cluster(self) -> None:
+        """Dissolve the cluster independently of the unit teardown process."""
+        dissolve_cluster_commands = (
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            "cluster.dissolve({'force': 'true'})",
+        )
+        self._run_mysqlsh_script("\n".join(dissolve_cluster_commands))
 
     def _acquire_lock(self, primary_address: str, unit_label: str, lock_name: str) -> bool:
         """Attempts to acquire a lock by using the mysql.juju_units_operations table.
