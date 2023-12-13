@@ -13,14 +13,7 @@ import kubernetes
 import yaml
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
-from tenacity import (
-    RetryError,
-    Retrying,
-    retry,
-    stop_after_attempt,
-    stop_after_delay,
-    wait_fixed,
-)
+from tenacity import RetryError, Retrying, retry, stop_after_attempt, stop_after_delay, wait_fixed
 
 from ..helpers import (
     execute_queries_on_unit,

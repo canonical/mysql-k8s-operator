@@ -35,13 +35,7 @@ from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
-from ops.model import (
-    ActiveStatus,
-    BlockedStatus,
-    Container,
-    MaintenanceStatus,
-    WaitingStatus,
-)
+from ops.model import ActiveStatus, BlockedStatus, Container, MaintenanceStatus, WaitingStatus
 from ops.pebble import Layer
 
 from config import CharmConfig, MySQLConfig
@@ -72,11 +66,7 @@ from constants import (
 )
 from k8s_helpers import KubernetesHelpers
 from log_rotate_manager import LogRotateManager
-from mysql_k8s_helpers import (
-    MySQL,
-    MySQLCreateCustomConfigFileError,
-    MySQLInitialiseMySQLDError,
-)
+from mysql_k8s_helpers import MySQL, MySQLCreateCustomConfigFileError, MySQLInitialiseMySQLDError
 from relations.async_primary import MySQLAsyncReplicationPrimary
 from relations.async_replica import MySQLAsyncReplicationReplica
 from relations.mysql import MySQLRelation

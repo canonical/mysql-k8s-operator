@@ -7,10 +7,7 @@ import json
 import logging
 import typing
 
-from charms.mysql.v0.mysql import (
-    MySQLCheckUserExistenceError,
-    MySQLDeleteUsersForUnitError,
-)
+from charms.mysql.v0.mysql import MySQLCheckUserExistenceError, MySQLDeleteUsersForUnitError
 from ops.charm import RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus

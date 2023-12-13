@@ -7,10 +7,7 @@ import logging
 import socket
 from typing import List
 
-from charms.data_platform_libs.v0.data_interfaces import (
-    DatabaseProvides,
-    DatabaseRequestedEvent,
-)
+from charms.data_platform_libs.v0.data_interfaces import DatabaseProvides, DatabaseRequestedEvent
 from charms.mysql.v0.mysql import (
     MySQLCreateApplicationDatabaseAndScopedUserError,
     MySQLDeleteUserError,
@@ -24,13 +21,7 @@ from ops.charm import PebbleReadyEvent, RelationBrokenEvent, RelationDepartedEve
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus
 
-from constants import (
-    CONTAINER_NAME,
-    CONTAINER_RESTARTS,
-    DB_RELATION_NAME,
-    PASSWORD_LENGTH,
-    PEER,
-)
+from constants import CONTAINER_NAME, CONTAINER_RESTARTS, DB_RELATION_NAME, PASSWORD_LENGTH, PEER
 from k8s_helpers import KubernetesClientError
 from utils import generate_random_password
 
