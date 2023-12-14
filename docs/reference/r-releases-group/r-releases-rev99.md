@@ -27,7 +27,7 @@ Dear community, this is to inform you that new Canonical Charmed MySQL K8s is pu
 
 ## Bugfixes included:
 
-Canonica Data issues are now public on both [Jira](https://warthogs.atlassian.net/jira/software/c/projects/DPE/issues/) and [GitHub](https://github.com/canonical/mysql-k8s-operator/issues) platforms.<br/>[GitHub Releases](https://github.com/canonical/mysql-k8s-operator/releases) provide a detailed list of bugfixes/PRs/Git commits for each revision.<br/>Highlights for the current revision:
+Canonical Data issues are now public on both [Jira](https://warthogs.atlassian.net/jira/software/c/projects/DPE/issues/) and [GitHub](https://github.com/canonical/mysql-k8s-operator/issues) platforms.<br/>[GitHub Releases](https://github.com/canonical/mysql-k8s-operator/releases) provide a detailed list of bugfixes/PRs/Git commits for each revision.<br/>Highlights for the current revision:
 
 * [DPE-1919](https://warthogs.atlassian.net/browse/DPE-1919) Fixed GKE [deployment support](/t/10875)
 * [DPE-1519](https://warthogs.atlassian.net/browse/DPE-1519) Stabilized integration with mysql-route-k8s
