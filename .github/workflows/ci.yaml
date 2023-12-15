@@ -133,7 +133,7 @@ jobs:
         if: ${{ matrix.libjuju-version == '2.9.44.1' }}
         run: poetry add --lock --group integration juju@'${{ matrix.libjuju-version }}'
       - name: Download packed charm(s)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build.outputs.artifact-name }}
       - name: Select test stability level
