@@ -4,11 +4,19 @@
 """MySQL async replication replica side module."""
 
 import enum
-import json
 import logging
+import socket
 import typing
 
-from ops import ActiveStatus, MaintenanceStatus, Relation, RelationDataContent, WaitingStatus
+from ops import (
+    ActiveStatus,
+    BlockedStatus,
+    MaintenanceStatus,
+    Relation,
+    RelationDataContent,
+    Secret,
+    WaitingStatus,
+)
 from ops.framework import Object
 from typing_extensions import Optional
 
@@ -47,9 +55,11 @@ class MySQLAsyncReplicationReplica(Object):
             self.framework.observe(
                 self._charm.on[REPLICA_RELATION].relation_created, self.on_replica_created
             )
-
             self.framework.observe(
                 self._charm.on[REPLICA_RELATION].relation_changed, self.on_replica_changed
+            )
+            self.framework.observe(
+                self._charm.on[REPLICA_RELATION].relation_broken, self._on_replica_broken
             )
 
     @property
@@ -75,8 +85,9 @@ class MySQLAsyncReplicationReplica(Object):
         if not self.relation:
             return None
 
-        if self.remote_relation_data.get("credentials") and not self.relation_data.get("endpoint"):
+        if self.remote_relation_data.get("secret-id") and not self.relation_data.get("endpoint"):
             # received credentials from primary cluster
+            # and did not synced credentials
             return States.SYNCING
 
         if self.remote_relation_data.get("replica-state") == "initialized":
@@ -84,15 +95,31 @@ class MySQLAsyncReplicationReplica(Object):
             if self._charm._mysql.get_cluster_node_count() < self.model.app.planned_units():
                 return States.RECOVERING
             return States.READY
+        return States.INITIALIZING
 
     @property
     def idle(self) -> bool:
         """Whether the async replication is idle."""
         return self.state in [States.READY, None]
 
+    def _get_secret(self) -> Secret:
+        """Get secret from primary cluster."""
+        secret_id = self.remote_relation_data.get("secret-id")
+        return self.model.get_secret(id=secret_id)
+
+    def _async_replication_credentials(self) -> dict[str, str]:
+        """Get async replication credentials from primary cluster."""
+        secret = self._get_secret()
+        return secret.peek_content()
+
+    def _get_endpoint(self) -> str:
+        """Get endpoint to be used by the primary cluster."""
+        # TODO: public address discovery method and/or config
+        return socket.getfqdn(f"{self.model.app.name}-primary")
+
     def on_replica_created(self, _):
         """Handle the async_replica relation being created."""
-        self._charm.app.status = MaintenanceStatus("Setting up async replication")
+        self._charm.app.status = MaintenanceStatus("Async replication")
 
     def on_replica_changed(self, _):
         """Handle the async_replica relation being changed."""
@@ -100,25 +127,46 @@ class MySQLAsyncReplicationReplica(Object):
             logger.debug("Syncing credentials from primary cluster")
             self._charm.unit.status = MaintenanceStatus("Syncing credentials")
 
-            credentials = json.loads(self.remote_relation_data["credentials"])
-            valid_usernames = {
-                SERVER_CONFIG_USERNAME: SERVER_CONFIG_PASSWORD_KEY,
-                CLUSTER_ADMIN_USERNAME: CLUSTER_ADMIN_PASSWORD_KEY,
+            credentials = self._async_replication_credentials()
+            sync_keys = {
+                SERVER_CONFIG_PASSWORD_KEY: SERVER_CONFIG_USERNAME,
+                CLUSTER_ADMIN_PASSWORD_KEY: CLUSTER_ADMIN_USERNAME,
             }
 
-            for user, password in credentials.items():
-                self._charm._mysql.update_user_password(user, password)
-                self._charm.set_secret("app", valid_usernames[user], password)
+            for key, password in credentials.items():
+                # sync credentials only for necessary users
+                if key not in sync_keys:
+                    continue
+                self._charm._mysql.update_user_password(sync_keys[key], password)
+                self._charm.set_secret("app", key, password)
+                logger.debug(f"Synced {sync_keys[key]} password")
 
             self._charm.unit.status = MaintenanceStatus("Dissolving replica cluster")
             self._charm._mysql.dissolve_cluster()
 
             self._charm.unit.status = MaintenanceStatus("Populate endpoint")
 
+            # this cluster name is used by the primary cluster to identify the replica cluster
             self.relation_data["cluster-name"] = self._charm.app_peer_data["cluster-name"]
-            self.relation_data["endpoint"] = self._charm._get_unit_fqdn()
+            # the reachable endpoint address
+            self.relation_data["endpoint"] = self._get_endpoint()
+            # the node label in the replica cluster to be created
+            self.relation_data["node-label"] = self._charm.unit_label
+
+            logger.debug("Data for adding replica cluster shared with primary cluster")
 
             self._charm.unit.status = WaitingStatus("Waiting for primary cluster")
         elif self.state == States.READY:
+            # update status
             logger.debug("Cluster is ready")
-            self._charm.app.status = self._charm.unit.status = ActiveStatus()
+            self._charm._on_update_status(None)
+
+    def _on_replica_broken(self, event):
+        """Handle the async_replica relation being broken."""
+        if self._charm._mysql.is_instance_in_cluster(self._charm.unit_label):
+            logger.debug("Replica cluster still active. Waiting for dissolution")
+            event.defer()
+            return
+        # recriate cluster
+        self._charm._mysql.create_cluster(self._charm.unit_label)
+        self._charm._mysql.create_cluster_set()

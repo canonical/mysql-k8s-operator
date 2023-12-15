@@ -370,6 +370,14 @@ class MySQLCreateReplicaClusterError(Error):
     """Exception raised when there is an issue creating a replica cluster."""
 
 
+class MySQLRemoveReplicaClusterError(Error):
+    """Exception raised when there is an issue removing a replica cluster."""
+
+
+class MySQLPromoteClusterToPrimary(Error):
+    """Exception raised when there is an issue promoting a replica cluster to primary."""
+
+
 @dataclasses.dataclass
 class RouterUser:
     """MySQL Router user."""
@@ -460,10 +468,10 @@ class MySQLCharmBase(CharmBase, ABC):
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Action used  to retrieve the cluster status."""
-        if event.params.get("status-type", "cluster") == "cluster":
-            status = self._mysql.get_cluster_status()
-        else:
+        if event.params.get("cluster-set", False) == True:
             status = self._mysql.get_cluster_set_status()
+        else:
+            status = self._mysql.get_cluster_status()
 
         if status:
             event.set_results(
@@ -1289,6 +1297,55 @@ class MySQLBase(ABC):
             logger.exception("Failed to create replica cluster")
             raise MySQLCreateReplicaClusterError
 
+    def promote_cluster_to_primary(self, cluster_name: str, force: bool = False) -> None:
+        """Promote a cluster to active on the primary cluster.
+
+        Args:
+            cluster_name: The name of the cluster to promote
+            force: Whether to force the promotion (due to a unreachable cluster)
+
+        Raises:
+            MySQLPromoteClusterToActiveError
+        """
+        commands = (
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            "cs = dba.get_cluster_set()",
+            (
+                f"cs.set_primary_cluster('{cluster_name}')"
+                if not force
+                else f"cs.force_primary_cluster('{cluster_name}')"
+            ),
+        )
+
+        try:
+            logger.debug(f"Promoting cluster {cluster_name} to active")
+            self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError:
+            logger.exception("Failed to promote cluster to active")
+            raise MySQLPromoteClusterToPrimary
+
+    def remove_replica_cluster(self, replica_cluster_name: str) -> None:
+        """Remove a replica cluster on the primary cluster.
+
+        Args:
+            replica_cluster_name: The name of the replica cluster
+
+        Raises:
+            MySQLRemoveReplicaClusterError
+        """
+        commands = (
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            "cs = dba.get_cluster_set()",
+            f"cs.remove_cluster('{replica_cluster_name}')",
+        )
+
+        try:
+            logger.debug(f"Removing replica cluster {replica_cluster_name}")
+            self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError:
+            logger.exception("Failed to remove replica cluster")
+            raise MySQLRemoveReplicaClusterError
+
     def initialize_juju_units_operations_table(self) -> None:
         """Initialize the mysql.juju_units_operations table using the serverconfig user.
 
@@ -2103,6 +2160,18 @@ class MySQLBase(ABC):
                 return results[0], results[1] or "unknown"
 
         raise MySQLGetMemberStateError("No member state retrieved")
+
+    def is_cluster_replica(self) -> bool:
+        """Check if cluster is a replica.
+
+        Returns:
+            True if cluster is a replica, False otherwise.
+        """
+        cs_status = self.get_cluster_set_status(extended=0)
+        if not cs_status:
+            return False
+
+        return cs_status["clusters"][self.cluster_name]["clusterrole"] == "replica"
 
     def reboot_from_complete_outage(self) -> None:
         """Wrapper for reboot_cluster_from_complete_outage command."""

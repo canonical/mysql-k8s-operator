@@ -4,21 +4,13 @@
 """MySQL async replication primary side module."""
 
 import enum
-import json
 import logging
 import typing
 
-from ops import MaintenanceStatus, RelationDataContent
+from ops import MaintenanceStatus, RelationDataContent, Secret
 from ops.framework import Object
 from ops.model import Relation
 from typing_extensions import Optional
-
-from constants import (
-    CLUSTER_ADMIN_PASSWORD_KEY,
-    CLUSTER_ADMIN_USERNAME,
-    SERVER_CONFIG_PASSWORD_KEY,
-    SERVER_CONFIG_USERNAME,
-)
 
 if typing.TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -46,10 +38,14 @@ class MySQLAsyncReplicationPrimary(Object):
 
         if self._charm.unit.is_leader():
             self.framework.observe(
-                self._charm.on[PRIMARY_RELATION].relation_created, self.on_primary_created
+                self._charm.on[PRIMARY_RELATION].relation_created, self._on_primary_created
             )
             self.framework.observe(
-                self._charm.on[PRIMARY_RELATION].relation_changed, self.on_primary_relation_changed
+                self._charm.on[PRIMARY_RELATION].relation_changed,
+                self._on_primary_relation_changed,
+            )
+            self.framework.observe(
+                self._charm.on[PRIMARY_RELATION].relation_broken, self._on_primary_broken
             )
 
     def get_relation(self, relation_id: int) -> Optional[Relation]:
@@ -72,12 +68,12 @@ class MySQLAsyncReplicationPrimary(Object):
             return None
 
         local_data = self.get_local_relation_data(relation)
-        remote_data = self.get_remote_relation_data(relation)
+        remote_data = self.get_remote_relation_data(relation) or {}
 
-        if local_data.get("credentials") and not remote_data.get("endpoint"):
+        if local_data.get("secret-id") and not remote_data.get("endpoint"):
             return States.SYNCING
 
-        if local_data.get("credentials") and remote_data.get("endpoint"):
+        if local_data.get("secret-id") and remote_data.get("endpoint"):
             # evaluate cluster status
             replica_status = self._charm._mysql.get_replica_cluster_status(
                 remote_data["cluster-name"]
@@ -97,22 +93,23 @@ class MySQLAsyncReplicationPrimary(Object):
                 return False
         return True
 
-    def on_primary_created(self, event):
-        """Handle the async_primary relation being created."""
+    def _get_secret(self) -> Secret:
+        """Return async replication necessary secrets."""
+        secret = self.model.get_secret(label=f"{self.model.app.name}.app")
+        return secret
+
+    def _on_primary_created(self, event):
+        """Share credentials with replica cluster."""
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
 
-        local_relation_data = self.get_local_relation_data(event.relation)
+        secret = self._get_secret()
+        secret_id = secret.get_info().id
+        secret.grant(event.relation)
 
-        logger.debug("Syncing credentials to replica cluster")
+        logger.debug(f"Sharing {secret_id} with replica cluster")
+        event.relation.data[self.model.app]["secret-id"] = secret_id
 
-        local_relation_data["credentials"] = json.dumps(
-            {
-                SERVER_CONFIG_USERNAME: self._charm.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
-                CLUSTER_ADMIN_USERNAME: self._charm.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),
-            }
-        )
-
-    def on_primary_relation_changed(self, event):
+    def _on_primary_relation_changed(self, event):
         """Handle the async_primary relation being changed."""
         state = self.get_state(event.relation)
 
@@ -121,15 +118,28 @@ class MySQLAsyncReplicationPrimary(Object):
             # TODO: select a secondary as a donor
             logger.debug("Initializing replica cluster")
             self._charm.unit.status = MaintenanceStatus("Adding replica cluster")
-            cluster_name = self.get_remote_relation_data(event.relation)["cluster-name"]
-            endpoint = self.get_remote_relation_data(event.relation)["endpoint"]
+            remote_data = self.get_remote_relation_data(event.relation) or {}
+
+            cluster_name = remote_data["cluster-name"]
+            endpoint = remote_data["endpoint"]
 
             logger.debug(f"Adding replica cluster {cluster_name} with endpoint {endpoint}")
             self._charm._mysql.create_replica_cluster(endpoint, cluster_name)
 
-            local_relation_data = self.get_local_relation_data(event.relation)
-            local_relation_data["replica-state"] = "initialized"
+            event.relation.data[self.model.app]["replica-state"] = "initialized"
 
         elif state == States.RECOVERING:
             # Recover replica cluster
             self._charm.unit.status = MaintenanceStatus("Replica cluster in recovery")
+
+    def _on_primary_broken(self, event):
+        """Handle the async_primary relation being broken."""
+        remote_data = self.get_remote_relation_data(event.relation) or {}
+        if cluster_name := remote_data.get("cluster-name"):
+            self._charm.unit.status = MaintenanceStatus("Removing replica cluster")
+            logger.debug(f"Removing replica cluster {cluster_name}")
+            self._charm._mysql.remove_replica_cluster(cluster_name)
+            logger.debug(f"Replica cluster {cluster_name} removed")
+            self._charm._on_update_status(None)
+        else:
+            logger.warning("No cluster name found, skipping removal")

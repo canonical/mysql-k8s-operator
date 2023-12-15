@@ -205,7 +205,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def active_status_message(self) -> str:
         """Active status message."""
         if self.unit_peer_data.get("member-role") == "primary":
-            return "Primary"
+            if self._mysql.is_cluster_replica():
+                return "Primary (replica)"
+            else:
+                return "Primary"
         return ""
 
     @property
@@ -686,12 +689,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.info(f"Unit state is {unit_member_state}")
             return True
 
-        if not (self.async_replica.idle or self.async_primary.idle):
-            # avoid changing status while async replication
-            # is setting up
-            return True
-
-        return False
+        # avoid changing status while async replication is setting up
+        return self.async_replica.idle and self.async_primary.idle
 
     def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
         """Handle the update status event."""
