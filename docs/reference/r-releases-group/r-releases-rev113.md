@@ -5,12 +5,11 @@ Dear community, this is to inform you that new Canonical Charmed MySQL K8s is pu
 
 ## The features you can start using today:
 
-* Add [profile limit](https://charmhub.io/mysql-k8s/configure?channel=8.0/beta#profile-limit-memory) option [[PR#318](https://github.com/canonical/mysql-k8s-operator/pull/318)]
+* Add [profile-limit-memory](https://charmhub.io/mysql-k8s/configure?channel=8.0/beta#profile-limit-memory) option [[PR#318](https://github.com/canonical/mysql-k8s-operator/pull/318)]
 * Add [log rotation](https://charmhub.io/mysql-k8s/docs/e-logs) of error, general and slow query logs [[PR#312](https://github.com/canonical/mysql-k8s-operator/pull/312)][[DPE-1797](https://warthogs.atlassian.net/browse/DPE-1797)]
 * Use Juju secret labels [[PR#333](https://github.com/canonical/mysql-k8s-operator/pull/333)][[DPE-2885](https://warthogs.atlassian.net/browse/DPE-2885)]
 * Updated data-platform-libs for external secrets [[PR#314](https://github.com/canonical/mysql-k8s-operator/pull/314)]
-
-All the functionality from [the previous revisions](/t/11880)
+* All the functionality from [the previous revisions](/t/11878)
 
 ## Bugfixes included:
 
@@ -38,6 +37,8 @@ Canonica Data issues are now public on both [Jira](https://warthogs.atlassian.ne
 ## Technical notes:
 
 * Upgrade (`juju refresh`) is possible from this revision 75+
+* Use this operator together with a modern operator "[MySQL Router K8s](https://charmhub.io/mysql-router-k8s)"
+* Please check additionally [the previously posted restrictions](/t/11878)
 
 ## How to reach us:
 
@@ -47,4 +48,4 @@ Consider [opening a GitHub issue](https://github.com/canonical/mysql-k8s-operato
 
 ## Hints:
 
-Please check [all the previous release notes](/t/11880) if you are jumping over the several stable revisions!
+Please check [all the previous release notes](/t/11878) if you are jumping over the several stable revisions!
