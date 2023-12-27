@@ -5,6 +5,7 @@
 
 import logging
 import socket
+import typing
 from typing import List
 
 from charms.data_platform_libs.v0.data_interfaces import DatabaseProvides, DatabaseRequestedEvent
@@ -28,10 +29,14 @@ from utils import generate_random_password
 logger = logging.getLogger(__name__)
 
 
+if typing.TYPE_CHECKING:
+    from charm import MySQLOperatorCharm
+
+
 class MySQLProvider(Object):
     """Standard database relation class."""
 
-    def __init__(self, charm) -> None:
+    def __init__(self, charm: "MySQLOperatorCharm") -> None:
         super().__init__(charm, DB_RELATION_NAME)
 
         self.charm = charm

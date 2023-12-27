@@ -5,18 +5,9 @@
 
 import enum
 import logging
-import socket
 import typing
 
-from ops import (
-    ActiveStatus,
-    BlockedStatus,
-    MaintenanceStatus,
-    Relation,
-    RelationDataContent,
-    Secret,
-    WaitingStatus,
-)
+from ops import MaintenanceStatus, Relation, RelationDataContent, Secret, WaitingStatus
 from ops.framework import Object
 from typing_extensions import Optional
 
@@ -100,6 +91,10 @@ class MySQLAsyncReplicationReplica(Object):
     @property
     def idle(self) -> bool:
         """Whether the async replication is idle."""
+        if not self.model.unit.is_leader():
+            # non leader units are always idle
+            return True
+
         return self.state in [States.READY, None]
 
     def _get_secret(self) -> Secret:
@@ -113,13 +108,18 @@ class MySQLAsyncReplicationReplica(Object):
         return secret.peek_content()
 
     def _get_endpoint(self) -> str:
-        """Get endpoint to be used by the primary cluster."""
-        # TODO: public address discovery method and/or config
-        return socket.getfqdn(f"{self.model.app.name}-primary")
+        """Get endpoint to be used by the primary cluster.
+
+        This is the address in which the unit must be reachable from the primary cluster.
+        Not necessarily the locally resolved address, but an ingress address.
+        """
+        # TODO: devise method to inform the real address
+        # stick to local fqdn for now
+        return self._charm._get_unit_fqdn()
 
     def on_replica_created(self, _):
         """Handle the async_replica relation being created."""
-        self._charm.app.status = MaintenanceStatus("Async replication")
+        self._charm.app.status = MaintenanceStatus("Setting up async replication")
 
     def on_replica_changed(self, _):
         """Handle the async_replica relation being changed."""
@@ -158,7 +158,7 @@ class MySQLAsyncReplicationReplica(Object):
             self._charm.unit.status = WaitingStatus("Waiting for primary cluster")
         elif self.state == States.READY:
             # update status
-            logger.debug("Cluster is ready")
+            logger.debug("Replica cluster is ready")
             self._charm._on_update_status(None)
 
     def _on_replica_broken(self, event):

@@ -281,53 +281,63 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         instance_label = self.unit.name.replace("/", "-")
         instance_fqdn = self._get_unit_fqdn(self.unit.name)
 
-        if self._mysql.is_instance_in_cluster(instance_label):
-            logger.debug("instance already in cluster")
-            return
+        if not self._mysql.is_instance_in_cluster(instance_label):
+            # Add new instance to the cluster
+            try:
+                cluster_primary = self._get_primary_from_online_peer()
+                if not cluster_primary:
+                    self.unit.status = WaitingStatus("waiting to get cluster primary from peers")
+                    logger.debug("waiting: unable to retrieve the cluster primary from peers")
+                    return
 
-        # Add new instance to the cluster
-        try:
-            cluster_primary = self._get_primary_from_online_peer()
-            if not cluster_primary:
-                self.unit.status = WaitingStatus("waiting to get cluster primary from peers")
-                logger.debug("waiting: unable to retrieve the cluster primary from peers")
-                return
+                if (
+                    self._mysql.get_cluster_node_count(from_instance=cluster_primary)
+                    == GR_MAX_MEMBERS
+                ):
+                    self.unit.status = WaitingStatus(
+                        f"Cluster reached max size of {GR_MAX_MEMBERS} units. Standby."
+                    )
+                    logger.warning(
+                        f"Cluster reached max size of {GR_MAX_MEMBERS} units. This unit will stay as standby."
+                    )
+                    return
 
-            if self._mysql.get_cluster_node_count(from_instance=cluster_primary) == GR_MAX_MEMBERS:
-                self.unit.status = WaitingStatus(
-                    f"Cluster reached max size of {GR_MAX_MEMBERS} units. Standby."
+                if self._mysql.are_locks_acquired(from_instance=cluster_primary):
+                    self.unit.status = WaitingStatus("waiting to join the cluster")
+                    logger.debug("waiting: cluster lock is held")
+                    return
+
+                self.unit.status = MaintenanceStatus("joining the cluster")
+
+                # If instance is part of a replica cluster, locks are managed by the
+                # the primary cluster primary (i.e. cluster set global primary)
+                lock_instance = None
+                if self._mysql.is_cluster_replica(from_instance=cluster_primary):
+                    lock_instance = self._mysql.get_cluster_set_global_primary_address(
+                        connect_instance_address=cluster_primary
+                    )
+
+                # Stop GR for cases where the instance was previously part of the cluster
+                # harmless otherwise
+                self._mysql.stop_group_replication()
+                self._mysql.add_instance_to_cluster(
+                    instance_address=instance_fqdn,
+                    instance_unit_label=instance_label,
+                    from_instance=cluster_primary,
+                    lock_instance=lock_instance,
                 )
-                logger.warning(
-                    f"Cluster reached max size of {GR_MAX_MEMBERS} units. This unit will stay as standby."
-                )
-                return
-
-            if self._mysql.are_locks_acquired(from_instance=cluster_primary):
+                logger.debug(f"Added instance {instance_fqdn} to cluster")
+            except MySQLAddInstanceToClusterError:
+                logger.debug(f"Unable to add instance {instance_fqdn} to cluster.")
+            except MySQLLockAcquisitionError:
                 self.unit.status = WaitingStatus("waiting to join the cluster")
-                logger.debug("waiting: cluster lock is held")
-                return
+                logger.debug("waiting: failed to acquire lock when adding instance to cluster")
 
-            self.unit.status = MaintenanceStatus("joining the cluster")
-
-            # Stop GR for cases where the instance was previously part of the cluster
-            # harmless otherwise
-            self._mysql.stop_group_replication()
-            self._mysql.add_instance_to_cluster(
-                instance_fqdn, instance_label, from_instance=cluster_primary
-            )
-            logger.debug(f"Added instance {instance_fqdn} to cluster")
-
-            # Update 'units-added-to-cluster' counter in the peer relation databag
-            self.unit_peer_data["unit-initialized"] = "True"
-            self.unit_peer_data["member-state"] = "online"
-            self.unit.status = ActiveStatus(self.active_status_message)
-            logger.debug(f"Instance {instance_label} is cluster member")
-
-        except MySQLAddInstanceToClusterError:
-            logger.debug(f"Unable to add instance {instance_fqdn} to cluster.")
-        except MySQLLockAcquisitionError:
-            self.unit.status = WaitingStatus("waiting to join the cluster")
-            logger.debug("waiting: failed to acquire lock when adding instance to cluster")
+        # Update 'units-added-to-cluster' counter in the peer relation databag
+        self.unit_peer_data["unit-initialized"] = "True"
+        self.unit_peer_data["member-state"] = "online"
+        self.unit.status = ActiveStatus(self.active_status_message)
+        logger.debug(f"Instance {instance_label} is cluster member")
 
     def _reconcile_pebble_layer(self, container: Container) -> None:
         """Reconcile pebble layer."""
@@ -690,7 +700,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return True
 
         # avoid changing status while async replication is setting up
-        return self.async_replica.idle and self.async_primary.idle
+        return not (self.async_replica.idle and self.async_primary.idle)
 
     def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
         """Handle the update status event."""

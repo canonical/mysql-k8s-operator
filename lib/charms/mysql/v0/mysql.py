@@ -1262,14 +1262,19 @@ class MySQLBase(ABC):
             raise MySQLCreateClusterSetError
 
     def create_replica_cluster(
-        self, endpoint: str, replica_cluster_name: str, donor: Optional[str] = None
+        self,
+        endpoint: str,
+        replica_cluster_name: str,
+        instance_label: str,
+        donor: Optional[str] = None,
     ) -> None:
         """Create a replica cluster on the primary cluster.
 
         Args:
             endpoint: The endpoint of the replica cluster leader unit
             replica_cluster_name: The name of the replica cluster
-            donor: The donor instance to clone from
+            instance_label: The label to apply to the replica cluster instance
+            donor: The donor instance address definition to clone from
 
         Raises:
             MySQLCreateReplicaClusterError
@@ -1287,7 +1292,8 @@ class MySQLBase(ABC):
         commands = (
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             "cs = dba.get_cluster_set()",
-            f"cs.create_replica_cluster('{endpoint}','{replica_cluster_name}', {options})",
+            f"repl_cluster = cs.create_replica_cluster('{endpoint}','{replica_cluster_name}', {options})",
+            f"repl_cluster.set_instance_option('{endpoint}', 'label', '{instance_label}')",
         )
 
         try:
@@ -1380,7 +1386,12 @@ class MySQLBase(ABC):
             raise MySQLInitializeJujuOperationsTableError(e.message)
 
     def add_instance_to_cluster(
-        self, instance_address: str, instance_unit_label: str, from_instance: Optional[str] = None
+        self,
+        *,
+        instance_address: str,
+        instance_unit_label: str,
+        from_instance: Optional[str] = None,
+        lock_instance: Optional[str] = None,
     ) -> None:
         """Add an instance to the InnoDB cluster.
 
@@ -1394,6 +1405,7 @@ class MySQLBase(ABC):
             instance_address: address of the instance to add to the cluster
             instance_unit_label: the label/name of the unit
             from_instance: address of the adding instance, e.g. primary
+            lock_instance: address of the instance to lock on
         """
         options = {
             "password": self.cluster_admin_password,
@@ -1401,7 +1413,9 @@ class MySQLBase(ABC):
         }
 
         if not self._acquire_lock(
-            from_instance or self.instance_address, instance_unit_label, UNIT_ADD_LOCKNAME
+            lock_instance or from_instance or self.instance_address,
+            instance_unit_label,
+            UNIT_ADD_LOCKNAME,
         ):
             raise MySQLLockAcquisitionError("Lock not acquired")
 
@@ -1445,7 +1459,9 @@ class MySQLBase(ABC):
                     f"Failed to add instance {instance_address} to cluster {self.cluster_name} with recovery method 'auto'. Trying method 'clone'"
                 )
         self._release_lock(
-            from_instance or self.instance_address, instance_unit_label, UNIT_ADD_LOCKNAME
+            lock_instance or from_instance or self.instance_address,
+            instance_unit_label,
+            UNIT_ADD_LOCKNAME,
         )
 
     def is_instance_configured_for_innodb(
@@ -1593,11 +1609,17 @@ class MySQLBase(ABC):
         except MySQLClientError:
             logger.error(f"Failed to get cluster status for {self.cluster_name}")
 
-    def get_cluster_set_status(self, extended: Optional[int] = 1) -> Optional[dict]:
+    def get_cluster_set_status(
+        self, extended: Optional[int] = 1, from_instance: Optional[str] = None
+    ) -> Optional[dict]:
         """Get the cluster-set status.
 
         Executes script to retrieve cluster-set status.
         Won't raise errors.
+
+        Args:
+            extended: whether to return extended status (default: 1)
+            from_instance: member instance to run the command from (fallback to current)
 
         Returns:
             Cluster-set status as a dictionary,
@@ -1605,7 +1627,7 @@ class MySQLBase(ABC):
         """
         options = {"extended": extended}
         status_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{from_instance or self.instance_address}')",
             f"cs = dba.get_cluster_set()",
             f"print(cs.status({options}))",
         )
@@ -1635,7 +1657,7 @@ class MySQLBase(ABC):
 
         try:
             output = self._run_mysqlsh_script("\n".join(status_commands), timeout=30)
-            return output.lower()
+            return output.lower().strip()
         except MySQLClientError:
             logger.error(f"Failed to get replica cluster status for {replica_cluster_name}")
             return "unknown"
@@ -1904,9 +1926,8 @@ class MySQLBase(ABC):
     ) -> Optional[str]:
         """Get the cluster primary's address.
 
-        Keyword args:
-            connect_instance_address: The address for the cluster primary
-                (default to this instance's address)
+        Args:
+            connect_instance_address: address for a cluster instance to query from
 
         Returns:
             The address of the cluster's primary
@@ -1925,6 +1946,41 @@ class MySQLBase(ABC):
             output = self._run_mysqlsh_script("\n".join(get_cluster_primary_commands))
         except MySQLClientError as e:
             logger.warning("Failed to get cluster primary addresses", exc_info=e)
+            raise MySQLGetClusterPrimaryAddressError(e.message)
+        matches = re.search(r"<PRIMARY_ADDRESS>(.+)</PRIMARY_ADDRESS>", output)
+
+        if not matches:
+            return None
+
+        return matches.group(1)
+
+    def get_cluster_set_global_primary_address(
+        self, connect_instance_address: Optional[str] = None
+    ) -> Optional[str]:
+        """Get the cluster set global primary's address.
+
+        The global primary is the primary instance on the primary cluster set.
+
+        Args:
+            connect_instance_address: address for a cluster instance to query from
+        """
+        if not connect_instance_address:
+            connect_instance_address = self.instance_address
+        logger.debug(
+            f"Getting cluster set global primary member's address from {connect_instance_address}"
+        )
+
+        get_cluster_set_global_primary_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
+            "cs = dba.get_cluster_set()",
+            "global_primary = cs.status()['globalPrimaryInstance']",
+            "print(f'<PRIMARY_ADDRESS>{global_primary}</PRIMARY_ADDRESS>')",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(get_cluster_set_global_primary_commands))
+        except MySQLClientError as e:
+            logger.warning("Failed to get cluster set global primary addresses", exc_info=e)
             raise MySQLGetClusterPrimaryAddressError(e.message)
         matches = re.search(r"<PRIMARY_ADDRESS>(.+)</PRIMARY_ADDRESS>", output)
 
@@ -2161,13 +2217,13 @@ class MySQLBase(ABC):
 
         raise MySQLGetMemberStateError("No member state retrieved")
 
-    def is_cluster_replica(self) -> bool:
+    def is_cluster_replica(self, from_instance: Optional[str] = None) -> bool:
         """Check if cluster is a replica.
 
         Returns:
             True if cluster is a replica, False otherwise.
         """
-        cs_status = self.get_cluster_set_status(extended=0)
+        cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
         if not cs_status:
             return False
 

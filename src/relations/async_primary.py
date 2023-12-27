@@ -88,6 +88,10 @@ class MySQLAsyncReplicationPrimary(Object):
     @property
     def idle(self) -> bool:
         """Whether the async replication is idle for all related clusters."""
+        if not self.model.unit.is_leader():
+            # non leader units are always idle
+            return True
+
         for relation in self.model.relations[PRIMARY_RELATION]:
             if self.get_state(relation) not in [States.READY, None]:
                 return False
@@ -120,13 +124,28 @@ class MySQLAsyncReplicationPrimary(Object):
             self._charm.unit.status = MaintenanceStatus("Adding replica cluster")
             remote_data = self.get_remote_relation_data(event.relation) or {}
 
-            cluster_name = remote_data["cluster-name"]
+            cluster = remote_data["cluster-name"]
             endpoint = remote_data["endpoint"]
+            unit_label = remote_data["node-label"]
 
-            logger.debug(f"Adding replica cluster {cluster_name} with endpoint {endpoint}")
-            self._charm._mysql.create_replica_cluster(endpoint, cluster_name)
+            logger.debug("Looking for a donor node")
+            _, ro, _ = self._charm._mysql.get_cluster_endpoints(get_ips=False)
+
+            if not ro:
+                logger.debug(f"Adding replica {cluster=} with {endpoint=}. Primary is the donor")
+                self._charm._mysql.create_replica_cluster(
+                    endpoint, cluster, instance_label=unit_label
+                )
+            else:
+                donor = ro.split(",")[0]
+                logger.debug(f"Adding replica {cluster=} with {endpoint=} using {donor=}")
+                self._charm._mysql.create_replica_cluster(
+                    endpoint, cluster, instance_label=unit_label, donor=donor
+                )
 
             event.relation.data[self.model.app]["replica-state"] = "initialized"
+            logger.debug("Replica cluster created")
+            self._charm._on_update_status(None)
 
         elif state == States.RECOVERING:
             # Recover replica cluster
