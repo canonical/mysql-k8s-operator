@@ -1333,6 +1333,8 @@ class MySQLBase(ABC):
     def remove_replica_cluster(self, replica_cluster_name: str) -> None:
         """Remove a replica cluster on the primary cluster.
 
+        The removed cluster will be implicitly dissolved.
+
         Args:
             replica_cluster_name: The name of the replica cluster
 
@@ -2220,6 +2222,9 @@ class MySQLBase(ABC):
     def is_cluster_replica(self, from_instance: Optional[str] = None) -> bool:
         """Check if cluster is a replica.
 
+        Args:
+            from_instance: The instance to run the command from (optional)
+
         Returns:
             True if cluster is a replica, False otherwise.
         """
@@ -2228,6 +2233,21 @@ class MySQLBase(ABC):
             return False
 
         return cs_status["clusters"][self.cluster_name]["clusterrole"] == "replica"
+
+    def get_cluster_set_name(self, from_instance: Optional[str] = None) -> Optional[str]:
+        """Get cluster set name.
+
+        Args:
+            from_instance: The instance to run the command from (optional)
+
+        Returns:
+            The cluster set name.
+        """
+        cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
+        if not cs_status:
+            return None
+
+        return cs_status["domainName"]
 
     def reboot_from_complete_outage(self) -> None:
         """Wrapper for reboot_cluster_from_complete_outage command."""

@@ -43,6 +43,7 @@ class MySQLAsyncReplicationReplica(Object):
         self._charm = charm
 
         if self._charm.unit.is_leader():
+            # leader/primary
             self.framework.observe(
                 self._charm.on[REPLICA_RELATION].relation_created, self._on_replica_created
             )
@@ -53,6 +54,11 @@ class MySQLAsyncReplicationReplica(Object):
                 self._charm.on[REPLICA_RELATION].relation_broken, self._on_replica_broken
             )
         else:
+            # non-leader/secondaries
+            self.framework.observe(
+                self._charm.on[REPLICA_RELATION].relation_created,
+                self._on_replica_secondary_created,
+            )
             self.framework.observe(
                 self._charm.on[REPLICA_RELATION].relation_changed,
                 self._on_replica_secondary_changed,
@@ -166,10 +172,15 @@ class MySQLAsyncReplicationReplica(Object):
             self._charm.unit.status = WaitingStatus("Waiting for primary cluster")
         elif state == States.READY:
             # update status
-            logger.debug("Replica cluster is ready")
+            logger.debug("Replica cluster primary is ready")
             # reset the number of units added to the cluster
-            # this will trigger secondaies to join the cluster
+            # this will trigger secondaries to join the cluster
             self._charm.app_peer_data["units-added-to-cluster"] = "1"
+
+            # sync cluster-set domain name across clusters
+            if cluster_set_domain_name := self._charm._mysql.get_cluster_set_name():
+                self._charm.app_peer_data["cluster-set-domain-name"] = cluster_set_domain_name
+
             self._charm._on_update_status(None)
         elif state == States.RECOVERING:
             # recoveryng cluster (copying data and/or joining units)
@@ -188,14 +199,23 @@ class MySQLAsyncReplicationReplica(Object):
         self._charm._mysql.create_cluster(self._charm.unit_label)
         self._charm._mysql.create_cluster_set()
 
+    def _on_replica_secondary_created(self, _):
+        """Handle the async_replica relation being created for secondaries/non-leader."""
+        # set waiting state to inhibit auto recovery
+        self._charm.unit_peer_data["member-state"] = "waiting"
+        self._charm.unit.status = WaitingStatus("waiting to replica cluster be configured")
+
     def _on_replica_secondary_changed(self, _):
         """Reset cluster secondaries to allow cluster rejoin after primary recovery."""
         # the replica state is initialized when the primary cluster finished
         # creating the replica cluster on this cluster primary/leader unit
-        if self.remote_relation_data.get("replica-state") == "initialized":
-            logger.debug("Reset seconday unit to allow cluster rejoin")
-            # reset unit flags to allow cluster rejoin after primary recovery
+        if self.remote_relation_data.get(
+            "replica-state"
+        ) == "initialized" and not self._charm._mysql.is_instance_in_cluster(
+            self._charm.unit_label
+        ):
+            logger.debug("Reset secondary unit to allow cluster rejoin")
+            # reset unit flag to allow cluster rejoin after primary recovery
             # the unit will rejoin on the next peer relation changed or update status
-            self._charm.unit_peer_data["member-state"] = "waiting"
             del self._charm.unit_peer_data["unit-initialized"]
             self._charm.unit.status = WaitingStatus("waiting to join the cluster")

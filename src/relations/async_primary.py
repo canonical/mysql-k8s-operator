@@ -163,6 +163,7 @@ class MySQLAsyncReplicationPrimary(Object):
 
     def _on_primary_broken(self, event):
         """Handle the async_primary relation being broken."""
+        # Remove the replica cluster, if any.
         remote_data = self.get_remote_relation_data(event.relation) or {}
         if cluster_name := remote_data.get("cluster-name"):
             self._charm.unit.status = MaintenanceStatus("Removing replica cluster")

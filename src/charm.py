@@ -206,7 +206,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """Active status message."""
         if self.unit_peer_data.get("member-role") == "primary":
             if self._mysql.is_cluster_replica():
-                return "Primary (replica)"
+                return "Primary (standby)"
             else:
                 return "Primary"
         return ""
