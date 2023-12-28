@@ -44,13 +44,18 @@ class MySQLAsyncReplicationReplica(Object):
 
         if self._charm.unit.is_leader():
             self.framework.observe(
-                self._charm.on[REPLICA_RELATION].relation_created, self.on_replica_created
+                self._charm.on[REPLICA_RELATION].relation_created, self._on_replica_created
             )
             self.framework.observe(
-                self._charm.on[REPLICA_RELATION].relation_changed, self.on_replica_changed
+                self._charm.on[REPLICA_RELATION].relation_changed, self._on_replica_changed
             )
             self.framework.observe(
                 self._charm.on[REPLICA_RELATION].relation_broken, self._on_replica_broken
+            )
+        else:
+            self.framework.observe(
+                self._charm.on[REPLICA_RELATION].relation_changed,
+                self._on_replica_secondary_changed,
             )
 
     @property
@@ -117,13 +122,16 @@ class MySQLAsyncReplicationReplica(Object):
         # stick to local fqdn for now
         return self._charm._get_unit_fqdn()
 
-    def on_replica_created(self, _):
+    def _on_replica_created(self, _):
         """Handle the async_replica relation being created."""
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
 
-    def on_replica_changed(self, _):
+    def _on_replica_changed(self, event):
         """Handle the async_replica relation being changed."""
-        if self.state == States.SYNCING:
+        state = self.state
+        logger.debug(f"Replica state: {state}")
+
+        if state == States.SYNCING:
             logger.debug("Syncing credentials from primary cluster")
             self._charm.unit.status = MaintenanceStatus("Syncing credentials")
 
@@ -156,10 +164,18 @@ class MySQLAsyncReplicationReplica(Object):
             logger.debug("Data for adding replica cluster shared with primary cluster")
 
             self._charm.unit.status = WaitingStatus("Waiting for primary cluster")
-        elif self.state == States.READY:
+        elif state == States.READY:
             # update status
             logger.debug("Replica cluster is ready")
+            # reset the number of units added to the cluster
+            # this will trigger secondaies to join the cluster
+            self._charm.app_peer_data["units-added-to-cluster"] = "1"
             self._charm._on_update_status(None)
+        elif state == States.RECOVERING:
+            # recoveryng cluster (copying data and/or joining units)
+            self._charm.unit.status = MaintenanceStatus("Recovering replica cluster")
+            logger.debug("Recovering replica cluster")
+            event.defer()
 
     def _on_replica_broken(self, event):
         """Handle the async_replica relation being broken."""
@@ -167,6 +183,19 @@ class MySQLAsyncReplicationReplica(Object):
             logger.debug("Replica cluster still active. Waiting for dissolution")
             event.defer()
             return
-        # recriate cluster
+        # recriate local cluster
+        logger.debug("Recreating local cluster")
         self._charm._mysql.create_cluster(self._charm.unit_label)
         self._charm._mysql.create_cluster_set()
+
+    def _on_replica_secondary_changed(self, _):
+        """Reset cluster secondaries to allow cluster rejoin after primary recovery."""
+        # the replica state is initialized when the primary cluster finished
+        # creating the replica cluster on this cluster primary/leader unit
+        if self.remote_relation_data.get("replica-state") == "initialized":
+            logger.debug("Reset seconday unit to allow cluster rejoin")
+            # reset unit flags to allow cluster rejoin after primary recovery
+            # the unit will rejoin on the next peer relation changed or update status
+            self._charm.unit_peer_data["member-state"] = "waiting"
+            del self._charm.unit_peer_data["unit-initialized"]
+            self._charm.unit.status = WaitingStatus("waiting to join the cluster")

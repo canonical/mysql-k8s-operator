@@ -7,7 +7,7 @@ import enum
 import logging
 import typing
 
-from ops import MaintenanceStatus, RelationDataContent, Secret
+from ops import BlockedStatus, MaintenanceStatus, RelationDataContent, Secret
 from ops.framework import Object
 from ops.model import Relation
 from typing_extensions import Optional
@@ -103,9 +103,19 @@ class MySQLAsyncReplicationPrimary(Object):
         return secret
 
     def _on_primary_created(self, event):
-        """Share credentials with replica cluster."""
+        """Validate relations and share credentials with replica cluster."""
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
 
+        if self._charm._mysql.is_cluster_replica():
+            logger.error(
+                f"This a replica cluster, cannot be related as {PRIMARY_RELATION}. Remove relation."
+            )
+            self._charm.unit.status = BlockedStatus(
+                f"This is a replica cluster. Unrelate from the {PRIMARY_RELATION} relation"
+            )
+            return
+
+        logger.debug("Granting secrets access to async replication relation")
         secret = self._get_secret()
         secret_id = secret.get_info().id
         secret.grant(event.relation)
