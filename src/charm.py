@@ -5,7 +5,9 @@
 """Charm for MySQL."""
 
 import logging
+import random
 from socket import getfqdn
+from time import sleep
 from typing import Optional
 
 import ops
@@ -309,6 +311,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     lock_instance = self._mysql.get_cluster_set_global_primary_address(
                         connect_instance_address=cluster_primary
                     )
+
+                # add random delay to mitigate collisions when multiple units are joining
+                # due the difference between the time we test for locks and acquire them
+                sleep(random.uniform(0, 1.5))
 
                 if self._mysql.are_locks_acquired(from_instance=lock_instance or cluster_primary):
                     self.unit.status = WaitingStatus("waiting to join the cluster")

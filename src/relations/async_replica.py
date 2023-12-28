@@ -130,7 +130,6 @@ class MySQLAsyncReplicationReplica(Object):
 
     def _on_replica_created(self, _):
         """Handle the async_replica relation being created."""
-        self._charm.unit_peer_data["member-state"] = "waiting"
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
         self._charm.unit.status = WaitingStatus("awaiting sync data from primary cluster")
 
