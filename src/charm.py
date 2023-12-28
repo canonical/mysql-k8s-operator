@@ -302,13 +302,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     )
                     return
 
-                if self._mysql.are_locks_acquired(from_instance=cluster_primary):
-                    self.unit.status = WaitingStatus("waiting to join the cluster")
-                    logger.debug("waiting: cluster lock is held")
-                    return
-
-                self.unit.status = MaintenanceStatus("joining the cluster")
-
                 # If instance is part of a replica cluster, locks are managed by the
                 # the primary cluster primary (i.e. cluster set global primary)
                 lock_instance = None
@@ -316,6 +309,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     lock_instance = self._mysql.get_cluster_set_global_primary_address(
                         connect_instance_address=cluster_primary
                     )
+
+                if self._mysql.are_locks_acquired(from_instance=lock_instance or cluster_primary):
+                    self.unit.status = WaitingStatus("waiting to join the cluster")
+                    logger.debug("waiting: cluster lock is held")
+                    return
+
+                self.unit.status = MaintenanceStatus("joining the cluster")
 
                 # Stop GR for cases where the instance was previously part of the cluster
                 # harmless otherwise
@@ -329,9 +329,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 logger.debug(f"Added instance {instance_fqdn} to cluster")
             except MySQLAddInstanceToClusterError:
                 logger.debug(f"Unable to add instance {instance_fqdn} to cluster.")
+                return
             except MySQLLockAcquisitionError:
                 self.unit.status = WaitingStatus("waiting to join the cluster")
                 logger.debug("waiting: failed to acquire lock when adding instance to cluster")
+                return
 
         # Update 'units-added-to-cluster' counter in the peer relation databag
         self.unit_peer_data["unit-initialized"] = "True"

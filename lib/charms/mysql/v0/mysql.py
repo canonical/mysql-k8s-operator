@@ -1451,7 +1451,7 @@ class MySQLBase(ABC):
                         exc_info=e,
                     )
                     self._release_lock(
-                        from_instance or self.instance_address,
+                        lock_instance or from_instance or self.instance_address,
                         instance_unit_label,
                         UNIT_ADD_LOCKNAME,
                     )
@@ -2247,7 +2247,7 @@ class MySQLBase(ABC):
         if not cs_status:
             return None
 
-        return cs_status["domainName"]
+        return cs_status["domainname"]
 
     def reboot_from_complete_outage(self) -> None:
         """Wrapper for reboot_cluster_from_complete_outage command."""

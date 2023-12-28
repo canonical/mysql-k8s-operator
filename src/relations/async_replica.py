@@ -130,7 +130,9 @@ class MySQLAsyncReplicationReplica(Object):
 
     def _on_replica_created(self, _):
         """Handle the async_replica relation being created."""
+        self._charm.unit_peer_data["member-state"] = "waiting"
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
+        self._charm.unit.status = WaitingStatus("awaiting sync data from primary cluster")
 
     def _on_replica_changed(self, event):
         """Handle the async_replica relation being changed."""
@@ -184,8 +186,9 @@ class MySQLAsyncReplicationReplica(Object):
             self._charm._on_update_status(None)
         elif state == States.RECOVERING:
             # recoveryng cluster (copying data and/or joining units)
-            self._charm.unit.status = MaintenanceStatus("Recovering replica cluster")
-            logger.debug("Recovering replica cluster")
+            self._charm.app.status = MaintenanceStatus("Recovering replica cluster")
+            self._charm.unit.status = WaitingStatus("Waiting for recovery to complete")
+            logger.debug("Awaiting other units to join the cluster")
             event.defer()
 
     def _on_replica_broken(self, event):
