@@ -44,9 +44,11 @@ class MySQLAsyncReplicationPrimary(Object):
                 self._charm.on[PRIMARY_RELATION].relation_changed,
                 self._on_primary_relation_changed,
             )
-            self.framework.observe(
-                self._charm.on[PRIMARY_RELATION].relation_broken, self._on_primary_broken
-            )
+
+        # relation broken is observed on all units
+        self.framework.observe(
+            self._charm.on[PRIMARY_RELATION].relation_broken, self.on_async_relation_broken
+        )
 
     def get_relation(self, relation_id: int) -> Optional[Relation]:
         """Return the relation."""
@@ -104,8 +106,6 @@ class MySQLAsyncReplicationPrimary(Object):
 
     def _on_primary_created(self, event):
         """Validate relations and share credentials with replica cluster."""
-        self._charm.app.status = MaintenanceStatus("Setting up async replication")
-
         if self._charm._mysql.is_cluster_replica():
             logger.error(
                 f"This a replica cluster, cannot be related as {PRIMARY_RELATION}. Remove relation."
@@ -115,6 +115,7 @@ class MySQLAsyncReplicationPrimary(Object):
             )
             return
 
+        self._charm.app.status = MaintenanceStatus("Setting up async replication")
         logger.debug("Granting secrets access to async replication relation")
         secret = self._get_secret()
         secret_id = secret.get_info().id
@@ -161,9 +162,28 @@ class MySQLAsyncReplicationPrimary(Object):
             # Recover replica cluster
             self._charm.unit.status = MaintenanceStatus("Replica cluster in recovery")
 
-    def _on_primary_broken(self, event):
-        """Handle the async_primary relation being broken."""
-        # Remove the replica cluster, if any.
+    def on_async_relation_broken(self, event):
+        """Handle the async relation being broken from either side."""
+        # Remove the replica cluster, if this is the primary
+        if self._charm._mysql.is_cluster_replica():
+            # case when this cluster was switched over to a replica cluster
+            logger.info(
+                "This is a replica cluster and will be dissolved.\n"
+                "The cluster can be recreated the `recreate-cluster` action.\n"
+                "After recreating the cluster, it can be (re)joined to a cluster set"
+            )
+            self._charm.unit.status = BlockedStatus("Standalone unit. Recreate cluster.")
+            # reset flag to allow instances rejoining the cluster
+            self._charm.unit_peer_data["member-state"] = "waiting"
+            del self._charm.unit_peer_data["unit-initialized"]
+            if self._charm.unit.is_leader():
+                # reset the cluster node count flag
+                del self._charm.app_peer_data["units-added-to-cluster"]
+            return
+
+        if not self._charm.unit.is_leader():
+            # only leader units can remove replica clusters
+            return
         remote_data = self.get_remote_relation_data(event.relation) or {}
         if cluster_name := remote_data.get("cluster-name"):
             self._charm.unit.status = MaintenanceStatus("Removing replica cluster")

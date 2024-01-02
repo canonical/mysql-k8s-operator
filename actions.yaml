@@ -61,3 +61,21 @@ pre-upgrade-check:
 
 resume-upgrade:
   description: Resume a rolling upgrade after asserting successful upgrade of a new revision.
+
+promote-standby-cluster:
+  description: |
+    Promotes the standby cluster of choice to a leader. Used for safe switchover or failover.
+    Must be ran against the charm unit leader of the standby cluster.
+  params:
+    cluster-set-name:
+      type: string
+      description: |
+        The name of the cluster-set. Mandatory option, used as a foolproof method.
+    force:
+      type: boolean
+      default: False
+      description: |
+        If the switchover must be forced, the previous primary will be invalidated, which is the case
+        for failover, where the previous primary is presumed unavailable.
+        Case the previous primary is reachable, force must be set to False, which will conduct a safe
+        switchover.

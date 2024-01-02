@@ -487,7 +487,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.app_peer_data.setdefault(
             "cluster-name", self.config.cluster_name or f"cluster-{common_hash}"
         )
-        self.app_peer_data.setdefault("cluster-set-domain-name", f"cluster-set-{common_hash}")
+        self.app_peer_data.setdefault(
+            "cluster-set-domain-name", self.config.cluster_set_name or f"cluster-set-{common_hash}"
+        )
 
     def _open_ports(self) -> None:
         """Open ports if supported.

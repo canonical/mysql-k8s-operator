@@ -101,6 +101,7 @@ from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     COS_AGENT_RELATION_NAME,
+    GR_MAX_MEMBERS,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
     PASSWORD_LENGTH,
@@ -374,7 +375,7 @@ class MySQLRemoveReplicaClusterError(Error):
     """Exception raised when there is an issue removing a replica cluster."""
 
 
-class MySQLPromoteClusterToPrimary(Error):
+class MySQLPromoteClusterToPrimaryError(Error):
     """Exception raised when there is an issue promoting a replica cluster to primary."""
 
 
@@ -494,12 +495,19 @@ class MySQLCharmBase(CharmBase, ABC):
         return self.model.get_relation(PEER)
 
     @property
-    def cluster_initialized(self):
+    def cluster_initialized(self) -> bool:
         """Returns True if the cluster is initialized."""
         return int(self.app_peer_data.get("units-added-to-cluster", "0")) >= 1
 
     @property
-    def unit_initialized(self):
+    def cluster_fully_initialized(self) -> bool:
+        """Returns True if the cluster is fully initialized."""
+        if self.app.planned_units() <= GR_MAX_MEMBERS:
+            return self.app.planned_units() == self._mysql.get_cluster_node_count()
+        return self._mysql.get_cluster_node_count() == GR_MAX_MEMBERS
+
+    @property
+    def unit_initialized(self) -> bool:
         """Return True if the unit is initialized."""
         return self.unit_peer_data.get("unit-initialized") == "True"
 
@@ -533,7 +541,7 @@ class MySQLCharmBase(CharmBase, ABC):
         return self.unit.name.replace("/", "-")
 
     @property
-    def _is_peer_data_set(self):
+    def _is_peer_data_set(self) -> bool:
         return bool(
             self.app_peer_data.get("cluster-name")
             and self.get_secret("app", ROOT_PASSWORD_KEY)
@@ -1267,6 +1275,7 @@ class MySQLBase(ABC):
         replica_cluster_name: str,
         instance_label: str,
         donor: Optional[str] = None,
+        method: Optional[str] = "auto",
     ) -> None:
         """Create a replica cluster on the primary cluster.
 
@@ -1281,8 +1290,8 @@ class MySQLBase(ABC):
         """
         options = {
             "recoveryProgress": 0,
-            "recoveryMethod": "clone",
-            "timeout": 3600,
+            "recoveryMethod": method,
+            "timeout": 0,
             "communicationStack": "MySQL",
         }
 
@@ -1300,8 +1309,20 @@ class MySQLBase(ABC):
             logger.debug(f"Creating replica cluster {replica_cluster_name}")
             self._run_mysqlsh_script("\n".join(commands))
         except MySQLClientError:
-            logger.exception("Failed to create replica cluster")
-            raise MySQLCreateReplicaClusterError
+            if method == "auto":
+                logger.warning(
+                    "Failed to create replica cluster with auto method, fallback to clone method"
+                )
+                self.create_replica_cluster(
+                    endpoint,
+                    replica_cluster_name,
+                    instance_label,
+                    donor,
+                    method="clone",
+                )
+            else:
+                logger.exception("Failed to create replica cluster")
+                raise MySQLCreateReplicaClusterError
 
     def promote_cluster_to_primary(self, cluster_name: str, force: bool = False) -> None:
         """Promote a cluster to active on the primary cluster.
@@ -1328,7 +1349,7 @@ class MySQLBase(ABC):
             self._run_mysqlsh_script("\n".join(commands))
         except MySQLClientError:
             logger.exception("Failed to promote cluster to active")
-            raise MySQLPromoteClusterToPrimary
+            raise MySQLPromoteClusterToPrimaryError
 
     def remove_replica_cluster(self, replica_cluster_name: str) -> None:
         """Remove a replica cluster on the primary cluster.
@@ -2158,7 +2179,7 @@ class MySQLBase(ABC):
         logger.debug(f"Updating password for {username}.")
 
         update_user_password_commands = (
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"session.run_sql(\"ALTER USER '{username}'@'{host}' IDENTIFIED BY '{new_password}';\")",
             'session.run_sql("FLUSH PRIVILEGES;")',
         )

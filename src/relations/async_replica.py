@@ -7,9 +7,17 @@ import enum
 import logging
 import typing
 
-from ops import MaintenanceStatus, Relation, RelationDataContent, Secret, WaitingStatus
+from ops import (
+    ActionEvent,
+    MaintenanceStatus,
+    Relation,
+    RelationDataContent,
+    Secret,
+    WaitingStatus,
+)
 from ops.framework import Object
 from typing_extensions import Optional
+from charms.mysql.v0.mysql import MySQLPromoteClusterToPrimaryError
 
 from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
@@ -63,6 +71,11 @@ class MySQLAsyncReplicationReplica(Object):
                 self._charm.on[REPLICA_RELATION].relation_changed,
                 self._on_replica_secondary_changed,
             )
+
+        # promotion action
+        self.framework.observe(
+            self._charm.on.promote_standy_cluster, self._on_promote_standby_cluster
+        )
 
     @property
     def relation(self) -> Optional[Relation]:
@@ -135,6 +148,14 @@ class MySQLAsyncReplicationReplica(Object):
 
     def _on_replica_changed(self, event):
         """Handle the async_replica relation being changed."""
+        if not self._charm.cluster_fully_initialized:
+            # cluster is not fully initialized
+            # avoid race on credentials sync
+            logger.debug(
+                "Cluster not fully initialized yet, waiting until all units join the cluster"
+            )
+            event.defer()
+            return
         state = self.state
         logger.debug(f"Replica state: {state}")
 
@@ -158,6 +179,8 @@ class MySQLAsyncReplicationReplica(Object):
 
             self._charm.unit.status = MaintenanceStatus("Dissolving replica cluster")
             self._charm._mysql.dissolve_cluster()
+            # reset the cluster node count flag
+            del self._charm.app_peer_data["units-added-to-cluster"]
 
             self._charm.unit.status = MaintenanceStatus("Populate endpoint")
 
@@ -191,15 +214,14 @@ class MySQLAsyncReplicationReplica(Object):
             event.defer()
 
     def _on_replica_broken(self, event):
-        """Handle the async_replica relation being broken."""
-        if self._charm._mysql.is_instance_in_cluster(self._charm.unit_label):
-            logger.debug("Replica cluster still active. Waiting for dissolution")
-            event.defer()
-            return
+        """Handle the async relation being broken from either side."""
+        # dispatch to common method on async_primary
+        self._charm.async_primary.on_async_relation_broken(event)
+
         # recriate local cluster
-        logger.debug("Recreating local cluster")
-        self._charm._mysql.create_cluster(self._charm.unit_label)
-        self._charm._mysql.create_cluster_set()
+        # logger.debug("Recreating local cluster")
+        # self._charm._mysql.create_cluster(self._charm.unit_label)
+        # self._charm._mysql.create_cluster_set()
 
     def _on_replica_secondary_created(self, _):
         """Handle the async_replica relation being created for secondaries/non-leader."""
@@ -221,3 +243,31 @@ class MySQLAsyncReplicationReplica(Object):
             # the unit will rejoin on the next peer relation changed or update status
             del self._charm.unit_peer_data["unit-initialized"]
             self._charm.unit.status = WaitingStatus("waiting to join the cluster")
+
+    def _on_promote_standby_cluster(self, event: ActionEvent) -> None:
+        """Promote a standby cluster to primary."""
+        if not self._charm.unit.is_leader():
+            event.fail("Only the leader unit can promote a standby cluster")
+            return
+
+        if self.state != States.READY:
+            event.fail("Only a ready standby cluster can be promoted")
+            return
+
+        cluster_set_name = event.params.get("cluster-set-name")
+        if (
+            not cluster_set_name
+            or cluster_set_name != self._charm.app_peer_data["cluster-set-domain-name"]
+        ):
+            event.fail("Invalid cluster set name")
+            return
+
+        # promote cluster to primary
+        cluster_name = self._charm.app_peer_data["cluster-name"]
+        force = event.params.get("force", False)
+
+        try:
+            self._charm._mysql.promote_cluster_to_primary(cluster_name, force)
+        except MySQLPromoteClusterToPrimaryError:
+            logger.exception("Failed to promote cluster to primary")
+            event.fail("Failed to promote cluster to primary")
