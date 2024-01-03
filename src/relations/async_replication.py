@@ -4,10 +4,11 @@
 """MySQL async replication module."""
 
 import enum
-from functools import lru_cache
 import logging
 import typing
+from functools import lru_cache
 
+from charms.mysql.v0.mysql import MySQLPromoteClusterToPrimaryError
 from ops import (
     ActionEvent,
     BlockedStatus,
@@ -18,10 +19,8 @@ from ops import (
     WaitingStatus,
 )
 from ops.framework import Object
-from typing_extensions import Optional
-
 from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
-from charms.mysql.v0.mysql import MySQLPromoteClusterToPrimaryError
+from typing_extensions import Optional
 
 from constants import (
     CLUSTER_ADMIN_PASSWORD_KEY,
@@ -138,7 +137,7 @@ class MySQLAsyncReplication(Object):
 
             self._charm.unit.status = WaitingStatus("Waiting for cluster to be dissolved")
             try:
-                # hold execution unitl the cluster is dissolved
+                # hold execution until the cluster is dissolved
                 for attempt in Retrying(stop=stop_after_attempt(30), wait=wait_fixed(10)):
                     with attempt:
                         if self._charm._mysql.is_instance_in_cluster(self._charm.unit_label):
@@ -485,36 +484,3 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             # the unit will rejoin on the next peer relation changed or update status
             del self._charm.unit_peer_data["unit-initialized"]
             self._charm.unit.status = WaitingStatus("waiting to join the cluster")
-
-    def _on_promote_standby_cluster(self, event: ActionEvent) -> None:
-        """Promote a standby cluster to primary."""
-        if not self._charm.unit.is_leader():
-            event.fail("Only the leader unit can promote a standby cluster")
-            return
-
-        if self.state != States.READY:
-            event.fail("Only a ready standby cluster can be promoted")
-            return
-
-        cluster_set_name = event.params.get("cluster-set-name")
-        if (
-            not cluster_set_name
-            or cluster_set_name != self._charm.app_peer_data["cluster-set-domain-name"]
-        ):
-            event.fail("Invalid cluster set name")
-            return
-
-        if not self._charm._mysql.is_cluster_replica():
-            event.fail("This cluster is not a standby cluster")
-            return
-
-        # promote cluster to primary
-        cluster_name = self._charm.app_peer_data["cluster-name"]
-        force = event.params.get("force", False)
-
-        try:
-            self._charm._mysql.promote_cluster_to_primary(cluster_name, force)
-            event.set_results({"message": f"Cluster {cluster_name} promoted to primary"})
-        except MySQLPromoteClusterToPrimaryError:
-            logger.exception("Failed to promote cluster to primary")
-            event.fail("Failed to promote cluster to primary")
