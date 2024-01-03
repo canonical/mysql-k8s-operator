@@ -402,6 +402,7 @@ class MySQLCharmBase(CharmBase, ABC):
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
         self.framework.observe(self.on.get_password_action, self._on_get_password)
         self.framework.observe(self.on.set_password_action, self._on_set_password)
+        self.framework.observe(self.on.recreate_cluster_action, self._recreate_cluster)
 
         # Set in some event handlers in order to avoid passing event down a chain
         # of methods
@@ -470,7 +471,7 @@ class MySQLCharmBase(CharmBase, ABC):
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Action used  to retrieve the cluster status."""
         if event.params.get("cluster-set", False) == True:
-            status = self._mysql.get_cluster_set_status()
+            status = self._mysql.get_cluster_set_status(extended=0)
         else:
             status = self._mysql.get_cluster_status()
 
@@ -488,6 +489,33 @@ class MySQLCharmBase(CharmBase, ABC):
                     "message": "Failed to read cluster status.  See logs for more information.",
                 }
             )
+
+    def _recreate_cluster(self, event: ActionEvent) -> None:
+        """Action used to recreate the cluster, for special cases."""
+
+        if not self.unit.is_leader():
+            event.fail("recreate-cluster action can only be run on the leader unit.")
+            return
+
+        logger.debug("Recreating cluster")
+        try:
+            self._mysql.create_cluster(self.unit_label)
+            self._mysql.create_cluster_set()
+            # rescan cluster for cleanup of unused
+            # recovery users
+            self._mysql.rescan_cluster()
+            self.app_peer_data["units-added-to-cluster"] = "1"
+
+            state, role = self._mysql.get_member_state()
+
+            self.unit_peer_data.update(
+                {"member-state": state, "member-role": role, "unit-initialized": "True"}
+            )
+
+            self.unit.status = ops.ActiveStatus(self.active_status_message)
+        except (MySQLCreateClusterError, MySQLCreateClusterSetError) as e:
+            logger.exception("Failed to recreate cluster")
+            event.fail(str(e))
 
     @property
     def peers(self) -> Optional[ops.model.Relation]:
@@ -566,6 +594,16 @@ class MySQLCharmBase(CharmBase, ABC):
         )
 
         return len(active_cos_relations) > 0
+
+    @property
+    def active_status_message(self) -> str:
+        """Active status message."""
+        if self.unit_peer_data.get("member-role") == "primary":
+            if self._mysql.is_cluster_replica():
+                return "Primary (standby)"
+            else:
+                return "Primary"
+        return ""
 
     def _scope_obj(self, scope: Scopes):
         if scope == APP_SCOPE:
@@ -1345,11 +1383,20 @@ class MySQLBase(ABC):
         )
 
         try:
-            logger.debug(f"Promoting cluster {cluster_name} to active")
+            logger.debug(f"Promoting {cluster_name=} to primary with {force=}")
             self._run_mysqlsh_script("\n".join(commands))
         except MySQLClientError:
             logger.exception("Failed to promote cluster to active")
             raise MySQLPromoteClusterToPrimaryError
+
+    def is_cluster_in_cluster_set(self, cluster_name: str) -> Optional[bool]:
+        """Check if a cluster is in the cluster set."""
+        cs_status = self.get_cluster_set_status(extended=0)
+
+        if cs_status is None:
+            return None
+
+        return cluster_name in cs_status["clusters"]
 
     def remove_replica_cluster(self, replica_cluster_name: str) -> None:
         """Remove a replica cluster on the primary cluster.
@@ -1669,8 +1716,7 @@ class MySQLBase(ABC):
         Won't raise errors.
 
         Returns:
-            Replica cluster status as a string,
-            or None if running the status script fails.
+            Replica cluster status as a string
         """
         status_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
@@ -1682,7 +1728,7 @@ class MySQLBase(ABC):
             output = self._run_mysqlsh_script("\n".join(status_commands), timeout=30)
             return output.lower().strip()
         except MySQLClientError:
-            logger.error(f"Failed to get replica cluster status for {replica_cluster_name}")
+            logger.warning(f"Failed to get replica cluster status for {replica_cluster_name}")
             return "unknown"
 
     def get_cluster_node_count(self, from_instance: Optional[str] = None) -> int:
@@ -1700,8 +1746,8 @@ class MySQLBase(ABC):
 
         try:
             output = self._run_mysqlsh_script("\n".join(size_commands))
-        except MySQLClientError as e:
-            logger.warning("Failed to get node count", exc_info=e)
+        except MySQLClientError:
+            logger.warning("Failed to get node count")
             return 0
 
         matches = re.search(r"<NODES>(\d)</NODES>", output)
@@ -2240,7 +2286,7 @@ class MySQLBase(ABC):
 
         raise MySQLGetMemberStateError("No member state retrieved")
 
-    def is_cluster_replica(self, from_instance: Optional[str] = None) -> bool:
+    def is_cluster_replica(self, from_instance: Optional[str] = None) -> Optional[bool]:
         """Check if cluster is a replica.
 
         Args:
@@ -2251,7 +2297,7 @@ class MySQLBase(ABC):
         """
         cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
         if not cs_status:
-            return False
+            return
 
         return cs_status["clusters"][self.cluster_name]["clusterrole"] == "replica"
 

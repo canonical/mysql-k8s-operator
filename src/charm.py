@@ -69,8 +69,7 @@ from constants import (
 from k8s_helpers import KubernetesHelpers
 from log_rotate_manager import LogRotateManager
 from mysql_k8s_helpers import MySQL, MySQLCreateCustomConfigFileError, MySQLInitialiseMySQLDError
-from relations.async_primary import MySQLAsyncReplicationPrimary
-from relations.async_replica import MySQLAsyncReplicationReplica
+from relations.async_replication import MySQLAsyncReplicationPrimary, MySQLAsyncReplicationReplica
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
@@ -88,7 +87,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     # RotateMySQLLogsCharmEvents needs to be defined on the charm object for
     # the log rotate manager process (which runs juju-run/juju-exec to dispatch
     # a custom event)
-    on = RotateMySQLLogsCharmEvents()
+    on = RotateMySQLLogsCharmEvents()  # pyright: ignore [reportGeneralTypeIssues]
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -154,15 +153,23 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self._get_unit_fqdn(),
             self.app_peer_data["cluster-name"],
             self.app_peer_data["cluster-set-domain-name"],
-            self.get_secret("app", ROOT_PASSWORD_KEY),
+            self.get_secret("app", ROOT_PASSWORD_KEY),  # pyright: ignore [reportGeneralTypeIssues]
             SERVER_CONFIG_USERNAME,
-            self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
+            self.get_secret(
+                "app", SERVER_CONFIG_PASSWORD_KEY
+            ),  # pyright: ignore [reportGeneralTypeIssues]
             CLUSTER_ADMIN_USERNAME,
-            self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),
+            self.get_secret(
+                "app", CLUSTER_ADMIN_PASSWORD_KEY
+            ),  # pyright: ignore [reportGeneralTypeIssues]
             MONITORING_USERNAME,
-            self.get_secret("app", MONITORING_PASSWORD_KEY),
+            self.get_secret(
+                "app", MONITORING_PASSWORD_KEY
+            ),  # pyright: ignore [reportGeneralTypeIssues]
             BACKUPS_USERNAME,
-            self.get_secret("app", BACKUPS_PASSWORD_KEY),
+            self.get_secret(
+                "app", BACKUPS_PASSWORD_KEY
+            ),  # pyright: ignore [reportGeneralTypeIssues]
             self.unit.get_container(CONTAINER_NAME),
             self.k8s_helpers,
             self,
@@ -201,17 +208,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 },
             },
         }
-        return Layer(layer)
-
-    @property
-    def active_status_message(self) -> str:
-        """Active status message."""
-        if self.unit_peer_data.get("member-role") == "primary":
-            if self._mysql.is_cluster_replica():
-                return "Primary (standby)"
-            else:
-                return "Primary"
-        return ""
+        return Layer(layer)  # pyright: ignore [reportGeneralTypeIssues]
 
     @property
     def restart_peers(self) -> Optional[ops.model.Relation]:
@@ -273,6 +270,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             and self.unit_peer_data.get("member-state") == "waiting"
             and self._mysql.is_data_dir_initialised()
             and not self.unit_peer_data.get("unit-initialized")
+            and int(self.app_peer_data.get("units-added-to-cluster", 0)) > 0
         )
 
     def _join_unit_to_cluster(self) -> None:
@@ -607,9 +605,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             raise
 
         if not self.unit.is_leader():
-            # Non-leader units should wait for leader to add them to the cluster
+            # Non-leader units try to join cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
-            self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
+            self.unit_peer_data.update({"member-state": "waiting"})
 
             self._join_unit_to_cluster()
             return

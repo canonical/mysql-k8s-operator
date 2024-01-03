@@ -79,3 +79,10 @@ promote-standby-cluster:
         for failover, where the previous primary is presumed unavailable.
         Case the previous primary is reachable, force must be set to False, which will conduct a safe
         switchover.
+
+recreate-cluster:
+  description: |
+    Recreates a cluster on one or more standalone instances that were previously part of a standby cluster.
+    When a standby cluster is removed from an async replication relation, the cluster will be dissolved and
+    each unit will be kept in blocked status. Recreating the cluster allows rejoin the an async replication
+    relation, or usage as a standalone cluster.
