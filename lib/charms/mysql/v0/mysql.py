@@ -2899,6 +2899,27 @@ class MySQLBase(ABC):
         except MySQLClientError:
             logger.exception(f"Failed to flush {logs_type} logs.")
 
+    def get_databases(self) -> set[str]:
+        """Return a set with all databases on the server."""
+        list_databases_commands = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            'result = session.run_sql("SHOW DATABASES")',
+            "for db in result.fetch_all():\n  print(db[0])",
+        )
+
+        output = self._run_mysqlsh_script("\n".join(list_databases_commands))
+        return set(output.split())
+
+    def get_non_system_databases(self) -> set[str]:
+        """Return a set wuith all non system databases on the server."""
+        return self.get_databases() - {
+            "information_schema",
+            "mysql",
+            "mysql_innodb_cluster_metadata",
+            "performance_schema",
+            "sys",
+        }
+
     @abstractmethod
     def is_mysqld_running(self) -> bool:
         """Returns whether mysqld is running."""

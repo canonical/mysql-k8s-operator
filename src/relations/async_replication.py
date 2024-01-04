@@ -53,6 +53,7 @@ class States(str, enum.Enum):
     INITIALIZING = "initializing"  # cluster to be added
     RECOVERING = "recovery"  # replica cluster is being recovered
     READY = "ready"  # cluster set is ready
+    FAILED = "failed"  # cluster set is in a failed state
 
 
 class MySQLAsyncReplication(Object):
@@ -128,7 +129,7 @@ class MySQLAsyncReplication(Object):
             logger.exception("Failed to promote cluster to primary")
             event.fail("Failed to promote cluster to primary")
 
-    def on_async_relation_broken(self, event):
+    def on_async_relation_broken(self, event):  # noqa: C901
         """Handle the async relation being broken from either side."""
         # Remove the replica cluster, if this is the primary
 
@@ -160,27 +161,35 @@ class MySQLAsyncReplication(Object):
                 # reset the cluster node count flag
                 del self._charm.app_peer_data["units-added-to-cluster"]
 
-        elif self.role.cluster_role == "primary" and self._charm.unit.is_leader():
-            # only leader units can remove replica clusters
-            remote_data = self.get_remote_relation_data(event.relation) or {}
-            if cluster_name := remote_data.get("cluster-name"):
-                self._charm.unit.status = MaintenanceStatus("Removing replica cluster")
-
-                if self._charm._mysql.is_cluster_in_cluster_set(cluster_name):
-                    logger.debug(f"Removing replica cluster {cluster_name}")
-                    self._charm._mysql.remove_replica_cluster(cluster_name)
-                    logger.debug(f"Replica cluster {cluster_name} removed")
-                    self._charm._on_update_status(None)
+        elif self.role.cluster_role == "primary":
+            if self._charm.unit.is_leader():
+                # only leader units can remove replica clusters
+                remote_data = self.get_remote_relation_data(event.relation) or {}
+                if cluster_name := remote_data.get("cluster-name"):
+                    if self._charm._mysql.is_cluster_in_cluster_set(cluster_name):
+                        self._charm.unit.status = MaintenanceStatus("Removing replica cluster")
+                        logger.debug(f"Removing replica cluster {cluster_name}")
+                        self._charm._mysql.remove_replica_cluster(cluster_name)
+                        logger.debug(f"Replica cluster {cluster_name} removed")
+                    else:
+                        logger.warning(
+                            f"Replica cluster {cluster_name} not found in cluster set, skipping removal"
+                        )
                 else:
-                    logger.warning(
-                        f"Replica cluster {cluster_name} not found in cluster set, skipping removal"
-                    )
-            else:
-                logger.warning("No cluster name found, skipping removal")
+                    # Relation being broken before setup, e.g.: due to replica with user data
+                    logger.warning("No cluster name found, skipping removal")
+            elif self._charm.unit_peer_data.get("member-state") == "waiting":
+                # set member-state to allow status update
+                # needed for secondaries status update when removing due to replica with user data
+                self._charm.unit_peer_data["member-state"] = "unknown"
+            self._charm._on_update_status(None)
 
 
 class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
-    """MySQL async replication primary side."""
+    """MySQL async replication primary side.
+
+    Implements the setup phase of the async replication for the primary side.
+    """
 
     def __init__(self, charm: "MySQLOperatorCharm"):
         super().__init__(charm, PRIMARY_RELATION)
@@ -209,6 +218,9 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
 
         local_data = self.get_local_relation_data(relation)
         remote_data = self.get_remote_relation_data(relation) or {}
+
+        if local_data.get("is-replica") == "true":
+            return States.FAILED
 
         if local_data.get("secret-id") and not remote_data.get("endpoint"):
             return States.SYNCING
@@ -251,6 +263,7 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
             self._charm.unit.status = BlockedStatus(
                 f"This is a replica cluster. Unrelate from the {PRIMARY_RELATION} relation"
             )
+            event.relation.data[self.model.app]["is-replica"] = "true"
             return
 
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
@@ -303,7 +316,10 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
 
 
 class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
-    """MySQL async replication replica side."""
+    """MySQL async replication replica side.
+
+    Implements the setup phase of the async replication for the replica side.
+    """
 
     def __init__(self, charm: "MySQLOperatorCharm"):
         super().__init__(charm, REPLICA_RELATION)
@@ -350,6 +366,9 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         if not self.relation:
             return None
 
+        if self.relation_data.get("user-data-found") == "true":
+            return States.FAILED
+
         if self.remote_relation_data.get("secret-id") and not self.relation_data.get("endpoint"):
             # received credentials from primary cluster
             # and did not synced credentials
@@ -392,7 +411,21 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         return self._charm._get_unit_fqdn()
 
     def _on_replica_created(self, _):
-        """Handle the async_replica relation being created."""
+        """Handle the async_replica relation being created by the leader unit."""
+        logger.debug("Checking for user data")
+        if self._charm._mysql.get_non_system_databases():
+            logger.info(
+                "\n\tUser data found, aborting async replication setup."
+                "\n\tEnsure the cluster has no user data before trying to join a cluster set."
+                "\n\tAfter removing/backing up the data, remove the relation and add it again."
+            )
+            self._charm.app.status = BlockedStatus("User data found, check instruction in the log")
+            self._charm.unit.status = BlockedStatus(
+                "User data found, aborting async replication setup"
+            )
+            self.relation_data["user-data-found"] = "true"
+            return
+
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
         self._charm.unit.status = WaitingStatus("awaiting sync data from primary cluster")
 
