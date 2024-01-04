@@ -2316,6 +2316,19 @@ class MySQLBase(ABC):
 
         return cs_status["domainname"]
 
+    def stop_group_replication(self) -> None:
+        """Stop Group replication if enabled on the instance."""
+        stop_gr_command = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            "data = session.run_sql('SELECT 1 FROM performance_schema.replication_group_members')",
+            "if len(data.fetch_all()) > 0:",
+            "    session.run_sql('STOP GROUP_REPLICATION')",
+        )
+        try:
+            self._run_mysqlsh_script("\n".join(stop_gr_command))
+        except MySQLClientError:
+            logger.debug("Failed to stop Group Replication for unit")
+
     def reboot_from_complete_outage(self) -> None:
         """Wrapper for reboot_cluster_from_complete_outage command."""
         reboot_from_outage_command = (

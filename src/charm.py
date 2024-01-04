@@ -218,6 +218,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """Retrieve the peer relation."""
         return self.model.get_relation("restart")
 
+    @property
+    def unit_address(self) -> str:
+        """Return the address of this unit."""
+        return self._get_unit_fqdn()
+
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
 
@@ -282,7 +287,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Try to join the unit from the primary unit.
         """
         instance_label = self.unit.name.replace("/", "-")
-        instance_fqdn = self._get_unit_fqdn(self.unit.name)
+        instance_address = self._get_unit_fqdn(self.unit.name)
 
         if not self._mysql.is_instance_in_cluster(instance_label):
             # Add new instance to the cluster
@@ -328,14 +333,14 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 # harmless otherwise
                 self._mysql.stop_group_replication()
                 self._mysql.add_instance_to_cluster(
-                    instance_address=instance_fqdn,
+                    instance_address=instance_address,
                     instance_unit_label=instance_label,
                     from_instance=cluster_primary,
                     lock_instance=lock_instance,
                 )
-                logger.debug(f"Added instance {instance_fqdn} to cluster")
+                logger.debug(f"Added instance {instance_address} to cluster")
             except MySQLAddInstanceToClusterError:
-                logger.debug(f"Unable to add instance {instance_fqdn} to cluster.")
+                logger.debug(f"Unable to add instance {instance_address} to cluster.")
                 return
             except MySQLLockAcquisitionError:
                 self.unit.status = WaitingStatus("waiting to join the cluster")

@@ -412,8 +412,8 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         Not necessarily the locally resolved address, but an ingress address.
         """
         # TODO: devise method to inform the real address
-        # stick to local fqdn for now
-        return self._charm._get_unit_fqdn()
+        # using unit informed address (fqdn or ip)
+        return self._charm.unit_address
 
     def _on_replica_created(self, _):
         """Handle the async_replica relation being created by the leader unit."""
