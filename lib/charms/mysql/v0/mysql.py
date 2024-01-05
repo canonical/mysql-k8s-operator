@@ -87,13 +87,7 @@ from charms.data_platform_libs.v0.data_secrets import (
 )
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from ops.model import Unit
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_fixed,
-    wait_random,
-)
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed, wait_random
 
 from constants import (
     BACKUPS_PASSWORD_KEY,
@@ -470,7 +464,7 @@ class MySQLCharmBase(CharmBase, ABC):
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Action used  to retrieve the cluster status."""
-        if event.params.get("cluster-set", False) == True:
+        if event.params.get("cluster-set"):
             status = self._mysql.get_cluster_set_status(extended=0)
         else:
             status = self._mysql.get_cluster_status()
@@ -492,7 +486,6 @@ class MySQLCharmBase(CharmBase, ABC):
 
     def _recreate_cluster(self, event: ActionEvent) -> None:
         """Action used to recreate the cluster, for special cases."""
-
         if not self.unit.is_leader():
             event.fail("recreate-cluster action can only be run on the leader unit.")
             return
@@ -1698,7 +1691,7 @@ class MySQLBase(ABC):
         options = {"extended": extended}
         status_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{from_instance or self.instance_address}')",
-            f"cs = dba.get_cluster_set()",
+            "cs = dba.get_cluster_set()",
             f"print(cs.status({options}))",
         )
 
