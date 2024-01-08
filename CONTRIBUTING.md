@@ -55,7 +55,7 @@ export LIBJUJU_VERSION_SPECIFIER=2.9.44.1
 Build the charm in this git repository using:
 
 ```shell
-tox run -e build
+tox run -e build-dev
 ```
 
 ### Deploy
