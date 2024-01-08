@@ -24,8 +24,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   ci-tests:
-    needs:
-      - lib-check
+    # Disabled because of https://github.com/canonical/charmcraft/issues/1389#issuecomment-1880921728
+#    needs:
+#      - lib-check
     uses: ./.github/workflows/ci.yaml
     secrets: inherit
   build:
@@ -37,7 +38,6 @@ jobs:
   release:
     name: Release charm
     needs:
-      - lib-check
       - ci-tests
       - build
     uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v9.0.0
