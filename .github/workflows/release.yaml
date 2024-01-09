@@ -33,7 +33,7 @@ jobs:
     secrets: inherit
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm_without_cache.yaml@v9.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm_without_cache.yaml@v9.0.2
     with:
       charmcraft-snap-channel: beta
 
@@ -43,7 +43,7 @@ jobs:
       - lib-check
       - ci-tests
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v9.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v9.0.2
     with:
       channel: 8.0/edge
       artifact-name: ${{ needs.build.outputs.artifact-name }}
