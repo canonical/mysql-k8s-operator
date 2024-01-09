@@ -11,6 +11,7 @@ from functools import lru_cache
 from charms.mysql.v0.mysql import MySQLPromoteClusterToPrimaryError
 from ops import (
     ActionEvent,
+    ActiveStatus,
     BlockedStatus,
     MaintenanceStatus,
     Relation,
@@ -176,6 +177,7 @@ class MySQLAsyncReplication(Object):
                         logger.debug(f"Removing replica cluster {cluster_name}")
                         self._charm._mysql.remove_replica_cluster(cluster_name)
                         logger.debug(f"Replica cluster {cluster_name} removed")
+                        self._charm.unit.status = ActiveStatus(self._charm.active_status_message)
                     else:
                         logger.warning(
                             f"Replica cluster {cluster_name} not found in cluster set, skipping removal"
@@ -381,9 +383,9 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
         if self.remote_relation_data.get("replica-state") == "initialized":
             # cluster added to cluster-set by primary cluster
-            if self._charm._mysql.get_cluster_node_count() < self.model.app.planned_units():
-                return States.RECOVERING
-            return States.READY
+            if self._charm.cluster_fully_initialized:
+                return States.READY
+            return States.RECOVERING
         return States.INITIALIZING
 
     @property
@@ -416,7 +418,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         return self._charm.unit_address
 
     def _on_replica_created(self, _):
-        """Handle the async_replica relation being created by the leader unit."""
+        """Handle the async_replica relation being created on the leader unit."""
         logger.debug("Checking for user data")
         if self._charm._mysql.get_non_system_databases():
             logger.info(
@@ -437,7 +439,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
     def _on_replica_changed(self, event):
         """Handle the async_replica relation being changed."""
         state = self.state
-        logger.debug(f"Replica state: {state}")
+        logger.debug(f"Replica cluster {state=}")
 
         if state == States.SYNCING:
             if not self._charm.cluster_fully_initialized:
@@ -500,7 +502,6 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             # this will trigger secondaries to join the cluster
             node_count = self._charm._mysql.get_cluster_node_count()
             self._charm.app_peer_data["units-added-to-cluster"] = str(node_count)
-            event.defer()
 
     def _on_replica_secondary_created(self, _):
         """Handle the async_replica relation being created for secondaries/non-leader."""

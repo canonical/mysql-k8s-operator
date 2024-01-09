@@ -798,9 +798,15 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             except MySQLSetClusterPrimaryError:
                 logger.warning("Failed to switch primary to unit 0")
 
+        # If instance is part of a replica cluster, locks are managed by the
+        # the primary cluster primary (i.e. cluster set global primary)
+        lock_instance = None
+        if self._mysql.is_cluster_replica():
+            lock_instance = self._mysql.get_cluster_set_global_primary_address()
+
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)
-        self._mysql.remove_instance(self.unit_label)
+        self._mysql.remove_instance(self.unit_label, lock_instance=lock_instance)
 
         # Inform other hooks of current status
         self.unit_peer_data["unit-status"] = "removing"

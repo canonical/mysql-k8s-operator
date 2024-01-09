@@ -522,7 +522,10 @@ class MySQLCharmBase(CharmBase, ABC):
 
     @property
     def cluster_fully_initialized(self) -> bool:
-        """Returns True if the cluster is fully initialized."""
+        """Returns True if the cluster is fully initialized.
+
+        Fully initialized means that all unit that can be joined are joined.
+        """
         if self.app.planned_units() <= GR_MAX_MEMBERS:
             return self.app.planned_units() == self._mysql.get_cluster_node_count()
         return self._mysql.get_cluster_node_count() == GR_MAX_MEMBERS
@@ -1797,7 +1800,7 @@ class MySQLBase(ABC):
         reraise=True,
         wait=wait_random(min=4, max=30),
     )
-    def remove_instance(self, unit_label: str) -> None:
+    def remove_instance(self, unit_label: str, lock_instance: Optional[str] = None) -> None:
         """Remove instance from the cluster.
 
         This method is called from each unit being torn down, thus we must obtain
@@ -1823,7 +1826,9 @@ class MySQLBase(ABC):
                 )
 
             # Attempt to acquire a lock on the primary instance
-            acquired_lock = self._acquire_lock(primary_address, unit_label, UNIT_TEARDOWN_LOCKNAME)
+            acquired_lock = self._acquire_lock(
+                lock_instance or primary_address, unit_label, UNIT_TEARDOWN_LOCKNAME
+            )
             if not acquired_lock:
                 raise MySQLRemoveInstanceRetryError("Did not acquire lock to remove unit")
 
@@ -1879,7 +1884,9 @@ class MySQLBase(ABC):
                     "Unable to retrieve the address of the cluster primary"
                 )
 
-            self._release_lock(primary_address, unit_label, UNIT_TEARDOWN_LOCKNAME)
+            self._release_lock(
+                lock_instance or primary_address, unit_label, UNIT_TEARDOWN_LOCKNAME
+            )
         except MySQLClientError as e:
             # Raise an error that does not lead to a retry of this method
             logger.exception(
