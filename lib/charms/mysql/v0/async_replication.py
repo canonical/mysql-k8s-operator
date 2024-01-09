@@ -6,7 +6,7 @@
 import enum
 import logging
 import typing
-from functools import lru_cache
+from functools import cached_property
 
 from charms.mysql.v0.mysql import MySQLPromoteClusterToPrimaryError
 from ops import (
@@ -82,14 +82,17 @@ class MySQLAsyncReplication(Object):
             self._charm.on[REPLICA_RELATION].relation_broken, self.on_async_relation_broken
         )
 
-    @property
-    @lru_cache
+    @cached_property
     def role(self) -> ClusterSetInstanceState:
         """Current cluster set role of the unit, after the relation is established."""
-        if is_replica := self._charm._mysql.is_cluster_replica():
+        is_replica = self._charm._mysql.is_cluster_replica()
+
+        if is_replica:
             cluster_role = "replica"
+        elif is_replica is False:
+            cluster_role = "primary"
         else:
-            cluster_role = "primary" if is_replica is False else "unset"
+            cluster_role = "unset"
 
         _, instance_role = self._charm._mysql.get_member_state()
 
@@ -226,6 +229,9 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
         local_data = self.get_local_relation_data(relation)
         remote_data = self.get_remote_relation_data(relation) or {}
 
+        if not local_data:
+            return None
+
         if local_data.get("is-replica") == "true":
             return States.FAILED
 
@@ -289,7 +295,6 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
 
         if state == States.INITIALIZING:
             # Add replica cluster primary node
-            # TODO: select a secondary as a donor
             logger.debug("Initializing replica cluster")
             self._charm.unit.status = MaintenanceStatus("Adding replica cluster")
             remote_data = self.get_remote_relation_data(event.relation) or {}
@@ -502,6 +507,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             # this will trigger secondaries to join the cluster
             node_count = self._charm._mysql.get_cluster_node_count()
             self._charm.app_peer_data["units-added-to-cluster"] = str(node_count)
+            event.defer()
 
     def _on_replica_secondary_created(self, _):
         """Handle the async_replica relation being created for secondaries/non-leader."""

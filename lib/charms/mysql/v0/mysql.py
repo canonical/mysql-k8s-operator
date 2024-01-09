@@ -490,7 +490,7 @@ class MySQLCharmBase(CharmBase, ABC):
             event.fail("recreate-cluster action can only be run on the leader unit.")
             return
 
-        logger.debug("Recreating cluster")
+        logger.info("Recreating cluster")
         try:
             self._mysql.create_cluster(self.unit_label)
             self._mysql.create_cluster_set()
@@ -526,9 +526,9 @@ class MySQLCharmBase(CharmBase, ABC):
 
         Fully initialized means that all unit that can be joined are joined.
         """
-        if self.app.planned_units() <= GR_MAX_MEMBERS:
-            return self.app.planned_units() == self._mysql.get_cluster_node_count()
-        return self._mysql.get_cluster_node_count() == GR_MAX_MEMBERS
+        return self._mysql.get_cluster_node_count() == min(
+            GR_MAX_MEMBERS, self.app.planned_units()
+        )
 
     @property
     def unit_initialized(self) -> bool:
@@ -1311,7 +1311,7 @@ class MySQLBase(ABC):
         donor: Optional[str] = None,
         method: Optional[str] = "auto",
     ) -> None:
-        """Create a replica cluster on the primary cluster.
+        """Create a replica cluster from the primary cluster.
 
         Args:
             endpoint: The endpoint of the replica cluster leader unit
@@ -1359,7 +1359,7 @@ class MySQLBase(ABC):
                 raise MySQLCreateReplicaClusterError
 
     def promote_cluster_to_primary(self, cluster_name: str, force: bool = False) -> None:
-        """Promote a cluster to active on the primary cluster.
+        """Promote a cluster to become the primary cluster on the cluster set.
 
         Args:
             cluster_name: The name of the cluster to promote
@@ -1372,9 +1372,9 @@ class MySQLBase(ABC):
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             "cs = dba.get_cluster_set()",
             (
-                f"cs.set_primary_cluster('{cluster_name}')"
-                if not force
-                else f"cs.force_primary_cluster('{cluster_name}')"
+                f"cs.force_primary_cluster('{cluster_name}')"
+                if force
+                else f"cs.set_primary_cluster('{cluster_name}')"
             ),
         )
 
@@ -1382,7 +1382,7 @@ class MySQLBase(ABC):
             logger.debug(f"Promoting {cluster_name=} to primary with {force=}")
             self._run_mysqlsh_script("\n".join(commands))
         except MySQLClientError:
-            logger.exception("Failed to promote cluster to active")
+            logger.exception("Failed to promote cluster to primary")
             raise MySQLPromoteClusterToPrimaryError
 
     def is_cluster_in_cluster_set(self, cluster_name: str) -> Optional[bool]:
@@ -1703,7 +1703,7 @@ class MySQLBase(ABC):
             output_dict = json.loads(output.lower())
             return output_dict
         except MySQLClientError:
-            logger.error("Failed to get cluster-set status")
+            logger.warning("Failed to get cluster-set status")
 
     def get_replica_cluster_status(self, replica_cluster_name: str) -> str:
         """Get the replica cluster status.
