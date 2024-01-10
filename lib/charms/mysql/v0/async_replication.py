@@ -4,6 +4,7 @@
 """MySQL async replication module."""
 
 import enum
+import json
 import logging
 import typing
 from functools import cached_property
@@ -24,8 +25,14 @@ from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
 from typing_extensions import Optional
 
 from constants import (
+    BACKUPS_PASSWORD_KEY,
+    BACKUPS_USERNAME,
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
+    MONITORING_PASSWORD_KEY,
+    MONITORING_USERNAME,
+    ROOT_PASSWORD_KEY,
+    ROOT_USERNAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
@@ -322,13 +329,20 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
             return
 
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
-        logger.debug("Granting secrets access to async replication relation")
-        secret = self._get_secret()
-        secret_id = secret.get_info().id
-        secret.grant(event.relation)
+        # CMR secrets not working: https://bugs.launchpad.net/juju/+bug/2046484
+        # logger.debug("Granting secrets access to async replication relation")
+        # secret = self._get_secret()
+        # secret_id = secret.get_info().id
+        # secret.grant(event.relation)
 
-        logger.debug(f"Sharing {secret_id} with replica cluster")
-        event.relation.data[self.model.app]["secret-id"] = secret_id
+        # logger.debug(f"Sharing {secret_id} with replica cluster")
+        # event.relation.data[self.model.app]["secret-id"] = secret_id
+
+        # workaround: using relation data instead of CMR secrets
+        secret = self._get_secret()
+
+        logger.debug("Sharing secret with replica cluster")
+        event.relation.data[self.model.app]["secret-id"] = json.dumps(secret.get_content())
         event.relation.data[self.model.app]["cluster-name"] = self._charm._mysql.cluster_name
 
     def _on_primary_relation_changed(self, event):
@@ -451,8 +465,9 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
     def _async_replication_credentials(self) -> dict[str, str]:
         """Get async replication credentials from primary cluster."""
-        secret = self._get_secret()
-        return secret.peek_content()
+        # secret = self._get_secret()
+        # return secret.peek_content()
+        return json.loads(self.remote_relation_data.get("secret-id", "{}"))
 
     def _get_endpoint(self) -> str:
         """Get endpoint to be used by the primary cluster.
@@ -504,6 +519,9 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             sync_keys = {
                 SERVER_CONFIG_PASSWORD_KEY: SERVER_CONFIG_USERNAME,
                 CLUSTER_ADMIN_PASSWORD_KEY: CLUSTER_ADMIN_USERNAME,
+                MONITORING_PASSWORD_KEY: MONITORING_USERNAME,
+                BACKUPS_PASSWORD_KEY: BACKUPS_USERNAME,
+                ROOT_PASSWORD_KEY: ROOT_USERNAME,
             }
 
             for key, password in credentials.items():
@@ -558,9 +576,10 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
     def _on_replica_secondary_created(self, _):
         """Handle the async_replica relation being created for secondaries/non-leader."""
-        # set waiting state to inhibit auto recovery
-        self._charm.unit_peer_data["member-state"] = "waiting"
-        self._charm.unit.status = WaitingStatus("waiting to replica cluster be configured")
+        # set waiting state to inhibit auto recovery, only when not already set
+        if not self._charm.unit_peer_data.get("member-state") == "waiting":
+            self._charm.unit_peer_data["member-state"] = "waiting"
+            self._charm.unit.status = WaitingStatus("waiting replica cluster be configured")
 
     def _on_replica_secondary_changed(self, _):
         """Reset cluster secondaries to allow cluster rejoin after primary recovery."""
