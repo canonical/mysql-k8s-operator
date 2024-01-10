@@ -85,3 +85,21 @@ recreate-cluster:
     When a standby cluster is removed from an async replication relation, the cluster will be dissolved and
     each unit will be kept in blocked status. Recreating the cluster allows rejoin the an async replication
     relation, or usage as a standalone cluster.
+
+fence-writes:
+  description: |
+    Stops write traffic to a primary cluster of a ClusterSet.
+  params:
+    cluster-set-name:
+      type: string
+      description: |
+        The name of the cluster-set. Mandatory option, used for confirmation.
+
+unfence-writes:
+  description: |
+    Resumes write traffic to a primary cluster of a ClusterSet.
+  params:
+    cluster-set-name:
+      type: string
+      description: |
+        The name of the cluster-set. Mandatory option, used for confirmation.

@@ -8,7 +8,7 @@ import logging
 import typing
 from functools import cached_property
 
-from charms.mysql.v0.mysql import MySQLPromoteClusterToPrimaryError
+from charms.mysql.v0.mysql import MySQLFencingWritesError, MySQLPromoteClusterToPrimaryError
 from ops import (
     ActionEvent,
     ActiveStatus,
@@ -68,11 +68,6 @@ class MySQLAsyncReplication(Object):
     def __init__(self, charm: "MySQLOperatorCharm", relation_name: str):
         super().__init__(charm, relation_name)
         self._charm = charm
-
-        # promotion action
-        self.framework.observe(
-            self._charm.on.promote_standby_cluster_action, self._on_promote_standby_cluster
-        )
 
         # relation broken is observed on all units
         self.framework.observe(
@@ -137,6 +132,38 @@ class MySQLAsyncReplication(Object):
         except MySQLPromoteClusterToPrimaryError:
             logger.exception("Failed to promote cluster to primary")
             event.fail("Failed to promote cluster to primary")
+
+    def _on_fence_unfence_writes_action(self, event: ActionEvent) -> None:
+        """Fence or unfence writes to a cluster."""
+        if (
+            event.params.get("cluster-set-name")
+            != self._charm.app_peer_data["cluster-set-domain-name"]
+        ):
+            event.fail("Invalid cluster set name")
+            return
+
+        if self.role.cluster_role == "replica":
+            event.fail("Only a primary cluster can have writes fenced/unfence")
+            return
+
+        try:
+            if (
+                event.handle.kind == "fence_writes_action"
+                and not self._charm._mysql.is_cluster_writes_fenced()
+            ):
+                logger.info("Fencing writes to the cluster")
+                self._charm._mysql.fence_writes()
+                event.set_results({"message": "Writes to the cluster are now fenced"})
+            elif (
+                event.handle.kind == "unfence_writes_action"
+                and self._charm._mysql.is_cluster_writes_fenced()
+            ):
+                logger.info("Unfencing writes to the cluster")
+                self._charm._mysql.unfence_writes()
+                event.set_results({"message": "Writes to the cluster are now resumed"})
+        except MySQLFencingWritesError:
+            event.fail("Failed to fence writes. Check logs for details")
+            return
 
     def on_async_relation_broken(self, event):  # noqa: C901
         """Handle the async relation being broken from either side."""
@@ -203,6 +230,21 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
 
     def __init__(self, charm: "MySQLOperatorCharm"):
         super().__init__(charm, PRIMARY_RELATION)
+
+        # Actions observed only on the primary side to avoid duplicated execution
+        # promotion action
+        self.framework.observe(
+            self._charm.on.promote_standby_cluster_action, self._on_promote_standby_cluster
+        )
+
+        # fence writes action
+        self.framework.observe(
+            self._charm.on.fence_writes_action, self._on_fence_unfence_writes_action
+        )
+        # unfence writes action
+        self.framework.observe(
+            self._charm.on.unfence_writes_action, self._on_fence_unfence_writes_action
+        )
 
         if self._charm.unit.is_leader():
             self.framework.observe(
