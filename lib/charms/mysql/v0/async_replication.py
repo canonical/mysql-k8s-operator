@@ -539,6 +539,11 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             if cluster_set_domain_name := self._charm._mysql.get_cluster_set_name():
                 self._charm.app_peer_data["cluster-set-domain-name"] = cluster_set_domain_name
 
+            # set the number of units added to the cluster for a single unit replica cluster
+            # needed here since it will skip the `RECOVERING` state
+            if self._charm.app.planned_units() == 1:
+                self._charm.app_peer_data["units-added-to-cluster"] = "1"
+
             self._charm._on_update_status(None)
         elif state == States.RECOVERING:
             # recoveryng cluster (copying data and/or joining units)
