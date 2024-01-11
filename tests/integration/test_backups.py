@@ -9,6 +9,7 @@ from pathlib import Path
 
 import boto3
 import pytest
+import pytest_microceph
 from ops import JujuVersion
 from pytest_operator.plugin import OpsTest
 
@@ -28,26 +29,6 @@ logger = logging.getLogger(__name__)
 
 host_ip = socket.gethostbyname(socket.gethostname())
 
-CLOUD_CONFIGS = {
-    "aws": {
-        "endpoint": "https://s3.amazonaws.com",
-        "bucket": "data-charms-testing",
-        "path": "mysql-k8s",
-        "region": "us-east-1",
-    },
-    "gcp": {
-        "endpoint": "https://storage.googleapis.com",
-        "bucket": "data-charms-testing",
-        "path": "mysql-k8s",
-        "region": "",
-    },
-    "ceph": {
-        "endpoint": f"http://{host_ip}",
-        "bucket": os.environ["S3_BUCKET"],
-        "path": "mysql-k8s",
-        "region": os.environ["S3_REGION"],
-    },
-}
 S3_INTEGRATOR = "s3-integrator"
 TIMEOUT = 10 * 60
 CLUSTER_ADMIN_PASSWORD = "clusteradminpassword"
@@ -61,7 +42,9 @@ value_before_backup, value_after_backup = None, None
 
 
 @pytest.fixture(scope="session")
-def cloud_credentials(github_secrets) -> dict[str, dict[str, str]]:
+def cloud_credentials(
+    github_secrets, microceph: pytest_microceph.ConnectionInformation
+) -> dict[str, dict[str, str]]:
     """Read cloud credentials."""
     return {
         "aws": {
@@ -73,19 +56,43 @@ def cloud_credentials(github_secrets) -> dict[str, dict[str, str]]:
             "secret-key": github_secrets["GCP_SECRET_KEY"],
         },
         "ceph": {
-            "access-key": os.environ["S3_ACCESS_KEY"],
-            "secret-key": os.environ["S3_SECRET_KEY"],
+            "access-key": microceph.access_key_id,
+            "secret-key": microceph.secret_access_key,
+        },
+    }
+
+
+@pytest.fixture(scope="session")
+def cloud_configs(microceph: pytest_microceph.ConnectionInformation):
+    return {
+        "aws": {
+            "endpoint": "https://s3.amazonaws.com",
+            "bucket": "data-charms-testing",
+            "path": "mysql-k8s",
+            "region": "us-east-1",
+        },
+        "gcp": {
+            "endpoint": "https://storage.googleapis.com",
+            "bucket": "data-charms-testing",
+            "path": "mysql-k8s",
+            "region": "",
+        },
+        "ceph": {
+            "endpoint": f"http://{host_ip}",
+            "bucket": microceph.bucket,
+            "path": "mysql-k8s",
+            "region": "",
         },
     }
 
 
 @pytest.fixture(scope="session", autouse=True)
-def clean_backups_from_buckets(cloud_credentials):
+def clean_backups_from_buckets(cloud_credentials, cloud_configs):
     """Teardown to clean up created backups from clouds."""
     yield
 
     logger.info("Cleaning backups from cloud buckets")
-    for cloud_name, config in CLOUD_CONFIGS.items():
+    for cloud_name, config in cloud_configs.items():
         backup = backups_by_cloud.get(cloud_name)
 
         if not backup:
@@ -134,7 +141,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_backup(ops_test: OpsTest, cloud_credentials) -> None:
+async def test_backup(ops_test: OpsTest, cloud_credentials, cloud_configs) -> None:
     """Test to create a backup and list backups."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
     mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
@@ -151,7 +158,7 @@ async def test_backup(ops_test: OpsTest, cloud_credentials) -> None:
         TABLE_NAME,
     )
 
-    for cloud_name, config in CLOUD_CONFIGS.items():
+    for cloud_name, config in cloud_configs.items():
         # set the s3 config and credentials
 
         logger.info(f"Setting s3 config for {cloud_name}")
@@ -206,7 +213,9 @@ async def test_backup(ops_test: OpsTest, cloud_credentials) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_restore_on_same_cluster(ops_test: OpsTest, cloud_credentials) -> None:
+async def test_restore_on_same_cluster(
+    ops_test: OpsTest, cloud_credentials, cloud_configs
+) -> None:
     """Test to restore a backup to the same mysql cluster."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
     mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
@@ -215,7 +224,7 @@ async def test_restore_on_same_cluster(ops_test: OpsTest, cloud_credentials) -> 
     mysql_unit_address = await get_unit_address(ops_test, mysql_unit.name)
     server_config_credentials = await get_server_config_credentials(mysql_unit)
 
-    for cloud_name, config in CLOUD_CONFIGS.items():
+    for cloud_name, config in cloud_configs.items():
         assert backups_by_cloud[cloud_name]
 
         # set the s3 config and credentials
@@ -297,7 +306,7 @@ async def test_restore_on_same_cluster(ops_test: OpsTest, cloud_credentials) -> 
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials) -> None:
+async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials, cloud_configs) -> None:
     """Test to restore a backup on a new mysql cluster."""
     logger.info("Deploying a new mysql cluster")
 
@@ -333,7 +342,7 @@ async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials) -> N
 
     server_config_credentials = await get_server_config_credentials(primary_mysql)
 
-    for cloud_name, config in CLOUD_CONFIGS.items():
+    for cloud_name, config in cloud_configs.items():
         assert backups_by_cloud[cloud_name]
 
         # set the s3 config and credentials
