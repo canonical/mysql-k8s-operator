@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 import logging
-import os
 import socket
 from pathlib import Path
 
