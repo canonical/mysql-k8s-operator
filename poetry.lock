@@ -1682,7 +1682,7 @@ pytest = "^7.4.4"
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
 reference = "microceph"
-resolved_reference = "0b12fa58e253b873dcd985fec9e29fac3c29afd9"
+resolved_reference = "4f2c68bb6e0a5bfd8f2f231fa54007925b20c6b9"
 subdirectory = "python/pytest_plugins/microceph"
 
 [[package]]
