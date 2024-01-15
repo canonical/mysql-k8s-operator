@@ -102,6 +102,7 @@ class TestCharm(unittest.TestCase):
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("charms.mysql.v0.mysql.MySQLCharmBase.active_status_message", return_value="")
     @patch("mysql_k8s_helpers.MySQL.write_content_to_file")
     @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.create_cluster_set")
@@ -139,6 +140,7 @@ class TestCharm(unittest.TestCase):
         _is_data_dir_initialised,
         _create_cluster_set,
         _write_content_to_file,
+        _active_status_message,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -294,11 +296,16 @@ class TestCharm(unittest.TestCase):
             self.peer_relation_id, self.charm.unit.name
         )
 
+    @patch("charms.mysql.v0.mysql.MySQLBase.is_cluster_replica", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.remove_instance")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
     def test_database_storage_detaching(
-        self, mock_is_instance_in_cluster, mock_get_primary_label, mock_remove_instance
+        self,
+        mock_is_instance_in_cluster,
+        mock_get_primary_label,
+        mock_remove_instance,
+        mock_is_cluster_replica,
     ):
         self.harness.update_relation_data(
             self.peer_relation_id, self.charm.unit.name, {"unit-initialized": "True"}
@@ -311,7 +318,7 @@ class TestCharm(unittest.TestCase):
         mock_get_primary_label.return_value = self.charm.unit_label
 
         self.charm._on_database_storage_detaching(None)
-        mock_remove_instance.assert_called_once_with(self.charm.unit_label)
+        mock_remove_instance.assert_called_once_with(self.charm.unit_label, lock_instance=None)
 
         self.assertEqual(
             self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)[
