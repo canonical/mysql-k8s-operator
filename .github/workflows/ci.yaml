@@ -16,7 +16,7 @@ on:
 jobs:
   lint:
     name: Lint
-    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v4.2.3
+    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v9.0.2
 
   unit-test:
     strategy:
@@ -44,11 +44,9 @@ jobs:
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v4.2.3
+    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v9.0.2
     with:
-      charmcraft-snap-revision: 1349  # version 2.3.0
-    permissions:
-      actions: write  # Needed to manage GitHub Actions cache
+      charmcraft-snap-channel: beta
 
   gh-hosted-collect-integration-tests:
     name: (GH hosted) Collect integration test groups

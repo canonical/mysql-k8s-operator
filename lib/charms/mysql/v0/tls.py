@@ -26,6 +26,7 @@ import re
 import socket
 from typing import List, Optional, Tuple
 
+import ops
 from charms.mysql.v0.mysql import MySQLKillSessionError, MySQLTLSSetupError
 from charms.tls_certificates_interface.v1.tls_certificates import (
     CertificateAvailableEvent,
@@ -52,7 +53,7 @@ LIBID = "eb73947deedd4380a3a90d527e0878eb"
 
 LIBAPI = 0
 
-LIBPATCH = 2
+LIBPATCH = 3
 
 SCOPE = "unit"
 
@@ -165,9 +166,10 @@ class MySQLTLS(Object):
     def _on_tls_relation_broken(self, _) -> None:
         """Disable TLS when TLS relation broken."""
         try:
-            self.charm.set_secret(SCOPE, "certificate-authority", None, fallback_key="ca")
-            self.charm.set_secret(SCOPE, "certificate", None, fallback_key="cert")
-            self.charm.set_secret(SCOPE, "chain", None)
+            if not ops.jujuversion.JujuVersion.from_environ().has_secrets:
+                self.charm.set_secret(SCOPE, "certificate-authority", None, fallback_key="ca")
+                self.charm.set_secret(SCOPE, "certificate", None, fallback_key="cert")
+                self.charm.set_secret(SCOPE, "chain", None)
         except KeyError:
             # ignore key error for unit teardown
             pass

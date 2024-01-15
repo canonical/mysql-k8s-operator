@@ -20,12 +20,13 @@ this operator.
   the `main` branch. This also avoids merge commits and creates a linear Git commit history.
 
 ## Developing
-Install `tox` and `poetry`
+Install `tox`, `poetry`, and `charmcraftcache`
+
+Install pipx: https://pipx.pypa.io/stable/installation/
 ```shell
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
 pipx install tox
 pipx install poetry
+pipx install charmcraftcache
 ```
 
 You can create an environment for development:
@@ -55,7 +56,7 @@ export LIBJUJU_VERSION_SPECIFIER=2.9.44.1
 Build the charm in this git repository using:
 
 ```shell
-tox run -e build
+tox run -e build-dev
 ```
 
 ### Deploy
