@@ -19,7 +19,7 @@ from charms.mysql.v0.mysql import (
     MySQLStopMySQLDError,
 )
 from ops.model import Container
-from ops.pebble import ChangeError, ConnectionError, ExecError
+from ops.pebble import ChangeError, ExecError
 from tenacity import (
     retry,
     retry_if_exception_type,
