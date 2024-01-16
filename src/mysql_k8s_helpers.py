@@ -559,17 +559,9 @@ class MySQL(MySQLBase):
             )
             raise MySQLDeleteUsersWithLabelError(e.message)
 
-    @retry(
-        retry=retry_if_exception_type(ConnectionError),
-        stop=stop_after_attempt(10),
-        wait=wait_fixed(5),
-    )
     def is_mysqld_running(self) -> bool:
-        """Returns whether mysqld is running.
-
-        Retry every 5 seconds for 10 seconds if there is an issue obtaining a socket connection.
-        """
-        return self.container.exists(MYSQLD_SOCK_FILE)
+        """Returns whether server is connectable and mysqld is running."""
+        return self.is_server_connectable and self.container.exists(MYSQLD_SOCK_FILE)
 
     def is_server_connectable(self) -> bool:
         """Returns whether the server is connectable."""
