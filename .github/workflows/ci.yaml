@@ -72,17 +72,6 @@ jobs:
             echo Skipping unstable tests
             echo "mark_expression=not unstable" >> "$GITHUB_OUTPUT"
           fi
-      - name: Setup microceph
-        # setup microceph before any tox call due to it writing a file
-        # used by tox
-        uses: phvalguima/microceph-action@v0.3.1
-        with:
-          channel: 'latest/edge'
-          devname: '/dev/sdi'
-          accesskey: 'accesskey'
-          secretkey: 'secretkey'
-          bucket: 'testbucket'
-          osdsize: '1G'
       - name: Collect test groups
         id: collect-groups
         run: tox run -e integration -- tests/integration -m '${{ steps.select-test-stability.outputs.mark_expression }}' --collect-groups
@@ -156,16 +145,6 @@ jobs:
             echo Skipping unstable tests
             echo "mark_expression=not unstable" >> "$GITHUB_OUTPUT"
           fi
-      - name: Setup microceph
-        # setup microceph before tests
-        uses: phvalguima/microceph-action@v0.3.1
-        with:
-          channel: 'latest/edge'
-          devname: '/dev/sdi'
-          accesskey: 'accesskey'
-          secretkey: 'secretkey'
-          bucket: 'testbucket'
-          osdsize: '1G'
       - name: Run integration tests
         run: tox run -e integration -- "${{ matrix.groups.path_to_test_file }}" --group="${{ matrix.groups.group_number }}" -m '${{ steps.select-test-stability.outputs.mark_expression }}'
         env:
