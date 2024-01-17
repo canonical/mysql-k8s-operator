@@ -75,7 +75,7 @@ class TestCharm(unittest.TestCase):
         # Comparing output dicts
         self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict())
 
-    @pytest.mark.usefixtures("only_without_juju_secrets")
+    @pytest.mark.usefixtures("without_juju_secrets")
     def test_on_leader_elected(self):
         # Test leader election setting of
         # peer relation data
@@ -88,7 +88,6 @@ class TestCharm(unittest.TestCase):
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
 
-    @pytest.mark.usefixtures("only_with_juju_secrets")
     def test_on_leader_elected_secrets(self):
         # Test leader election setting of secret data
         self.harness.set_leader()
@@ -236,7 +235,7 @@ class TestCharm(unittest.TestCase):
         )
         assert self.charm.get_secret("unit", "password") == "test-password"
 
-    @pytest.mark.usefixtures("only_without_juju_secrets")
+    @pytest.mark.usefixtures("without_juju_secrets")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
     def test_set_secret_databag(self, _):
         self.harness.set_leader()
@@ -261,7 +260,6 @@ class TestCharm(unittest.TestCase):
             == "test-password"
         )
 
-    @pytest.mark.usefixtures("only_with_juju_secrets")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
     def test_set_secret(self, _):
         self.harness.set_leader()
@@ -321,7 +319,6 @@ class TestCharm(unittest.TestCase):
         )
 
     @parameterized.expand([("app"), ("unit")])
-    @pytest.mark.usefixtures("only_with_juju_secrets")
     def test_set_reset_new_secret(self, scope):
         """NOTE: currently ops.testing seems to allow for non-leader to set secrets too!"""
         # Getting current password
@@ -338,7 +335,6 @@ class TestCharm(unittest.TestCase):
         assert self.harness.charm.get_secret(scope, "new-secret2") == "blablabla"
 
     @parameterized.expand([("app"), ("unit")])
-    @pytest.mark.usefixtures("only_with_juju_secrets")
     def test_invalid_secret(self, scope):
         with self.assertRaises(TypeError):
             self.harness.charm.set_secret("unit", "somekey", 1)
@@ -346,7 +342,6 @@ class TestCharm(unittest.TestCase):
         self.harness.charm.set_secret("unit", "somekey", "")
         assert self.harness.charm.get_secret(scope, "somekey") is None
 
-    @pytest.mark.usefixtures("only_with_juju_secrets")
     def test_migartion(self):
         """Check if we're moving on to use secrets when live upgrade to Secrets usage."""
         # Getting current password
@@ -360,7 +355,6 @@ class TestCharm(unittest.TestCase):
         assert self.harness.charm.model.get_secret(label="mysql-k8s.app")
         assert self.harness.charm.get_secret("app", "my-secret") == "blablabla"
 
-    @pytest.mark.usefixtures("only_with_juju_secrets")
     def test_migartion_unit(self):
         """Check if we're moving on to use secrets when live upgrade to Secrets usage."""
         # Getting current password
@@ -373,7 +367,7 @@ class TestCharm(unittest.TestCase):
         assert self.harness.charm.model.get_secret(label="mysql-k8s.unit")
         assert self.harness.charm.get_secret("unit", "my-secret") == "blablabla"
 
-    @pytest.mark.usefixtures("only_without_juju_secrets")
+    @pytest.mark.usefixtures("without_juju_secrets")
     @pytest.mark.usefixtures("use_caplog")
     def test_delete_password(self):
         """NOTE: currently ops.testing seems to allow for non-leader to remove secrets too!"""
@@ -415,7 +409,6 @@ class TestCharm(unittest.TestCase):
                 in self._caplog.text
             )
 
-    @pytest.mark.usefixtures("only_with_juju_secrets")
     @pytest.mark.usefixtures("use_caplog")
     def test_delete_existing_password_secrets(self):
         """NOTE: currently ops.testing seems to allow for non-leader to remove secrets too!"""

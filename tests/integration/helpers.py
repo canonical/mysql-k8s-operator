@@ -23,6 +23,7 @@ from tenacity import RetryError, Retrying, retry, stop_after_attempt, wait_fixed
 
 from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE, SERVER_CONFIG_USERNAME
 
+from . import juju_
 from .connector import MySQLConnector
 
 
@@ -63,9 +64,8 @@ async def get_cluster_status(ops_test: OpsTest, unit: Unit) -> Dict:
     Returns:
         A dictionary representing the cluster status
     """
-    get_cluster_status_action = await unit.run_action("get-cluster-status")
-    cluster_status_results = await get_cluster_status_action.wait()
-    return cluster_status_results.results.get("status", {})
+    results = await juju_.run_action(unit, "get-cluster-status")
+    return results.get("status", {})
 
 
 async def get_leader_unit(ops_test: OpsTest, app_name: str) -> Optional[Unit]:
@@ -192,10 +192,7 @@ async def get_server_config_credentials(unit: Unit) -> Dict:
     Returns:
         A dictionary with the server config username and password
     """
-    action = await unit.run_action(action_name="get-password", username=SERVER_CONFIG_USERNAME)
-    result = await action.wait()
-
-    return result.results
+    return await juju_.run_action(unit, "get-password", username=SERVER_CONFIG_USERNAME)
 
 
 async def fetch_credentials(unit: Unit, username: str = None) -> Dict:
@@ -208,13 +205,9 @@ async def fetch_credentials(unit: Unit, username: str = None) -> Dict:
         A dictionary with the server config username and password
     """
     if username is None:
-        action = await unit.run_action(action_name="get-password")
+        return await juju_.run_action(unit, "get-password")
     else:
-        action = await unit.run_action(action_name="get-password", username=username)
-
-    result = await action.wait()
-
-    return result.results
+        return await juju_.run_action(unit, "get-password", username=username)
 
 
 async def rotate_credentials(unit: Unit, username: str = None, password: str = None) -> Dict:
@@ -227,16 +220,11 @@ async def rotate_credentials(unit: Unit, username: str = None, password: str = N
         A dictionary with the action result
     """
     if username is None:
-        action = await unit.run_action(action_name="set-password")
+        return await juju_.run_action(unit, "set-password")
     elif password is None:
-        action = await unit.run_action(action_name="set-password", username=username)
+        return await juju_.run_action(unit, username=username)
     else:
-        action = await unit.run_action(
-            action_name="set-password", username=username, password=password
-        )
-    result = await action.wait()
-
-    return result.results
+        return await juju_.run_action(unit, username=username, password=password)
 
 
 async def scale_application(
