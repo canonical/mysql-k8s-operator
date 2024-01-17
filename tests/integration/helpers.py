@@ -222,9 +222,9 @@ async def rotate_credentials(unit: Unit, username: str = None, password: str = N
     if username is None:
         return await juju_.run_action(unit, "set-password")
     elif password is None:
-        return await juju_.run_action(unit, username=username)
+        return await juju_.run_action(unit, "set-password", username=username)
     else:
-        return await juju_.run_action(unit, username=username, password=password)
+        return await juju_.run_action(unit, "set-password", username=username, password=password)
 
 
 async def scale_application(
