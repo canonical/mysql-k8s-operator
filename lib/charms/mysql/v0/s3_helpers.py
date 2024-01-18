@@ -31,7 +31,11 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 5
+LIBPATCH = 6
+
+# botocore/urllib3 clutter the logs when on debug
+logging.getLogger("botocore").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -55,6 +59,7 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
         )
 
         s3 = session.resource("s3", endpoint_url=s3_parameters["endpoint"])
+
         bucket = s3.Bucket(s3_parameters["bucket"])
 
         with tempfile.NamedTemporaryFile() as temp_file:
@@ -89,7 +94,7 @@ def _compile_backups_from_file_ids(
     return backups
 
 
-def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
+def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # noqa: C901
     """Retrieve subdirectories in an S3 path.
 
     Args:
@@ -147,9 +152,19 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
 
         return _compile_backups_from_file_ids(metadata_ids, md5_ids, log_ids)
     except Exception as e:
+        try:
+            # botocore raises dynamically generated exceptions
+            # with a response attribute. We can use this to
+            # set a more meaningful error message.
+            if e.response["Error"]["Code"] == "NoSuchBucket":
+                message = f"Bucket {s3_parameters['bucket']} does not exist"
+                setattr(e, "message", message)
+                raise
+        except (KeyError, AttributeError):
+            pass
+        # default handling exposes exception
         logger.exception(
-            f"Failed to list subdirectories in S3 bucket={s3_parameters['bucket']}, path={s3_parameters['path']}",
-            exc_info=e,
+            f"Failed to list subdirectories in S3 bucket={s3_parameters['bucket']}, path={s3_parameters['path']}"
         )
         raise
 

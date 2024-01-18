@@ -11,6 +11,7 @@ from pytest_operator.plugin import OpsTest
 
 from constants import CLUSTER_ADMIN_USERNAME, TLS_SSL_CERT_FILE
 
+from . import juju_
 from .helpers import (
     app_name,
     fetch_credentials,
@@ -161,9 +162,7 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
 
     # set key using auto-generated key for each unit
     for unit in ops_test.model.applications[app].units:
-        action = await unit.run_action(action_name="set-tls-private-key")
-        action = await action.wait()
-        assert action.status == "completed", "❌ setting key failed"
+        await juju_.run_action(unit, "set-tls-private-key")
 
     # allow time for reconfiguration
     sleep(TLS_SETUP_SLEEP_TIME)
