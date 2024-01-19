@@ -2550,18 +2550,13 @@ class MySQLBase(ABC):
             logger.exception("Failed to kill external sessions")
             raise MySQLKillSessionError
 
-    def check_mysqlsh_connection(self) -> bool:
+    def check_mysqlsh_connection(self) -> None:
         """Checks if it is possible to connect to the server with mysqlsh."""
         connect_commands = (
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             'session.run_sql("SELECT 1")',
         )
-
-        try:
-            self._run_mysqlsh_script("\n".join(connect_commands))
-            return True
-        except MySQLClientError:
-            return False
+        self._run_mysqlsh_script("\n".join(connect_commands))
 
     def get_pid_of_port_3306(self) -> Optional[str]:
         """Retrieves the PID of the process that is bound to port 3306."""
