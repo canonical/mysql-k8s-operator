@@ -233,8 +233,11 @@ class MySQL(MySQLBase):
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError()
 
-        if check_port and not self.check_mysqlsh_connection():
-            raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
+        if check_port:
+            try:
+                self.check_mysqlsh_connection():
+            except MySQLClientError as e:
+                raise MySQLServiceNotRunningError("Connection with mysqlsh not possible") from e
 
         logger.debug("MySQL connection possible")
 
