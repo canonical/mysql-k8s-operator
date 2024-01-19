@@ -235,7 +235,7 @@ class MySQL(MySQLBase):
 
         if check_port:
             try:
-                self.check_mysqlsh_connection():
+                self.check_mysqlsh_connection()
             except MySQLClientError as e:
                 raise MySQLServiceNotRunningError("Connection with mysqlsh not possible") from e
 
