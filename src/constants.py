@@ -45,7 +45,6 @@ MYSQLD_DEFAULTS_CONFIG_FILE = "/etc/mysql/my.cnf"
 MYSQLD_EXPORTER_PORT = "9104"
 MYSQLD_EXPORTER_SERVICE = "mysqld_exporter"
 GR_MAX_MEMBERS = 9
-SECRET_ID_KEY = "secret-id"
 # TODO: should be changed when adopting cos-agent
 COS_AGENT_RELATION_NAME = "metrics-endpoint"
 LOG_ROTATE_CONFIG_FILE = "/etc/logrotate.d/flush_mysql_logs"
