@@ -150,6 +150,9 @@ class MySQLRelation(Object):
         if not container.can_connect():
             return
 
+        if not self.charm.unit.is_leader():
+            return
+
         host = json.loads(relation_data)["host"]
 
         primary_address = self.charm._mysql.get_cluster_primary_address()
