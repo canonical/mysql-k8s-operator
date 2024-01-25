@@ -79,21 +79,10 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, get_args
 
 import ops
 from charms.data_platform_libs.v0.data_interfaces import DataPeer, DataPeerUnit
-from charms.data_platform_libs.v0.data_secrets import (
-    APP_SCOPE,
-    UNIT_SCOPE,
-    Scopes,
-    SecretCache,
-)
+from charms.data_platform_libs.v0.data_secrets import APP_SCOPE, UNIT_SCOPE, Scopes, SecretCache
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from ops.model import Unit
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_fixed,
-    wait_random,
-)
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed, wait_random
 
 from constants import (
     BACKUPS_PASSWORD_KEY,
@@ -134,7 +123,7 @@ BYTES_1MiB = 1048576  # 1 mebibyte
 RECOVERY_CHECK_TIME = 10  # seconds
 GET_MEMBER_STATE_TIME = 10  # seconds
 
-SECRET_INTERNAL_LABEL = "internal-secret"
+SECRET_INTERNAL_LABEL = "secret-id"
 SECRET_DELETED_LABEL = "None"
 
 
@@ -583,9 +572,8 @@ class MySQLCharmBase(CharmBase, ABC):
         """Get secret from the secret storage.
 
         Retrieve secret from juju secrets backend if secret exists there.
-        Else retrieve from peer databag (with key or fallback_key). This is to
-        account for cases where secrets are stored in peer databag but the charm
-        is then refreshed to a newer revision.
+        Else retrieve from peer databag. This is to account for cases where secrets are stored in
+        peer databag but the charm is then refreshed to a newer revision.
         """
         peers = self.model.get_relation(PEER)
         if scope == APP_SCOPE:
@@ -2503,7 +2491,8 @@ class MySQLBase(ABC):
         try:
             self._run_mysqlsh_script("\n".join(connect_commands))
             return True
-        except MySQLClientError:
+        except MySQLClientError as e:
+            logger.exception("Failed to connect to MySQL with mysqlsh")
             return False
 
     def get_pid_of_port_3306(self) -> Optional[str]:
