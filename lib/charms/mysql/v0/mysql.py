@@ -2491,7 +2491,7 @@ class MySQLBase(ABC):
         try:
             self._run_mysqlsh_script("\n".join(connect_commands))
             return True
-        except MySQLClientError as e:
+        except MySQLClientError:
             logger.exception("Failed to connect to MySQL with mysqlsh")
             return False
 
