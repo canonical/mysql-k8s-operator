@@ -1,5 +1,5 @@
 # Charmed MySQL K8s revision 75
-<sub>Thursday, April 20, 2023</sub>
+<sub>April 20, 2023</sub>
 
 Dear community, this is to inform you that new Canonical Charmed MySQL K8s charm is published in `8.0/stable` charmhub channel for Kubernetes.
 

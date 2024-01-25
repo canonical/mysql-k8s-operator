@@ -1,5 +1,5 @@
 # Charmed MySQL K8s revision 99
-<sub>Monday, September 18, 2023</sub>
+<sub>September 18, 2023</sub>
 
 Dear community, this is to inform you that new Canonical Charmed MySQL K8s is published in `8.0/stable` [charmhub](https://charmhub.io/mysql-k8s?channel=8.0/stable) channel for Kubernetes.
 
