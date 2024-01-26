@@ -24,6 +24,7 @@ import base64
 import logging
 import re
 import socket
+import typing
 from typing import List, Optional, Tuple
 
 import ops
@@ -35,7 +36,7 @@ from charms.tls_certificates_interface.v1.tls_certificates import (
     generate_csr,
     generate_private_key,
 )
-from ops.charm import ActionEvent, CharmBase
+from ops.charm import ActionEvent
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 
@@ -50,18 +51,19 @@ from constants import (
 logger = logging.getLogger(__name__)
 
 LIBID = "eb73947deedd4380a3a90d527e0878eb"
-
 LIBAPI = 0
-
-LIBPATCH = 3
+LIBPATCH = 4
 
 SCOPE = "unit"
+
+if typing.TYPE_CHECKING:
+    from .mysql import MySQLCharmBase
 
 
 class MySQLTLS(Object):
     """MySQL TLS Provider class."""
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: "MySQLCharmBase"):
         super().__init__(charm, "certificates")
         self.charm = charm
 
@@ -119,8 +121,8 @@ class MySQLTLS(Object):
         self.charm.set_secret(
             SCOPE, "chain", "\n".join(event.chain) if event.chain is not None else None
         )
-        self.charm.set_secret(SCOPE, "certificate", event.certificate, fallback_key="cert")
-        self.charm.set_secret(SCOPE, "certificate-authority", event.ca, fallback_key="ca")
+        self.charm.set_secret(SCOPE, "certificate", event.certificate)
+        self.charm.set_secret(SCOPE, "certificate-authority", event.ca)
 
         self.push_tls_files_to_workload()
         try:
@@ -145,7 +147,7 @@ class MySQLTLS(Object):
 
     def _on_certificate_expiring(self, event: CertificateExpiringEvent) -> None:
         """Request the new certificate when old certificate is expiring."""
-        if event.certificate != self.charm.get_secret(SCOPE, "certificate", fallback_key="cert"):
+        if event.certificate != self.charm.get_secret(SCOPE, "certificate"):
             logger.error("An unknown certificate expiring.")
             return
 
@@ -167,8 +169,8 @@ class MySQLTLS(Object):
         """Disable TLS when TLS relation broken."""
         try:
             if not ops.jujuversion.JujuVersion.from_environ().has_secrets:
-                self.charm.set_secret(SCOPE, "certificate-authority", None, fallback_key="ca")
-                self.charm.set_secret(SCOPE, "certificate", None, fallback_key="cert")
+                self.charm.set_secret(SCOPE, "certificate-authority", None)
+                self.charm.set_secret(SCOPE, "certificate", None)
                 self.charm.set_secret(SCOPE, "chain", None)
         except KeyError:
             # ignore key error for unit teardown
@@ -237,12 +239,12 @@ class MySQLTLS(Object):
         Returns:
             A tuple of strings with the content of server-key, ca and server-cert
         """
-        ca = self.charm.get_secret(SCOPE, "certificate-authority", fallback_key="ca")
+        ca = self.charm.get_secret(SCOPE, "certificate-authority")
         chain = self.charm.get_secret(SCOPE, "chain")
         ca_file = chain or ca
 
         key = self.charm.get_secret(SCOPE, "key")
-        cert = self.charm.get_secret(SCOPE, "certificate", fallback_key="cert")
+        cert = self.charm.get_secret(SCOPE, "certificate")
         return key, ca_file, cert
 
     def push_tls_files_to_workload(self) -> None:
