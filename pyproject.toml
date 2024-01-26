@@ -71,6 +71,7 @@ pyyaml = "^6.0.1"
 urllib3 = "^1.26.16"
 lightkube = "^0.14.0"
 kubernetes = "^27.2.0"
+allure-pytest = "^2.13.2"
 
 
 [tool.coverage.run]
