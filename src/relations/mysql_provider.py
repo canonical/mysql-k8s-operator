@@ -6,7 +6,6 @@
 import logging
 import socket
 import typing
-from typing import List
 
 from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseProvides,
@@ -16,7 +15,6 @@ from charms.mysql.v0.mysql import (
     MySQLCreateApplicationDatabaseAndScopedUserError,
     MySQLDeleteUserError,
     MySQLDeleteUsersForRelationError,
-    MySQLGetClusterEndpointsError,
     MySQLGetMySQLVersionError,
     MySQLGrantPrivilegesToUserError,
     MySQLRemoveRouterFromMetadataError,
@@ -84,37 +82,6 @@ class MySQLProvider(Object):
         self.database.update_relation_data(relation.id, {"password": password})
         return password
 
-    @staticmethod
-    def _endpoints_to_pod_list(endpoints: str) -> List[str]:
-        """Converts a comma separated list of endpoints to a list of pods."""
-        return [p.split(".")[0] for p in endpoints.split(",")]
-
-    def _update_endpoints(self) -> None:
-        """Updates pod labels to reflect role of the unit."""
-        logger.debug("Updating pod labels")
-        try:
-            rw_endpoints, ro_endpoints, offline = self.charm._mysql.get_cluster_endpoints(
-                get_ips=False
-            )
-
-            # rw pod labels
-            if rw_endpoints:
-                for pod in self._endpoints_to_pod_list(rw_endpoints):
-                    self.charm.k8s_helpers.label_pod("primary", pod)
-            # ro pod labels
-            if ro_endpoints:
-                for pod in self._endpoints_to_pod_list(ro_endpoints):
-                    self.charm.k8s_helpers.label_pod("replicas", pod)
-            # offline pod labels
-            if offline:
-                for pod in self._endpoints_to_pod_list(offline):
-                    self.charm.k8s_helpers.label_pod("offline", pod)
-        except MySQLGetClusterEndpointsError:
-            logger.exception("Failed to get cluster endpoints")
-        except KubernetesClientError:
-            logger.debug("Can't update pod labels")
-            self.charm.unit.status = BlockedStatus("Can't update pod labels")
-
     def _update_pod_endpoint(self) -> None:
         """Update pod label to reflect the role of the unit."""
         logger.debug(f"Updating pod endpoint for {self.charm.unit.name}")
@@ -171,7 +138,7 @@ class MySQLProvider(Object):
 
         try:
             # make sure pods are labeled before adding service
-            self._update_endpoints()
+            self.charm._mysql.update_endpoints()
 
             # create k8s services for endpoints
             self.charm.k8s_helpers.create_endpoint_services(["primary", "replicas"])

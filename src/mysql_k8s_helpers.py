@@ -15,6 +15,7 @@ from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureMySQLUsersError,
     MySQLExecError,
+    MySQLGetClusterEndpointsError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
@@ -47,7 +48,7 @@ from constants import (
     ROOT_SYSTEM_USER,
     XTRABACKUP_PLUGIN_DIR,
 )
-from k8s_helpers import KubernetesHelpers
+from k8s_helpers import KubernetesClientError, KubernetesHelpers
 from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
@@ -613,6 +614,7 @@ class MySQL(MySQLBase):
         user: Optional[str] = None,
         group: Optional[str] = None,
         env_extra: Optional[Dict] = None,
+        timeout: Optional[float] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         try:
@@ -624,6 +626,7 @@ class MySQL(MySQLBase):
                 user=user,
                 group=group,
                 environment=env_extra,
+                timeout=timeout,
             )
             stdout, stderr = process.wait_output()
             return (stdout, stderr or "")
@@ -820,3 +823,36 @@ class MySQL(MySQLBase):
             return expected_content <= content_set
         except ExecError:
             return False
+
+    def update_endpoints(self) -> None:  # noqa: C901
+        """Updates pod labels to reflect role of the unit."""
+
+        def endpoints_to_pod_list(endpoints: str) -> List[str]:
+            """Converts a comma separated list of endpoints to a list of pods."""
+            return [p.split(".")[0] for p in endpoints.split(",")]
+
+        logger.debug("Updating pod labels")
+        try:
+            rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+
+            # rw pod labels
+            if rw_endpoints:
+                for pod in endpoints_to_pod_list(rw_endpoints):
+                    self.k8s_helper.label_pod("primary", pod)
+            # ro pod labels
+            if ro_endpoints:
+                for pod in endpoints_to_pod_list(ro_endpoints):
+                    self.k8s_helper.label_pod("replicas", pod)
+            # offline pod labels
+            if offline:
+                for pod in endpoints_to_pod_list(offline):
+                    self.k8s_helper.label_pod("offline", pod)
+        except MySQLGetClusterEndpointsError:
+            logger.exception("Failed to get cluster endpoints")
+        except KubernetesClientError:
+            logger.exception("Can't update pod labels")
+
+    def set_cluster_primary(self, new_primary_address: str) -> None:
+        """Set the cluster primary and update pod labels."""
+        super().set_cluster_primary(new_primary_address)
+        self.update_endpoints()
