@@ -66,13 +66,12 @@ class MySQLRelation(Object):
             a string representing the password for the mysql user
         """
         password_key = f"{username}-password"
-        fallback_key = f"{username}_password"
-        password = self.charm.get_secret("app", password_key, fallback_key=fallback_key)
+        password = self.charm.get_secret("app", password_key)
         if password:
             return password
 
         password = generate_random_password(PASSWORD_LENGTH)
-        self.charm.set_secret("app", password_key, password, fallback_key=fallback_key)
+        self.charm.set_secret("app", password_key, password)
         return password
 
     def _get_or_generate_username(self, event_relation_id: int) -> str:
@@ -149,6 +148,9 @@ class MySQLRelation(Object):
 
         container = self.charm.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
+            return
+
+        if not self.charm.unit.is_leader():
             return
 
         host = json.loads(relation_data)["host"]
