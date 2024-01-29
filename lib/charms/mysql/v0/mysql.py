@@ -2505,18 +2505,28 @@ class MySQLBase(ABC):
         except MySQLExecError:
             return None
 
-    def flush_mysql_logs(self, logs_type: MySQLTextLogs) -> None:
-        """Flushes the specified logs_type logs."""
-        flush_logs_commands = (
+    def flush_mysql_logs(self, logs_type: Union[MySQLTextLogs, list[MySQLTextLogs]]) -> None:
+        """Flushes the specified logs_type logs.
+
+        Args:
+            logs_type: The type of logs to flush, single or list of MySQLTextLogs.
+        """
+        if isinstance(logs_type, list):
+            logs_str = [f'session.run_sql("FLUSH {log.value}")' for log in logs_type]
+        else:
+            logs_str = [f'session.run_sql("FLUSH {logs_type.value}")']
+
+        flush_logs_commands = [
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             'session.run_sql("SET sql_log_bin = 0")',
-            f'session.run_sql("FLUSH {logs_type.value}")',
-        )
+        ]
+
+        flush_logs_commands.extend(logs_str)
 
         try:
-            self._run_mysqlsh_script("\n".join(flush_logs_commands))
+            self._run_mysqlsh_script("\n".join(flush_logs_commands))  # type: ignore
         except MySQLClientError:
-            logger.exception(f"Failed to flush {logs_type} logs.")
+            logger.exception("Failed to flush logs.")
 
     @abstractmethod
     def is_mysqld_running(self) -> bool:

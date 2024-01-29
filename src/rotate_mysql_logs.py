@@ -47,11 +47,14 @@ class RotateMySQLLogs(Object):
             return
 
         try:
-            self.charm._mysql._execute_commands(["logrotate", "-f", LOG_ROTATE_CONFIG_FILE])
+            logger.debug("Log rotate call")
+            self.charm._mysql._execute_commands(
+                ["logrotate", "-f", LOG_ROTATE_CONFIG_FILE], timeout=50
+            )
         except MySQLExecError:
             logger.exception("Failed to rotate mysql logs")
             return
 
-        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.ERROR)
-        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.GENERAL)
-        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.SLOW)
+        logger.debug("Flushing text logs")
+        logs = [log for log in MySQLTextLogs]
+        self.charm._mysql.flush_mysql_logs(logs)
