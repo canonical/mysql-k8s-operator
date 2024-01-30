@@ -824,29 +824,19 @@ class MySQL(MySQLBase):
         except ExecError:
             return False
 
-    def update_endpoints(self) -> None:  # noqa: C901
+    def update_endpoints(self) -> None:
         """Updates pod labels to reflect role of the unit."""
-
-        def endpoints_to_pod_list(endpoints: str) -> List[str]:
-            """Converts a comma separated list of endpoints to a list of pods."""
-            return [p.split(".")[0] for p in endpoints.split(",")]
-
         logger.debug("Updating pod labels")
         try:
             rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
 
-            # rw pod labels
-            if rw_endpoints:
-                for pod in endpoints_to_pod_list(rw_endpoints):
-                    self.k8s_helper.label_pod("primary", pod)
-            # ro pod labels
-            if ro_endpoints:
-                for pod in endpoints_to_pod_list(ro_endpoints):
-                    self.k8s_helper.label_pod("replicas", pod)
-            # offline pod labels
-            if offline:
-                for pod in endpoints_to_pod_list(offline):
-                    self.k8s_helper.label_pod("offline", pod)
+            for endpoints, label in (
+                (rw_endpoints, "primary"),
+                (ro_endpoints, "replicas"),
+                (offline, "offline"),
+            ):
+                for pod in (p.split(".")[0] for p in endpoints.split(",")):
+                    self.k8s_helper.label_pod(label, pod)
         except MySQLGetClusterEndpointsError:
             logger.exception("Failed to get cluster endpoints")
         except KubernetesClientError:
