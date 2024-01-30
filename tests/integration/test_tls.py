@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-TLS_APP_NAME = "tls-certificates-operator"
 MODEL_CONFIG = {"logging-config": "<root>=INFO;unit=DEBUG"}
 TLS_SETUP_SLEEP_TIME = 30
 
@@ -35,7 +34,7 @@ if juju_.has_secrets:
     TLS_APP_NAME = "self-signed-certificates"
     TLS_CONFIG = {"ca-common-name": "Test CA"}
 else:
-    TLS_APP_NAME = "tls-certificate-operator"
+    TLS_APP_NAME = "tls-certificates-operator"
     TLS_CONFIG = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
 
 
