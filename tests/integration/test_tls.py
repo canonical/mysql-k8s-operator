@@ -21,6 +21,7 @@ from .helpers import (
     scale_application,
     unit_file_md5,
 )
+from .markers import only_with_juju_secrets
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ TLS_SETUP_SLEEP_TIME = 30
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
+@only_with_juju_secrets
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
     # Set model configuration
@@ -75,6 +77,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
+@only_with_juju_secrets
 async def test_connection_before_tls(ops_test: OpsTest) -> None:
     """Ensure connections (with and without ssl) are possible before relating with TLS operator."""
     app = await app_name(ops_test)
@@ -105,6 +108,7 @@ async def test_connection_before_tls(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
+@only_with_juju_secrets
 async def test_enable_tls(ops_test: OpsTest) -> None:
     """Test for encryption enablement when relation to TLS charm."""
     app = await app_name(ops_test)
@@ -144,6 +148,7 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
+@only_with_juju_secrets
 async def test_rotate_tls_key(ops_test: OpsTest) -> None:
     """Verify rotating tls private keys restarts cluster with new certificates.
 
@@ -194,6 +199,7 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
+@only_with_juju_secrets
 async def test_disable_tls(ops_test: OpsTest) -> None:
     # Remove the relation
     app = await app_name(ops_test)
