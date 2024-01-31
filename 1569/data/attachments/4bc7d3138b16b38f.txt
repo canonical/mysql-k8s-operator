@@ -1,0 +1,71 @@
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:99 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:105 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:108 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:111 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:122 Resume upgrade
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:125 Wait for upgrade to complete
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:45:46Z
+
+App        Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s  8.0.35-0ubuntu0.22.04.1  waiting      3  mysql-k8s       8.0/stable     0  10.152.183.81   no       installing agent
+test-app   0.0.2                    active       1  mysql-test-app  latest/edge   29  10.152.183.215  no       
+
+Unit          Workload     Agent  Address      Ports  Message
+mysql-k8s/0*  waiting      idle   10.1.91.205         other units upgrading first...
+mysql-k8s/1   waiting      idle   10.1.91.206         other units upgrading first...
+mysql-k8s/2   maintenance  idle   10.1.91.207         upgrade completed
+test-app/0*   active       idle   10.1.91.200         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:30:04 ERROR unit.mysql-k8s/2.juju-log Failed to flush GENERAL LOGS logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1441, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-01-31T01:30:01Z: Loading startup files...\nverbose: 2024-01-31T01:30:01Z: Loading plugins...\nverbose: 2024-01-31T01:30:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2013): Shell.connect: Lost connection to MySQL server at \'reading initial communication packet\', system error: 104\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2585, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-01-31T01:30:01Z: Loading startup files...
+verbose: 2024-01-31T01:30:01Z: Loading plugins...
+verbose: 2024-01-31T01:30:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2013): Shell.connect: Lost connection to MySQL server at 'reading initial communication packet', system error: 104
+
+unit-mysql-k8s-2: 01:30:05 ERROR unit.mysql-k8s/2.juju-log Failed to flush SLOW LOGS logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1441, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-01-31T01:30:04Z: Loading startup files...\nverbose: 2024-01-31T01:30:04Z: Loading plugins...\nverbose: 2024-01-31T01:30:04Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2585, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-01-31T01:30:04Z: Loading startup files...
+verbose: 2024-01-31T01:30:04Z: Loading plugins...
+verbose: 2024-01-31T01:30:04Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
