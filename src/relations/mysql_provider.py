@@ -5,6 +5,7 @@
 
 import logging
 import socket
+import typing
 from typing import List
 
 from charms.data_platform_libs.v0.data_interfaces import (
@@ -36,11 +37,14 @@ from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from charm import MySQLOperatorCharm
+
 
 class MySQLProvider(Object):
     """Standard database relation class."""
 
-    def __init__(self, charm) -> None:
+    def __init__(self, charm: "MySQLOperatorCharm") -> None:
         super().__init__(charm, DB_RELATION_NAME)
 
         self.charm = charm
@@ -215,6 +219,9 @@ class MySQLProvider(Object):
         ) as e:
             logger.exception("Failed to set up database relation", exc_info=e)
             self.charm.unit.status = BlockedStatus("Failed to create scoped user")
+        except TimeoutError:
+            logger.exception("Timed out waiting for k8s service to be ready")
+            raise
         except KubernetesClientError:
             logger.exception("Failed to create k8s services for endpoints")
             self.charm.unit.status = BlockedStatus(

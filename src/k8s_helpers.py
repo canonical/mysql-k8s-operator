@@ -173,6 +173,7 @@ class KubernetesHelpers:
         except ApiError:
             raise KubernetesClientError
 
+<<<<<<< HEAD
     def get_node_allocable_cpu(self) -> int:
         """Return the allocable cpu count for a given node."""
         try:
@@ -183,7 +184,7 @@ class KubernetesHelpers:
         except ApiError:
             raise KubernetesClientError
 
-    @retry(stop=stop_after_attempt(10), wait=wait_fixed(1), reraise=True)
+    @retry(stop=stop_after_attempt(60), wait=wait_fixed(1), reraise=True)
     def wait_service_ready(self, service_endpoint: Tuple[str, int]) -> None:
         """Wait for a service to be listening on a given endpoint.
 
@@ -193,13 +194,14 @@ class KubernetesHelpers:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(1)
 
+        logger.debug("Checking for Kubernetes service endpoint")
         result = sock.connect_ex(service_endpoint)
         sock.close()
 
         # check if the port is open
         if result != 0:
-            logger.debug("Kubernetes service endpoint not ready yet")
-            raise KubernetesClientError
+            logger.debug(f"Kubernetes {service_endpoint=} not ready")
+            raise TimeoutError
         logger.debug("Kubernetes service endpoint ready")
 
     def set_rolling_update_partition(self, partition: int) -> None:

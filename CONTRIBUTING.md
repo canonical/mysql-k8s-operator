@@ -20,12 +20,13 @@ this operator.
   the `main` branch. This also avoids merge commits and creates a linear Git commit history.
 
 ## Developing
-Install `tox` and `poetry`
+Install `tox`, `poetry`, and `charmcraftcache`
+
+Install pipx: https://pipx.pypa.io/stable/installation/
 ```shell
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
 pipx install tox
 pipx install poetry
+pipx install charmcraftcache
 ```
 
 You can create an environment for development:
@@ -43,19 +44,13 @@ tox run -e unit          # unit tests
 tox run -e integration   # integration tests
 tox                      # runs 'lint' and 'unit' environments
 ```
-Tests by default are using Juju 3. In case tests are to be run against Juju 3, the following
-environment variable should be defined with a valid `juju` Python library version:
-
-```
-export LIBJUJU_VERSION_SPECIFIER=2.9.44.1
-```
 
 ## Build charm
 
 Build the charm in this git repository using:
 
 ```shell
-tox run -e build
+tox run -e build-dev
 ```
 
 ### Deploy

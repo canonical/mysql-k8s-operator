@@ -29,6 +29,10 @@ class TestCharm(unittest.TestCase):
         self.charm = self.harness.charm
         self.maxDiff = None
 
+    @pytest.fixture
+    def use_caplog(self, caplog):
+        self._caplog = caplog
+
     def layer_dict(self, with_mysqld_exporter: bool = False):
         return {
             "summary": "mysqld services layer",
@@ -69,7 +73,7 @@ class TestCharm(unittest.TestCase):
         # Comparing output dicts
         self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict())
 
-    @pytest.mark.usefixtures("only_without_juju_secrets")
+    @pytest.mark.usefixtures("without_juju_secrets")
     def test_on_leader_elected(self):
         # Test leader election setting of
         # peer relation data
@@ -82,15 +86,11 @@ class TestCharm(unittest.TestCase):
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
 
-    @pytest.mark.usefixtures("only_with_juju_secrets")
     def test_on_leader_elected_secrets(self):
         # Test leader election setting of secret data
         self.harness.set_leader()
 
-        secret_id = self.harness.get_relation_data(self.peer_relation_id, self.harness.charm.app)[
-            "secret-id"
-        ]
-        secret_data = self.harness.model.get_secret(id=secret_id).get_content()
+        secret_data = self.harness.model.get_secret(label="mysql-k8s.app").get_content()
 
         # Test passwords in content and length
         required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
@@ -214,88 +214,6 @@ class TestCharm(unittest.TestCase):
 
         mysql = self.charm._mysql
         self.assertTrue(isinstance(mysql, MySQL))
-
-    @patch("charm.MySQLOperatorCharm._on_leader_elected")
-    def test_get_secret(self, _):
-        self.harness.set_leader()
-
-        # Test application scope.
-        assert self.charm.get_secret("app", "password") is None
-        self.harness.update_relation_data(
-            self.peer_relation_id, self.charm.app.name, {"password": "test-password"}
-        )
-        assert self.charm.get_secret("app", "password") == "test-password"
-
-        # Test unit scope.
-        assert self.charm.get_secret("unit", "password") is None
-        self.harness.update_relation_data(
-            self.peer_relation_id, self.charm.unit.name, {"password": "test-password"}
-        )
-        assert self.charm.get_secret("unit", "password") == "test-password"
-
-    @pytest.mark.usefixtures("only_without_juju_secrets")
-    @patch("charm.MySQLOperatorCharm._on_leader_elected")
-    def test_set_secret_databag(self, _):
-        self.harness.set_leader()
-
-        # Test application scope.
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.app.name
-        )
-        self.charm.set_secret("app", "password", "test-password")
-        assert (
-            self.harness.get_relation_data(self.peer_relation_id, self.charm.app.name)["password"]
-            == "test-password"
-        )
-
-        # Test unit scope.
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.unit.name
-        )
-        self.charm.set_secret("unit", "password", "test-password")
-        assert (
-            self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)["password"]
-            == "test-password"
-        )
-
-    @pytest.mark.usefixtures("only_with_juju_secrets")
-    @patch("charm.MySQLOperatorCharm._on_leader_elected")
-    def test_set_secret(self, _):
-        self.harness.set_leader()
-
-        # Test application scope.
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.app.name
-        )
-
-        self.charm.set_secret("app", "password", "test-password")
-        secret_id = self.harness.get_relation_data(self.peer_relation_id, self.charm.app.name)[
-            "secret-id"
-        ]
-        secret_data = self.harness.model.get_secret(id=secret_id).get_content()
-        assert secret_data["password"] == "test-password"
-
-        # Nothing went to databag
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.app.name
-        )
-
-        # Test unit scope.
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.unit.name
-        )
-
-        self.charm.set_secret("unit", "password", "test-password")
-        secret_id = self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)[
-            "secret-id"
-        ]
-        secret_data = self.harness.model.get_secret(id=secret_id).get_content()
-        assert secret_data["password"] == "test-password"
-
-        # Nothing went to databag
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.unit.name
-        )
 
     @patch("mysql_k8s_helpers.MySQL.remove_instance")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label")

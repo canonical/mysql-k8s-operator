@@ -10,21 +10,23 @@ from pathlib import Path
 from typing import Union
 
 import pytest
-from integration.helpers import (
+from lightkube import Client
+from lightkube.resources.apps_v1 import StatefulSet
+from pytest_operator.plugin import OpsTest
+
+from .. import juju_
+from ..helpers import (
     get_leader_unit,
     get_primary_unit,
     get_relation_data,
     get_unit_by_index,
     retrieve_database_variable_value,
 )
-from integration.high_availability.high_availability_helpers import (
+from .high_availability_helpers import (
     METADATA,
     ensure_all_units_continuous_writes_incrementing,
     relate_mysql_and_application,
 )
-from lightkube import Client
-from lightkube.resources.apps_v1 import StatefulSet
-from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +77,7 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     assert leader_unit is not None, "No leader unit found"
 
     logger.info("Run pre-upgrade-check action")
-    action = await leader_unit.run_action("pre-upgrade-check")
-    await action.wait()
+    await juju_.run_action(leader_unit, "pre-upgrade-check")
 
     logger.info("Assert slow shutdown is enabled")
     for unit in mysql_units:
@@ -123,8 +124,7 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
     assert leader_unit is not None, "No leader unit found"
 
     logger.info("Resume upgrade")
-    action = await leader_unit.run_action("resume-upgrade")
-    await action.wait()
+    await juju_.run_action(leader_unit, "resume-upgrade")
 
     logger.info("Wait for upgrade to complete")
     await ops_test.model.block_until(
@@ -144,8 +144,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     assert leader_unit is not None, "No leader unit found"
 
     logger.info("Run pre-upgrade-check action")
-    action = await leader_unit.run_action("pre-upgrade-check")
-    await action.wait()
+    await juju_.run_action(leader_unit, "pre-upgrade-check")
 
     if not built_charm:
         # on CI built charm is cached and returned with build_charm
@@ -180,8 +179,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     await ensure_all_units_continuous_writes_incrementing(ops_test, mysql_units)
 
     logger.info("Re-run pre-upgrade-check action")
-    action = await leader_unit.run_action("pre-upgrade-check")
-    await action.wait()
+    await juju_.run_action(leader_unit, "pre-upgrade-check")
 
     logger.info("Re-refresh the charm")
     await application.refresh(path=local_charm)
@@ -192,8 +190,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     )
 
     logger.info("Resume upgrade")
-    action = await leader_unit.run_action("resume-upgrade")
-    await action.wait()
+    await juju_.run_action(leader_unit, "resume-upgrade")
 
     logger.info("Wait for application to recover")
     await ops_test.model.block_until(

@@ -17,6 +17,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - run: |
+          # Workaround for https://github.com/canonical/charmcraft/issues/1389#issuecomment-1880921728
+          touch requirements.txt
       - name: Check libs
         uses: canonical/charming-actions/check-libraries@2.4.0
         with:
@@ -29,13 +32,11 @@ jobs:
     uses: ./.github/workflows/ci.yaml
     secrets: inherit
     permissions:
-      actions: write  # Needed to manage GitHub Actions cache
+      contents: write  # Needed for Allure Report beta
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm_without_cache.yaml@v4.2.3
-    with:
-      charmcraft-snap-revision: 1349  # version 2.3.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v11.0.1
 
   release:
     name: Release charm
@@ -43,10 +44,10 @@ jobs:
       - lib-check
       - ci-tests
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v4.2.3
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v11.0.1
     with:
       channel: 8.0/edge
-      artifact-name: ${{ needs.build.outputs.artifact-name }}
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets:
       charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
     permissions:

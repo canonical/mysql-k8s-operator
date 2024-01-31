@@ -75,18 +75,14 @@ import re
 import socket
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, get_args
 
 import ops
+from charms.data_platform_libs.v0.data_interfaces import DataPeer, DataPeerUnit
+from charms.data_platform_libs.v0.data_secrets import APP_SCOPE, UNIT_SCOPE, Scopes, SecretCache
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from ops.model import Unit
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_fixed,
-    wait_random,
-)
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed, wait_random
 
 from constants import (
     BACKUPS_PASSWORD_KEY,
@@ -100,7 +96,6 @@ from constants import (
     PEER,
     ROOT_PASSWORD_KEY,
     ROOT_USERNAME,
-    SECRET_ID_KEY,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
@@ -116,7 +111,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 51
+LIBPATCH = 54
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -127,6 +122,9 @@ BYTES_1MB = 1000000  # 1 megabyte
 BYTES_1MiB = 1048576  # 1 mebibyte
 RECOVERY_CHECK_TIME = 10  # seconds
 GET_MEMBER_STATE_TIME = 10  # seconds
+
+SECRET_INTERNAL_LABEL = "secret-id"
+SECRET_DELETED_LABEL = "None"
 
 
 class Error(Exception):
@@ -377,7 +375,33 @@ class MySQLCharmBase(CharmBase, ABC):
     def __init__(self, *args):
         super().__init__(*args)
 
-        self.app_secrets, self.unit_secrets = None, None
+        self.secrets = SecretCache(self)
+        self.peer_relation_app = DataPeer(
+            self,
+            relation_name=PEER,
+            additional_secret_fields=[
+                ROOT_PASSWORD_KEY,
+                SERVER_CONFIG_PASSWORD_KEY,
+                MONITORING_PASSWORD_KEY,
+                CLUSTER_ADMIN_PASSWORD_KEY,
+                BACKUPS_PASSWORD_KEY,
+            ],
+            secret_field_name=SECRET_INTERNAL_LABEL,
+            deleted_label=SECRET_DELETED_LABEL,
+        )
+        self.peer_relation_unit = DataPeerUnit(
+            self,
+            relation_name=PEER,
+            additional_secret_fields=[
+                "key",
+                "csr",
+                "cert",
+                "cauth",
+                "chain",
+            ],
+            secret_field_name=SECRET_INTERNAL_LABEL,
+            deleted_label=SECRET_DELETED_LABEL,
+        )
 
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
         self.framework.observe(self.on.get_password_action, self._on_get_password)
@@ -391,6 +415,11 @@ class MySQLCharmBase(CharmBase, ABC):
     @abstractmethod
     def _mysql(self) -> "MySQLBase":
         """Return the MySQL instance."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_unit_hostname(self):
+        """Return unit hostname."""
         raise NotImplementedError
 
     def _on_get_password(self, event: ActionEvent) -> None:
@@ -535,149 +564,51 @@ class MySQLCharmBase(CharmBase, ABC):
 
         return len(active_cos_relations) > 0
 
-    def _get_secret_from_juju(self, scope: str, key: str) -> Optional[str]:
-        """Retrieve and return the secret from the juju secret storage."""
-        if scope == "unit":
-            secret_id = self.unit_peer_data.get(SECRET_ID_KEY)
-
-            if not self.unit_secrets and not secret_id:
-                logger.debug("Getting a secret when no secrets added in juju")
-                return None
-
-            if not self.unit_secrets:
-                secret = self.model.get_secret(id=secret_id)
-                content = secret.get_content()
-                self.unit_secrets = content
-                logger.debug(f"Retrieved secret {key} for unit from juju")
-
-            return self.unit_secrets.get(key)
-
-        secret_id = self.app_peer_data.get(SECRET_ID_KEY)
-
-        if not self.app_secrets and not secret_id:
-            logger.debug("Getting a secret when no secrets added in juju")
-            return None
-
-        if not self.app_secrets:
-            secret = self.model.get_secret(id=secret_id)
-            content = secret.get_content()
-            self.app_secrets = content
-            logger.debug(f"Retrieved secret {key} for app from juju")
-
-        return self.app_secrets.get(key)
-
-    def _get_secret_from_databag(self, scope: str, key: str) -> Optional[str]:
-        """Retrieve and return the secret from the peer relation databag."""
-        if scope == "unit":
-            return self.unit_peer_data.get(key)
-
-        return self.app_peer_data.get(key)
-
     def get_secret(
-        self, scope: str, key: str, fallback_key: Optional[str] = None
+        self,
+        scope: Scopes,
+        key: str,
     ) -> Optional[str]:
         """Get secret from the secret storage.
 
         Retrieve secret from juju secrets backend if secret exists there.
-        Else retrieve from peer databag (with key or fallback_key). This is to
-        account for cases where secrets are stored in peer databag but the charm
-        is then refreshed to a newer revision.
+        Else retrieve from peer databag. This is to account for cases where secrets are stored in
+        peer databag but the charm is then refreshed to a newer revision.
         """
-        if scope not in ["unit", "app"]:
-            raise MySQLSecretError(f"Invalid secret scope: {scope}")
-
-        if ops.jujuversion.JujuVersion.from_environ().has_secrets:
-            secret = self._get_secret_from_juju(scope, key)
-            if secret:
-                return secret
-
-        return self._get_secret_from_databag(scope, key) or self._get_secret_from_databag(
-            scope, fallback_key
-        )
-
-    def _set_secret_in_databag(self, scope: str, key: str, value: Optional[str]) -> None:
-        """Set secret in the peer relation databag."""
-        if not value:
-            if scope == "unit":
-                del self.unit_peer_data[key]
-            else:
-                del self.app_peer_data[key]
-            return
-
-        if scope == "unit":
-            self.unit_peer_data[key] = value
-            return
-
-        self.app_peer_data[key] = value
-
-    def _set_secret_in_juju(self, scope: str, key: str, value: Optional[str]) -> None:
-        """Set the secret in the juju secret storage."""
-        if scope == "unit":
-            secret_id = self.unit_peer_data.get(SECRET_ID_KEY)
+        peers = self.model.get_relation(PEER)
+        if scope == APP_SCOPE:
+            value = self.peer_relation_app.fetch_my_relation_field(peers.id, key)
         else:
-            secret_id = self.app_peer_data.get(SECRET_ID_KEY)
+            value = self.peer_relation_unit.fetch_my_relation_field(peers.id, key)
+        return value
 
-        if secret_id:
-            secret = self.model.get_secret(id=secret_id)
-
-            if scope == "unit":
-                content = self.unit_secrets or secret.get_content()
-            else:
-                content = self.app_secrets or secret.get_content()
-
-            if not value:
-                del content[key]
-            else:
-                content[key] = value
-
-            secret.set_content(content)
-            logger.debug(f"Updated {scope} secret {secret_id} for {key}")
-        elif not value:
-            return
-        else:
-            content = {
-                key: value,
-            }
-
-            if scope == "unit":
-                secret = self.unit.add_secret(content)
-                self.unit_peer_data[SECRET_ID_KEY] = secret.id
-            else:
-                secret = self.app.add_secret(content)
-                self.app_peer_data[SECRET_ID_KEY] = secret.id
-            logger.debug(f"Added {scope} secret {secret.id} for {key}")
-
-        if scope == "unit":
-            self.unit_secrets = content
-        else:
-            self.app_secrets = content
-
-    def set_secret(
-        self, scope: str, key: str, value: Optional[str], fallback_key: Optional[str] = None
-    ) -> None:
+    def set_secret(self, scope: Scopes, key: str, value: Optional[str]) -> None:
         """Set a secret in the secret storage."""
-        if scope not in ["unit", "app"]:
-            raise MySQLSecretError(f"Invalid secret scope: {scope}")
+        if scope not in get_args(Scopes):
+            raise MySQLSecretError(f"Invalid secret {scope=}")
 
-        if scope == "app" and not self.unit.is_leader():
+        if scope == APP_SCOPE and not self.unit.is_leader():
             raise MySQLSecretError("Can only set app secrets on the leader unit")
 
-        if ops.jujuversion.JujuVersion.from_environ().has_secrets:
-            self._set_secret_in_juju(scope, key, value)
+        if not value:
+            return self.remove_secret(scope, key)
 
-            # for refresh from juju <= 3.1.4 to >= 3.1.5, we need to clear out
-            # secrets from the databag as well
-            if self._get_secret_from_databag(scope, key):
-                self._set_secret_in_databag(scope, key, None)
+        peers = self.model.get_relation(PEER)
+        if scope == APP_SCOPE:
+            self.peer_relation_app.update_relation_data(peers.id, {key: value})
+        elif scope == UNIT_SCOPE:
+            self.peer_relation_unit.update_relation_data(peers.id, {key: value})
 
-            if fallback_key and self._get_secret_from_databag(scope, fallback_key):
-                self._set_secret_in_databag(scope, key, None)
+    def remove_secret(self, scope: Scopes, key: str) -> None:
+        """Removing a secret."""
+        if scope not in get_args(Scopes):
+            raise RuntimeError("Unknown secret scope.")
 
-            return
-
-        self._set_secret_in_databag(scope, key, value)
-        if fallback_key:
-            self._set_secret_in_databag(scope, fallback_key, None)
+        peers = self.model.get_relation(PEER)
+        if scope == APP_SCOPE:
+            self.peer_relation_app.delete_relation_data(peers.id, [key])
+        else:
+            self.peer_relation_unit.delete_relation_data(peers.id, [key])
 
 
 class MySQLMemberState(str, enum.Enum):
@@ -2561,6 +2492,7 @@ class MySQLBase(ABC):
             self._run_mysqlsh_script("\n".join(connect_commands))
             return True
         except MySQLClientError:
+            logger.exception("Failed to connect to MySQL with mysqlsh")
             return False
 
     def get_pid_of_port_3306(self) -> Optional[str]:

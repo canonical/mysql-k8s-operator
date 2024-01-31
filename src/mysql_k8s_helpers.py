@@ -560,8 +560,8 @@ class MySQL(MySQLBase):
             raise MySQLDeleteUsersWithLabelError(e.message)
 
     def is_mysqld_running(self) -> bool:
-        """Returns whether mysqld is running."""
-        return self.container.exists(MYSQLD_SOCK_FILE)
+        """Returns whether server is connectable and mysqld is running."""
+        return self.is_server_connectable() and self.container.exists(MYSQLD_SOCK_FILE)
 
     def is_server_connectable(self) -> bool:
         """Returns whether the server is connectable."""

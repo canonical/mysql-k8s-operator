@@ -4,7 +4,7 @@ This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overv
 
 ## Remove and cleanup environment
 If you're done with testing and would like to free up resources on your machine, just remove Multipass VM.
-*Warning: when you remove VM as shown below you will lose all the data in PostgreSQL and any other applications inside Multipass VM!*
+*Warning: when you remove VM as shown below you will lose all the data in MySQL and any other applications inside Multipass VM!*
 ```shell
 multipass delete --purge my-vm
 ```
