@@ -1,0 +1,103 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:28:51Z
+
+App        Version  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s           waiting      3  mysql-k8s       8.0/stable   113  10.152.183.202  no       installing agent
+test-app   0.0.2    waiting      1  mysql-test-app  latest/edge   29  10.152.183.43   no       installing agent
+
+Unit          Workload  Agent  Address       Ports  Message
+mysql-k8s/0   error     idle   10.1.230.204         hook failed: "config-changed"
+mysql-k8s/1   error     idle   10.1.230.206         hook failed: "config-changed"
+mysql-k8s/2*  error     idle   10.1.230.205         hook failed: "config-changed"
+test-app/0*   waiting   idle   10.1.230.200         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:28:50 ERROR unit.mysql-k8s/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/./src/charm.py", line 786, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/./src/charm.py", line 412, in _on_config_changed
+    if not self._mysql.is_mysqld_running():
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 564, in is_mysqld_running
+    return self.container.exists(MYSQLD_SOCK_FILE)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/model.py", line 2547, in exists
+    self._pebble.list_files(str(path), itself=True)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 2219, in list_files
+    resp = self._request('GET', '/v1/files', query)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1655, in _request
+    response = self._request_raw(method, path, query, headers, data)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1704, in _request_raw
+    raise ConnectionError(
+ops.pebble.ConnectionError: Could not connect to Pebble: socket not found at '/charm/containers/mysql/pebble.socket' (container restarted?)
+unit-mysql-k8s-0: 01:28:50 ERROR unit.mysql-k8s/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/./src/charm.py", line 786, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/./src/charm.py", line 412, in _on_config_changed
+    if not self._mysql.is_mysqld_running():
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 564, in is_mysqld_running
+    return self.container.exists(MYSQLD_SOCK_FILE)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/model.py", line 2547, in exists
+    self._pebble.list_files(str(path), itself=True)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 2219, in list_files
+    resp = self._request('GET', '/v1/files', query)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 1655, in _request
+    response = self._request_raw(method, path, query, headers, data)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 1704, in _request_raw
+    raise ConnectionError(
+ops.pebble.ConnectionError: Could not connect to Pebble: socket not found at '/charm/containers/mysql/pebble.socket' (container restarted?)
+unit-mysql-k8s-2: 01:28:50 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 786, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 412, in _on_config_changed
+    if not self._mysql.is_mysqld_running():
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 564, in is_mysqld_running
+    return self.container.exists(MYSQLD_SOCK_FILE)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/model.py", line 2547, in exists
+    self._pebble.list_files(str(path), itself=True)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 2219, in list_files
+    resp = self._request('GET', '/v1/files', query)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1655, in _request
+    response = self._request_raw(method, path, query, headers, data)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1704, in _request_raw
+    raise ConnectionError(
+ops.pebble.ConnectionError: Could not connect to Pebble: socket not found at '/charm/containers/mysql/pebble.socket' (container restarted?)
+unit-mysql-k8s-1: 01:28:50 ERROR juju.worker.uniter.operation hook "config-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-0: 01:28:50 ERROR juju.worker.uniter.operation hook "config-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:28:51 ERROR juju.worker.uniter.operation hook "config-changed" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
