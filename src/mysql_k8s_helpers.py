@@ -6,7 +6,7 @@
 
 import json
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 import jinja2
 from charms.mysql.v0.mysql import (
@@ -19,7 +19,7 @@ from charms.mysql.v0.mysql import (
     MySQLStopMySQLDError,
 )
 from ops.model import Container
-from ops.pebble import ChangeError, ExecError
+from ops.pebble import ChangeError, ExecError, PathError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -194,14 +194,13 @@ class MySQL(MySQLBase):
             logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
             try:
                 container.exec(
-                    f"chown -R {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP} {MYSQL_DATA_DIR}".split(
-                        " "
-                    )
+                    ["chown", "-R", f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}", MYSQL_DATA_DIR]
                 )
             except ExecError as e:
                 logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
                 raise MySQLInitialiseMySQLDError(e.stderr or "")
 
+    @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
     def initialise_mysqld(self) -> None:
         """Execute instance first run.
 
@@ -210,19 +209,19 @@ class MySQL(MySQLBase):
         """
         bootstrap_command = [MYSQLD_LOCATION, "--initialize-insecure", "-u", MYSQL_SYSTEM_USER]
 
+        logger.info("Initializing MySQL data directory")
         try:
+            # Remove the data directory if exists
             process = self.container.exec(
                 command=bootstrap_command,
                 user=MYSQL_SYSTEM_USER,
                 group=MYSQL_SYSTEM_GROUP,
             )
-            process.wait_output()
-        except ExecError as e:
-            logger.error("Exited with code %d. Stderr:", e.exit_code)
-            if e.stderr:
-                for line in e.stderr.splitlines():
-                    logger.error("  %s", line)
-            raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
+            process.wait()
+        except (ExecError, ChangeError, PathError, TimeoutError):
+            logger.exception("Failed to initialise MySQL data directory")
+            self.reset_data_dir()
+            raise MySQLInitialiseMySQLDError
 
     @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
     def wait_until_mysql_connection(self, check_port: bool = True) -> None:
@@ -668,7 +667,7 @@ class MySQL(MySQLBase):
         except ExecError as e:
             raise MySQLClientError(e.stderr)
         except ChangeError as e:
-            raise MySQLClientError(e)
+            raise MySQLClientError from e
 
     def _run_mysqlcli_script(
         self,
@@ -729,7 +728,7 @@ class MySQL(MySQLBase):
         """
         self.container.push(path, content, permissions=permission, user=owner, group=group)
 
-    def read_file_content(self, path: str) -> Optional[str]:
+    def read_file_content(self, path: str) -> Optional[Union[str, bytes]]:
         """Read file content.
 
         Args:
@@ -752,6 +751,14 @@ class MySQL(MySQLBase):
         """
         if self.container.exists(path):
             self.container.remove_path(path)
+
+    def reset_data_dir(self) -> None:
+        """Remove all files from the data directory."""
+        content = self.container.list_files(MYSQL_DATA_DIR)
+        content_set = {item.name for item in content}
+        logger.debug("Resetting MySQL data directory.")
+        for item in content_set:
+            self.container.remove_path(f"{MYSQL_DATA_DIR}/{item}", recursive=True)
 
     def check_if_mysqld_process_stopped(self) -> bool:
         """Checks if the mysqld process is stopped on the container."""

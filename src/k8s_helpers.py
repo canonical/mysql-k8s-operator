@@ -5,6 +5,7 @@
 
 import logging
 import socket
+import typing
 from typing import Dict, List, Optional, Tuple
 
 from lightkube import Client
@@ -13,10 +14,9 @@ from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.resources.core_v1 import Node, Pod, Service
-from ops.charm import CharmBase
 from tenacity import retry, stop_after_attempt, wait_fixed
-from constants import CONTAINER_NAME
 
+from constants import CONTAINER_NAME
 from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,11 @@ logging.getLogger("httpx").setLevel(logging.ERROR)
 
 SIDECAR_MEM = "250Mi"
 SECONDS_DAY = 86400
+PROBE_FAILURE_THRESHOLD = 3
+PROBE_TIMEOUT_SECONDS = 5
+
+if typing.TYPE_CHECKING:
+    from charm import MySQLOperatorCharm
 
 
 class KubernetesClientError(Exception):
@@ -36,7 +41,7 @@ class KubernetesClientError(Exception):
 class KubernetesHelpers:
     """Kubernetes helpers for service exposure."""
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: "MySQLOperatorCharm"):
         """Initialize Kubernetes helpers.
 
         Args:
@@ -46,7 +51,7 @@ class KubernetesHelpers:
         self.namespace = charm.model.name
         self.app_name = charm.model.app.name
         self.cluster_name = charm.app_peer_data.get("cluster-name")
-        self.client = Client()
+        self.client = Client()  # type: ignore
 
     def create_endpoint_services(self, roles: List[str]) -> None:
         """Create kubernetes service for endpoints.
@@ -173,7 +178,6 @@ class KubernetesHelpers:
         except ApiError:
             raise KubernetesClientError
 
-<<<<<<< HEAD
     def get_node_allocable_cpu(self) -> int:
         """Return the allocable cpu count for a given node."""
         try:
@@ -235,10 +239,10 @@ class KubernetesHelpers:
             workload_mem = constraints.get("memory")
             workload_cpu = constraints.get("cpu")
 
-            if workload_cpu and workload_mem:
-                # both constraints set, use them to patch the statefulSet
-                # and get Garanteed QoS Class
-                for container in statefulset.spec.template.spec.containers:
+            for container in statefulset.spec.template.spec.containers:
+                if workload_cpu and workload_mem:
+                    # both constraints set, use them to patch the statefulSet
+                    # and get Guaranteed QoS Class
                     if container.name == "charm":
                         container.resources.limits = container.resources.requests = {
                             "memory": SIDECAR_MEM,
@@ -251,6 +255,11 @@ class KubernetesHelpers:
                             "cpu": workload_cpu,
                         }
 
+                container.livenessProbe.failureThreshold = PROBE_FAILURE_THRESHOLD
+                container.livenessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
+                container.readinessProbe.failureThreshold = PROBE_FAILURE_THRESHOLD
+                container.readinessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
+
             # always patch init container to get Burstable QoS Class
             init_container = statefulset.spec.template.spec.initContainers[0]
             init_container.resources.limits = init_container.resources.requests = {
@@ -258,7 +267,10 @@ class KubernetesHelpers:
                 "cpu": 0.1,
             }
 
-            self.client.patch(StatefulSet, name=self.app_name, obj=statefulset)
+            self.client.patch(
+                StatefulSet, name=self.app_name, namespace=self.namespace, obj=statefulset
+            )
+            logger.debug(f"Kubernetes statefulset '{self.app_name}' succesffuly patched")
         except ApiError as e:
             if e.status.code == 409:
                 logger.warning(

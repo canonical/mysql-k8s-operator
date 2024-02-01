@@ -339,7 +339,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_layer = self._pebble_layer
 
         if new_layer.services != current_layer.services:
-            logger.info("Adding pebble layer")
+            logger.info("Reconcile pebble layer")
 
             container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
             container.replan()
@@ -379,6 +379,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _on_install(self, _) -> None:
         """Handle the install event."""
+        if not self.k8s_helpers.is_pod_best_effort():
+            # statefulset was already patched
+            return
         logger.info("Initial statefulset patch")
         self.k8s_helpers.init_statefulset_patch()
 
@@ -503,7 +506,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             # Add the pebble layer
             logger.debug("Adding pebble layer")
-            container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=False)
+            container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
             container.restart(MYSQLD_SAFE_SERVICE)
 
             logger.debug("Waiting for instance to be ready")

@@ -77,11 +77,12 @@ class TestMySQL(unittest.TestCase):
             group="mysql",
         )
 
-        _process.wait_output.assert_called_once()
+        _process.wait.assert_called_once()
 
     @patch("ops.model.Container")
     def test_initialise_mysqld_exception(self, _container):
         """Test a failing execution of bootstrap_instance."""
+        self.mysql.initialise_mysqld.retry.retry = tenacity.retry_if_not_result(lambda x: True)
         _container.exec.side_effect = ExecError(
             command=["mysqld"], exit_code=1, stdout=b"", stderr=b"Error"
         )
