@@ -16,7 +16,7 @@ on:
 jobs:
   lint:
     name: Lint
-    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v11.0.1
+    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@add-sos-report
 
   unit-test:
     name: Unit test charm
@@ -36,7 +36,7 @@ jobs:
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v11.0.1
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@add-sos-report
     with:
       cache: true
 
@@ -55,7 +55,7 @@ jobs:
       - lint
       - unit-test
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v11.0.1
+    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@add-sos-report
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
       cloud: microk8s

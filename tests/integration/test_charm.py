@@ -95,6 +95,10 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 @pytest.mark.abort_on_fail
 async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> None:
     """Confirm that data is replicated from the primary node to all the replicas."""
+
+    # fails here to test sos report PR
+    exit(1)
+
     # Insert values into a table on the primary unit
     random_unit = ops_test.model.applications[APP_NAME].units[0]
     server_config_credentials = await get_server_config_credentials(random_unit)
