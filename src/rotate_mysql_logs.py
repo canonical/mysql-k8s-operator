@@ -46,12 +46,11 @@ class RotateMySQLLogs(Object):
         if self.charm.peers is None or self.charm.unit_peer_data.get("unit-initialized") != "True":
             return
 
+        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.ERROR)
+        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.GENERAL)
+        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.SLOW)
         try:
             self.charm._mysql._execute_commands(["logrotate", "-f", LOG_ROTATE_CONFIG_FILE])
         except MySQLExecError:
             logger.exception("Failed to rotate mysql logs")
             return
-
-        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.ERROR)
-        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.GENERAL)
-        self.charm._mysql.flush_mysql_logs(MySQLTextLogs.SLOW)

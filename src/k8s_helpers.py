@@ -255,10 +255,9 @@ class KubernetesHelpers:
                             "cpu": workload_cpu,
                         }
 
-                container.livenessProbe.failureThreshold = PROBE_FAILURE_THRESHOLD
-                container.livenessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
-                container.readinessProbe.failureThreshold = PROBE_FAILURE_THRESHOLD
-                container.readinessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
+                if container.name == CONTAINER_NAME:
+                    container.livenessProbe.failureThreshold = PROBE_FAILURE_THRESHOLD
+                    container.livenessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
 
             # always patch init container to get Burstable QoS Class
             init_container = statefulset.spec.template.spec.initContainers[0]
