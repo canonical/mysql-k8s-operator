@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple
 
 from lightkube import Client
 from lightkube.core.exceptions import ApiError
-from lightkube.models.core_v1 import ServicePort, ServiceSpec
+from lightkube.models.core_v1 import ExecAction, Probe, ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.resources.core_v1 import Node, Pod, Service
@@ -27,8 +27,9 @@ logging.getLogger("httpx").setLevel(logging.ERROR)
 
 SIDECAR_MEM = "250Mi"
 SECONDS_DAY = 86400
-PROBE_FAILURE_THRESHOLD = 3
-PROBE_TIMEOUT_SECONDS = 5
+PROBE_FAILURE_THRESHOLD = 30
+PROBE_TIMEOUT_SECONDS = 2
+PROBE_DELAY_SECONDS = 300
 
 if typing.TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -255,9 +256,17 @@ class KubernetesHelpers:
                             "cpu": workload_cpu,
                         }
 
-                if container.name == CONTAINER_NAME:
-                    container.livenessProbe.failureThreshold = PROBE_FAILURE_THRESHOLD
-                    container.livenessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
+                #container.livenessProbe.failureThreshold = PROBE_FAILURE_THRESHOLD
+                #container.livenessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
+                probe = {
+                    "exec": ExecAction(command=["/bin/true"]).to_dict(),
+                    "initialDelaySeconds": PROBE_DELAY_SECONDS,
+                    "failureThreshold": PROBE_FAILURE_THRESHOLD,
+                    "timeoutSeconds": PROBE_TIMEOUT_SECONDS,
+                    "successThreshold": 1,
+                    "periodSeconds": 5,
+                }
+                container.livenessProbe = Probe.from_dict(probe)
 
             # always patch init container to get Burstable QoS Class
             init_container = statefulset.spec.template.spec.initContainers[0]
@@ -266,9 +275,10 @@ class KubernetesHelpers:
                 "cpu": 0.1,
             }
 
-            self.client.patch(
-                StatefulSet, name=self.app_name, namespace=self.namespace, obj=statefulset
-            )
+            self.client.replace(statefulset)
+            #self.client.patch(
+            #    StatefulSet, name=self.app_name, namespace=self.namespace, obj=statefulset
+            #)
             logger.debug(f"Kubernetes statefulset '{self.app_name}' succesffuly patched")
         except ApiError as e:
             if e.status.code == 409:

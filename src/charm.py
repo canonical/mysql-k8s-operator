@@ -550,7 +550,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _mysql_pebble_ready_checks(self, event) -> bool:
         """Executes some checks to see if it is safe to execute the pebble ready handler."""
         if self.k8s_helpers.is_pod_best_effort():
-            logger.debug("Pod is best-effort, skipping pebble ready handler")
+            logger.debug("Waiting for pod QoS to be set")
             return True
 
         if not self._is_peer_data_set:

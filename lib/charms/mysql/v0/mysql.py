@@ -710,7 +710,7 @@ class MySQLBase(ABC):
             innodb_buffer_pool_size = 20 * BYTES_1MiB
             innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
             group_replication_message_cache_size = 128 * BYTES_1MiB
-            max_connections = 20
+            max_connections = 100
             performance_schema_instrument = "'memory/%=OFF'"
         else:
             available_memory = self.get_available_memory()
