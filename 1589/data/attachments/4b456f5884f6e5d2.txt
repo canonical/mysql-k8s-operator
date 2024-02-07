@@ -1,0 +1,19 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:27:05Z
+
+App        Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s  8.0.35-0ubuntu0.22.04.1  waiting      3  mysql-k8s       8.0/edge     120  10.152.183.201  no       installing agent
+test-app   0.0.2                    waiting      1  mysql-test-app  latest/edge   29  10.152.183.82   no       installing agent
+
+Unit          Workload     Agent      Address     Ports  Message
+mysql-k8s/0*  blocked      executing  10.1.21.12         Permission to create k8s services denied. `juju trust`
+mysql-k8s/1   waiting      executing  10.1.21.13         waiting to join the cluster
+mysql-k8s/2   maintenance  idle       10.1.21.14         joining the cluster
+test-app/0*   waiting      executing  10.1.21.11         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
