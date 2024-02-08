@@ -1398,6 +1398,11 @@ class MySQLBase(ABC):
             )
             return False
 
+    @retry(
+        wait=wait_fixed(2),
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception_type(TimeoutError),
+    )
     def get_cluster_status(self, extended: Optional[bool] = False) -> Optional[dict]:
         """Get the cluster status.
 
