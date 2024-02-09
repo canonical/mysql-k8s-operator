@@ -15,6 +15,7 @@ from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureMySQLUsersError,
     MySQLExecError,
+    MySQLGetClusterEndpointsError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
@@ -47,7 +48,7 @@ from constants import (
     ROOT_SYSTEM_USER,
     XTRABACKUP_PLUGIN_DIR,
 )
-from k8s_helpers import KubernetesHelpers
+from k8s_helpers import KubernetesClientError, KubernetesHelpers
 from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
@@ -613,6 +614,7 @@ class MySQL(MySQLBase):
         user: Optional[str] = None,
         group: Optional[str] = None,
         env_extra: Optional[Dict] = None,
+        timeout: Optional[float] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         try:
@@ -624,6 +626,7 @@ class MySQL(MySQLBase):
                 user=user,
                 group=group,
                 environment=env_extra,
+                timeout=timeout,
             )
             stdout, stderr = process.wait_output()
             return (stdout, stderr or "")
@@ -820,3 +823,27 @@ class MySQL(MySQLBase):
             return expected_content <= content_set
         except ExecError:
             return False
+
+    def update_endpoints(self) -> None:
+        """Updates pod labels to reflect role of the unit."""
+        logger.debug("Updating pod labels")
+        try:
+            rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+
+            for endpoints, label in (
+                (rw_endpoints, "primary"),
+                (ro_endpoints, "replicas"),
+                (offline, "offline"),
+            ):
+                for pod in (p.split(".")[0] for p in endpoints.split(",")):
+                    if pod:
+                        self.k8s_helper.label_pod(label, pod)
+        except MySQLGetClusterEndpointsError:
+            logger.exception("Failed to get cluster endpoints")
+        except KubernetesClientError:
+            logger.exception("Can't update pod labels")
+
+    def set_cluster_primary(self, new_primary_address: str) -> None:
+        """Set the cluster primary and update pod labels."""
+        super().set_cluster_primary(new_primary_address)
+        self.update_endpoints()

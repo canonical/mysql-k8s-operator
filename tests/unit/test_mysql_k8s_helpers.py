@@ -3,7 +3,7 @@
 
 import json
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import tenacity
 from charms.mysql.v0.mysql import MySQLClientError, MySQLConfigureMySQLUsersError
@@ -336,3 +336,31 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLWaitUntilUnitRemovedFromClusterError):
             self.mysql._wait_until_unit_removed_from_cluster("mysql-0.mysql-endpoints")
+
+    @patch(
+        "mysql_k8s_helpers.MySQL.get_cluster_endpoints",
+        return_value=(
+            "mysql-0.mysql-endpoints",
+            "mysql-1.mysql-endpoints,mysql-2.mysql-endpoints",
+            "mysql-3.mysql-endpoints",
+        ),
+    )
+    def test_update_endpoints(self, _get_cluster_endpoints):
+        """Test the successful execution of update_endpoints."""
+        _label_pod = MagicMock()
+        _mock_k8s_helper = MagicMock()
+        _mock_k8s_helper.label_pod = _label_pod
+
+        self.mysql.k8s_helper = _mock_k8s_helper
+
+        calls = [
+            call("primary", "mysql-0"),
+            call("replicas", "mysql-1"),
+            call("replicas", "mysql-2"),
+            call("offline", "mysql-3"),
+        ]
+
+        self.mysql.update_endpoints()
+        _get_cluster_endpoints.assert_called_once()
+
+        _label_pod.assert_has_calls(calls)
