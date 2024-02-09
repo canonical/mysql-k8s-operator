@@ -1,0 +1,36 @@
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:142 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:146 Run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:159 Inject dependency fault
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:164 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:167 Get first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:171 Wait for upgrade to fail on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:177 Ensure continuous_writes while in failure state on remaining units
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:181 Re-run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:184 Re-refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:187 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:192 Resume upgrade
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:195 Wait for application to recover
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:49:18Z
+
+App        Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s  8.0.35-0ubuntu0.22.04.1  waiting      3  mysql-k8s       8.0/edge       2  10.152.183.108  no       waiting for units to settle down
+test-app   0.0.2                    active       1  mysql-test-app  latest/edge   29  10.152.183.220  no       
+
+Unit          Workload     Agent  Address      Ports  Message
+mysql-k8s/0   waiting      idle   10.1.79.145         other units upgrading first...
+mysql-k8s/1*  blocked      idle   10.1.79.144         ready to rollback application
+mysql-k8s/2   maintenance  idle   10.1.79.147         upgrade completed
+test-app/0*   active       idle   10.1.79.136         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:32:57 ERROR unit.mysql-k8s/2.juju-log charms.data_platform_libs.v0.upgrade.VersionError - {'message': 'Versions incompatible, charm 1 can not be upgraded to 999.999.999', 'cause': 'Upgrades only supported for specific versions, charm versions satisfying requirement >1', 'resolution': ''}
+unit-mysql-k8s-2: 01:32:57 CRITICAL unit.mysql-k8s/2.juju-log Upgrade failed, follow the instructions below to rollback:
+  1 - Run `juju run mysql-k8s/leader pre-upgrade-check` to configure rollback
+  2 - Run `juju refresh --revision <previous-revision> mysql-k8s` to initiate the rollback
+  3 - Run `juju run mysql-k8s/leader resume-upgrade` to resume the rollback
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
