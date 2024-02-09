@@ -82,34 +82,6 @@ class MySQLProvider(Object):
         self.database.update_relation_data(relation.id, {"password": password})
         return password
 
-    def _update_pod_endpoint(self) -> None:
-        """Update pod label to reflect the role of the unit."""
-        logger.debug(f"Updating pod endpoint for {self.charm.unit.name}")
-
-        pod = self.charm.unit.name.replace("/", "-")
-
-        try:
-            cluster_status = self.charm._mysql.get_cluster_status()
-            if not cluster_status:
-                self.charm.k8s_helpers.label_pod("error", pod)
-                return
-
-            for hostname, properties in cluster_status["defaultreplicaset"]["topology"].items():
-                if hostname.split(".")[0] == pod:
-                    if properties["status"] != "online":
-                        label = "offline"
-                    elif properties["memberrole"] == "secondary":
-                        label = "replicas"
-                    elif properties["memberrole"] == "primary":
-                        label = "primary"
-                    else:
-                        label = "none"
-
-                    logger.debug(f"Labeling pod {pod} with label {label}")
-                    self.charm.k8s_helpers.label_pod(label, pod)
-        except KubernetesClientError:
-            logger.error("Error updating pod label. Traffic may not be properly routed.")
-
     # =============
     # Handlers
     # =============
@@ -234,7 +206,7 @@ class MySQLProvider(Object):
             if relation.id not in relation_data:
                 continue
 
-            self._update_pod_endpoint()
+            self.charm._mysql.update_endpoints()
 
     def _on_update_status(self, _) -> None:
         """Handle the update status event.
@@ -252,7 +224,7 @@ class MySQLProvider(Object):
         ):
             return
 
-        self._update_pod_endpoint()
+        self.charm._mysql.update_endpoints()
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.

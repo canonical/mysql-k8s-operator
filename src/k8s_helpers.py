@@ -120,11 +120,11 @@ class KubernetesHelpers:
 
             if pod.metadata.labels.get("role") == role:
                 return
+            logger.debug(f"Patching {pod=} with {role=}")
 
             pod.metadata.labels["cluster-name"] = self.cluster_name
             pod.metadata.labels["role"] = role
             self.client.patch(Pod, pod_name or self.pod_name, pod)
-            logger.info(f"Kubernetes pod label {role} created")
         except ApiError as e:
             if e.status.code == 404:
                 logger.warning(f"Kubernetes pod {pod_name} not found. Scaling in?")

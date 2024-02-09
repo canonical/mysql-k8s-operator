@@ -836,7 +836,8 @@ class MySQL(MySQLBase):
                 (offline, "offline"),
             ):
                 for pod in (p.split(".")[0] for p in endpoints.split(",")):
-                    self.k8s_helper.label_pod(label, pod)
+                    if pod:
+                        self.k8s_helper.label_pod(label, pod)
         except MySQLGetClusterEndpointsError:
             logger.exception("Failed to get cluster endpoints")
         except KubernetesClientError:
