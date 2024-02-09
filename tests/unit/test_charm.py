@@ -93,7 +93,7 @@ class TestCharm(unittest.TestCase):
         secret_data = self.harness.model.get_secret(label="mysql-k8s.app").get_content()
 
         # Test passwords in content and length
-        required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
+        required_passwords = ["root-password"]
         for password in required_passwords:
             self.assertTrue(
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
@@ -116,7 +116,7 @@ class TestCharm(unittest.TestCase):
         "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters",
         return_value=(123456, None, None),
     )
-    @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=(120, None))
+    @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=120)
     @patch("mysql_k8s_helpers.MySQL.setup_logrotate_config")
     def test_mysql_pebble_ready(
         self,

@@ -111,7 +111,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 54
+LIBPATCH = 55
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -122,6 +122,7 @@ BYTES_1MB = 1000000  # 1 megabyte
 BYTES_1MiB = 1048576  # 1 mebibyte
 RECOVERY_CHECK_TIME = 10  # seconds
 GET_MEMBER_STATE_TIME = 10  # seconds
+MIM_MAX_CONNECTIONS = 100
 
 SECRET_INTERNAL_LABEL = "secret-id"
 SECRET_DELETED_LABEL = "None"
@@ -710,7 +711,7 @@ class MySQLBase(ABC):
             innodb_buffer_pool_size = 20 * BYTES_1MiB
             innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
             group_replication_message_cache_size = 128 * BYTES_1MiB
-            max_connections = 20
+            max_connections = MIM_MAX_CONNECTIONS
             performance_schema_instrument = "'memory/%=OFF'"
         else:
             available_memory = self.get_available_memory()
@@ -723,7 +724,7 @@ class MySQLBase(ABC):
                 innodb_buffer_pool_chunk_size,
                 group_replication_message_cache_size,
             ) = self.get_innodb_buffer_pool_parameters(available_memory)
-            max_connections = self.get_max_connections(available_memory)
+            max_connections = max(self.get_max_connections(available_memory), MIM_MAX_CONNECTIONS)
             if available_memory < 2 * BYTES_1GiB:
                 # disable memory instruments if we have less than 2GiB of RAM
                 performance_schema_instrument = "'memory/%=OFF'"
@@ -1209,7 +1210,11 @@ class MySQLBase(ABC):
             raise MySQLInitializeJujuOperationsTableError(e.message)
 
     def add_instance_to_cluster(
-        self, instance_address: str, instance_unit_label: str, from_instance: Optional[str] = None
+        self,
+        instance_address: str,
+        instance_unit_label: str,
+        from_instance: Optional[str] = None,
+        method: str = "auto",
     ) -> None:
         """Add an instance to the InnoDB cluster.
 
@@ -1223,6 +1228,7 @@ class MySQLBase(ABC):
             instance_address: address of the instance to add to the cluster
             instance_unit_label: the label/name of the unit
             from_instance: address of the adding instance, e.g. primary
+            method: recovery method to use, either "auto" or "clone"
         """
         options = {
             "password": self.cluster_admin_password,
@@ -1243,39 +1249,37 @@ class MySQLBase(ABC):
             "shell.options['dba.restartWaitTimeout'] = 3600",
         )
 
-        for recovery_method in ["auto", "clone"]:
-            # Prefer "auto" recovery method, but if it fails, try "clone"
-            try:
-                options["recoveryMethod"] = recovery_method
-                add_instance_command = (
-                    f"cluster.add_instance('{self.cluster_admin_user}@{instance_address}', {json.dumps(options)})",
-                )
+        # Prefer "auto" recovery method, but if it fails, try "clone"
+        try:
+            options["recoveryMethod"] = method
+            add_instance_command = (
+                f"cluster.add_instance('{self.cluster_admin_user}@{instance_address}', {options})",
+            )
 
-                logger.debug(
-                    f"Adding instance {instance_address}/{instance_unit_label} to cluster {self.cluster_name} with recovery method {recovery_method}"
-                )
-                self._run_mysqlsh_script("\n".join(connect_commands + add_instance_command))
+            logger.info(
+                f"Adding instance {instance_address}/{instance_unit_label} to {self.cluster_name=}"
+                f"with recovery {method=}"
+            )
+            self._run_mysqlsh_script("\n".join(connect_commands + add_instance_command))
 
-                break
-            except MySQLClientError as e:
-                if recovery_method == "clone":
-                    logger.exception(
-                        f"Failed to add instance {instance_address} to cluster {self.cluster_name} on {self.instance_address}",
-                        exc_info=e,
-                    )
-                    self._release_lock(
-                        from_instance or self.instance_address,
-                        instance_unit_label,
-                        UNIT_ADD_LOCKNAME,
-                    )
-                    raise MySQLAddInstanceToClusterError(e.message)
-
-                logger.debug(
-                    f"Failed to add instance {instance_address} to cluster {self.cluster_name} with recovery method 'auto'. Trying method 'clone'"
+        except MySQLClientError:
+            if method == "clone":
+                logger.exception(
+                    f"Failed to add {instance_address=} to {self.cluster_name=} on {self.instance_address=}",
                 )
-        self._release_lock(
-            from_instance or self.instance_address, instance_unit_label, UNIT_ADD_LOCKNAME
-        )
+                raise MySQLAddInstanceToClusterError
+
+            logger.debug(
+                f"Cannot add {instance_address=} to {self.cluster_name=} with recovery {method=}. Trying method 'clone'"
+            )
+            self.add_instance_to_cluster(
+                instance_address, instance_unit_label, from_instance, method="clone"
+            )
+        finally:
+            # always release the lock
+            self._release_lock(
+                from_instance or self.instance_address, instance_unit_label, UNIT_ADD_LOCKNAME
+            )
 
     def is_instance_configured_for_innodb(
         self, instance_address: str, instance_unit_label: str
@@ -1398,6 +1402,11 @@ class MySQLBase(ABC):
             )
             return False
 
+    @retry(
+        wait=wait_fixed(2),
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception_type(TimeoutError),
+    )
     def get_cluster_status(self, extended: Optional[bool] = False) -> Optional[dict]:
         """Get the cluster status.
 
@@ -2505,13 +2514,19 @@ class MySQLBase(ABC):
         except MySQLExecError:
             return None
 
-    def flush_mysql_logs(self, logs_type: MySQLTextLogs) -> None:
+    def flush_mysql_logs(self, logs_type: Union[MySQLTextLogs, list[MySQLTextLogs]]) -> None:
         """Flushes the specified logs_type logs."""
-        flush_logs_commands = (
+        flush_logs_commands = [
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             'session.run_sql("SET sql_log_bin = 0")',
-            f'session.run_sql("FLUSH {logs_type.value}")',
-        )
+        ]
+
+        if type(logs_type) is list:
+            flush_logs_commands.extend(
+                [f"session.run_sql('FLUSH {log.value}')" for log in logs_type]
+            )
+        else:
+            flush_logs_commands.append(f'session.run_sql("FLUSH {logs_type.value}")')  # type: ignore
 
         try:
             self._run_mysqlsh_script("\n".join(flush_logs_commands))
