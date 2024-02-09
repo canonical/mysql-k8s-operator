@@ -256,17 +256,8 @@ class KubernetesHelpers:
                             "cpu": workload_cpu,
                         }
 
-                #container.livenessProbe.failureThreshold = PROBE_FAILURE_THRESHOLD
-                #container.livenessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
-                probe = {
-                    "exec": ExecAction(command=["/bin/true"]).to_dict(),
-                    "initialDelaySeconds": PROBE_DELAY_SECONDS,
-                    "failureThreshold": PROBE_FAILURE_THRESHOLD,
-                    "timeoutSeconds": PROBE_TIMEOUT_SECONDS,
-                    "successThreshold": 1,
-                    "periodSeconds": 5,
-                }
-                container.livenessProbe = Probe.from_dict(probe)
+                if container.name == CONTAINER_NAME:
+                    container.livenessProbe.timeoutSeconds = PROBE_TIMEOUT_SECONDS
 
             # always patch init container to get Burstable QoS Class
             init_container = statefulset.spec.template.spec.initContainers[0]
@@ -275,10 +266,9 @@ class KubernetesHelpers:
                 "cpu": 0.1,
             }
 
-            self.client.replace(statefulset)
-            #self.client.patch(
-            #    StatefulSet, name=self.app_name, namespace=self.namespace, obj=statefulset
-            #)
+            self.client.patch(
+                StatefulSet, name=self.app_name, namespace=self.namespace, obj=statefulset
+            )
             logger.debug(f"Kubernetes statefulset '{self.app_name}' succesffuly patched")
         except ApiError as e:
             if e.status.code == 409:
