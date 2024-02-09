@@ -113,6 +113,8 @@ class KubernetesHelpers:
             pod_name: (optional) name of the pod to label, defaults to the current pod
         """
         try:
+            if not pod_name:
+                pod_name = self.pod_name
             pod = self.client.get(Pod, pod_name or self.pod_name, namespace=self.namespace)
 
             if not pod.metadata.labels:
@@ -120,14 +122,17 @@ class KubernetesHelpers:
 
             if pod.metadata.labels.get("role") == role:
                 return
-            logger.debug(f"Patching {pod=} with {role=}")
+            logger.debug(f"Patching {pod_name=} with {role=}")
 
             pod.metadata.labels["cluster-name"] = self.cluster_name
             pod.metadata.labels["role"] = role
-            self.client.patch(Pod, pod_name or self.pod_name, pod)
+            self.client.patch(Pod, pod_name, pod)
         except ApiError as e:
             if e.status.code == 404:
-                logger.warning(f"Kubernetes pod {pod_name} not found. Scaling in?")
+                logger.warning(f"Kubernetes {pod_name=} not found. Scaling in?")
+                return
+            if e.status.code == 409:
+                logger.warning(f"Kubernetes {pod_name=} changed. Labeling skipped")
                 return
             if e.status.code == 403:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
