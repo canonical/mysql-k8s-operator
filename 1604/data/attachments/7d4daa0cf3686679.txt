@@ -1,0 +1,4 @@
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:55 Waiting until 3 mysql instances are online
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:61 Ensuring all units have continuous writes incrementing
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:71 Sending SIGKILL to unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:83 Waiting until 3 mysql instances are online
