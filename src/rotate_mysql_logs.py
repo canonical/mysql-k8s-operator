@@ -47,8 +47,8 @@ class RotateMySQLLogs(Object):
             return
 
         try:
-            self.charm._mysql.flush_mysql_logs(list(MySQLTextLogs))
             self.charm._mysql._execute_commands(["logrotate", "-f", LOG_ROTATE_CONFIG_FILE])
+            self.charm._mysql.flush_mysql_logs(list(MySQLTextLogs))
         except MySQLExecError:
             logger.warning("Failed to rotate MySQL logs")
         except MySQLClientError:
