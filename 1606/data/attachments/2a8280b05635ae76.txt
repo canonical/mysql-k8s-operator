@@ -1,0 +1,89 @@
+[32mINFO    [0m integration.test_charm:test_charm.py:346 Extending update-status-hook-inteval to 60m
+[32mINFO    [0m integration.test_charm:test_charm.py:354 Overwriting the log rotate dispatcher script
+[32mINFO    [0m integration.test_charm:test_charm.py:364 Stopping the log rotate dispatcher
+[32mINFO    [0m integration.test_charm:test_charm.py:367 Stopping any running logrotate jobs
+[32mINFO    [0m integration.test_charm:test_charm.py:370 Removing existing archive directories
+[32mINFO    [0m integration.test_charm:test_charm.py:378 Writing some data to the text log files
+[32mINFO    [0m integration.test_charm:test_charm.py:383 Ensuring only log files exist
+[32mINFO    [0m integration.test_charm:test_charm.py:394 Dispatching custom event to rotate logs
+[32mINFO    [0m integration.test_charm:test_charm.py:397 Ensuring log files and archive directories exist
+[32mINFO    [0m integration.test_charm:test_charm.py:408 Ensuring log files were rotated
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:36:15Z
+
+App        Version  Status  Scale  Charm      Channel  Rev  Address        Exposed  Message
+mysql-k8s           active      3  mysql-k8s             0  10.152.183.87  no       
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0*  active    idle   10.1.166.75         Primary
+mysql-k8s/1   active    idle   10.1.166.83         
+mysql-k8s/2   active    idle   10.1.166.82         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:32:26 ERROR unit.mysql-k8s/2.juju-log Failed to set cluster primary
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1355, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='Reconnecting to the PRIMARY instance of an InnoDB cluster (mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33060)...\n', stderr="Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-02-11T01:32:25Z: Loading startup files...\nverbose: 2024-02-11T01:32:25Z: Loading plugins...\nverbose: 2024-02-11T01:32:25Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nverbose: 2024-02-11T01:32:25Z: Shell.connect_to_primary: tid=566: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nverbose: 2024-02-11T01:32:25Z: Redirecting session from 'mysqlx://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33060' to a PRIMARY of an InnoDB cluster or ReplicaSet...\nverbose: 2024-02-11T01:32:25Z: Reconnecting to mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33060 instance of an InnoDB cluster (PRIMARY)...\nverbose: 2024-02-11T01:32:25Z: Connecting to MySQL at: mysqlx://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33060\nverbose: 2024-02-11T01:32:25Z: Shell.connect_to_primary: tid=568: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.s" [truncated]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1744, in set_cluster_primary
+    self._run_mysqlsh_script("\n".join(set_cluster_primary_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 672, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-02-11T01:32:25Z: Loading startup files...
+verbose: 2024-02-11T01:32:25Z: Loading plugins...
+verbose: 2024-02-11T01:32:25Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+verbose: 2024-02-11T01:32:25Z: Shell.connect_to_primary: tid=566: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+verbose: 2024-02-11T01:32:25Z: Redirecting session from 'mysqlx://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33060' to a PRIMARY of an InnoDB cluster or ReplicaSet...
+verbose: 2024-02-11T01:32:25Z: Reconnecting to mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33060 instance of an InnoDB cluster (PRIMARY)...
+verbose: 2024-02-11T01:32:25Z: Connecting to MySQL at: mysqlx://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33060
+verbose: 2024-02-11T01:32:25Z: Shell.connect_to_primary: tid=568: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33060
+verbose: 2024-02-11T01:32:25Z: Connecting to MySQL at: mysql://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306?connect-timeout=5000
+verbose: 2024-02-11T01:32:25Z: Dba.get_cluster: tid=570: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306
+verbose: 2024-02-11T01:32:25Z: Connecting to MySQL at: mysql://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306?connect-timeout=5000
+verbose: 2024-02-11T01:32:25Z: Dba.get_cluster: tid=571: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306
+verbose: 2024-02-11T01:32:25Z: Group Replication 'group_name' value: eed64362-c87c-11ee-a28c-06287fe77b6f
+verbose: 2024-02-11T01:32:25Z: Metadata 'group_name' value: eed64362-c87c-11ee-a28c-06287fe77b6f
+verbose: 2024-02-11T01:32:25Z: Connecting to MySQL at: mysql://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306?connect-timeout=5000
+verbose: 2024-02-11T01:32:25Z: Dba.get_cluster: tid=576: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306
+verbose: 2024-02-11T01:32:25Z: Connecting to MySQL at: mysql://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306?connect-timeout=5000
+verbose: 2024-02-11T01:32:25Z: Dba.get_cluster: tid=577: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306
+verbose: 2024-02-11T01:32:26Z: Connecting to MySQL at: mysql://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306?connect-timeout=5000
+verbose: 2024-02-11T01:32:26Z: Cluster.set_primary_instance: tid=578: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306
+verbose: 2024-02-11T01:32:26Z: Connecting to MySQL at: mysql://serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306?connect-timeout=5000
+verbose: 2024-02-11T01:32:26Z: Cluster.set_primary_instance: tid=579: CONNECTED: mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+RuntimeError: Cluster.set_primary_instance: This operation requires all the cluster members to be ONLINE
+
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[1m[31mERROR   [0m websockets.client:protocol.py:1015 data transfer failed
+Traceback (most recent call last):
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 959, in transfer_data
+    message = await self.read_message()
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1029, in read_message
+    frame = await self.read_data_frame(max_size=self.max_size)
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1104, in read_data_frame
+    frame = await self.read_frame(max_size)
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1161, in read_frame
+    frame = await Frame.read(
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/framing.py", line 68, in read
+    data = await reader(2)
+  File "/usr/lib/python3.10/asyncio/streams.py", line 708, in readexactly
+    await self._wait_for_data('readexactly')
+  File "/usr/lib/python3.10/asyncio/streams.py", line 501, in _wait_for_data
+    await self._waiter
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 924, in write
+    n = self._sock.send(data)
+OSError: [Errno 9] Bad file descriptor
