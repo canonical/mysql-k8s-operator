@@ -122,7 +122,7 @@ BYTES_1MB = 1000000  # 1 megabyte
 BYTES_1MiB = 1048576  # 1 mebibyte
 RECOVERY_CHECK_TIME = 10  # seconds
 GET_MEMBER_STATE_TIME = 10  # seconds
-MIM_MAX_CONNECTIONS = 100
+MIN_MAX_CONNECTIONS = 100
 
 SECRET_INTERNAL_LABEL = "secret-id"
 SECRET_DELETED_LABEL = "None"
@@ -711,7 +711,7 @@ class MySQLBase(ABC):
             innodb_buffer_pool_size = 20 * BYTES_1MiB
             innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
             group_replication_message_cache_size = 128 * BYTES_1MiB
-            max_connections = MIM_MAX_CONNECTIONS
+            max_connections = MIN_MAX_CONNECTIONS
             performance_schema_instrument = "'memory/%=OFF'"
         else:
             available_memory = self.get_available_memory()
@@ -724,7 +724,7 @@ class MySQLBase(ABC):
                 innodb_buffer_pool_chunk_size,
                 group_replication_message_cache_size,
             ) = self.get_innodb_buffer_pool_parameters(available_memory)
-            max_connections = max(self.get_max_connections(available_memory), MIM_MAX_CONNECTIONS)
+            max_connections = max(self.get_max_connections(available_memory), MIN_MAX_CONNECTIONS)
             if available_memory < 2 * BYTES_1GiB:
                 # disable memory instruments if we have less than 2GiB of RAM
                 performance_schema_instrument = "'memory/%=OFF'"
