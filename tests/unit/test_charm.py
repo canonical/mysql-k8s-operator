@@ -90,7 +90,7 @@ class TestCharm(unittest.TestCase):
         # Test leader election setting of secret data
         self.harness.set_leader()
 
-        secret_data = self.harness.model.get_secret(label="mysql-k8s.app").get_content()
+        secret_data = self.harness.model.get_secret(label="mysql-k8s.app").peek_content()
 
         # Test passwords in content and length
         required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
