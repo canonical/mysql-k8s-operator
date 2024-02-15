@@ -1,0 +1,19 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:28:16Z
+
+App        Version  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s           waiting      3  mysql-k8s       8.0/stable   113  10.152.183.171  no       installing agent
+test-app   0.0.2    waiting      1  mysql-test-app  latest/edge   29  10.152.183.42   no       installing agent
+
+Unit          Workload     Agent      Address       Ports  Message
+mysql-k8s/0   maintenance  executing  10.1.107.141         (config-changed) installing charm software
+mysql-k8s/1   maintenance  executing  10.1.107.142         (config-changed) installing charm software
+mysql-k8s/2*  error        idle       10.1.107.140         hook failed: "config-changed"
+test-app/0*   waiting      idle       10.1.107.136         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
