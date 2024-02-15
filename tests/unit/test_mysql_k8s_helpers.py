@@ -77,11 +77,12 @@ class TestMySQL(unittest.TestCase):
             group="mysql",
         )
 
-        _process.wait_output.assert_called_once()
+        _process.wait.assert_called_once()
 
     @patch("ops.model.Container")
     def test_initialise_mysqld_exception(self, _container):
         """Test a failing execution of bootstrap_instance."""
+        self.mysql.initialise_mysqld.retry.retry = tenacity.retry_if_not_result(lambda x: True)
         _container.exec.side_effect = ExecError(
             command=["mysqld"], exit_code=1, stdout=b"", stderr=b"Error"
         )
@@ -89,6 +90,17 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLInitialiseMySQLDError):
             self.mysql.initialise_mysqld()
+
+    @patch("ops.model.Container")
+    def test_wait_until_mysql_connection(self, _container):
+        """Test wait_until_mysql_connection."""
+        self.mysql.wait_until_mysql_connection.retry.retry = tenacity.retry_if_not_result(
+            lambda x: True
+        )
+        _container.exists.return_value = True
+        self.mysql.container = _container
+
+        self.assertTrue(not self.mysql.wait_until_mysql_connection(check_port=False))
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
     def test_configure_mysql_users(self, _run_mysqlcli_script):
@@ -336,6 +348,31 @@ class TestMySQL(unittest.TestCase):
 
         with self.assertRaises(MySQLWaitUntilUnitRemovedFromClusterError):
             self.mysql._wait_until_unit_removed_from_cluster("mysql-0.mysql-endpoints")
+
+    @patch("ops.model.Container")
+    def test_log_rotate_config(self, _container):
+        """Test log_rotate_config."""
+        rendered_logrotate_config = (
+            "# Use system user\nsu mysql mysql\n\n# Create dedicated "
+            "subdirectory for rotated files\ncreateolddir 770 mysql mysql\n\n# Frequency of logs"
+            " rotation\nhourly\nmaxage 7\nrotate 10800\n\n# Naming of rotated files should be in"
+            " the format:\ndateext\ndateformat -%Y%m%d_%H%M\n\n# Settings to prevent"
+            " misconfigurations and unwanted behaviours\nifempty\nmissingok\nnocompress\nnomail\n"
+            "nosharedscripts\nnocopytruncate\n\n/var/log/mysql/error.log {\n    olddir"
+            " archive_error\n}\n\n/var/log/mysql/general.log {\n    olddir archive_general\n}\n\n"
+            "/var/log/mysql/slowquery.log {\n    olddir archive_slowquery\n}"
+        )
+
+        self.mysql.container = _container
+        self.mysql.setup_logrotate_config()
+
+        self.mysql.container.push.assert_called_once_with(
+            "/etc/logrotate.d/flush_mysql_logs",
+            rendered_logrotate_config,
+            permissions=416,
+            user="root",
+            group="root",
+        )
 
     @patch(
         "mysql_k8s_helpers.MySQL.get_cluster_endpoints",
