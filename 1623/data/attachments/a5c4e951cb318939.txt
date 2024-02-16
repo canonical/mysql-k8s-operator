@@ -1,0 +1,3 @@
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:124 Ensuring that all units continuous writes incrementing
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:135 Sending SIGSTOP to unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:158 Waiting for new primary to be elected
