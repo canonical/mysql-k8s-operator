@@ -51,7 +51,7 @@ class TestDatabase(unittest.TestCase):
         self.patcher.stop()
 
     @patch("k8s_helpers.KubernetesHelpers.wait_service_ready")
-    @patch("relations.mysql_provider.MySQLProvider._update_endpoints")
+    @patch("mysql_k8s_helpers.MySQL.update_endpoints")
     @patch("k8s_helpers.KubernetesHelpers.create_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
     @patch("mysql_k8s_helpers.MySQL.create_application_database_and_scoped_user")

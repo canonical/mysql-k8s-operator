@@ -1,9 +1,11 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import socketserver
 import unittest
 from unittest.mock import MagicMock, patch
 
+import tenacity
 from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.core_v1 import Pod, Service
@@ -85,7 +87,19 @@ class TestK8sHelpers(unittest.TestCase):
             self.k8s_helpers.get_resources_limits(container_name="mysql"), {"memory": "2Gi"}
         )
 
-    @patch("socket.socket")
-    def test_wait_service_ready(self, _socket):
-        _socket.return_value.connect_ex.return_value = 0
-        self.k8s_helpers.wait_service_ready(("test-service", 3306))
+    def test_wait_service_ready(self):
+        server = socketserver.ForkingTCPServer(("localhost", 9999), MyTCPHandler)
+        server.server_activate()
+        self.k8s_helpers.wait_service_ready(("localhost", 9999))
+
+        server.server_close()
+        self.k8s_helpers.wait_service_ready.retry.retry = tenacity.retry_if_not_result(
+            lambda x: True
+        )
+        with self.assertRaises(TimeoutError):
+            self.k8s_helpers.wait_service_ready(("localhost", 9999))
+
+
+class MyTCPHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        pass

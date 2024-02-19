@@ -11,10 +11,24 @@ from ops.model import ActiveStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import MySQLOperatorCharm
-from constants import PASSWORD_LENGTH
+from constants import (
+    BACKUPS_PASSWORD_KEY,
+    CLUSTER_ADMIN_PASSWORD_KEY,
+    MONITORING_PASSWORD_KEY,
+    PASSWORD_LENGTH,
+    ROOT_PASSWORD_KEY,
+    SERVER_CONFIG_PASSWORD_KEY,
+)
 from mysql_k8s_helpers import MySQL, MySQLInitialiseMySQLDError
 
 APP_NAME = "mysql-k8s"
+REQUIRED_PASSWORD_KEYS = [
+    ROOT_PASSWORD_KEY,
+    MONITORING_PASSWORD_KEY,
+    CLUSTER_ADMIN_PASSWORD_KEY,
+    SERVER_CONFIG_PASSWORD_KEY,
+    BACKUPS_PASSWORD_KEY,
+]
 
 
 class TestCharm(unittest.TestCase):
@@ -80,8 +94,7 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader()
         peer_data = self.harness.get_relation_data(self.peer_relation_id, self.charm.app)
         # Test passwords in content and length
-        required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
-        for password in required_passwords:
+        for password in REQUIRED_PASSWORD_KEYS:
             self.assertTrue(
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
@@ -90,11 +103,11 @@ class TestCharm(unittest.TestCase):
         # Test leader election setting of secret data
         self.harness.set_leader()
 
-        secret_data = self.harness.model.get_secret(label="mysql-k8s.app").get_content()
+        # > 3.1.7 changed way last revision secret is accessed (peek)
+        secret_data = self.harness.model.get_secret(label="mysql-k8s.app").peek_content()
 
         # Test passwords in content and length
-        required_passwords = ["root-password", "server-config-password", "cluster-admin-password"]
-        for password in required_passwords:
+        for password in REQUIRED_PASSWORD_KEYS:
             self.assertTrue(
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
             )
@@ -116,7 +129,7 @@ class TestCharm(unittest.TestCase):
         "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters",
         return_value=(123456, None, None),
     )
-    @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=(120, None))
+    @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=120)
     @patch("mysql_k8s_helpers.MySQL.setup_logrotate_config")
     def test_mysql_pebble_ready(
         self,
