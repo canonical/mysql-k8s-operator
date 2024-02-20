@@ -1,0 +1,29 @@
+[32mINFO    [0m integration.test_charm:test_charm.py:346 Extending update-status-hook-inteval to 60m
+[32mINFO    [0m integration.test_charm:test_charm.py:354 Overwriting the log rotate dispatcher script
+[32mINFO    [0m integration.test_charm:test_charm.py:364 Stopping the log rotate dispatcher
+[32mINFO    [0m integration.test_charm:test_charm.py:367 Stopping any running logrotate jobs
+[32mINFO    [0m integration.test_charm:test_charm.py:370 Removing existing archive directories
+[32mINFO    [0m integration.test_charm:test_charm.py:378 Writing some data to the text log files
+[32mINFO    [0m integration.test_charm:test_charm.py:383 Ensuring only log files exist
+[32mINFO    [0m integration.test_charm:test_charm.py:394 Dispatching custom event to rotate logs
+[32mINFO    [0m integration.test_charm:test_charm.py:397 Ensuring log files and archive directories exist
+[32mINFO    [0m integration.test_charm:test_charm.py:408 Ensuring log files were rotated
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:34:22Z
+
+App        Version                  Status  Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s  8.0.35-0ubuntu0.22.04.1  active      3  mysql-k8s             0  10.152.183.195  no       
+
+Unit          Workload  Agent  Address     Ports  Message
+mysql-k8s/0*  active    idle   10.1.78.75         Primary
+mysql-k8s/1   active    idle   10.1.78.84         
+mysql-k8s/2   active    idle   10.1.78.83         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+controller-0: 01:30:43 ERROR juju.worker.caasapplicationprovisioner.runner exited "mysql-k8s": updating filesystem information for mysql-k8s: cannot set info for filesystem attachment 1:mysql-k8s/1: state changing too quickly; try again soon
+controller-0: 01:31:32 ERROR juju.worker.caasapplicationprovisioner.runner exited "mysql-k8s": finding filesystem info for mysql-k8s-database-a15f577a: unable to get persistent volume claim: k8s: persistentvolumeclaims "mysql-k8s-database-a15f577a-mysql-k8s-1" not found
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
