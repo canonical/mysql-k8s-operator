@@ -59,7 +59,7 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
             region_name=s3_parameters["region"] or None,
         )
         verif = True
-        ca_chain = s3_parameters["tls-ca-chain"]
+        ca_chain = s3_parameters.get("tls-ca-chain")
         if ca_chain:
             ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
             ca_file.write(ca.encode())
