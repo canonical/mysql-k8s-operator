@@ -29,10 +29,10 @@ from typing import List, Optional, Tuple
 
 import ops
 from charms.mysql.v0.mysql import MySQLKillSessionError, MySQLTLSSetupError
-from charms.tls_certificates_interface.v1.tls_certificates import (
+from charms.tls_certificates_interface.v2.tls_certificates import (
     CertificateAvailableEvent,
     CertificateExpiringEvent,
-    TLSCertificatesRequiresV1,
+    TLSCertificatesRequiresV2,
     generate_csr,
     generate_private_key,
 )
@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 LIBID = "eb73947deedd4380a3a90d527e0878eb"
 LIBAPI = 0
-LIBPATCH = 4
+LIBPATCH = 5
 
 SCOPE = "unit"
 
@@ -67,7 +67,7 @@ class MySQLTLS(Object):
         super().__init__(charm, "certificates")
         self.charm = charm
 
-        self.certs = TLSCertificatesRequiresV1(self.charm, TLS_RELATION)
+        self.certs = TLSCertificatesRequiresV2(self.charm, TLS_RELATION)
 
         self.framework.observe(
             self.charm.on.set_tls_private_key_action,
