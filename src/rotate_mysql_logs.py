@@ -10,7 +10,7 @@ from charms.mysql.v0.mysql import MySQLClientError, MySQLExecError, MySQLTextLog
 from ops.charm import CharmEvents
 from ops.framework import EventBase, EventSource, Object
 
-from constants import LOG_ROTATE_CONFIG_FILE
+from constants import CONTAINER_NAME, LOG_ROTATE_CONFIG_FILE
 
 if typing.TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -43,7 +43,13 @@ class RotateMySQLLogs(Object):
 
     def _rotate_mysql_logs(self, _) -> None:
         """Rotate the mysql logs."""
-        if self.charm.peers is None or self.charm.unit_peer_data.get("unit-initialized") != "True":
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if (
+            self.charm.peers is None
+            or self.charm.unit_peer_data.get("unit-initialized") != "True"
+            or not container.can_connect()
+        ):
+            logger.debug("Skipping log rotation, workload not ready")
             return
 
         try:
