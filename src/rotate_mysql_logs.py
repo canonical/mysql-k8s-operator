@@ -43,7 +43,12 @@ class RotateMySQLLogs(Object):
 
     def _rotate_mysql_logs(self, _) -> None:
         """Rotate the mysql logs."""
-        if self.charm.peers is None or self.charm.unit_peer_data.get("unit-initialized") != "True":
+        if (
+            self.charm.peers is None
+            or self.charm.unit_peer_data.get("unit-initialized") != "True"
+            or not self.charm.upgrade.idle
+        ):
+            # skip when not initialized or during an upgrade
             return
 
         try:

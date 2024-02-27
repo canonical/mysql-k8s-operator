@@ -15,7 +15,9 @@ from charms.data_platform_libs.v0.upgrade import (
 )
 from charms.mysql.v0.mysql import (
     MySQLGetMySQLVersionError,
+    MySQLRebootFromCompleteOutageError,
     MySQLRescanClusterError,
+    MySQLServerNotUpgradableError,
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
 )
@@ -28,6 +30,7 @@ from tenacity.wait import wait_fixed
 from typing_extensions import override
 
 import k8s_helpers
+from constants import CONTAINER_NAME
 
 if TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -224,7 +227,6 @@ class MySQLK8sUpgrade(DataUpgrade):
             # don't fail on this, just log it
             logger.warning("Failed to get MySQL version")
         try:
-            failure_message = "unknown error"
             self._check_server_upgradeability()
             self.charm.unit.status = MaintenanceStatus("recovering unit after upgrade")
             if self.charm.app.planned_units() > 1:
@@ -232,13 +234,20 @@ class MySQLK8sUpgrade(DataUpgrade):
             else:
                 self._recover_single_unit_cluster()
             self._complete_upgrade()
-        except Exception:
-            failure_message = "Unit failed to rejoin the cluster after upgrade"
-            logger.error(failure_message)
+        except MySQLRebootFromCompleteOutageError:
+            logger.error("Failed to reboot single unit from outage after upgrade")
             self.set_unit_failed()
             self.charm.unit.status = BlockedStatus(
                 "upgrade failed. Check logs for rollback instruction"
             )
+        except (RetryError, MySQLServerNotUpgradableError):
+            # Failed to recover unit
+            if not self._check_server_unsupported_downgrade():
+                logger.error("Unit failed to rejoin the cluster after upgrade")
+                self.set_unit_failed()
+                return
+            logger.info("Downgrade is incompatible. Resetting workload")
+            self._reset_on_unsupported_downgrade()
 
     def _recover_multi_unit_cluster(self) -> None:
         logger.debug("Recovering unit")
@@ -301,3 +310,27 @@ class MySQLK8sUpgrade(DataUpgrade):
         instance = self.charm._get_unit_fqdn(f"{self.charm.app.name}/0")
         self.charm._mysql.verify_server_upgradable(instance=instance)
         logger.debug("MySQL server is upgradeable")
+
+    def _check_server_unsupported_downgrade(self) -> bool:
+        """Check error log for unsupported downgrade.
+
+        https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
+        """
+        if log_content := self.charm._mysql.fetch_error_log():
+            return "MY-013171" in log_content
+
+        return False
+
+    def _reset_on_unsupported_downgrade(self) -> None:
+        """Reset the cluster on unsupported downgrade."""
+        self.charm._mysql.reset_data_dir()
+        self.charm._mysql.initialise_mysqld()
+        self.charm._write_mysqld_configuration()
+        self.charm._configure_instance(self.charm.unit.get_container(CONTAINER_NAME))
+        # reset flags
+        self.charm.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
+        # rescan is needed to remove the instance old incarnation from the cluster
+        leader = self.charm._get_primary_from_online_peer()
+        self.charm._mysql.rescan_cluster(from_instance=leader, remove_instances=True)
+        # rejoin after
+        self.charm.join_unit_to_cluster()

@@ -852,3 +852,7 @@ class MySQL(MySQLBase):
         """Set the cluster primary and update pod labels."""
         super().set_cluster_primary(new_primary_address)
         self.update_endpoints()
+
+    def fetch_error_log(self) -> Optional[str]:
+        """Fetch the MySQL error log."""
+        return self.read_file_content("/var/log/mysql/error.log")
