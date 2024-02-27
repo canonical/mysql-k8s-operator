@@ -7,6 +7,7 @@ import os
 import pathlib
 import shutil
 import subprocess
+import yaml
 from zipfile import ZipFile
 
 import pytest
@@ -25,6 +26,8 @@ TIMEOUT = 20 * 60
 MYSQL_APP_NAME = "mysql-k8s"
 TEST_APP = "mysql-test-app"
 
+METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
+
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -39,12 +42,15 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     src_patch(revert=True)
     config = {"profile": "testing"}
 
+    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
     async with ops_test.fast_forward("10s"):
         await ops_test.model.deploy(
             charm,
             application_name=MYSQL_APP_NAME,
             config=config,
             num_units=3,
+            resources=resources,
+            trust=True,
         )
 
         await ops_test.model.deploy(
