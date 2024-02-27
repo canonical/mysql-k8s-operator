@@ -28,7 +28,7 @@ TEST_APP = "mysql-test-app"
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, mysql_charm_series: str) -> None:
+async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
     sub_regex_older_rock = (
         "s/sha256:.*$/sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21/"
@@ -45,7 +45,6 @@ async def test_build_and_deploy(ops_test: OpsTest, mysql_charm_series: str) -> N
             application_name=MYSQL_APP_NAME,
             config=config,
             num_units=3,
-            series=mysql_charm_series,
         )
 
         await ops_test.model.deploy(
