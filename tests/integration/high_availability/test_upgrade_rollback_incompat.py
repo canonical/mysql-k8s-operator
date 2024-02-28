@@ -33,16 +33,13 @@ METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
-    sub_regex_older_rock = (
-        "s/sha256:.*$/sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21/"
-    )
-    src_patch(sub_regex=sub_regex_older_rock, file_name="metadata.yaml")
     charm = await charm_local_build(ops_test)
 
-    src_patch(revert=True)
     config = {"profile": "testing"}
-
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+    # MySQL 8.0.34 image, last known minor version incompatible
+    resources = {
+        "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
+    }
     async with ops_test.fast_forward("10s"):
         await ops_test.model.deploy(
             charm,
@@ -101,7 +98,9 @@ async def test_upgrade_to_failling(
     src_patch(revert=True)
 
     logger.info("Refresh the charm")
-    await application.refresh(path=new_charm)
+    # Current MySQL Image > 8.0.34
+    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+    await application.refresh(path=new_charm, resources=resources)
 
     logger.info("Wait for upgrade to start")
     await ops_test.model.block_until(
@@ -129,10 +128,6 @@ async def test_upgrade_to_failling(
 async def test_rollback(ops_test, continuous_writes) -> None:
     application = ops_test.model.applications[MYSQL_APP_NAME]
 
-    sub_regex_older_rock = (
-        "s/sha256:.*$/sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21/"
-    )
-    src_patch(sub_regex=sub_regex_older_rock, file_name="src/constants.py")
     charm = await charm_local_build(ops_test, refresh=True)
 
     logger.info("Get leader unit")
@@ -144,7 +139,11 @@ async def test_rollback(ops_test, continuous_writes) -> None:
     await juju_.run_action(leader_unit, "pre-upgrade-check")
 
     logger.info("Refresh with previous charm")
-    await application.refresh(path=charm)
+    # MySQL 8.0.34 image
+    resources = {
+        "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
+    }
+    await application.refresh(path=charm, resources=resources)
 
     logger.info("Wait for upgrade to start")
     await ops_test.model.block_until(
