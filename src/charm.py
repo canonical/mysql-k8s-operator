@@ -498,7 +498,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         # Add the pebble layer
         logger.debug("Adding pebble layer")
-        container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=False)
+        container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
         container.restart(MYSQLD_SAFE_SERVICE)
 
         logger.debug("Waiting for instance to be ready")
@@ -553,7 +553,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return
 
         if not self.upgrade.idle:
-            # pebble ready task delegated to upgrade
+            # when upgrading pebble ready is
+            # task delegated to upgrade code
             return
 
         container = event.workload
