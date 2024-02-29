@@ -2361,7 +2361,7 @@ class MySQLBase(ABC):
         if not cs_status:
             return
 
-        return cs_status["clusters"][self.cluster_name]["clusterrole"] == "replica"
+        return cs_status["clusters"][self.cluster_name.lower()]["clusterrole"] == "replica"
 
     def get_cluster_set_name(self, from_instance: Optional[str] = None) -> Optional[str]:
         """Get cluster set name.

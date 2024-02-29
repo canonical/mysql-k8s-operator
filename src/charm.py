@@ -622,7 +622,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         try:
             # Create the cluster when is the leader unit
-            logger.info("Creating cluster on the leader unit")
+            logger.info(f"Creating cluster {self.app_peer_data['cluster-name']}")
             self._mysql.create_cluster(self.unit_label)
             self._mysql.create_cluster_set()
 
