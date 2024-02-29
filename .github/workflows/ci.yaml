@@ -14,29 +14,9 @@ on:
   workflow_call:
 
 jobs:
-  lint:
-    name: Lint
-    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v11.0.1
-
-  unit-test:
-    name: Unit test charm
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install tox & poetry
-        run: |
-          pipx install tox
-          pipx install poetry
-      - name: Run tests
-        run: tox run -e unit
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v3
-
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v11.0.1
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@add-sos-report
     with:
       cache: true
 
@@ -52,10 +32,8 @@ jobs:
             allure: true
     name: Integration test charm | ${{ matrix.juju.agent }}
     needs:
-      - lint
-      - unit-test
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v11.0.1
+    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@add-sos-report
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
       cloud: microk8s
