@@ -552,6 +552,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             event.defer()
             return
 
+        if not self.upgrade.idle:
+            # pebble ready task delegated to upgrade
+            return
+
         container = event.workload
         self._write_mysqld_configuration()
 

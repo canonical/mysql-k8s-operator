@@ -18,6 +18,7 @@ from charms.mysql.v0.mysql import (
     MySQLRebootFromCompleteOutageError,
     MySQLRescanClusterError,
     MySQLServerNotUpgradableError,
+    MySQLServiceNotRunningError,
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
 )
@@ -221,12 +222,19 @@ class MySQLK8sUpgrade(DataUpgrade):
         if self.state not in ["upgrading", "recovery"]:
             return
 
+        container = event.workload
+        self.charm._write_mysqld_configuration()
+
+        logger.info("Setting up the logrotate configurations")
+        self.charm._mysql.setup_logrotate_config()
+
         try:
             self.charm.unit.set_workload_version(self.charm._mysql.get_mysql_version() or "unset")
         except MySQLGetMySQLVersionError:
             # don't fail on this, just log it
             logger.warning("Failed to get MySQL version")
         try:
+            self.charm._reconcile_pebble_layer(container)
             self._check_server_upgradeability()
             self.charm.unit.status = MaintenanceStatus("recovering unit after upgrade")
             if self.charm.app.planned_units() > 1:
@@ -240,7 +248,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             self.charm.unit.status = BlockedStatus(
                 "upgrade failed. Check logs for rollback instruction"
             )
-        except (RetryError, MySQLServerNotUpgradableError):
+        except (RetryError, MySQLServerNotUpgradableError, MySQLServiceNotRunningError):
             # Failed to recover unit
             if not self._check_server_unsupported_downgrade():
                 logger.error("Unit failed to rejoin the cluster after upgrade")
