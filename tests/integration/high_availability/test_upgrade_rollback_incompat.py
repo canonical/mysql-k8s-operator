@@ -1,20 +1,19 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import ast
 import logging
 import os
 import pathlib
 import shutil
 import subprocess
-import yaml
 from zipfile import ZipFile
 
 import pytest
+import yaml
 from pytest_operator.plugin import OpsTest
 
 from .. import juju_
-from ..helpers import get_leader_unit, get_relation_data, get_unit_by_index
+from ..helpers import get_leader_unit, get_unit_by_index
 from .high_availability_helpers import (
     ensure_all_units_continuous_writes_incrementing,
     relate_mysql_and_application,
@@ -108,11 +107,7 @@ async def test_upgrade_to_failling(
         timeout=TIMEOUT,
     )
     logger.info("Get first upgrading unit")
-    relation_data = await get_relation_data(ops_test, MYSQL_APP_NAME, "upgrade")
-    upgrade_stack = relation_data[0]["application-data"]["upgrade-stack"]
-    upgrading_unit = get_unit_by_index(
-        MYSQL_APP_NAME, application.units, ast.literal_eval(upgrade_stack)[-1]
-    )
+    upgrading_unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
 
     assert upgrading_unit is not None, "No upgrading unit found"
 
@@ -150,7 +145,21 @@ async def test_rollback(ops_test, continuous_writes) -> None:
         lambda: "waiting" in {unit.workload_status for unit in application.units},
         timeout=TIMEOUT,
     )
-    await ops_test.model.wait_for_idle(apps=[MYSQL_APP_NAME], status="active", timeout=TIMEOUT)
+
+    unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
+    logger.info("Wait for upgrade to complete on first upgrading unit")
+    await ops_test.model.block_until(
+        lambda: unit.workload_status_message == "upgrade completed", timeout=TIMEOUT
+    )
+
+    logger.info("Resume upgrade")
+    await juju_.run_action(leader_unit, "resume-upgrade")
+
+    logger.info("Wait for application to recover")
+    await ops_test.model.block_until(
+        lambda: all(unit.workload_status == "active" for unit in application.units),
+        timeout=TIMEOUT,
+    )
 
     logger.info("Ensure continuous_writes after rollback procedure")
     await ensure_all_units_continuous_writes_incrementing(ops_test)

@@ -32,7 +32,7 @@ from tenacity.wait import wait_fixed
 from typing_extensions import override
 
 import k8s_helpers
-from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE
+from constants import MYSQLD_SAFE_SERVICE
 
 if TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -259,8 +259,9 @@ class MySQLK8sUpgrade(DataUpgrade):
                 logger.error("Unit failed to rejoin the cluster after upgrade")
                 self.set_unit_failed()
                 return
-            logger.info("Downgrade is incompatible. Resetting workload")
+            logger.warning("Downgrade is incompatible. Resetting workload")
             self._reset_on_unsupported_downgrade(container)
+            self._complete_upgrade()
 
     def _recover_multi_unit_cluster(self) -> None:
         logger.debug("Recovering unit")
