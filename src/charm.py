@@ -579,7 +579,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             # Non-leader units should wait for leader to add them to the cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
-
             self.join_unit_to_cluster()
             return
 
@@ -594,7 +593,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self.app_peer_data["units-added-to-cluster"] = "1"
 
             state, role = self._mysql.get_member_state()
-
             self.unit_peer_data.update(
                 {"member-state": state, "member-role": role, "unit-initialized": "True"}
             )
