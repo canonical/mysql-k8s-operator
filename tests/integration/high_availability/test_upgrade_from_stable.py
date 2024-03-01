@@ -120,7 +120,14 @@ async def test_upgrade_from_stable(ops_test: OpsTest):
     assert leader_unit is not None, "No leader unit found"
 
     logger.info("Resume upgrade")
-    await juju_.run_action(leader_unit, "resume-upgrade")
+    try:
+        await juju_.run_action(leader_unit, "resume-upgrade")
+    except AssertionError:
+        # ignore action return error as it is expected when
+        # the leader unit is the next one to be upgraded
+        # due it being immediately rolled when the partition
+        # is patched in the statefulset
+        pass
 
     logger.info("Wait for upgrade to complete")
     await ops_test.model.block_until(
