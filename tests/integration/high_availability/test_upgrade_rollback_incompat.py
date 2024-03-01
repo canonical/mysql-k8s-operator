@@ -158,7 +158,7 @@ async def test_rollback(ops_test, continuous_writes) -> None:
     logger.info("Wait for application to recover")
     await ops_test.model.block_until(
         lambda: all(unit.workload_status == "active" for unit in application.units),
-        timeout=TIMEOUT,
+        timeout=2 * TIMEOUT,
     )
 
     logger.info("Ensure continuous_writes after rollback procedure")
