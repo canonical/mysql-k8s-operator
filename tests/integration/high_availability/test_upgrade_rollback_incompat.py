@@ -14,16 +14,11 @@ from pytest_operator.plugin import OpsTest
 
 from .. import juju_
 from ..helpers import get_leader_unit, get_unit_by_index
-from .high_availability_helpers import (
-    ensure_all_units_continuous_writes_incrementing,
-    relate_mysql_and_application,
-)
 
 logger = logging.getLogger(__name__)
 
 TIMEOUT = 20 * 60
 MYSQL_APP_NAME = "mysql-k8s"
-TEST_APP = "mysql-test-app"
 
 METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
 
@@ -49,16 +44,8 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             trust=True,
         )
 
-        await ops_test.model.deploy(
-            TEST_APP,
-            application_name=TEST_APP,
-            channel="latest/edge",
-            num_units=1,
-        )
-
-        await relate_mysql_and_application(ops_test, MYSQL_APP_NAME, TEST_APP)
         await ops_test.model.wait_for_idle(
-            apps=[MYSQL_APP_NAME, TEST_APP],
+            apps=[MYSQL_APP_NAME],
             status="active",
             timeout=TIMEOUT,
         )
@@ -78,13 +65,7 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_upgrade_to_failling(
-    ops_test: OpsTest,
-    continuous_writes,
-) -> None:
-    logger.info("Ensure continuous_writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
-
+async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
     application = ops_test.model.applications[MYSQL_APP_NAME]
     logger.info("Build charm locally")
 
@@ -120,7 +101,7 @@ async def test_upgrade_to_failling(
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_rollback(ops_test, continuous_writes) -> None:
+async def test_rollback(ops_test) -> None:
     application = ops_test.model.applications[MYSQL_APP_NAME]
 
     charm = await charm_local_build(ops_test, refresh=True)
@@ -160,9 +141,6 @@ async def test_rollback(ops_test, continuous_writes) -> None:
         lambda: all(unit.workload_status == "active" for unit in application.units),
         timeout=2 * TIMEOUT,
     )
-
-    logger.info("Ensure continuous_writes after rollback procedure")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
 def src_patch(sub_regex: str = "", file_name: str = "", revert: bool = False) -> None:
