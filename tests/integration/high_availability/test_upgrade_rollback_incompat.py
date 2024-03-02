@@ -6,6 +6,7 @@ import os
 import pathlib
 import shutil
 import subprocess
+from time import sleep
 from zipfile import ZipFile
 
 import pytest
@@ -14,6 +15,7 @@ from pytest_operator.plugin import OpsTest
 
 from .. import juju_
 from ..helpers import get_leader_unit, get_unit_by_index
+from .high_availability_helpers import get_sts_partition
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +98,7 @@ async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
     await ops_test.model.block_until(
         lambda: upgrading_unit.workload_status == "blocked",
         timeout=TIMEOUT,
+        wait_period=5,
     )
 
 
@@ -130,23 +133,28 @@ async def test_rollback(ops_test) -> None:
     unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
     logger.info("Wait for upgrade to complete on first upgrading unit")
     await ops_test.model.block_until(
-        lambda: unit.workload_status_message == "upgrade completed", timeout=TIMEOUT
+        lambda: unit.workload_status_message == "upgrade completed",
+        timeout=TIMEOUT,
+        wait_period=5,
     )
 
     logger.info("Resume upgrade")
-    try:
-        await juju_.run_action(leader_unit, "resume-upgrade")
-    except AssertionError:
-        # ignore action return error as it is expected when
-        # the leader unit is the next one to be upgraded
-        # due it being immediately rolled when the partition
-        # is patched in the statefulset
-        pass
+    while get_sts_partition(ops_test, MYSQL_APP_NAME) == 2:
+        # resume action sometime fails in CI, no clear reason
+        try:
+            await juju_.run_action(leader_unit, "resume-upgrade")
+            sleep(2)
+        except AssertionError:
+            # ignore action return error as it is expected when
+            # the leader unit is the next one to be upgraded
+            # due it being immediately rolled when the partition
+            # is patched in the statefulset
+            pass
 
     logger.info("Wait for application to recover")
     await ops_test.model.block_until(
         lambda: all(unit.workload_status == "active" for unit in application.units),
-        timeout=2 * TIMEOUT,
+        timeout=TIMEOUT,
     )
 
 
