@@ -120,14 +120,16 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
     assert leader_unit is not None, "No leader unit found"
 
     logger.info("Resume upgrade")
-    try:
-        await juju_.run_action(leader_unit, "resume-upgrade")
-    except AssertionError:
-        # ignore action return error as it is expected when
-        # the leader unit is the next one to be upgraded
-        # due it being immediately rolled when the partition
-        # is patched in the statefulset
-        pass
+    while get_sts_partition(ops_test, MYSQL_APP_NAME) == 2:
+        # resume action sometime fails in CI, no clear reason
+        try:
+            await juju_.run_action(leader_unit, "resume-upgrade")
+        except AssertionError:
+            # ignore action return error as it is expected when
+            # the leader unit is the next one to be upgraded
+            # due it being immediately rolled when the partition
+            # is patched in the statefulset
+            pass
 
     logger.info("Wait for upgrade to complete")
     await ops_test.model.block_until(
