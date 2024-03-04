@@ -180,7 +180,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     )
 
     logger.info("Ensure continuous_writes while in failure state on remaining units")
-    mysql_units = [unit_ for unit_ in application.units if unit_ != unit]
+    mysql_units = [unit_ for unit_ in application.units if unit_.name != unit.name]
     await ensure_all_units_continuous_writes_incrementing(ops_test, mysql_units)
 
     logger.info("Re-run pre-upgrade-check action")

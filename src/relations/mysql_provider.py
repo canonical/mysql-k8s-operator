@@ -216,6 +216,12 @@ class MySQLProvider(Object):
         if self.charm._is_cluster_blocked():
             return
 
+        if self.charm.upgrade.state == "failed":
+            # skip updating endpoints if upgrade failed
+            # unit pod still will be labeled from another unit
+            logger.debug("Skip labelling pods on failed upgrade")
+            return
+
         container = self.charm.unit.get_container(CONTAINER_NAME)
         if (
             not container.can_connect()
