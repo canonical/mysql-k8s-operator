@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """S3 helper functions for the MySQL charms."""
-
+import base64
 import logging
 import tempfile
 import time
@@ -31,7 +31,11 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 5
+LIBPATCH = 7
+
+# botocore/urllib3 clutter the logs when on debug
+logging.getLogger("botocore").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -48,13 +52,26 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
     """
     try:
         logger.info(f"Uploading content to bucket={s3_parameters['bucket']}, path={content_path}")
+        ca_file = tempfile.NamedTemporaryFile()
         session = boto3.session.Session(
             aws_access_key_id=s3_parameters["access-key"],
             aws_secret_access_key=s3_parameters["secret-key"],
             region_name=s3_parameters["region"] or None,
         )
+        verif = True
+        ca_chain = s3_parameters.get("tls-ca-chain")
+        if ca_chain:
+            ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
+            ca_file.write(ca.encode())
+            ca_file.flush()
+            verif = ca_file.name
 
-        s3 = session.resource("s3", endpoint_url=s3_parameters["endpoint"])
+        s3 = session.resource(
+            "s3",
+            endpoint_url=s3_parameters["endpoint"],
+            verify=verif,
+        )
+
         bucket = s3.Bucket(s3_parameters["bucket"])
 
         with tempfile.NamedTemporaryFile() as temp_file:
@@ -68,6 +85,8 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
             exc_info=e,
         )
         return False
+    finally:
+        ca_file.close()
 
     return True
 
@@ -89,7 +108,7 @@ def _compile_backups_from_file_ids(
     return backups
 
 
-def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
+def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # noqa: C901
     """Retrieve subdirectories in an S3 path.
 
     Args:
@@ -147,9 +166,19 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:
 
         return _compile_backups_from_file_ids(metadata_ids, md5_ids, log_ids)
     except Exception as e:
+        try:
+            # botocore raises dynamically generated exceptions
+            # with a response attribute. We can use this to
+            # set a more meaningful error message.
+            if e.response["Error"]["Code"] == "NoSuchBucket":
+                message = f"Bucket {s3_parameters['bucket']} does not exist"
+                setattr(e, "message", message)
+                raise
+        except (KeyError, AttributeError):
+            pass
+        # default handling exposes exception
         logger.exception(
-            f"Failed to list subdirectories in S3 bucket={s3_parameters['bucket']}, path={s3_parameters['path']}",
-            exc_info=e,
+            f"Failed to list subdirectories in S3 bucket={s3_parameters['bucket']}, path={s3_parameters['path']}"
         )
         raise
 

@@ -325,7 +325,7 @@ async def test_custom_variables(ops_test: OpsTest) -> None:
     application = ops_test.model.applications[APP_NAME]
 
     custom_vars = {}
-    custom_vars["max_connections"] = 20
+    custom_vars["max_connections"] = 100
     custom_vars["innodb_buffer_pool_size"] = 20971520
     custom_vars["innodb_buffer_pool_chunk_size"] = 1048576
     custom_vars["group_replication_message_cache_size"] = 134217728

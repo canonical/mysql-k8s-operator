@@ -15,11 +15,12 @@ from charms.mysql.v0.mysql import (
     MySQLClientError,
     MySQLConfigureMySQLUsersError,
     MySQLExecError,
+    MySQLGetClusterEndpointsError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
 from ops.model import Container
-from ops.pebble import ChangeError, ExecError
+from ops.pebble import ChangeError, ExecError, PathError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -47,7 +48,7 @@ from constants import (
     ROOT_SYSTEM_USER,
     XTRABACKUP_PLUGIN_DIR,
 )
-from k8s_helpers import KubernetesHelpers
+from k8s_helpers import KubernetesClientError, KubernetesHelpers
 from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
@@ -194,14 +195,13 @@ class MySQL(MySQLBase):
             logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
             try:
                 container.exec(
-                    f"chown -R {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP} {MYSQL_DATA_DIR}".split(
-                        " "
-                    )
+                    ["chown", "-R", f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}", MYSQL_DATA_DIR]
                 )
             except ExecError as e:
                 logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
                 raise MySQLInitialiseMySQLDError(e.stderr or "")
 
+    @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
     def initialise_mysqld(self) -> None:
         """Execute instance first run.
 
@@ -216,13 +216,11 @@ class MySQL(MySQLBase):
                 user=MYSQL_SYSTEM_USER,
                 group=MYSQL_SYSTEM_GROUP,
             )
-            process.wait_output()
-        except ExecError as e:
-            logger.error("Exited with code %d. Stderr:", e.exit_code)
-            if e.stderr:
-                for line in e.stderr.splitlines():
-                    logger.error("  %s", line)
-            raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
+            process.wait()
+        except (ExecError, ChangeError, PathError, TimeoutError):
+            logger.exception("Failed to initialise MySQL data directory")
+            self.reset_data_dir()
+            raise MySQLInitialiseMySQLDError
 
     @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
     def wait_until_mysql_connection(self, check_port: bool = True) -> None:
@@ -560,8 +558,8 @@ class MySQL(MySQLBase):
             raise MySQLDeleteUsersWithLabelError(e.message)
 
     def is_mysqld_running(self) -> bool:
-        """Returns whether mysqld is running."""
-        return self.container.exists(MYSQLD_SOCK_FILE)
+        """Returns whether server is connectable and mysqld is running."""
+        return self.is_server_connectable() and self.container.exists(MYSQLD_SOCK_FILE)
 
     def is_server_connectable(self) -> bool:
         """Returns whether the server is connectable."""
@@ -600,6 +598,7 @@ class MySQL(MySQLBase):
         user: Optional[str] = None,
         group: Optional[str] = None,
         env_extra: Optional[Dict] = None,
+        timeout: Optional[float] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         try:
@@ -611,6 +610,7 @@ class MySQL(MySQLBase):
                 user=user,
                 group=group,
                 environment=env_extra,
+                timeout=timeout,
             )
             stdout, stderr = process.wait_output()
             return (stdout, stderr or "")
@@ -740,6 +740,14 @@ class MySQL(MySQLBase):
         if self.container.exists(path):
             self.container.remove_path(path)
 
+    def reset_data_dir(self) -> None:
+        """Remove all files from the data directory."""
+        content = self.container.list_files(MYSQL_DATA_DIR)
+        content_set = {item.name for item in content}
+        logger.debug("Resetting MySQL data directory.")
+        for item in content_set:
+            self.container.remove_path(f"{MYSQL_DATA_DIR}/{item}", recursive=True)
+
     def check_if_mysqld_process_stopped(self) -> bool:
         """Checks if the mysqld process is stopped on the container."""
         command = ["ps", "-eo", "comm,stat"]
@@ -807,3 +815,27 @@ class MySQL(MySQLBase):
             return expected_content <= content_set
         except ExecError:
             return False
+
+    def update_endpoints(self) -> None:
+        """Updates pod labels to reflect role of the unit."""
+        logger.debug("Updating pod labels")
+        try:
+            rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+
+            for endpoints, label in (
+                (rw_endpoints, "primary"),
+                (ro_endpoints, "replicas"),
+                (offline, "offline"),
+            ):
+                for pod in (p.split(".")[0] for p in endpoints.split(",")):
+                    if pod:
+                        self.k8s_helper.label_pod(label, pod)
+        except MySQLGetClusterEndpointsError:
+            logger.exception("Failed to get cluster endpoints")
+        except KubernetesClientError:
+            logger.exception("Can't update pod labels")
+
+    def set_cluster_primary(self, new_primary_address: str) -> None:
+        """Set the cluster primary and update pod labels."""
+        super().set_cluster_primary(new_primary_address)
+        self.update_endpoints()

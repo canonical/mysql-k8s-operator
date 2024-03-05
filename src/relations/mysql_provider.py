@@ -6,14 +6,12 @@
 import logging
 import socket
 import typing
-from typing import List
 
 from charms.data_platform_libs.v0.data_interfaces import DatabaseProvides, DatabaseRequestedEvent
 from charms.mysql.v0.mysql import (
     MySQLCreateApplicationDatabaseAndScopedUserError,
     MySQLDeleteUserError,
     MySQLDeleteUsersForRelationError,
-    MySQLGetClusterEndpointsError,
     MySQLGetMySQLVersionError,
     MySQLGrantPrivilegesToUserError,
     MySQLRemoveRouterFromMetadataError,
@@ -27,7 +25,6 @@ from k8s_helpers import KubernetesClientError
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
-
 
 if typing.TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -76,65 +73,6 @@ class MySQLProvider(Object):
         self.database.update_relation_data(relation.id, {"password": password})
         return password
 
-    @staticmethod
-    def _endpoints_to_pod_list(endpoints: str) -> List[str]:
-        """Converts a comma separated list of endpoints to a list of pods."""
-        return [p.split(".")[0] for p in endpoints.split(",")]
-
-    def _update_endpoints(self) -> None:
-        """Updates pod labels to reflect role of the unit."""
-        logger.debug("Updating pod labels")
-        try:
-            rw_endpoints, ro_endpoints, offline = self.charm._mysql.get_cluster_endpoints(
-                get_ips=False
-            )
-
-            # rw pod labels
-            if rw_endpoints:
-                for pod in self._endpoints_to_pod_list(rw_endpoints):
-                    self.charm.k8s_helpers.label_pod("primary", pod)
-            # ro pod labels
-            if ro_endpoints:
-                for pod in self._endpoints_to_pod_list(ro_endpoints):
-                    self.charm.k8s_helpers.label_pod("replicas", pod)
-            # offline pod labels
-            if offline:
-                for pod in self._endpoints_to_pod_list(offline):
-                    self.charm.k8s_helpers.label_pod("offline", pod)
-        except MySQLGetClusterEndpointsError:
-            logger.exception("Failed to get cluster endpoints")
-        except KubernetesClientError:
-            logger.debug("Can't update pod labels")
-            self.charm.unit.status = BlockedStatus("Can't update pod labels")
-
-    def _update_pod_endpoint(self) -> None:
-        """Update pod label to reflect the role of the unit."""
-        logger.debug(f"Updating pod endpoint for {self.charm.unit.name}")
-
-        pod = self.charm.unit.name.replace("/", "-")
-
-        try:
-            cluster_status = self.charm._mysql.get_cluster_status()
-            if not cluster_status:
-                self.charm.k8s_helpers.label_pod("error", pod)
-                return
-
-            for hostname, properties in cluster_status["defaultreplicaset"]["topology"].items():
-                if hostname.split(".")[0] == pod:
-                    if properties["status"] != "online":
-                        label = "offline"
-                    elif properties["memberrole"] == "secondary":
-                        label = "replicas"
-                    elif properties["memberrole"] == "primary":
-                        label = "primary"
-                    else:
-                        label = "none"
-
-                    logger.debug(f"Labeling pod {pod} with label {label}")
-                    self.charm.k8s_helpers.label_pod(label, pod)
-        except KubernetesClientError:
-            logger.error("Error updating pod label. Traffic may not be properly routed.")
-
     # =============
     # Handlers
     # =============
@@ -163,7 +101,7 @@ class MySQLProvider(Object):
 
         try:
             # make sure pods are labeled before adding service
-            self._update_endpoints()
+            self.charm._mysql.update_endpoints()
 
             # create k8s services for endpoints
             self.charm.k8s_helpers.create_endpoint_services(["primary", "replicas"])
@@ -211,6 +149,9 @@ class MySQLProvider(Object):
         ) as e:
             logger.exception("Failed to set up database relation", exc_info=e)
             self.charm.unit.status = BlockedStatus("Failed to create scoped user")
+        except TimeoutError:
+            logger.exception("Timed out waiting for k8s service to be ready")
+            raise
         except KubernetesClientError:
             logger.exception("Failed to create k8s services for endpoints")
             self.charm.unit.status = BlockedStatus(
@@ -256,7 +197,7 @@ class MySQLProvider(Object):
             if relation.id not in relation_data:
                 continue
 
-            self._update_pod_endpoint()
+            self.charm._mysql.update_endpoints()
 
     def _on_update_status(self, _) -> None:
         """Handle the update status event.
@@ -274,7 +215,7 @@ class MySQLProvider(Object):
         ):
             return
 
-        self._update_pod_endpoint()
+        self.charm._mysql.update_endpoints()
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.

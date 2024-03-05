@@ -48,8 +48,8 @@ class MySQL(MySQLBase):
 import datetime
 import logging
 import pathlib
-from typing import Dict, List, Optional, Tuple
 import typing
+from typing import Dict, List, Optional, Tuple
 
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
@@ -96,7 +96,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 6
+LIBPATCH = 8
 
 
 if typing.TYPE_CHECKING:
@@ -220,9 +220,11 @@ Stderr:
             logger.info("Listing backups in the specified s3 path")
             backups = sorted(list_backups_in_s3_path(s3_parameters), key=lambda pair: pair[0])
             event.set_results({"backups": self._format_backups_list(backups)})
-        except Exception:
-            error_message = "Failed to retrieve backup ids from S3"
-            logger.exception(error_message)
+        except Exception as e:
+            error_message = (
+                e.message if hasattr(e, "message") else "Failed to retrieve backup ids from S3"
+            )
+            logger.error(error_message)
             event.fail(error_message)
 
     # ------------------ Create Backup ------------------

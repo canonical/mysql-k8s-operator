@@ -11,6 +11,7 @@ from pytest_operator.plugin import OpsTest
 
 from constants import CLUSTER_ADMIN_USERNAME, TLS_SSL_CERT_FILE
 
+from . import juju_
 from .helpers import (
     app_name,
     fetch_credentials,
@@ -26,9 +27,15 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-TLS_APP_NAME = "tls-certificates-operator"
 MODEL_CONFIG = {"logging-config": "<root>=INFO;unit=DEBUG"}
 TLS_SETUP_SLEEP_TIME = 30
+
+if juju_.has_secrets:
+    TLS_APP_NAME = "self-signed-certificates"
+    TLS_CONFIG = {"ca-common-name": "Test CA"}
+else:
+    TLS_APP_NAME = "tls-certificates-operator"
+    TLS_CONFIG = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
 
 
 @pytest.mark.group(1)
@@ -112,8 +119,7 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     # Deploy TLS Certificates operator.
     logger.info("Deploy TLS operator")
     async with ops_test.fast_forward("60s"):
-        tls_config = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
-        await ops_test.model.deploy(TLS_APP_NAME, channel="latest/stable", config=tls_config)
+        await ops_test.model.deploy(TLS_APP_NAME, channel="latest/stable", config=TLS_CONFIG)
         await ops_test.model.wait_for_idle(apps=[TLS_APP_NAME], status="active", timeout=15 * 60)
 
     # Relate with TLS charm
@@ -161,9 +167,7 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
 
     # set key using auto-generated key for each unit
     for unit in ops_test.model.applications[app].units:
-        action = await unit.run_action(action_name="set-tls-private-key")
-        action = await action.wait()
-        assert action.status == "completed", "❌ setting key failed"
+        await juju_.run_action(unit, "set-tls-private-key")
 
     # allow time for reconfiguration
     sleep(TLS_SETUP_SLEEP_TIME)

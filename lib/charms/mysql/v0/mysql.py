@@ -75,16 +75,11 @@ import re
 import socket
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, get_args
 
 import ops
-from charms.data_platform_libs.v0.data_secrets import (
-    APP_SCOPE,
-    UNIT_SCOPE,
-    Scopes,
-    SecretCache,
-    generate_secret_label,
-)
+from charms.data_platform_libs.v0.data_interfaces import DataPeer, DataPeerUnit
+from charms.data_platform_libs.v0.data_secrets import APP_SCOPE, UNIT_SCOPE, Scopes, SecretCache
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from ops.model import Unit
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed, wait_random
@@ -102,7 +97,6 @@ from constants import (
     PEER,
     ROOT_PASSWORD_KEY,
     ROOT_USERNAME,
-    SECRET_ID_KEY,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
@@ -118,7 +112,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 54
+LIBPATCH = 56
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -129,6 +123,10 @@ BYTES_1MB = 1000000  # 1 megabyte
 BYTES_1MiB = 1048576  # 1 mebibyte
 RECOVERY_CHECK_TIME = 10  # seconds
 GET_MEMBER_STATE_TIME = 10  # seconds
+MIN_MAX_CONNECTIONS = 100
+
+SECRET_INTERNAL_LABEL = "secret-id"
+SECRET_DELETED_LABEL = "None"
 
 
 class Error(Exception):
@@ -396,6 +394,32 @@ class MySQLCharmBase(CharmBase, ABC):
         super().__init__(*args)
 
         self.secrets = SecretCache(self)
+        self.peer_relation_app = DataPeer(
+            self,
+            relation_name=PEER,
+            additional_secret_fields=[
+                ROOT_PASSWORD_KEY,
+                SERVER_CONFIG_PASSWORD_KEY,
+                MONITORING_PASSWORD_KEY,
+                CLUSTER_ADMIN_PASSWORD_KEY,
+                BACKUPS_PASSWORD_KEY,
+            ],
+            secret_field_name=SECRET_INTERNAL_LABEL,
+            deleted_label=SECRET_DELETED_LABEL,
+        )
+        self.peer_relation_unit = DataPeerUnit(
+            self,
+            relation_name=PEER,
+            additional_secret_fields=[
+                "key",
+                "csr",
+                "cert",
+                "cauth",
+                "chain",
+            ],
+            secret_field_name=SECRET_INTERNAL_LABEL,
+            deleted_label=SECRET_DELETED_LABEL,
+        )
 
         self.framework.observe(self.on.get_cluster_status_action, self._get_cluster_status)
         self.framework.observe(self.on.get_password_action, self._on_get_password)
@@ -410,6 +434,11 @@ class MySQLCharmBase(CharmBase, ABC):
     @abstractmethod
     def _mysql(self) -> "MySQLBase":
         """Return the MySQL instance."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_unit_hostname(self):
+        """Return unit hostname."""
         raise NotImplementedError
 
     def _on_get_password(self, event: ActionEvent) -> None:
@@ -608,142 +637,51 @@ class MySQLCharmBase(CharmBase, ABC):
 
         return ""
 
-    def _scope_obj(self, scope: Scopes):
-        if scope == APP_SCOPE:
-            return self.app
-        if scope == UNIT_SCOPE:
-            return self.unit
-
-    def _peer_data(self, scope: Scopes) -> Dict:
-        """Return corresponding databag for app/unit."""
-        if self.peers is None:
-            return {}
-        return self.peers.data[self._scope_obj(scope)]
-
-    def _safe_get_secret(self, scope: Scopes, label: str) -> SecretCache:
-        """Safety measure, for upgrades between versions.
-
-        Based on secret URI usage to others with labels usage.
-        If the secret can't be retrieved by label, we search for the uri -- and
-        if found, we "stick" the label on the secret for further usage.
-        """
-        secret_uri = self._peer_data(scope).get(SECRET_ID_KEY, None)
-        secret = self.secrets.get(label, secret_uri)
-
-        # Since now we switched to labels, the databag reference can be removed
-        if secret_uri and secret and scope == APP_SCOPE and self.unit.is_leader():
-            self._peer_data(scope).pop(SECRET_ID_KEY, None)
-        return secret
-
-    def _get_secret_from_juju(self, scope: Scopes, key: str) -> Optional[str]:
-        """Retrieve and return the secret from the juju secret storage."""
-        label = generate_secret_label(self, scope)
-        secret = self._safe_get_secret(scope, label)
-
-        if not secret:
-            logger.debug("Getting a secret when secret is not added in juju")
-            return
-
-        value = secret.get_content().get(key)
-        return value
-
-    def _get_secret_from_databag(self, scope: str, key: str) -> Optional[str]:
-        """Retrieve and return the secret from the peer relation databag."""
-        if scope == "unit":
-            return self.unit_peer_data.get(key)
-
-        return self.app_peer_data.get(key)
-
     def get_secret(
-        self, scope: Scopes, key: str, fallback_key: Optional[str] = None
+        self,
+        scope: Scopes,
+        key: str,
     ) -> Optional[str]:
         """Get secret from the secret storage.
 
         Retrieve secret from juju secrets backend if secret exists there.
-        Else retrieve from peer databag (with key or fallback_key). This is to
-        account for cases where secrets are stored in peer databag but the charm
-        is then refreshed to a newer revision.
+        Else retrieve from peer databag. This is to account for cases where secrets are stored in
+        peer databag but the charm is then refreshed to a newer revision.
         """
-        if scope not in ["app", "unit"]:
-            raise MySQLSecretError(f"Invalid secret scope: {scope}")
-
-        if ops.jujuversion.JujuVersion.from_environ().has_secrets:
-            secret = self._get_secret_from_juju(scope, key)
-            if secret:
-                return secret
-
-        return self._get_secret_from_databag(scope, key) or self._get_secret_from_databag(
-            scope, fallback_key
-        )
-
-    def _set_secret_in_databag(self, scope: Scopes, key: str, value: Optional[str]) -> None:
-        """Set secret in the peer relation databag."""
-        if not value:
-            try:
-                self._peer_data(scope).pop(key)
-                return
-            except KeyError:
-                logger.error(f"Non-existing secret {scope}:{key} was attempted to be removed.")
-                return
-
-        self._peer_data(scope)[key] = value
-
-    def _set_secret_in_juju(self, scope: Scopes, key: str, value: Optional[str]) -> None:
-        """Set the secret in the juju secret storage."""
-        # Charm could have been upgraded since last run
-        # We make an attempt to remove potential traces from the databag
-        self._peer_data(scope).pop(key, None)
-
-        label = generate_secret_label(self, scope)
-        secret = self._safe_get_secret(scope, label)
-        if not secret and value:
-            self.secrets.add(label, {key: value}, scope)
-            return
-
-        content = secret.get_content() if secret else None
-
-        if not value:
-            if content and key in content:
-                content.pop(key, None)
-            else:
-                logger.error(f"Non-existing secret {scope}:{key} was attempted to be removed.")
-                return
+        peers = self.model.get_relation(PEER)
+        if scope == APP_SCOPE:
+            value = self.peer_relation_app.fetch_my_relation_field(peers.id, key)
         else:
-            content.update({key: value})
+            value = self.peer_relation_unit.fetch_my_relation_field(peers.id, key)
+        return value
 
-        # Temporary solution: this should come from the shared lib
-        # Improved after https://warthogs.atlassian.net/browse/DPE-3056 is resolved
-        if content:
-            secret.set_content(content)
-        else:
-            secret.meta.remove_all_revisions()
-
-    def set_secret(
-        self, scope: Scopes, key: str, value: Optional[str], fallback_key: Optional[str] = None
-    ) -> None:
+    def set_secret(self, scope: Scopes, key: str, value: Optional[str]) -> None:
         """Set a secret in the secret storage."""
-        if scope not in ["app", "unit"]:
-            raise MySQLSecretError(f"Invalid secret scope: {scope}")
+        if scope not in get_args(Scopes):
+            raise MySQLSecretError(f"Invalid secret {scope=}")
 
-        if scope == "app" and not self.unit.is_leader():
+        if scope == APP_SCOPE and not self.unit.is_leader():
             raise MySQLSecretError("Can only set app secrets on the leader unit")
 
-        if ops.jujuversion.JujuVersion.from_environ().has_secrets:
-            self._set_secret_in_juju(scope, key, value)
+        if not value:
+            return self.remove_secret(scope, key)
 
-            # for refresh from juju <= 3.1.4 to >= 3.1.5, we need to clear out
-            # secrets from the databag as well
-            if self._get_secret_from_databag(scope, key):
-                self._set_secret_in_databag(scope, key, None)
+        peers = self.model.get_relation(PEER)
+        if scope == APP_SCOPE:
+            self.peer_relation_app.update_relation_data(peers.id, {key: value})
+        elif scope == UNIT_SCOPE:
+            self.peer_relation_unit.update_relation_data(peers.id, {key: value})
 
-            if fallback_key and self._get_secret_from_databag(scope, fallback_key):
-                self._set_secret_in_databag(scope, key, None)
+    def remove_secret(self, scope: Scopes, key: str) -> None:
+        """Removing a secret."""
+        if scope not in get_args(Scopes):
+            raise RuntimeError("Unknown secret scope.")
 
-            return
-
-        self._set_secret_in_databag(scope, key, value)
-        if fallback_key:
-            self._set_secret_in_databag(scope, fallback_key, None)
+        peers = self.model.get_relation(PEER)
+        if scope == APP_SCOPE:
+            self.peer_relation_app.delete_relation_data(peers.id, [key])
+        else:
+            self.peer_relation_unit.delete_relation_data(peers.id, [key])
 
 
 class MySQLMemberState(str, enum.Enum):
@@ -852,7 +790,7 @@ class MySQLBase(ABC):
             innodb_buffer_pool_size = 20 * BYTES_1MiB
             innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
             group_replication_message_cache_size = 128 * BYTES_1MiB
-            max_connections = 20
+            max_connections = MIN_MAX_CONNECTIONS
             performance_schema_instrument = "'memory/%=OFF'"
         else:
             available_memory = self.get_available_memory()
@@ -865,7 +803,7 @@ class MySQLBase(ABC):
                 innodb_buffer_pool_chunk_size,
                 group_replication_message_cache_size,
             ) = self.get_innodb_buffer_pool_parameters(available_memory)
-            max_connections = self.get_max_connections(available_memory)
+            max_connections = max(self.get_max_connections(available_memory), MIN_MAX_CONNECTIONS)
             if available_memory < 2 * BYTES_1GiB:
                 # disable memory instruments if we have less than 2GiB of RAM
                 performance_schema_instrument = "'memory/%=OFF'"
@@ -1520,6 +1458,7 @@ class MySQLBase(ABC):
         instance_unit_label: str,
         from_instance: Optional[str] = None,
         lock_instance: Optional[str] = None,
+        method: str = "auto",
     ) -> None:
         """Add an instance to the InnoDB cluster.
 
@@ -1534,6 +1473,7 @@ class MySQLBase(ABC):
             instance_unit_label: the label/name of the unit
             from_instance: address of the adding instance, e.g. primary
             lock_instance: address of the instance to lock on
+            method: recovery method to use, either "auto" or "clone"
         """
         options = {
             "password": self.cluster_admin_password,
@@ -1556,41 +1496,41 @@ class MySQLBase(ABC):
             "shell.options['dba.restartWaitTimeout'] = 3600",
         )
 
-        for recovery_method in ["auto", "clone"]:
-            # Prefer "auto" recovery method, but if it fails, try "clone"
-            try:
-                options["recoveryMethod"] = recovery_method
-                add_instance_command = (
-                    f"cluster.add_instance('{self.cluster_admin_user}@{instance_address}', {json.dumps(options)})",
-                )
+        # Prefer "auto" recovery method, but if it fails, try "clone"
+        try:
+            options["recoveryMethod"] = method
+            add_instance_command = (
+                f"cluster.add_instance('{self.cluster_admin_user}@{instance_address}', {options})",
+            )
 
-                logger.debug(
-                    f"Adding instance {instance_address}/{instance_unit_label} to cluster {self.cluster_name} with recovery method {recovery_method}"
-                )
-                self._run_mysqlsh_script("\n".join(connect_commands + add_instance_command))
+            logger.info(
+                f"Adding instance {instance_address}/{instance_unit_label} to {self.cluster_name=}"
+                f"with recovery {method=}"
+            )
+            self._run_mysqlsh_script("\n".join(connect_commands + add_instance_command))
 
-                break
-            except MySQLClientError as e:
-                if recovery_method == "clone":
-                    logger.exception(
-                        f"Failed to add instance {instance_address} to cluster {self.cluster_name} on {self.instance_address}",
-                        exc_info=e,
-                    )
-                    self._release_lock(
-                        lock_instance or from_instance or self.instance_address,
-                        instance_unit_label,
-                        UNIT_ADD_LOCKNAME,
-                    )
-                    raise MySQLAddInstanceToClusterError(e.message)
-
-                logger.debug(
-                    f"Failed to add instance {instance_address} to cluster {self.cluster_name} with recovery method 'auto'. Trying method 'clone'"
+        except MySQLClientError:
+            if method == "clone":
+                logger.exception(
+                    f"Failed to add {instance_address=} to {self.cluster_name=} on {self.instance_address=}",
                 )
-        self._release_lock(
-            lock_instance or from_instance or self.instance_address,
-            instance_unit_label,
-            UNIT_ADD_LOCKNAME,
-        )
+                raise MySQLAddInstanceToClusterError
+
+            logger.debug(
+                f"Cannot add {instance_address=} to {self.cluster_name=} with recovery {method=}. Trying method 'clone'"
+            )
+            self.add_instance_to_cluster(
+                instance_address=instance_address,
+                instance_unit_label=instance_unit_label,
+                from_instance=from_instance,
+                lock_instance=lock_instance,
+                method="clone",
+            )
+        finally:
+            # always release the lock
+            self._release_lock(
+                from_instance or self.instance_address, instance_unit_label, UNIT_ADD_LOCKNAME
+            )
 
     def is_instance_configured_for_innodb(
         self, instance_address: str, instance_unit_label: str
@@ -1713,6 +1653,11 @@ class MySQLBase(ABC):
             )
             return False
 
+    @retry(
+        wait=wait_fixed(2),
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception_type(TimeoutError),
+    )
     def get_cluster_status(self, extended: Optional[bool] = False) -> Optional[dict]:
         """Get the cluster status.
 
@@ -2949,6 +2894,7 @@ class MySQLBase(ABC):
             self._run_mysqlsh_script("\n".join(connect_commands))
             return True
         except MySQLClientError:
+            logger.exception("Failed to connect to MySQL with mysqlsh")
             return False
 
     def get_pid_of_port_3306(self) -> Optional[str]:
@@ -2961,13 +2907,19 @@ class MySQLBase(ABC):
         except MySQLExecError:
             return None
 
-    def flush_mysql_logs(self, logs_type: MySQLTextLogs) -> None:
+    def flush_mysql_logs(self, logs_type: Union[MySQLTextLogs, list[MySQLTextLogs]]) -> None:
         """Flushes the specified logs_type logs."""
-        flush_logs_commands = (
+        flush_logs_commands = [
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             'session.run_sql("SET sql_log_bin = 0")',
-            f'session.run_sql("FLUSH {logs_type.value}")',
-        )
+        ]
+
+        if type(logs_type) is list:
+            flush_logs_commands.extend(
+                [f"session.run_sql('FLUSH {log.value}')" for log in logs_type]
+            )
+        else:
+            flush_logs_commands.append(f'session.run_sql("FLUSH {logs_type.value}")')  # type: ignore
 
         try:
             self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)

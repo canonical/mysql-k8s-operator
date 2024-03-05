@@ -1,13 +1,18 @@
-# Contacts
+# Contact
 
-Contact Canonical Data Platform team in [Mattermost](https://chat.charmhub.io/charmhub/channels/data-platform) (preferred).
+Charmed MySQL K8s is an open source project that warmly welcomes community contributions, suggestions, fixes, and constructive feedback.
+* Raise software issues or feature requests on [**GitHub**](https://github.com/canonical/mysql-k8s-operator/issues/new/choose)
+* Report security issues through [**Launchpad**](https://wiki.ubuntu.com/DebuggingSecurity#How%20to%20File)
+* Contact the Canonical Data Platform team through our [Matrix](https://matrix.to/#/#charmhub-data-platform:ubuntu.com) channel.
+[note]
+Our legacy [Mattermost](https://chat.charmhub.io/charmhub/channels/data-platform) channel is read-only until January 31, 2025.
+[/note]
 
-Report your ideas/issues on [GitHub](https://github.com/canonical/mysql-k8s-operator/issues/new/choose).</br>
-Security issues should be reported through [LaunchPad](https://wiki.ubuntu.com/DebuggingSecurity#How%20to%20File).</br>Please do NOT file GitHub issues on security topics. 
 
-Useful links:
+## Useful links
 * [Canonical Data Fabric](https://ubuntu.com/data/)
 * [Charmed MySQL K8s](https://charmhub.io/mysql-k8s)
 * [Git sources for Charmed MySQL K8s](https://github.com/canonical/mysql-k8s-operator)
-* [Canonical Data Platform on Launchpad](https://launchpad.net/~data-platform)
+* [Canonical Data on Launchpad](https://launchpad.net/~data-platform)
+* [Canonical Data on Matrix](https://matrix.to/#/#charmhub-data-platform:ubuntu.com) 
 * [Mailing list on Launchpad](https://lists.launchpad.net/data-platform/)

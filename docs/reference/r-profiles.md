@@ -10,8 +10,8 @@ juju deploy mysql-k8s --trust --config profile=testing
 
 |Value|Description|Tech details|
 | --- | --- | ----- |
-|`production`<br>(default)|[Maximum performance](https://github.com/canonical/mysql-k8s-operator/blob/main/lib/charms/mysql/v0/mysql.py#L766-L775)| ~75% of '[Allocatable memory](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)' granted for MySQL|
-|`testing`|[Minimal resource usage](https://github.com/canonical/mysql-k8s-operator/blob/main/lib/charms/mysql/v0/mysql.py#L759-L764)| innodb_buffer_pool_size = 20MB<br/>innodb_buffer_pool_chunk_size=1MB<br/>group_replication_message_cache_size=128MB<br/>max_connections=20<br/>performance-schema-instrument='memory/%=OFF' |
+|`production`<br>(default)|[Maximum performance](https://github.com/canonical/mysql-k8s-operator/blob/main/lib/charms/mysql/v0/mysql.py#L766-L775)| ~75% of '[Allocatable memory](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)' granted for MySQL<br/>max_connections=[RAM/12MiB](https://github.com/canonical/mysql-k8s-operator/blob/main/lib/charms/mysql/v0/mysql.py#L2092) (max safe value)|
+|`testing`|[Minimal resource usage](https://github.com/canonical/mysql-k8s-operator/blob/main/lib/charms/mysql/v0/mysql.py#L759-L764)| innodb_buffer_pool_size = 20MB<br/>innodb_buffer_pool_chunk_size=1MB<br/>group_replication_message_cache_size=128MB<br/>max_connections=100<br/>performance-schema-instrument='memory/%=OFF' |
 
 ## Config change
 

@@ -5,15 +5,15 @@
 
 import logging
 import socket
+import typing
 from typing import Dict, List, Optional, Tuple
 
-from lightkube import Client
+from lightkube.core.client import Client
 from lightkube.core.exceptions import ApiError
 from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.resources.core_v1 import Node, Pod, Service
-from ops.charm import CharmBase
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from utils import any_memory_to_bytes
@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpcore").setLevel(logging.ERROR)
 logging.getLogger("httpx").setLevel(logging.ERROR)
 
+if typing.TYPE_CHECKING:
+    from charm import MySQLOperatorCharm
+
 
 class KubernetesClientError(Exception):
     """Exception raised when client can't execute."""
@@ -32,7 +35,7 @@ class KubernetesClientError(Exception):
 class KubernetesHelpers:
     """Kubernetes helpers for service exposure."""
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: "MySQLOperatorCharm"):
         """Initialize Kubernetes helpers.
 
         Args:
@@ -42,7 +45,7 @@ class KubernetesHelpers:
         self.namespace = charm.model.name
         self.app_name = charm.model.app.name
         self.cluster_name = charm.app_peer_data.get("cluster-name")
-        self.client = Client()
+        self.client = Client()  # type: ignore
 
     def create_endpoint_services(self, roles: List[str]) -> None:
         """Create kubernetes service for endpoints.
@@ -113,6 +116,8 @@ class KubernetesHelpers:
             pod_name: (optional) name of the pod to label, defaults to the current pod
         """
         try:
+            if not pod_name:
+                pod_name = self.pod_name
             pod = self.client.get(Pod, pod_name or self.pod_name, namespace=self.namespace)
 
             if not pod.metadata.labels:
@@ -120,14 +125,17 @@ class KubernetesHelpers:
 
             if pod.metadata.labels.get("role") == role:
                 return
+            logger.debug(f"Patching {pod_name=} with {role=}")
 
             pod.metadata.labels["cluster-name"] = self.cluster_name
             pod.metadata.labels["role"] = role
-            self.client.patch(Pod, pod_name or self.pod_name, pod)
-            logger.info(f"Kubernetes pod label {role} created")
+            self.client.patch(Pod, pod_name, pod)
         except ApiError as e:
             if e.status.code == 404:
-                logger.warning(f"Kubernetes pod {pod_name} not found. Scaling in?")
+                logger.warning(f"Kubernetes {pod_name=} not found. Scaling in?")
+                return
+            if e.status.code == 409:
+                logger.warning(f"Kubernetes {pod_name=} changed. Labeling skipped")
                 return
             if e.status.code == 403:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
@@ -173,7 +181,7 @@ class KubernetesHelpers:
         except ApiError:
             raise KubernetesClientError
 
-    @retry(stop=stop_after_attempt(10), wait=wait_fixed(1), reraise=True)
+    @retry(stop=stop_after_attempt(60), wait=wait_fixed(1), reraise=True)
     def wait_service_ready(self, service_endpoint: Tuple[str, int]) -> None:
         """Wait for a service to be listening on a given endpoint.
 
@@ -183,13 +191,14 @@ class KubernetesHelpers:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(1)
 
+        logger.debug("Checking for Kubernetes service endpoint")
         result = sock.connect_ex(service_endpoint)
         sock.close()
 
         # check if the port is open
         if result != 0:
-            logger.debug("Kubernetes service endpoint not ready yet")
-            raise KubernetesClientError
+            logger.debug(f"Kubernetes {service_endpoint=} not ready")
+            raise TimeoutError
         logger.debug("Kubernetes service endpoint ready")
 
     def set_rolling_update_partition(self, partition: int) -> None:

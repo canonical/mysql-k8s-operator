@@ -504,8 +504,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """
         if ops.JujuVersion.from_environ().supports_open_port_on_k8s:
             try:
-                self.unit.open_port("tcp", 3306)
-                self.unit.open_port("tcp", 33060)
+                self.unit.set_ports(3306, 33060)
             except ops.ModelError:
                 logger.exception("failed to open port")
 
