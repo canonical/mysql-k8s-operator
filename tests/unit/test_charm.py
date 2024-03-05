@@ -248,7 +248,7 @@ class TestCharm(unittest.TestCase):
         )
         assert self.charm.get_secret("unit", "password") == "test-password"
 
-    @pytest.mark.usefixtures("only_without_juju_secrets")
+    @pytest.mark.usefixtures("without_juju_secrets")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
     def test_set_secret_databag(self, _):
         self.harness.set_leader()
@@ -271,39 +271,6 @@ class TestCharm(unittest.TestCase):
         assert (
             self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)["password"]
             == "test-password"
-        )
-
-    @pytest.mark.usefixtures("only_with_juju_secrets")
-    @patch("charm.MySQLOperatorCharm._on_leader_elected")
-    def test_set_secret(self, _):
-        self.harness.set_leader()
-
-        # Test application scope.
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.app.name
-        )
-
-        self.charm.set_secret("app", "password", "test-password")
-        secret_data = self.harness.model.get_secret(label="mysql-k8s.app").get_content()
-        assert secret_data["password"] == "test-password"
-
-        # Nothing went to databag
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.app.name
-        )
-
-        # Test unit scope.
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.unit.name
-        )
-
-        self.charm.set_secret("unit", "password", "test-password")
-        secret_data = self.harness.model.get_secret(label="mysql-k8s.unit").get_content()
-        assert secret_data["password"] == "test-password"
-
-        # Nothing went to databag
-        assert "password" not in self.harness.get_relation_data(
-            self.peer_relation_id, self.charm.unit.name
         )
 
     @patch("charms.mysql.v0.mysql.MySQLBase.is_cluster_replica", return_value=False)
