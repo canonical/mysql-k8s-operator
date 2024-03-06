@@ -16,6 +16,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureMySQLUsersError,
     MySQLExecError,
     MySQLGetClusterEndpointsError,
+    MySQLServiceNotRunningError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
@@ -59,10 +60,6 @@ if TYPE_CHECKING:
 
 class MySQLInitialiseMySQLDError(Error):
     """Exception raised when there is an issue initialising an instance."""
-
-
-class MySQLServiceNotRunningError(Error):
-    """Exception raised when the MySQL service is not running."""
 
 
 class MySQLCreateCustomConfigFileError(Error):
@@ -229,10 +226,13 @@ class MySQL(MySQLBase):
         Retry every 5 seconds for 30 seconds if there is an issue obtaining a connection.
         """
         if not self.container.exists(MYSQLD_SOCK_FILE):
-            raise MySQLServiceNotRunningError()
+            raise MySQLServiceNotRunningError
 
-        if check_port and not self.check_mysqlsh_connection():
-            raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
+        try:
+            if check_port and not self.check_mysqlsh_connection():
+                raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
+        except MySQLClientError:
+            raise MySQLServiceNotRunningError
 
         logger.debug("MySQL connection possible")
 
@@ -852,3 +852,7 @@ class MySQL(MySQLBase):
         """Set the cluster primary and update pod labels."""
         super().set_cluster_primary(new_primary_address)
         self.update_endpoints()
+
+    def fetch_error_log(self) -> Optional[str]:
+        """Fetch the MySQL error log."""
+        return self.read_file_content("/var/log/mysql/error.log")

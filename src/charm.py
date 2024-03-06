@@ -18,8 +18,6 @@ from charms.mysql.v0.mysql import (
     BYTES_1MB,
     MySQLAddInstanceToClusterError,
     MySQLCharmBase,
-    MySQLConfigureInstanceError,
-    MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
@@ -72,11 +70,7 @@ from constants import (
 )
 from k8s_helpers import KubernetesHelpers
 from log_rotate_manager import LogRotateManager
-from mysql_k8s_helpers import (
-    MySQL,
-    MySQLCreateCustomConfigFileError,
-    MySQLInitialiseMySQLDError,
-)
+from mysql_k8s_helpers import MySQL
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
@@ -276,7 +270,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             and not self.unit_peer_data.get("unit-initialized")
         )
 
-    def _join_unit_to_cluster(self) -> None:
+    def join_unit_to_cluster(self) -> None:
         """Join the unit to the cluster.
 
         Try to join the unit from the primary unit.
@@ -485,45 +479,45 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             except ops.ModelError:
                 logger.exception("failed to open port")
 
-    def _configure_instance(self, container) -> bool:
+    def _write_mysqld_configuration(self):
+        """Write the mysqld configuration to the file."""
+        memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
+        new_config_content, _ = self._mysql.render_mysqld_configuration(
+            profile=self.config.profile,
+            memory_limit=memory_limit_bytes,
+        )
+        self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
+
+    def _configure_instance(self, container) -> None:
         """Configure the instance for use in Group Replication."""
-        try:
-            # Run mysqld for the first time to
-            # bootstrap the data directory and users
-            logger.debug("Initializing instance")
-            self._mysql.fix_data_dir(container)
-            self._mysql.initialise_mysqld()
+        # Run mysqld for the first time to
+        # bootstrap the data directory and users
+        logger.debug("Initializing instance")
+        self._mysql.fix_data_dir(container)
+        self._mysql.initialise_mysqld()
 
-            # Add the pebble layer
-            logger.debug("Adding pebble layer")
-            container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=False)
-            container.restart(MYSQLD_SAFE_SERVICE)
+        # Add the pebble layer
+        logger.debug("Adding pebble layer")
+        container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
+        container.restart(MYSQLD_SAFE_SERVICE)
 
-            logger.debug("Waiting for instance to be ready")
-            self._mysql.wait_until_mysql_connection(check_port=False)
+        logger.debug("Waiting for instance to be ready")
+        self._mysql.wait_until_mysql_connection(check_port=False)
 
-            logger.info("Configuring instance")
-            # Configure all base users and revoke privileges from the root users
-            self._mysql.configure_mysql_users()
-            # Configure instance as a cluster node
-            self._mysql.configure_instance()
+        logger.info("Configuring instance")
+        # Configure all base users and revoke privileges from the root users
+        self._mysql.configure_mysql_users()
+        # Configure instance as a cluster node
+        self._mysql.configure_instance()
 
-            if self.has_cos_relation:
-                if container.get_services(MYSQLD_EXPORTER_SERVICE)[
-                    MYSQLD_EXPORTER_SERVICE
-                ].is_running():
-                    # Restart exporter service after configuration
-                    container.restart(MYSQLD_EXPORTER_SERVICE)
-                else:
-                    container.start(MYSQLD_EXPORTER_SERVICE)
-        except (
-            MySQLConfigureInstanceError,
-            MySQLConfigureMySQLUsersError,
-            MySQLInitialiseMySQLDError,
-            MySQLCreateCustomConfigFileError,
-        ) as e:
-            logger.debug("Unable to configure instance: {}".format(e))
-            return False
+        if self.has_cos_relation:
+            if container.get_services(MYSQLD_EXPORTER_SERVICE)[
+                MYSQLD_EXPORTER_SERVICE
+            ].is_running():
+                # Restart exporter service after configuration
+                container.restart(MYSQLD_EXPORTER_SERVICE)
+            else:
+                container.start(MYSQLD_EXPORTER_SERVICE)
 
         self._open_ports()
 
@@ -534,8 +528,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         except MySQLGetMySQLVersionError:
             # Do not block the charm if the version cannot be retrieved
             pass
-
-        return True
 
     def _mysql_pebble_ready_checks(self, event) -> bool:
         """Executes some checks to see if it is safe to execute the pebble ready handler."""
@@ -560,17 +552,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             event.defer()
             return
 
+        if not self.upgrade.idle:
+            # when upgrading pebble ready is
+            # task delegated to upgrade code
+            return
+
         container = event.workload
-        try:
-            memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
-            new_config_content, _ = self._mysql.render_mysqld_configuration(
-                profile=self.config.profile,
-                memory_limit=memory_limit_bytes,
-            )
-            self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
-        except MySQLCreateCustomConfigFileError:
-            logger.exception("Unable to write custom config file")
-            raise
+        self._write_mysqld_configuration()
 
         logger.info("Setting up the logrotate configurations")
         self._mysql.setup_logrotate_config()
@@ -585,15 +573,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.unit.status = MaintenanceStatus("Initialising mysqld")
 
         # First run setup
-        if not self._configure_instance(container):
-            raise
+        self._configure_instance(container)
 
         if not self.unit.is_leader():
             # Non-leader units should wait for leader to add them to the cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
-
-            self._join_unit_to_cluster()
+            self.join_unit_to_cluster()
             return
 
         try:
@@ -607,7 +593,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self.app_peer_data["units-added-to-cluster"] = "1"
 
             state, role = self._mysql.get_member_state()
-
             self.unit_peer_data.update(
                 {"member-state": state, "member-role": role, "unit-initialized": "True"}
             )
@@ -702,7 +687,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
             # join cluster test takes precedence over blocked test
             # due to matching criteria
-            self._join_unit_to_cluster()
+            self.join_unit_to_cluster()
             return
 
         if self._is_cluster_blocked():
@@ -748,7 +733,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return
 
         if self._is_unit_waiting_to_join_cluster():
-            self._join_unit_to_cluster()
+            self.join_unit_to_cluster()
 
     def _on_database_storage_detaching(self, _) -> None:
         """Handle the database storage detaching event."""

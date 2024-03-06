@@ -3,10 +3,9 @@
 
 import asyncio
 import logging
+from time import sleep
 
 import pytest
-from lightkube import Client
-from lightkube.resources.apps_v1 import StatefulSet
 from pytest_operator.plugin import OpsTest
 
 from .. import juju_
@@ -19,6 +18,7 @@ from ..helpers import (
 from .high_availability_helpers import (
     METADATA,
     ensure_all_units_continuous_writes_incrementing,
+    get_sts_partition,
     relate_mysql_and_application,
 )
 
@@ -83,12 +83,7 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     assert primary_unit.name == f"{MYSQL_APP_NAME}/0", "Primary unit not set to unit 0"
 
     logger.info("Assert partition is set to 2")
-    client = Client()
-    statefulset = client.get(
-        res=StatefulSet, namespace=ops_test.model.info.name, name=MYSQL_APP_NAME
-    )
-
-    assert statefulset.spec.updateStrategy.rollingUpdate.partition == 2, "Partition not set to 2"
+    assert get_sts_partition(ops_test, MYSQL_APP_NAME) == 2, "Partition not set to 2"
 
 
 @pytest.mark.group(1)
@@ -120,7 +115,17 @@ async def test_upgrade_from_stable(ops_test: OpsTest):
     assert leader_unit is not None, "No leader unit found"
 
     logger.info("Resume upgrade")
-    await juju_.run_action(leader_unit, "resume-upgrade")
+    while get_sts_partition(ops_test, MYSQL_APP_NAME) == 2:
+        # resume action sometime fails in CI, no clear reason
+        try:
+            await juju_.run_action(leader_unit, "resume-upgrade")
+            sleep(2)
+        except AssertionError:
+            # ignore action return error as it is expected when
+            # the leader unit is the next one to be upgraded
+            # due it being immediately rolled when the partition
+            # is patched in the statefulset
+            pass
 
     logger.info("Wait for upgrade to complete")
     await ops_test.model.block_until(

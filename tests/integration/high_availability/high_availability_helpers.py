@@ -12,6 +12,8 @@ from typing import List, Optional, Tuple
 import kubernetes
 import yaml
 from juju.unit import Unit
+from lightkube import Client
+from lightkube.resources.apps_v1 import StatefulSet
 from pytest_operator.plugin import OpsTest
 from tenacity import (
     RetryError,
@@ -575,3 +577,9 @@ async def ensure_process_not_running(
     assert (
         return_code != 0
     ), f"Process {process} is still running with pid {pid} on unit {unit_name}, container {container_name}"
+
+
+def get_sts_partition(ops_test: OpsTest, app_name: str) -> int:
+    client = Client()  # type: ignore
+    statefulset = client.get(res=StatefulSet, namespace=ops_test.model.info.name, name=app_name)
+    return statefulset.spec.updateStrategy.rollingUpdate.partition  # type: ignore
