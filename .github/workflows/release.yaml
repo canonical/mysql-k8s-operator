@@ -36,7 +36,7 @@ jobs:
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v11.0.1
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v12.6.2
 
   release:
     name: Release charm
@@ -44,7 +44,7 @@ jobs:
       - lib-check
       - ci-tests
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v11.0.1
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v12.6.2
     with:
       channel: 8.0/edge
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
