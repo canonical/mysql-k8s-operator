@@ -71,17 +71,20 @@ import enum
 import io
 import json
 import logging
+import os
 import re
 import socket
+import sys
 import time
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, get_args
 
 import ops
 from charms.data_platform_libs.v0.data_interfaces import DataPeer, DataPeerUnit
 from charms.data_platform_libs.v0.data_secrets import APP_SCOPE, UNIT_SCOPE, Scopes, SecretCache
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
-from ops.model import Unit
+from ops.model import MaintenanceStatus, Unit
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed, wait_random
 
 from constants import (
@@ -111,7 +114,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 55
+LIBPATCH = 56
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -375,6 +378,18 @@ class MySQLCharmBase(CharmBase, ABC):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+        # pause support
+        pause_file = Path(
+            f"{os.environ.get('CHARM_DIR')}/pause"
+        )  # pyright: ignore [reportArgumentType]
+        if pause_file.exists():
+            logger.warning(
+                f"\n\tPause file `{pause_file.resolve()}` found, the charm will skip all events."
+                "\n\tTo resume normal operations, please remove the pause file."
+            )
+            self.unit.status = MaintenanceStatus("Paused")
+            sys.exit(0)
 
         self.secrets = SecretCache(self)
         self.peer_relation_app = DataPeer(
