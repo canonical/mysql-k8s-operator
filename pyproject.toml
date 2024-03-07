@@ -64,7 +64,7 @@ pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workf
 pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v12.6.2", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
 juju = "^3.2.2"
 ops = "^2.5.0"
-mysql-connector-python = "~8.0.33"
+mysql-connector-python = "~8.3.0"
 tenacity = "^8.2.2"
 boto3 = "^1.28.22"
 pyyaml = "^6.0.1"
