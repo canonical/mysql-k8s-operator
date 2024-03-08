@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+####  Fix s3-integrator problems with tls-ca-chain ####
+
+
+
 """S3 helper functions for the MySQL charms."""
 import base64
 import logging
@@ -61,8 +65,7 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
         verif = True
         ca_chain = s3_parameters.get("tls-ca-chain")
         if ca_chain:
-            ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
-            ca_file.write(ca.encode())
+            ca_file.write(ca_chain[0].encode('utf-8'))
             ca_file.flush()
             verif = ca_file.name
 
@@ -124,13 +127,26 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # no
         logger.info(
             f"Listing subdirectories from S3 bucket={s3_parameters['bucket']}, path={s3_parameters['path']}"
         )
+        
+        # Verify ssl with tls-ca-chain
+        ca_file = tempfile.NamedTemporaryFile()
+        verif = True
+        ca_chain = s3_parameters.get("tls-ca-chain")
+        if ca_chain:
+            ca_file.write(ca_chain[0].encode('utf-8'))
+            ca_file.flush()
+            verif = ca_file.name
         s3_client = boto3.client(
             "s3",
             aws_access_key_id=s3_parameters["access-key"],
             aws_secret_access_key=s3_parameters["secret-key"],
             endpoint_url=s3_parameters["endpoint"],
             region_name=s3_parameters["region"] or None,
+            verify=verif,
+
         )
+
+
         list_objects_v2_paginator = s3_client.get_paginator("list_objects_v2")
         s3_path_directory = (
             s3_parameters["path"]
@@ -196,12 +212,23 @@ def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str
 
     Raises: any exceptions raised by boto3
     """
+    # Verify ssl with tls-ca-chain
+    ca_file = tempfile.NamedTemporaryFile()
+    verif = True
+    ca_chain = s3_parameters.get("tls-ca-chain")
+    if ca_chain:
+            ca_file.write(ca_chain[0].encode('utf-8'))
+            ca_file.flush()
+            verif = ca_file.name
+
     s3_client = boto3.client(
         "s3",
         aws_access_key_id=s3_parameters["access-key"],
         aws_secret_access_key=s3_parameters["secret-key"],
         endpoint_url=s3_parameters["endpoint"],
         region_name=s3_parameters["region"] or None,
+        verify=verif,
+
     )
 
     try:
