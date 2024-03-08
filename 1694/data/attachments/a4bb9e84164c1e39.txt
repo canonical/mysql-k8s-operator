@@ -1,0 +1,15 @@
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:247 Deploying Chaos Mesh
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:259 Ensure chaos mesh is ready
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:304 Ensuring that there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:309 Ensuring that all instances have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:317 Creating networkchaos policy to isolate instance mysql-k8s/0 from the cluster
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:324 Wait until MySQL GR actually detects isolated instance
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:341 Ensure all units have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:344 Remove networkchaos policy isolating instance from cluster
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:348 Wait until returning instance enters recovery
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:352 Wait until returning instance become active
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:357 Wait until all units are online
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:362 Ensure isolated instance is now secondary
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:371 Ensure there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:376 Ensure all units have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:41 Destroying chaos mesh
