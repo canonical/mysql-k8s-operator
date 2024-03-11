@@ -84,7 +84,7 @@ import ops
 from charms.data_platform_libs.v0.data_interfaces import DataPeer, DataPeerUnit
 from charms.data_platform_libs.v0.data_secrets import APP_SCOPE, UNIT_SCOPE, Scopes, SecretCache
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
-from ops.model import MaintenanceStatus, Unit
+from ops.model import Unit
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed, wait_random
 
 from constants import (
@@ -379,16 +379,16 @@ class MySQLCharmBase(CharmBase, ABC):
     def __init__(self, *args):
         super().__init__(*args)
 
-        # pause support
-        pause_file = Path(
-            f"{os.environ.get('CHARM_DIR')}/pause"
+        # disable support
+        disable_file = Path(
+            f"{os.environ.get('CHARM_DIR')}/disable"
         )  # pyright: ignore [reportArgumentType]
-        if pause_file.exists():
+        if disable_file.exists():
             logger.warning(
-                f"\n\tPause file `{pause_file.resolve()}` found, the charm will skip all events."
-                "\n\tTo resume normal operations, please remove the pause file."
+                f"\n\tDisable file `{disable_file.resolve()}` found, the charm will skip all events."
+                "\n\tTo resume normal operations, please remove the file."
             )
-            self.unit.status = MaintenanceStatus("Paused")
+            self.unit.status = ops.BlockedStatus("Disabled")
             sys.exit(0)
 
         self.secrets = SecretCache(self)
