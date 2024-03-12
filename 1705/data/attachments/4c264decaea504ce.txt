@@ -1,0 +1,110 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:47:38Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.35-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.87   no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   33  10.152.183.145  no       Last written value=5092
+
+Unit               Workload  Agent      Address       Ports  Message
+mysql-k8s/0        active    executing  10.1.131.139         Primary
+mysql-k8s/1*       active    idle       10.1.131.140         
+mysql-k8s/2        active    idle       10.1.131.141         
+mysql-test-app/0*  active    idle       10.1.131.142         Last written value=5092
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:30:46 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:30:58 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:32:22 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:32:45 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:33:07 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:33:29 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:33:51 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:34:13 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:34:35 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:34:57 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:35:19 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:35:41 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:36:03 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:36:25 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:36:47 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:37:09 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:37:20 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:37:20 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:37:22 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:37:22 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:37:33 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:37:55 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:38:17 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:38:39 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:39:01 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:39:23 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:39:45 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:40:07 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:40:29 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:40:51 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:41:13 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:41:35 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:41:57 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:42:20 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:42:38 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:42:38 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:42:38 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:42:38 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:42:50 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:43:12 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:43:34 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:43:56 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:44:18 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:44:40 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:45:02 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:45:24 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:45:46 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:46:08 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:46:30 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:46:52 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:47:15 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:47:17 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:47:17 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:47:26 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:47:26 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
