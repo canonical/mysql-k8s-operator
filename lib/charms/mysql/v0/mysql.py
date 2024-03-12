@@ -1480,8 +1480,10 @@ class MySQLBase(ABC):
             "label": instance_unit_label,
         }
 
+        local_lock_instance = lock_instance or from_instance or self.instance_address
+
         if not self._acquire_lock(
-            lock_instance or from_instance or self.instance_address,
+            local_lock_instance,
             instance_unit_label,
             UNIT_ADD_LOCKNAME,
         ):
@@ -1528,9 +1530,7 @@ class MySQLBase(ABC):
             )
         finally:
             # always release the lock
-            self._release_lock(
-                from_instance or self.instance_address, instance_unit_label, UNIT_ADD_LOCKNAME
-            )
+            self._release_lock(local_lock_instance, instance_unit_label, UNIT_ADD_LOCKNAME)
 
     def is_instance_configured_for_innodb(
         self, instance_address: str, instance_unit_label: str
