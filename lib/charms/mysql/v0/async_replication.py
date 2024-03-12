@@ -194,12 +194,14 @@ class MySQLAsyncReplication(Object):
             # reset flag to allow instances rejoining the cluster
             self._charm.unit_peer_data["member-state"] = "waiting"
             del self._charm.unit_peer_data["unit-initialized"]
+            self._charm.app_peer_data["skip-user-data-check"] = "true"
             if self._charm.unit.is_leader():
-                self._charm.app.status = BlockedStatus("Recreate cluster.")
+                self._charm.app.status = BlockedStatus("Recreate or rejoin cluster.")
                 logger.info(
                     "\n\tThis is a replica cluster and will be dissolved.\n"
                     "\tThe cluster can be recreated with the `recreate-cluster` action.\n"
-                    "\tAfter recreating the cluster, it can be (re)joined to a cluster set"
+                    "\tData will be wiped out by the action.\n"
+                    "\tAlternatively the cluster can be rejoined to the cluster set."
                 )
                 # reset the cluster node count flag
                 del self._charm.app_peer_data["units-added-to-cluster"]
@@ -481,19 +483,28 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
     def _on_replica_created(self, _):
         """Handle the async_replica relation being created on the leader unit."""
-        logger.debug("Checking for user data")
-        if self._charm._mysql.get_non_system_databases():
-            logger.info(
-                "\n\tUser data found, aborting async replication setup."
-                "\n\tEnsure the cluster has no user data before trying to join a cluster set."
-                "\n\tAfter removing/backing up the data, remove the relation and add it again."
-            )
-            self._charm.app.status = BlockedStatus("User data found, check instruction in the log")
-            self._charm.unit.status = BlockedStatus(
-                "User data found, aborting async replication setup"
-            )
-            self.relation_data["user-data-found"] = "true"
-            return
+        if self._charm.app_peer_data.get("skip-user-data-check") == "true":
+            # flag set on prior async relation broken
+            # allows the relation to be created with user data so
+            # rejoin to cluster-set can be done incrementaly
+            logger.debug("User data check skipped")
+        else:
+            logger.debug("Checking for user data")
+            if self._charm._mysql.get_non_system_databases():
+                # don't check for user data if skip flag is set
+                logger.info(
+                    "\n\tUser data found, aborting async replication setup."
+                    "\n\tEnsure the cluster has no user data before trying to join a cluster set."
+                    "\n\tAfter removing/backing up the data, remove the relation and add it again."
+                )
+                self._charm.app.status = BlockedStatus(
+                    "User data found, check instruction in the log"
+                )
+                self._charm.unit.status = BlockedStatus(
+                    "User data found, aborting async replication setup"
+                )
+                self.relation_data["user-data-found"] = "true"
+                return
 
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
         self._charm.unit.status = WaitingStatus("awaiting sync data from primary cluster")
