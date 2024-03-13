@@ -4,7 +4,6 @@
 """MySQL async replication module."""
 
 import enum
-import json
 import logging
 import typing
 from functools import cached_property
@@ -194,7 +193,6 @@ class MySQLAsyncReplication(Object):
             # reset flag to allow instances rejoining the cluster
             self._charm.unit_peer_data["member-state"] = "waiting"
             del self._charm.unit_peer_data["unit-initialized"]
-            self._charm.app_peer_data["skip-user-data-check"] = "true"
             if self._charm.unit.is_leader():
                 self._charm.app.status = BlockedStatus("Recreate or rejoin cluster.")
                 logger.info(
@@ -205,6 +203,8 @@ class MySQLAsyncReplication(Object):
                 )
                 # reset the cluster node count flag
                 del self._charm.app_peer_data["units-added-to-cluster"]
+                # set flag to persist removed from cluster-set state
+                self._charm.app_peer_data["removed-from-cluster-set"] = "true"
 
         elif self.role.cluster_role == "primary":
             if self._charm.unit.is_leader():
@@ -320,6 +320,11 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
 
     def _on_primary_created(self, event):
         """Validate relations and share credentials with replica cluster."""
+        if not self._charm.unit_initialized:
+            logger.debug("Unit not initialized, deferring event")
+            event.defer()
+            return
+
         if self._charm._mysql.is_cluster_replica():
             logger.error(
                 f"This a replica cluster, cannot be related as {PRIMARY_RELATION}. Remove relation."
@@ -331,21 +336,13 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
             return
 
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
-        # CMR secrets not working: https://bugs.launchpad.net/juju/+bug/2046484
-        # logger.debug("Granting secrets access to async replication relation")
-        # secret = self._get_secret()
-        # secret_id = secret.get_info().id
-        # secret.grant(event.relation)
-
-        # logger.debug(f"Sharing {secret_id} with replica cluster")
-        # event.relation.data[self.model.app]["secret-id"] = secret_id
-
-        # workaround: using relation data instead of CMR secrets
+        logger.debug("Granting secrets access to async replication relation")
         secret = self._get_secret()
+        secret_id = secret.get_info().id
+        secret.grant(event.relation)
 
-        logger.debug("Sharing secret with replica cluster")
-        event.relation.data[self.model.app]["secret-id"] = json.dumps(secret.get_content())
-        event.relation.data[self.model.app]["cluster-name"] = self._charm._mysql.cluster_name
+        logger.debug(f"Sharing {secret_id} with replica cluster")
+        event.relation.data[self.model.app]["secret-id"] = secret_id
 
     def _on_primary_relation_changed(self, event):
         """Handle the async_primary relation being changed."""
@@ -444,7 +441,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             # and did not synced credentials
             return States.SYNCING
 
-        if self.remote_relation_data.get("replica-state") == "initialized":
+        if self.replica_initialized:
             # cluster added to cluster-set by primary cluster
             if self._charm.cluster_fully_initialized:
                 return States.READY
@@ -460,6 +457,19 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
         return self.state in [States.READY, None]
 
+    @property
+    def returning_cluster(self) -> bool:
+        """Whether to skip checks.
+
+        Used for skipping checks when a replica cluster was removed through broken relation.
+        """
+        return self._charm.app_peer_data.get("removed-from-cluster-set") == "true"
+
+    @property
+    def replica_initialized(self) -> bool:
+        """Whether the replica cluster is initialized as such."""
+        return self.remote_relation_data.get("replica-state") == "initialized"
+
     def _get_secret(self) -> Secret:
         """Get secret from primary cluster."""
         secret_id = self.remote_relation_data.get("secret-id")
@@ -467,9 +477,8 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
     def _async_replication_credentials(self) -> dict[str, str]:
         """Get async replication credentials from primary cluster."""
-        # secret = self._get_secret()
-        # return secret.peek_content()
-        return json.loads(self.remote_relation_data.get("secret-id", "{}"))
+        secret = self._get_secret()
+        return secret.peek_content()
 
     def _get_endpoint(self) -> str:
         """Get endpoint to be used by the primary cluster.
@@ -481,12 +490,17 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         # using unit informed address (fqdn or ip)
         return self._charm.unit_address
 
-    def _on_replica_created(self, _):
+    def _on_replica_created(self, event):
         """Handle the async_replica relation being created on the leader unit."""
-        if self._charm.app_peer_data.get("skip-user-data-check") == "true":
+        if not self._charm.unit_initialized:
+            logger.debug("Unit not initialized, deferring event")
+            event.defer()
+            return
+        if self.returning_cluster:
             # flag set on prior async relation broken
             # allows the relation to be created with user data so
-            # rejoin to cluster-set can be done incrementaly
+            # rejoining to the cluster-set can be done incrementaly
+            # on incompatible user data, join fallbacks to clone
             logger.debug("User data check skipped")
         else:
             logger.debug("Checking for user data")
@@ -512,9 +526,20 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
     def _on_replica_changed(self, event):
         """Handle the async_replica relation being changed."""
         state = self.state
-        logger.debug(f"Replica cluster {state=}")
+        logger.debug(f"Replica cluster {state.value=}")
 
         if state == States.SYNCING:
+            if self.returning_cluster:
+                # when runing from and async relation broken
+                # re-create the cluster and wait
+                logger.debug("Recreating cluster prior to sync credentials")
+                self._charm.create_cluster()
+                event.defer()
+                # (re)set flags
+                self._charm.app_peer_data.update(
+                    {"removed-from-cluster-set": "", "rejoin-secondaries": "true"}
+                )
+                return
             if not self._charm.cluster_fully_initialized:
                 # cluster is not fully initialized
                 # avoid race on credentials sync
@@ -544,9 +569,12 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
                 logger.debug(f"Synced {sync_keys[key]} password")
 
             self._charm.unit.status = MaintenanceStatus("Dissolving replica cluster")
+            logger.debug("Dissolving replica cluster")
             self._charm._mysql.dissolve_cluster()
             # reset the cluster node count flag
             del self._charm.app_peer_data["units-added-to-cluster"]
+            # reset force rejoin-secondaries flag
+            del self._charm.app_peer_data["rejoin-secondaries"]
 
             self._charm.unit.status = MaintenanceStatus("Populate endpoint")
 
@@ -596,13 +624,13 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         """Reset cluster secondaries to allow cluster rejoin after primary recovery."""
         # the replica state is initialized when the primary cluster finished
         # creating the replica cluster on this cluster primary/leader unit
-        if self.remote_relation_data.get(
-            "replica-state"
-        ) == "initialized" and not self._charm._mysql.is_instance_in_cluster(
-            self._charm.unit_label
-        ):
+        if (
+            self.replica_initialized
+            or self._charm.app_peer_data.get("rejoin-secondaries") == "true"
+        ) and not self._charm._mysql.is_instance_in_cluster(self._charm.unit_label):
             logger.debug("Reset secondary unit to allow cluster rejoin")
             # reset unit flag to allow cluster rejoin after primary recovery
             # the unit will rejoin on the next peer relation changed or update status
             del self._charm.unit_peer_data["unit-initialized"]
+            self._charm.unit_peer_data["member-state"] = "waiting"
             self._charm.unit.status = WaitingStatus("waiting to join the cluster")

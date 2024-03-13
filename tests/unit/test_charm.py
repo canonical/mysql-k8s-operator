@@ -113,6 +113,7 @@ class TestCharm(unittest.TestCase):
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("mysql_k8s_helpers.MySQL.rescan_cluster")
     @patch("charms.mysql.v0.mysql.MySQLCharmBase.active_status_message", return_value="")
     @patch("upgrade.MySQLK8sUpgrade.idle", return_value=True)
     @patch("mysql_k8s_helpers.MySQL.write_content_to_file")
@@ -154,6 +155,7 @@ class TestCharm(unittest.TestCase):
         _write_content_to_file,
         _active_status_message,
         _upgrade_idle,
+        _rescan_cluster,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -171,12 +173,16 @@ class TestCharm(unittest.TestCase):
 
         # After configuration run, plan should be populated
         plan = self.harness.get_container_pebble_plan("mysql")
-        self.assertEqual(plan.to_dict()["services"], self.layer_dict()["services"])
+        self.assertEqual(
+            plan.to_dict()["services"],  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            self.layer_dict()["services"],
+        )
 
         self.harness.add_relation("metrics-endpoint", "test-cos-app")
         plan = self.harness.get_container_pebble_plan("mysql")
         self.assertEqual(
-            plan.to_dict()["services"], self.layer_dict(with_mysqld_exporter=True)["services"]
+            plan.to_dict()["services"],  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            self.layer_dict(with_mysqld_exporter=True)["services"],
         )
 
     @patch("charm.MySQLOperatorCharm.join_unit_to_cluster")

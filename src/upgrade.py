@@ -207,7 +207,7 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         Run update status for every unit when the upgrade is completed.
         """
-        if not self.upgrade_stack and self.idle:
+        if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
             self.charm._on_update_status(None)
 
     def _on_pebble_ready(self, event) -> None:

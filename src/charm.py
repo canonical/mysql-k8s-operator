@@ -88,7 +88,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     # RotateMySQLLogsCharmEvents needs to be defined on the charm object for
     # the log rotate manager process (which runs juju-run/juju-exec to dispatch
     # a custom event)
-    on = RotateMySQLLogsCharmEvents()  # pyright: ignore [reportGeneralTypeIssues]
+    on = RotateMySQLLogsCharmEvents()  # pyright: ignore [reportAssignmentType]
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -154,23 +154,21 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self._get_unit_fqdn(),
             self.app_peer_data["cluster-name"],
             self.app_peer_data["cluster-set-domain-name"],
-            self.get_secret("app", ROOT_PASSWORD_KEY),  # pyright: ignore [reportGeneralTypeIssues]
+            self.get_secret("app", ROOT_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
             SERVER_CONFIG_USERNAME,
             self.get_secret(
                 "app", SERVER_CONFIG_PASSWORD_KEY
-            ),  # pyright: ignore [reportGeneralTypeIssues]
+            ),  # pyright: ignore [reportArgumentType]
             CLUSTER_ADMIN_USERNAME,
             self.get_secret(
                 "app", CLUSTER_ADMIN_PASSWORD_KEY
-            ),  # pyright: ignore [reportGeneralTypeIssues]
+            ),  # pyright: ignore [reportArgumentType]
             MONITORING_USERNAME,
             self.get_secret(
                 "app", MONITORING_PASSWORD_KEY
-            ),  # pyright: ignore [reportGeneralTypeIssues]
+            ),  # pyright: ignore [reportArgumentType]
             BACKUPS_USERNAME,
-            self.get_secret(
-                "app", BACKUPS_PASSWORD_KEY
-            ),  # pyright: ignore [reportGeneralTypeIssues]
+            self.get_secret("app", BACKUPS_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
             self.unit.get_container(CONTAINER_NAME),
             self.k8s_helpers,
             self,
@@ -209,7 +207,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 },
             },
         }
-        return Layer(layer)  # pyright: ignore [reportGeneralTypeIssues]
+        return Layer(layer)  # pyright: ignore [reportArgumentType]
 
     @property
     def restart_peers(self) -> Optional[ops.model.Relation]:
@@ -612,19 +610,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         try:
             # Create the cluster when is the leader unit
             logger.info(f"Creating cluster {self.app_peer_data['cluster-name']}")
-            self._mysql.create_cluster(self.unit_label)
-            self._mysql.create_cluster_set()
+            self.create_cluster()
+            self.unit.status = ops.ActiveStatus(self.active_status_message)
 
-            self._mysql.initialize_juju_units_operations_table()
-            # Start control flag
-            self.app_peer_data["units-added-to-cluster"] = "1"
-
-            state, role = self._mysql.get_member_state()
-            self.unit_peer_data.update(
-                {"member-state": state, "member-role": role, "unit-initialized": "True"}
-            )
-
-            self.unit.status = ActiveStatus(self.active_status_message)
         except (
             MySQLCreateClusterError,
             MySQLGetMemberStateError,
