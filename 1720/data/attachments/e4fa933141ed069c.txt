@@ -1,0 +1,19 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:28:01Z
+
+App        Version  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s           waiting      3  mysql-k8s       8.0/stable   113  10.152.183.231  no       installing agent
+test-app   0.0.2    waiting      1  mysql-test-app  latest/edge   33  10.152.183.187  no       installing agent
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0   error     idle   10.1.125.75         hook failed: "config-changed"
+mysql-k8s/1   error     idle   10.1.125.76         hook failed: "config-changed"
+mysql-k8s/2*  error     idle   10.1.125.77         hook failed: "config-changed"
+test-app/0*   waiting   idle   10.1.125.78         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
