@@ -106,6 +106,11 @@ class MySQLAsyncReplication(Object):
 
         return ClusterSetInstanceState(cluster_role, instance_role, relation_side)
 
+    @property
+    def cluster_name(self) -> str:
+        """This cluster name."""
+        return self._charm.app_peer_data["cluster-name"]
+
     def get_remote_relation_data(self, relation: Relation) -> Optional[RelationDataContent]:
         """Remote data."""
         if not relation.app:
@@ -131,7 +136,7 @@ class MySQLAsyncReplication(Object):
             return
 
         # promote cluster to primary
-        cluster_name = self._charm.app_peer_data["cluster-name"]
+        cluster_name = self.cluster_name
         force = event.params.get("force", False)
 
         try:
@@ -358,7 +363,10 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
         secret.grant(event.relation)
 
         logger.debug(f"Sharing {secret_id=} with replica cluster")
-        event.relation.data[self.model.app]["secret-id"] = secret_id
+        # Share secret id and store this cluster name
+        event.relation.data[self.model.app].update(
+            {"secret-id": secret_id, "cluster-name": self.cluster_name}
+        )
 
     def _on_primary_relation_changed(self, event):
         """Handle the async_primary relation being changed."""
@@ -600,7 +608,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             self._charm.unit.status = MaintenanceStatus("Populate endpoint")
 
             # this cluster name is used by the primary cluster to identify the replica cluster
-            self.relation_data["cluster-name"] = self._charm.app_peer_data["cluster-name"]
+            self.relation_data["cluster-name"] = self.cluster_name
             # the reachable endpoint address
             self.relation_data["endpoint"] = self._get_endpoint()
             # the node label in the replica cluster to be created

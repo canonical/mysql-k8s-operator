@@ -524,17 +524,13 @@ class MySQLCharmBase(CharmBase, ABC):
             event.fail("recreate-cluster action can only be run on the leader unit.")
             return
 
-        if not self.cluster_initialized:
-            event.fail("Cannot recreate a cluster that is not yet initialized.")
-            return
-
         if self.app_peer_data.get("removed-from-cluster-set"):
             # remove the flag if it exists. Allow further cluster rejoin
             del self.app_peer_data["removed-from-cluster-set"]
 
         # reset cluster-set-name to config or previous value
         hash = self.generate_random_hash()
-        self.app_peer_data["cluster-set-domain-name"] = self.config.get(
+        self.app_peer_data["cluster-set-domain-name"] = self.model.config.get(
             "cluster-set-name", f"cluster-set-{hash}"
         )
 
