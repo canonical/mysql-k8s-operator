@@ -4,6 +4,7 @@
 
 import logging
 import socket
+import uuid
 from pathlib import Path
 
 import boto3
@@ -63,17 +64,21 @@ def cloud_credentials(
 
 @pytest.fixture(scope="session")
 def cloud_configs(microceph: pytest_microceph.ConnectionInformation):
+    # Add UUID to path to avoid conflict with tests running in parallel (e.g. multiple Juju
+    # versions on a PR, multiple PRs)
+    path = f"mysql-k8s/{uuid.uuid4()}"
+
     return {
         "aws": {
             "endpoint": "https://s3.amazonaws.com",
             "bucket": "data-charms-testing",
-            "path": "mysql-k8s",
+            "path": path,
             "region": "us-east-1",
         },
         "gcp": {
             "endpoint": "https://storage.googleapis.com",
             "bucket": "data-charms-testing",
-            "path": "mysql-k8s",
+            "path": path,
             "region": "",
         },
         "ceph": {

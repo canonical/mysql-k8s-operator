@@ -1180,18 +1180,21 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "ops"
-version = "2.5.1"
+version = "2.10.0"
 description = "The Python library behind great charms"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "ops-2.5.1-py3-none-any.whl", hash = "sha256:b7efc373031c52cb4ce61a455bcb990330bc1b81c01b1061626ed957bc58bbc1"},
-    {file = "ops-2.5.1.tar.gz", hash = "sha256:7f74552e48ee42af3ae87148767fd0cedef03e6d28248728f2258e05a0dfd86d"},
+    {file = "ops-2.10.0-py3-none-any.whl", hash = "sha256:25ecac7054e53b500d1ea6cccf47de4ed69d39de4eaf9a2bc05d49a12f8651bf"},
+    {file = "ops-2.10.0.tar.gz", hash = "sha256:7b0bf23c7ae20891d3fd7943830d75f1b38e7cafb216d5b727771d9c2f69d654"},
 ]
 
 [package.dependencies]
 PyYAML = "==6.*"
 websocket-client = "==1.*"
+
+[package.extras]
+docs = ["furo", "lxd-sphinx-extensions", "sphinx (==6.2.1)", "sphinx-copybutton", "sphinx-design", "sphinx-tabs"]
 
 [[package]]
 name = "packaging"
@@ -1691,8 +1694,8 @@ develop = false
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v11.0.0"
-resolved_reference = "a298a6d504d780220e97a471188a945ef870e795"
+reference = "v12.6.2"
+resolved_reference = "d7601d584f5df0ef7cafc23bd48d8634879d8725"
 subdirectory = "python/pytest_plugins/github_secrets"
 
 [[package]]
@@ -1711,8 +1714,8 @@ pytest = "^7.4.4"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v11.0.0"
-resolved_reference = "a298a6d504d780220e97a471188a945ef870e795"
+reference = "v12.6.2"
+resolved_reference = "d7601d584f5df0ef7cafc23bd48d8634879d8725"
 subdirectory = "python/pytest_plugins/microceph"
 
 [[package]]
@@ -1766,8 +1769,8 @@ pyyaml = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v11.0.0"
-resolved_reference = "a298a6d504d780220e97a471188a945ef870e795"
+reference = "v12.6.2"
+resolved_reference = "d7601d584f5df0ef7cafc23bd48d8634879d8725"
 subdirectory = "python/pytest_plugins/pytest_operator_cache"
 
 [[package]]
@@ -1785,8 +1788,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v11.0.0"
-resolved_reference = "a298a6d504d780220e97a471188a945ef870e795"
+reference = "v12.6.2"
+resolved_reference = "d7601d584f5df0ef7cafc23bd48d8634879d8725"
 subdirectory = "python/pytest_plugins/pytest_operator_groups"
 
 [[package]]
@@ -2337,4 +2340,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "475ea8a1e1f447f30981fb2916e387979f46c57d1ac1563824851de570556d70"
+content-hash = "4e5386836760245379630ce607025bd6234fff605d8bb781a968fa68569c036c"
