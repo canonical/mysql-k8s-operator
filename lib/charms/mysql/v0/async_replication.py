@@ -49,6 +49,7 @@ LIBPATCH = 1
 
 PRIMARY_RELATION = "async-primary"
 REPLICA_RELATION = "async-replica"
+SECRET_LABEL = "async-secret"
 
 
 class ClusterSetInstanceState(typing.NamedTuple):
@@ -317,17 +318,21 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
     def _get_secret(self) -> Secret:
         """Return async replication necessary secrets."""
         try:
-            # avoid recreating the secret
-            return self._charm.model.get_secret(label="async-secret")
+            # Avoid recreating the secret
+            secret = self._charm.model.get_secret(label=SECRET_LABEL)
+            if not secret.id:
+                # workaround for the secret id not being set with model uuid
+                secret._id = f"secret://{self.model.uuid}/{secret.get_info().id.split(':')[1]}"
+            return secret
         except SecretNotFoundError:
             pass
 
-        secret = self._charm.model.get_secret(label=f"{self.model.app.name}.app")
-        content = secret.peek_content()
+        app_secret = self._charm.model.get_secret(label=f"{self.model.app.name}.app")
+        content = app_secret.peek_content()
         # filter out unnecessary secrets
         shared_content = dict(filter(lambda x: "password" in x[0], content.items()))
 
-        return self._charm.model.app.add_secret(content=shared_content, label="async-secret")
+        return self._charm.model.app.add_secret(content=shared_content, label=SECRET_LABEL)
 
     def _on_primary_created(self, event):
         """Validate relations and share credentials with replica cluster."""
@@ -349,7 +354,7 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
         logger.debug("Granting secrets access to async replication relation")
         secret = self._get_secret()
-        secret_id = secret.get_info().id
+        secret_id = secret.id
         secret.grant(event.relation)
 
         logger.debug(f"Sharing {secret_id=} with replica cluster")
@@ -484,7 +489,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
     def _obtain_secret(self) -> Secret:
         """Get secret from primary cluster."""
         secret_id = self.remote_relation_data.get("secret-id")
-        return self._charm.model.get_secret(id=secret_id, label="async-secret")
+        return self._charm.model.get_secret(id=secret_id, label=SECRET_LABEL)
 
     def _async_replication_credentials(self) -> dict[str, str]:
         """Get async replication credentials from primary cluster."""
@@ -563,7 +568,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             self._charm.unit.status = MaintenanceStatus("Syncing credentials")
 
             try:
-               credentials = self._async_replication_credentials()
+                credentials = self._async_replication_credentials()
             except SecretNotFoundError:
                 logger.debug("Secret not found, deferring event")
                 event.defer()
