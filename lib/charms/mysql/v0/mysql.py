@@ -68,6 +68,7 @@ error handling on the subclass and in the charm code.
 import configparser
 import dataclasses
 import enum
+import hashlib
 import io
 import json
 import logging
@@ -523,9 +524,19 @@ class MySQLCharmBase(CharmBase, ABC):
             event.fail("recreate-cluster action can only be run on the leader unit.")
             return
 
+        if not self.cluster_initialized:
+            event.fail("Cannot recreate a cluster that is not yet initialized.")
+            return
+
         if self.app_peer_data.get("removed-from-cluster-set"):
             # remove the flag if it exists. Allow further cluster rejoin
             del self.app_peer_data["removed-from-cluster-set"]
+
+        # reset cluster-set-name to config or previous value
+        hash = self.generate_random_hash()
+        self.app_peer_data["cluster-set-domain-name"] = self.config.get(
+            "cluster-set-name", f"cluster-set-{hash}"
+        )
 
         logger.info("Recreating cluster")
         try:
@@ -693,6 +704,16 @@ class MySQLCharmBase(CharmBase, ABC):
             self.peer_relation_app.delete_relation_data(peers.id, [key])
         else:
             self.peer_relation_unit.delete_relation_data(peers.id, [key])
+
+    @staticmethod
+    def generate_random_hash() -> str:
+        """Generate a hash based on a random string.
+
+        Returns:
+            A hash based on a random string.
+        """
+        random_characters = generate_random_password(10)
+        return hashlib.md5(random_characters.encode("utf-8")).hexdigest()
 
 
 class MySQLMemberState(str, enum.Enum):
@@ -2990,6 +3011,11 @@ class MySQLBase(ABC):
 
         Implemented in subclasses, test for socket file existence.
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def reset_data_dir(self) -> None:
+        """Reset the data directory."""
         raise NotImplementedError
 
     @abstractmethod

@@ -76,7 +76,7 @@ from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
 from rotate_mysql_logs import RotateMySQLLogs, RotateMySQLLogsCharmEvents
 from upgrade import MySQLK8sUpgrade, get_mysql_k8s_dependencies_model
-from utils import compare_dictionaries, generate_random_hash, generate_random_password
+from utils import compare_dictionaries, generate_random_password
 
 logger = logging.getLogger(__name__)
 
@@ -485,7 +485,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 )
 
         # Create and set cluster and cluster-set names in the peer relation databag
-        common_hash = generate_random_hash()
+        common_hash = self.generate_random_hash()
         self.app_peer_data.setdefault(
             "cluster-name", self.config.cluster_name or f"cluster-{common_hash}"
         )
