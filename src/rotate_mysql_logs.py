@@ -54,7 +54,7 @@ class RotateMySQLLogs(Object):
         try:
             logger.debug("Log rotate call")
             self.charm._mysql._execute_commands(
-                ["logrotate", "-f", LOG_ROTATE_CONFIG_FILE], timeout=50
+                ["logrotate", "-f", LOG_ROTATE_CONFIG_FILE], timeout=30
             )
             logger.debug("Flushing text logs")
             self.charm._mysql.flush_mysql_logs(list(MySQLTextLogs))
