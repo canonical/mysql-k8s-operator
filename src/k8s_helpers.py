@@ -47,6 +47,14 @@ class KubernetesHelpers:
         self.cluster_name = charm.app_peer_data.get("cluster-name")
         self.client = Client()  # type: ignore
 
+    def get_k8s_nodes_ips(self) -> List[str]:
+        """Return a list of kubernetes nodes IPs."""
+        try:
+            nodes = self.client.list(Node)
+            return [node.status.addresses[0].address for node in nodes.items]
+        except ApiError:
+            raise KubernetesClientError
+
     def create_endpoint_services(self, roles: List[str]) -> None:
         """Create kubernetes service for endpoints.
 
@@ -73,7 +81,7 @@ class KubernetesHelpers:
                 spec=ServiceSpec(
                     selector=selector,
                     ports=[ServicePort(port=3306, targetPort=3306)],
-                    type="ClusterIP",
+                    type="NodePort",
                 ),
             )
 
@@ -89,6 +97,31 @@ class KubernetesHelpers:
                 else:
                     logger.exception("Kubernetes service creation failed: %s", e)
                 raise KubernetesClientError
+
+    def get_node_port(self, svc_name) -> str:
+        try:
+            node = self.client.get(
+                Node, name=self._get_node_name_for_pod(), namespace=self.namespace
+            )
+            # [
+            #    NodeAddress(address='192.168.0.228', type='InternalIP'),
+            #    NodeAddress(address='desktopdone', type='Hostname')
+            # ]
+            # TODO: not hardcode the index below, but rather search for ExternalIP, then InternalIP
+            # maybe add a config to choose Hostname instead
+            # Remember that OpenStack, for example, will return an internal hostname, which is not
+            # accessible from the outside.
+            node_ip = node.status.addresses[0].address
+            svc = self.client.get(Service, svc_name, namespace=self.namespace)
+            if svc.spec.type == "NodePort":
+                # svc.spec.ports
+                # [ServicePort(port=3306, appProtocol=None, name=None, nodePort=31438, protocol='TCP', targetPort=3306)]
+                # TODO: check if we are getting the right 3306 port
+                return f"{node_ip}:{str(svc.spec.ports[0].nodePort)}"
+            # TODO: handle the case node port does not exist
+            return None
+        except ApiError:
+            raise KubernetesClientError
 
     def delete_endpoint_services(self, roles: List[str]) -> None:
         """Delete kubernetes service for endpoints.
