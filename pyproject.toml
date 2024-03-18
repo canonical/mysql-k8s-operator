@@ -31,16 +31,16 @@ jsonschema = "*"
 optional = true
 
 [tool.poetry.group.format.dependencies]
-black = "^23.7.0"
+black = "^24.3.0"
 isort = "^5.12.0"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-black = "^23.7.0"
+black = "^24.3.0"
 isort = "^5.12.0"
-flake8 = "^6.0.0"
+flake8 = "^7.0.0"
 flake8-docstrings = "^1.7.0"
 flake8-copyright = "^0.2.4"
 flake8-builtins = "^2.1.0"
@@ -50,13 +50,13 @@ codespell = "^2.2.5"
 shellcheck-py = "^0.9.0.5"
 
 [tool.poetry.group.unit.dependencies]
-pytest = "^7.4.0"
+pytest = "^8.1.1"
 pytest-mock = "^3.11.1"
 coverage = {extras = ["toml"], version = "^7.2.7"}
 parameterized = "^0.9.0"
 
 [tool.poetry.group.integration.dependencies]
-pytest = "^7.4.0"
+pytest = "^8.1.1"
 pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v12.6.2", subdirectory = "python/pytest_plugins/github_secrets"}
 pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v12.6.2", subdirectory = "python/pytest_plugins/microceph"}
 pytest-operator = "^0.28.0"
@@ -68,9 +68,9 @@ mysql-connector-python = "~8.0.33"
 tenacity = "^8.2.2"
 boto3 = "^1.28.22"
 pyyaml = "^6.0.1"
-urllib3 = "^1.26.16"
+urllib3 = "^2.2.1"
 lightkube = "^0.14.0"
-kubernetes = "^27.2.0"
+kubernetes = "^29.0.0"
 allure-pytest = "^2.13.2"
 
 
