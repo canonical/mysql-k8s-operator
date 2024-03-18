@@ -115,6 +115,7 @@ class MySQLProvider(Object):
             # create k8s services for endpoints
             self.charm.k8s_helpers.create_endpoint_services(["primary"])  #, "replicas"])
 
+            db_version = self.charm._mysql.get_mysql_version()
             #primary_endpoint = socket.getfqdn(f"{self.charm.app.name}-primary")
             #replicas_endpoint = socket.getfqdn(f"{self.charm.app.name}-replicas")
             primary_endpoint = self.charm.k8s_helpers.get_node_port(f"{self.charm.app.name}-primary")
