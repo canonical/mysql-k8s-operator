@@ -7,6 +7,7 @@ import argparse
 import shutil
 import subprocess
 import time
+from random import randint
 
 
 def dispatch(unit: str, charm_directory: str):
@@ -15,7 +16,7 @@ def dispatch(unit: str, charm_directory: str):
 
     juju_run = shutil.which("juju-run")
     juju_exec = shutil.which("juju-exec")
-    command = juju_exec or juju_run
+    command = juju_exec or juju_run or ""
 
     subprocess.run(
         [
@@ -47,7 +48,9 @@ def main():
         dispatch(arguments.unit, arguments.charm_directory)
 
         # wait again till the top of the next minute
-        time.sleep(60.0 - ((time.monotonic() - start_time) % 60.0))
+        # with random delay to avoid thundering herd
+        delay = randint(0, 15)
+        time.sleep(60.0 + delay - ((time.monotonic() - start_time) % 60.0))
 
 
 if __name__ == "__main__":
