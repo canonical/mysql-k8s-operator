@@ -577,7 +577,7 @@ class MySQLCharmBase(CharmBase, ABC):
 
         Fully initialized means that all unit that can be joined are joined.
         """
-        return self._mysql.get_cluster_node_count() == min(
+        return self._mysql.get_cluster_node_count(node_status=MySQLMemberState["ONLINE"]) == min(
             GR_MAX_MEMBERS, self.app.planned_units()
         )
 
@@ -1384,7 +1384,7 @@ class MySQLBase(ABC):
             raise MySQLFencingWritesError
 
     def unfence_writes(self) -> None:
-        """Fence writes on the primary cluster.
+        """Unfence writes on the primary cluster.
 
         Raises:
             MySQLFenceUnfenceWritesError
@@ -1763,16 +1763,29 @@ class MySQLBase(ABC):
             logger.warning(f"Failed to get replica cluster status for {replica_cluster_name}")
             return "unknown"
 
-    def get_cluster_node_count(self, from_instance: Optional[str] = None) -> int:
+    def get_cluster_node_count(
+        self, from_instance: Optional[str] = None, node_status: Optional[MySQLMemberState] = None
+    ) -> int:
         """Retrieve current count of cluster nodes.
+
+        Args:
+            from_instance: member instance to run the command from (fallback to current)
+            node_status: status of the nodes to count
 
         Returns:
             Amount of cluster nodes.
         """
+        if not node_status:
+            query = "SELECT COUNT(*) FROM performance_schema.replication_group_members"
+        else:
+            query = (
+                "SELECT COUNT(*) FROM performance_schema.replication_group_members"
+                f" WHERE member_state = '{node_status.value.upper()}'"
+            )
         size_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}"
             f"@{from_instance or self.instance_address}')",
-            'result = session.run_sql("SELECT COUNT(*) FROM performance_schema.replication_group_members")',
+            f'result = session.run_sql("{query}")',
             'print(f"<NODES>{result.fetch_one()[0]}</NODES>")',
         )
 
