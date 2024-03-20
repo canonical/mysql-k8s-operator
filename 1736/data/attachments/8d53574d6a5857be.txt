@@ -1,0 +1,410 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:49:47Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address        Exposed  Message
+mysql-k8s       8.0.36-0ubuntu0.22.04.1  waiting      3  mysql-k8s                      0  10.152.183.18  no       installing agent
+mysql-test-app  0.0.2                    active       1  mysql-test-app  latest/edge   33  10.152.183.98  no       Last written value=35564
+
+Unit               Workload     Agent  Address      Ports  Message
+mysql-k8s/0        maintenance  idle   10.1.14.141         offline
+mysql-k8s/1*       active       idle   10.1.14.140         
+mysql-k8s/2        active       idle   10.1.14.139         Primary
+mysql-test-app/0*  active       idle   10.1.14.142         Last written value=35564
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:30:49 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:31:01 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:32:25 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:36:01 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:36:01Z: Loading startup files...\nverbose: 2024-03-20T01:36:01Z: Loading plugins...\nverbose: 2024-03-20T01:36:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:36:01Z: Loading startup files...
+verbose: 2024-03-20T01:36:01Z: Loading plugins...
+verbose: 2024-03-20T01:36:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-1: 01:38:59 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:39:16 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: api connection broken unexpectedly
+unit-mysql-k8s-0: 01:39:16 ERROR juju.worker.caasunitterminationworker error while terminating unit: connection is shut down
+unit-mysql-k8s-0: 01:39:22 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-0: 01:39:29 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-0: 01:39:36 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: try was stopped
+unit-mysql-k8s-0: 01:39:44 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-0: 01:39:53 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: try was stopped
+unit-mysql-k8s-0: 01:40:04 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-0: 01:40:16 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-0: 01:40:29 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-0: 01:40:46 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-0: 01:41:04 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-0: 01:41:27 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [6e82c4] "unit-mysql-k8s-0" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-1: 01:43:48 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:43:48 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:43:49 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:43:49 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:43:54 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:43:54 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:43:54 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:43:54 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:44:01 ERROR unit.mysql-k8s/1.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:44:01Z: Loading startup files...\nverbose: 2024-03-20T01:44:01Z: Loading plugins...\nverbose: 2024-03-20T01:44:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:44:01Z: Loading startup files...
+verbose: 2024-03-20T01:44:01Z: Loading plugins...
+verbose: 2024-03-20T01:44:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-2: 01:44:01 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:44:01Z: Loading startup files...\nverbose: 2024-03-20T01:44:01Z: Loading plugins...\nverbose: 2024-03-20T01:44:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:44:01Z: Loading startup files...
+verbose: 2024-03-20T01:44:01Z: Loading plugins...
+verbose: 2024-03-20T01:44:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-1: 01:45:01 ERROR unit.mysql-k8s/1.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:45:01Z: Loading startup files...\nverbose: 2024-03-20T01:45:01Z: Loading plugins...\nverbose: 2024-03-20T01:45:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:45:01Z: Loading startup files...
+verbose: 2024-03-20T01:45:01Z: Loading plugins...
+verbose: 2024-03-20T01:45:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-2: 01:45:01 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:45:01Z: Loading startup files...\nverbose: 2024-03-20T01:45:01Z: Loading plugins...\nverbose: 2024-03-20T01:45:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:45:01Z: Loading startup files...
+verbose: 2024-03-20T01:45:01Z: Loading plugins...
+verbose: 2024-03-20T01:45:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-2: 01:46:01 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:46:01Z: Loading startup files...\nverbose: 2024-03-20T01:46:01Z: Loading plugins...\nverbose: 2024-03-20T01:46:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:46:01Z: Loading startup files...
+verbose: 2024-03-20T01:46:01Z: Loading plugins...
+verbose: 2024-03-20T01:46:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-1: 01:46:01 ERROR unit.mysql-k8s/1.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:46:01Z: Loading startup files...\nverbose: 2024-03-20T01:46:01Z: Loading plugins...\nverbose: 2024-03-20T01:46:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:46:01Z: Loading startup files...
+verbose: 2024-03-20T01:46:01Z: Loading plugins...
+verbose: 2024-03-20T01:46:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-2: 01:47:01 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:47:01Z: Loading startup files...\nverbose: 2024-03-20T01:47:01Z: Loading plugins...\nverbose: 2024-03-20T01:47:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:47:01Z: Loading startup files...
+verbose: 2024-03-20T01:47:01Z: Loading plugins...
+verbose: 2024-03-20T01:47:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-1: 01:47:01 ERROR unit.mysql-k8s/1.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:47:01Z: Loading startup files...\nverbose: 2024-03-20T01:47:01Z: Loading plugins...\nverbose: 2024-03-20T01:47:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:47:01Z: Loading startup files...
+verbose: 2024-03-20T01:47:01Z: Loading plugins...
+verbose: 2024-03-20T01:47:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-2: 01:48:01 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:48:01Z: Loading startup files...\nverbose: 2024-03-20T01:48:01Z: Loading plugins...\nverbose: 2024-03-20T01:48:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:48:01Z: Loading startup files...
+verbose: 2024-03-20T01:48:01Z: Loading plugins...
+verbose: 2024-03-20T01:48:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-1: 01:48:01 ERROR unit.mysql-k8s/1.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:48:01Z: Loading startup files...\nverbose: 2024-03-20T01:48:01Z: Loading plugins...\nverbose: 2024-03-20T01:48:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:48:01Z: Loading startup files...
+verbose: 2024-03-20T01:48:01Z: Loading plugins...
+verbose: 2024-03-20T01:48:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-0: 01:48:03 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:48:03 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:49:01 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:49:01Z: Loading startup files...\nverbose: 2024-03-20T01:49:01Z: Loading plugins...\nverbose: 2024-03-20T01:49:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:49:01Z: Loading startup files...
+verbose: 2024-03-20T01:49:01Z: Loading plugins...
+verbose: 2024-03-20T01:49:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-1: 01:49:01 ERROR unit.mysql-k8s/1.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 666, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1540, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-03-20T01:49:01Z: Loading startup files...\nverbose: 2024-03-20T01:49:01Z: Loading plugins...\nverbose: 2024-03-20T01:49:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2003): Shell.connect: Can\'t connect to MySQL server on \'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306\' (111)\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2532, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 669, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-03-20T01:49:01Z: Loading startup files...
+verbose: 2024-03-20T01:49:01Z: Loading plugins...
+verbose: 2024-03-20T01:49:01Z: Connecting to MySQL at: serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2003): Shell.connect: Can't connect to MySQL server on 'mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:3306' (111)
+
+unit-mysql-k8s-2: 01:49:07 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:49:07 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:49:07 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:49:07 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 836, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1469, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[1m[31mERROR   [0m websockets.client:protocol.py:1015 data transfer failed
+Traceback (most recent call last):
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 959, in transfer_data
+    message = await self.read_message()
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1029, in read_message
+    frame = await self.read_data_frame(max_size=self.max_size)
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1104, in read_data_frame
+    frame = await self.read_frame(max_size)
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1161, in read_frame
+    frame = await Frame.read(
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/framing.py", line 68, in read
+    data = await reader(2)
+  File "/usr/lib/python3.10/asyncio/streams.py", line 708, in readexactly
+    await self._wait_for_data('readexactly')
+  File "/usr/lib/python3.10/asyncio/streams.py", line 501, in _wait_for_data
+    await self._waiter
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 924, in write
+    n = self._sock.send(data)
+OSError: [Errno 9] Bad file descriptor
