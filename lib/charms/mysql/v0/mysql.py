@@ -1384,7 +1384,7 @@ class MySQLBase(ABC):
             raise MySQLFencingWritesError
 
     def unfence_writes(self) -> None:
-        """Unfence writes on the primary cluster.
+        """Unfence writes on the primary cluster and reset read_only flag
 
         Raises:
             MySQLFenceUnfenceWritesError
@@ -1393,6 +1393,7 @@ class MySQLBase(ABC):
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             "c = dba.get_cluster()",
             "c.unfence_writes()",
+            "shell.run_sql('SET GLOBAL read_only=OFF')",
         )
 
         try:

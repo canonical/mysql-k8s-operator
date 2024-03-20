@@ -152,7 +152,7 @@ class MySQLAsyncReplication(Object):
             event.params.get("cluster-set-name")
             != self._charm.app_peer_data["cluster-set-domain-name"]
         ):
-            event.fail("Invalid cluster set name")
+            event.fail("Invalid/empty cluster set name")
             return
 
         if self.role.cluster_role == "replica":
@@ -174,9 +174,10 @@ class MySQLAsyncReplication(Object):
                 logger.info("Unfencing writes to the cluster")
                 self._charm._mysql.unfence_writes()
                 event.set_results({"message": "Writes to the cluster are now resumed"})
+            # update status
+            self._charm._on_update_status(None)
         except MySQLFencingWritesError:
             event.fail("Failed to fence writes. Check logs for details")
-            return
 
     def on_async_relation_broken(self, event):  # noqa: C901
         """Handle the async relation being broken from either side."""
