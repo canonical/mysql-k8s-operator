@@ -138,3 +138,9 @@ build
 # helm related
 .kube
 .config
+
+# Makefile
+Makefile
+
+# local pyright settings
+pyrightconfig.json
