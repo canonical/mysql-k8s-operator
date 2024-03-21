@@ -195,7 +195,15 @@ class MySQLAsyncReplication(Object):
                             logger.debug("Waiting for cluster to be dissolved")
                             raise Exception
             except RetryError:
-                raise
+                self._charm.unit.status = BlockedStatus(
+                    "Replica cluster not dissolved after relation broken"
+                )
+                logger.warning(
+                    "Replica cluster not dissolved after relation broken, by the primary cluster."
+                    "\n\tThe happens when the primary cluster was removed prior to removing the async relation."
+                    "\n\tThis cluster can be promoted to primary with the `promote-standby-cluster` action."
+                )
+                return
 
             self._charm.unit.status = BlockedStatus("Standalone read-only unit.")
             # reset flag to allow instances rejoining the cluster
@@ -635,7 +643,9 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         elif state == States.RECOVERING:
             # recoveryng cluster (copying data and/or joining units)
             self._charm.app.status = MaintenanceStatus("Recovering replica cluster")
-            self._charm.unit.status = WaitingStatus("Waiting for recovery to complete")
+            self._charm.unit.status = WaitingStatus(
+                "Waiting for recovery to complete on other units"
+            )
             logger.debug("Awaiting other units to join the cluster")
             # reset the number of units added to the cluster
             # this will trigger secondaries to join the cluster
