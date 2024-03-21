@@ -142,6 +142,7 @@ class MySQLAsyncReplication(Object):
         try:
             self._charm._mysql.promote_cluster_to_primary(cluster_name, force)
             event.set_results({"message": f"Cluster {cluster_name} promoted to primary"})
+            self._charm._on_update_status(None)
         except MySQLPromoteClusterToPrimaryError:
             logger.exception("Failed to promote cluster to primary")
             event.fail("Failed to promote cluster to primary")
@@ -183,8 +184,10 @@ class MySQLAsyncReplication(Object):
         """Handle the async relation being broken from either side."""
         # Remove the replica cluster, if this is the primary
 
-        if self.role.cluster_role == "replica":
+        if self.role.cluster_role in ("replica", "unset"):
             # The cluster being removed is a replica cluster
+            # role is `unset` when the primary cluster dissolved the replica before
+            # this hook execution i.e. was faster on running the handler
 
             self._charm.unit.status = WaitingStatus("Waiting for cluster to be dissolved")
             try:
