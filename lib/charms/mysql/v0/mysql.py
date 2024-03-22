@@ -71,10 +71,13 @@ import enum
 import io
 import json
 import logging
+import os
 import re
 import socket
+import sys
 import time
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, get_args
 
 import ops
@@ -111,7 +114,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 55
+LIBPATCH = 56
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -375,6 +378,18 @@ class MySQLCharmBase(CharmBase, ABC):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+        # disable support
+        disable_file = Path(
+            f"{os.environ.get('CHARM_DIR')}/disable"
+        )  # pyright: ignore [reportArgumentType]
+        if disable_file.exists():
+            logger.warning(
+                f"\n\tDisable file `{disable_file.resolve()}` found, the charm will skip all events."
+                "\n\tTo resume normal operations, please remove the file."
+            )
+            self.unit.status = ops.BlockedStatus("Disabled")
+            sys.exit(0)
 
         self.secrets = SecretCache(self)
         self.peer_relation_app = DataPeer(
