@@ -261,7 +261,7 @@ def deploy_chaos_mesh(namespace: str) -> None:
         for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
             with attempt:
                 output = subprocess.check_output(
-                    f"kubectl get pods --namespace {namespace} -l app.kubernetes.io/instance=chaos-mesh".split(),
+                    f"microk8s.kubectl get pods --namespace {namespace} -l app.kubernetes.io/instance=chaos-mesh".split(),
                     env=env,
                 )
                 assert output.decode().count("Running") == 4, "Chaos Mesh not ready"
@@ -525,7 +525,7 @@ def isolate_instance_from_cluster(ops_test: OpsTest, unit_name: str) -> None:
         env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
 
         try:
-            subprocess.check_output(["kubectl", "apply", "-f", temp_file.name], env=env)
+            subprocess.check_output(["microk8s.kubectl", "apply", "-f", temp_file.name], env=env)
         except subprocess.CalledProcessError as e:
             logger.error(e.output)
             logger.error(e.stderr)
@@ -537,7 +537,7 @@ def remove_instance_isolation(ops_test: OpsTest) -> None:
     env = os.environ
     env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
     subprocess.check_output(
-        f"kubectl -n {ops_test.model.info.name} delete networkchaos network-loss-primary",
+        f"microk8s.kubectl -n {ops_test.model.info.name} delete networkchaos network-loss-primary",
         shell=True,
         env=env,
     )
