@@ -16,7 +16,7 @@ jobs:
       contents: write  # Needed to login to Discourse
       pull-requests: write # Need to create PR
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Open PR with docs changes
         uses: deusebio/discourse-gatekeeper@c8adb89ea1cbceca54d78da798658373615487ac
         id: docs-pr
