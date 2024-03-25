@@ -394,6 +394,14 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
             endpoint = remote_data["endpoint"]
             unit_label = remote_data["node-label"]
 
+            if cluster == self.cluster_name:
+                import uuid
+
+                logger.warning(
+                    "Cluster name is the same as the primary cluster. Appending generetade value"
+                )
+                cluster = f"{cluster}{uuid.uuid4().hex[:4]}"
+
             logger.debug("Looking for a donor node")
             _, ro, _ = self._charm._mysql.get_cluster_endpoints(get_ips=False)
 
