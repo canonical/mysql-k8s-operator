@@ -111,6 +111,11 @@ class MySQLAsyncReplication(Object):
         """This cluster name."""
         return self._charm.app_peer_data["cluster-name"]
 
+    @property
+    def cluster_set_name(self) -> str:
+        """Cluster set name."""
+        return self._charm.app_peer_data["cluster-set-domain-name"]
+
     def get_remote_relation_data(self, relation: Relation) -> Optional[RelationDataContent]:
         """Remote data."""
         if not relation.app:
@@ -127,12 +132,8 @@ class MySQLAsyncReplication(Object):
             event.fail("Only a standby cluster can be promoted")
             return
 
-        cluster_set_name = event.params.get("cluster-set-name")
-        if (
-            not cluster_set_name
-            or cluster_set_name != self._charm.app_peer_data["cluster-set-domain-name"]
-        ):
-            event.fail("Invalid cluster set name")
+        if event.params.get("cluster-set-name") != self.cluster_set_name:
+            event.fail("Invalid/empty cluster set name")
             return
 
         # promote cluster to primary
@@ -149,10 +150,7 @@ class MySQLAsyncReplication(Object):
 
     def _on_fence_unfence_writes_action(self, event: ActionEvent) -> None:
         """Fence or unfence writes to a cluster."""
-        if (
-            event.params.get("cluster-set-name")
-            != self._charm.app_peer_data["cluster-set-domain-name"]
-        ):
+        if event.params.get("cluster-set-name") != self.cluster_set_name:
             event.fail("Invalid/empty cluster set name")
             return
 
@@ -374,10 +372,18 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
         secret_id = secret.id
         secret.grant(event.relation)
 
+        # get workload version
+        version = self._charm._mysql.get_mysql_version()
+
         logger.debug(f"Sharing {secret_id=} with replica cluster")
-        # Share secret id and store this cluster name
+        # Set variables for credential sync and validations
         event.relation.data[self.model.app].update(
-            {"secret-id": secret_id, "cluster-name": self.cluster_name}
+            {
+                "secret-id": secret_id,
+                "cluster-name": self.cluster_name,
+                "mysql-version": version,
+                "cluster-set-name": self.cluster_set_name,
+            }
         )
 
     def _on_primary_relation_changed(self, event):
@@ -507,12 +513,32 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
         Used for skipping checks when a replica cluster was removed through broken relation.
         """
-        return self._charm.app_peer_data.get("removed-from-cluster-set") == "true"
+        remote_cluster_set_name = self.remote_relation_data.get("cluster-set-name")
+        return (
+            self._charm.app_peer_data.get("removed-from-cluster-set") == "true"
+            and self.cluster_set_name == remote_cluster_set_name
+        )
 
     @property
     def replica_initialized(self) -> bool:
         """Whether the replica cluster is initialized as such."""
         return self.remote_relation_data.get("replica-state") == "initialized"
+
+    def _check_version(self) -> bool:
+        """Check if the MySQL version is compatible with the primary cluster."""
+        remote_version = self.remote_relation_data.get("mysql-version")
+        local_version = self._charm._mysql.get_mysql_version()
+
+        if not remote_version:
+            return False
+
+        if remote_version != local_version:
+            logger.error(
+                f"Primary cluster MySQL version {remote_version} is not compatible with this cluster MySQL version {local_version}"
+            )
+            return False
+
+        return True
 
     def _obtain_secret(self) -> Secret:
         """Get secret from primary cluster."""
@@ -592,8 +618,17 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
                 )
                 event.defer()
                 return
+
+            if not self._check_version():
+                self._charm.unit.status = BlockedStatus(
+                    f"MySQL version mismatch with primary cluster. Check logs for details"
+                )
+                logger.error("MySQL version mismatch with primary cluster. Remove relation.")
+                return
+
             logger.debug("Syncing credentials from primary cluster")
             self._charm.unit.status = MaintenanceStatus("Syncing credentials")
+            self._charm.app.status = MaintenanceStatus("Setting up async replication")
 
             try:
                 credentials = self._async_replication_credentials()
