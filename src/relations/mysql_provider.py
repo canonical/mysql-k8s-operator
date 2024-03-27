@@ -234,7 +234,7 @@ class MySQLProvider(Object):
             # run once by the leader
             return
 
-        if self.charm.unit_peer_data.get("unit-status", None) == "removing":
+        if self.charm.removing_unit:
             # safeguard against relation broken being triggered for
             # a unit being torn down (instead of un-related). See:
             # https://bugs.launchpad.net/juju/+bug/1979811

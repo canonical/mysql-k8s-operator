@@ -670,6 +670,11 @@ class MySQLCharmBase(CharmBase, ABC):
 
         return ""
 
+    @property
+    def removing_unit(self) -> bool:
+        """Check if the unit is being removed."""
+        return self.unit_peer_data.get("unit-status") == "removing"
+
     def get_secret(
         self,
         scope: Scopes,
@@ -1399,7 +1404,7 @@ class MySQLBase(ABC):
             raise MySQLFencingWritesError
 
     def unfence_writes(self) -> None:
-        """Unfence writes on the primary cluster and reset read_only flag
+        """Unfence writes on the primary cluster and reset read_only flag.
 
         Raises:
             MySQLFenceUnfenceWritesError
@@ -1893,7 +1898,7 @@ class MySQLBase(ABC):
         Args:
             unit_label: The label for this unit's instance (to be torn down)
         """
-        remaining_cluster_member_addresses = None
+        remaining_cluster_member_addresses = list()
         skip_release_lock = False
         try:
             # Get the cluster primary's address to direct lock acquisition request to.
@@ -1968,7 +1973,13 @@ class MySQLBase(ABC):
             # instance would already be removed from the cluster.
             try:
                 if not lock_instance:
-                    # Retrieve the cluster primary's address again (in case the old primary is scaled down)
+                    if len(remaining_cluster_member_addresses) == 0:
+                        raise MySQLRemoveInstanceError(
+                            "No remaining instance to query cluster primary from."
+                        )
+
+                    # Retrieve the cluster primary's address again (in case the old primary is
+                    # scaled down)
                     # Release the lock by making a request to this primary member's address
                     lock_instance = self.get_cluster_primary_address(
                         connect_instance_address=remaining_cluster_member_addresses[0]

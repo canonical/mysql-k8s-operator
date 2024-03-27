@@ -182,7 +182,7 @@ class MySQLAsyncReplication(Object):
         """Handle the async relation being broken from either side."""
         # Remove the replica cluster, if this is the primary
 
-        if self.role.cluster_role in ("replica", "unset"):
+        if self.role.cluster_role in ("replica", "unset") and not self._charm.removing_unit:
             # The cluster being removed is a replica cluster
             # role is `unset` when the primary cluster dissolved the replica before
             # this hook execution i.e. was faster on running the handler

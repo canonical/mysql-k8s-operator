@@ -191,12 +191,8 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         If upgrade is in progress, set unit status.
         """
-        try:
-            if self.charm.unit_peer_data["unit-status"] == "removing":
-                # unit is being removed, noop
-                return
-        except KeyError:
-            # databag gone
+        if self.charm.removing_unit:
+            # unit is being removed, noop
             return
         if self.upgrade_stack:
             # upgrade stack set, pre-upgrade-check ran
