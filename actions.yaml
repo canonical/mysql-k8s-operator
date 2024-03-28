@@ -65,7 +65,7 @@ resume-upgrade:
 promote-standby-cluster:
   description: |
     Promotes this cluster to become the leader in the cluster-set. Used for safe switchover or failover.
-    Must be ran against the charm leader unit of a standby cluster.
+    Must be run against the charm leader unit of a standby cluster.
   params:
     cluster-set-name:
       type: string
@@ -80,10 +80,10 @@ promote-standby-cluster:
 
 recreate-cluster:
   description: |
-    Recreates cluster on one or more standalone unit that were previously part of a standby cluster.
+    Recreates cluster on one or more standalone units that were previously part of a standby cluster.
 
     When a standby cluster is removed from an async replication relation, the cluster will be dissolved and
-    each unit will be kept in blocked status. Recreating the cluster allows rejoin the an async replication
+    each unit will be kept in blocked status. Recreating the cluster allows to rejoin the async replication
     relation, or usage as a standalone cluster.
 
 fence-writes:

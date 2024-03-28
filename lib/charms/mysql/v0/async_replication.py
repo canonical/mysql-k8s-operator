@@ -6,6 +6,7 @@
 import enum
 import logging
 import typing
+import uuid
 from functools import cached_property
 
 from charms.mysql.v0.mysql import MySQLFencingWritesError, MySQLPromoteClusterToPrimaryError
@@ -63,6 +64,7 @@ class ClusterSetInstanceState(typing.NamedTuple):
 class States(str, enum.Enum):
     """States for the relation."""
 
+    UNINITIALIZED = "uninitialized"  # relation is not initialized
     SYNCING = "syncing"  # credentials are being synced
     INITIALIZING = "initializing"  # cluster to be added
     RECOVERING = "recovery"  # replica cluster is being recovered
@@ -292,13 +294,13 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
     def get_state(self, relation: Relation) -> Optional[States]:
         """State of the relation, on primary side."""
         if not relation:
-            return None
+            return States.UNINITIALIZED
 
         local_data = self.get_local_relation_data(relation)
         remote_data = self.get_remote_relation_data(relation) or {}
 
         if not local_data:
-            return None
+            return States.UNINITIALIZED
 
         if local_data.get("is-replica") == "true":
             return States.FAILED
@@ -326,7 +328,7 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
             return True
 
         for relation in self.model.relations[PRIMARY_RELATION]:
-            if self.get_state(relation) not in [States.READY, None]:
+            if self.get_state(relation) not in [States.READY, States.UNINITIALIZED]:
                 return False
         return True
 
@@ -358,7 +360,7 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
 
         if self._charm._mysql.is_cluster_replica():
             logger.error(
-                f"This a replica cluster, cannot be related as {PRIMARY_RELATION}. Remove relation."
+                f"This is a replica cluster, cannot be related as {PRIMARY_RELATION}. Remove relation."
             )
             self._charm.unit.status = BlockedStatus(
                 f"This is a replica cluster. Unrelate from the {PRIMARY_RELATION} relation"
@@ -401,8 +403,6 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
             unit_label = remote_data["node-label"]
 
             if cluster == self.cluster_name:
-                import uuid
-
                 logger.warning(
                     "Cluster name is the same as the primary cluster. Appending generetade value"
                 )
@@ -453,11 +453,11 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             # non-leader/secondaries
             self.framework.observe(
                 self._charm.on[REPLICA_RELATION].relation_created,
-                self._on_replica_secondary_created,
+                self._on_replica_non_leader_created,
             )
             self.framework.observe(
                 self._charm.on[REPLICA_RELATION].relation_changed,
-                self._on_replica_secondary_changed,
+                self._on_replica_non_leader_changed,
             )
 
     @property
@@ -591,7 +591,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
                 return
 
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
-        self._charm.unit.status = WaitingStatus("awaiting sync data from primary cluster")
+        self._charm.unit.status = WaitingStatus("Awaiting sync data from primary cluster")
 
     def _on_replica_changed(self, event):  # noqa: C901
         """Handle the async_replica relation being changed."""
@@ -690,7 +690,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
             self._charm._on_update_status(None)
         elif state == States.RECOVERING:
-            # recoveryng cluster (copying data and/or joining units)
+            # recovering cluster (copying data and/or joining units)
             self._charm.app.status = MaintenanceStatus("Recovering replica cluster")
             self._charm.unit.status = WaitingStatus(
                 "Waiting for recovery to complete on other units"
@@ -702,14 +702,14 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             self._charm.app_peer_data["units-added-to-cluster"] = str(node_count)
             event.defer()
 
-    def _on_replica_secondary_created(self, _):
+    def _on_replica_non_leader_created(self, _):
         """Handle the async_replica relation being created for secondaries/non-leader."""
         # set waiting state to inhibit auto recovery, only when not already set
         if not self._charm.unit_peer_data.get("member-state") == "waiting":
             self._charm.unit_peer_data["member-state"] = "waiting"
             self._charm.unit.status = WaitingStatus("waiting replica cluster be configured")
 
-    def _on_replica_secondary_changed(self, _):
+    def _on_replica_non_leader_changed(self, _):
         """Reset cluster secondaries to allow cluster rejoin after primary recovery."""
         # the replica state is initialized when the primary cluster finished
         # creating the replica cluster on this cluster primary/leader unit
