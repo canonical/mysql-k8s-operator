@@ -646,11 +646,14 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
             for key, password in credentials.items():
                 # sync credentials only for necessary users
-                if key not in sync_keys:
-                    continue
-                self._charm._mysql.update_user_password(sync_keys[key], password)
+                user = sync_keys[key]
+                if user == ROOT_USERNAME:
+                    # root user is only local
+                    self._charm._mysql.update_user_password(user, password, host="localhost")
+                else:
+                    self._charm._mysql.update_user_password(user, password)
                 self._charm.set_secret("app", key, password)
-                logger.debug(f"Synced {sync_keys[key]} password")
+                logger.debug(f"Synced {user=} password")
 
             self._charm.unit.status = MaintenanceStatus("Dissolving replica cluster")
             logger.debug("Dissolving replica cluster")
