@@ -13,7 +13,6 @@ from charms.mysql.v0.mysql import (
     Error,
     MySQLBase,
     MySQLClientError,
-    MySQLConfigureMySQLUsersError,
     MySQLExecError,
     MySQLGetClusterEndpointsError,
     MySQLServiceNotRunningError,
@@ -255,56 +254,6 @@ class MySQL(MySQLBase):
             owner=ROOT_SYSTEM_USER,
             group=ROOT_SYSTEM_USER,
         )
-
-    def configure_mysql_users(self) -> None:
-        """Configure the MySQL users for the instance.
-
-        Creates base `root@%` and `<server_config>@%` users with the
-        appropriate privileges, and reconfigure `root@localhost` user password.
-
-        Raises MySQLConfigureMySQLUsersError if the user creation fails.
-        """
-        # SYSTEM_USER and SUPER privileges to revoke from the root users
-        # Reference: https://dev.mysql.com/doc/refman/8.0/en/privileges-provided.html#priv_super
-        privileges_to_revoke = (
-            "SYSTEM_USER",
-            "SYSTEM_VARIABLES_ADMIN",
-            "SUPER",
-            "REPLICATION_SLAVE_ADMIN",
-            "GROUP_REPLICATION_ADMIN",
-            "BINLOG_ADMIN",
-            "SET_USER_ID",
-            "ENCRYPTION_KEY_ADMIN",
-            "VERSION_TOKEN_ADMIN",
-            "CONNECTION_ADMIN",
-        )
-
-        # Configure root@%, root@localhost and serverconfig@% users
-        configure_users_commands = (
-            f"CREATE USER 'root'@'%' IDENTIFIED BY '{self.root_password}'",
-            "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION",
-            f"CREATE USER '{self.server_config_user}'@'%' IDENTIFIED BY '{self.server_config_password}'",
-            f"GRANT ALL ON *.* TO '{self.server_config_user}'@'%' WITH GRANT OPTION",
-            f"CREATE USER '{self.monitoring_user}'@'%' IDENTIFIED BY '{self.monitoring_password}' WITH MAX_USER_CONNECTIONS 3",
-            f"GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO '{self.monitoring_user}'@'%'",
-            f"CREATE USER '{self.backups_user}'@'%' IDENTIFIED BY '{self.backups_password}'",
-            f"GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO '{self.backups_user}'@'%'",
-            f"GRANT SELECT ON performance_schema.log_status TO '{self.backups_user}'@'%'",
-            f"GRANT SELECT ON performance_schema.keyring_component_status TO '{self.backups_user}'@'%'",
-            f"GRANT SELECT ON performance_schema.replication_group_members TO '{self.backups_user}'@'%'",
-            "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost'",
-            f"ALTER USER 'root'@'localhost' IDENTIFIED BY '{self.root_password}'",
-            f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'%'",
-            f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'localhost'",
-            "FLUSH PRIVILEGES",
-        )
-
-        try:
-            logger.debug("Configuring users")
-            self._run_mysqlcli_script("; ".join(configure_users_commands))
-        except MySQLClientError as e:
-            logger.exception("Error configuring MySQL users", exc_info=e)
-            raise MySQLConfigureMySQLUsersError(e.message)
 
     def execute_backup_commands(
         self,
@@ -591,19 +540,6 @@ class MySQL(MySQLBase):
         """Restarts the mysqld exporter service in pebble."""
         self.charm._reconcile_pebble_layer(self.container)
 
-    def stop_group_replication(self) -> None:
-        """Stop Group replication if enabled on the instance."""
-        stop_gr_command = (
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-            "data = session.run_sql('SELECT 1 FROM performance_schema.replication_group_members')",
-            "if len(data.fetch_all()) > 0:",
-            "    session.run_sql('STOP GROUP_REPLICATION')",
-        )
-        try:
-            self._run_mysqlsh_script("\n".join(stop_gr_command))
-        except ExecError:
-            logger.debug("Failed to stop Group Replication for unit")
-
     def _execute_commands(
         self,
         commands: List[str],
@@ -673,8 +609,8 @@ class MySQL(MySQLBase):
     def _run_mysqlcli_script(
         self,
         script: str,
-        password: Optional[str] = None,
         user: str = "root",
+        password: Optional[str] = None,
         timeout: Optional[int] = None,
     ) -> str:
         """Execute a MySQL CLI script.

@@ -16,13 +16,7 @@ from ops.charm import RelationBrokenEvent, RelationChangedEvent, RelationCreated
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus
 
-from constants import (
-    CONTAINER_NAME,
-    LEGACY_MYSQL,
-    PASSWORD_LENGTH,
-    PEER,
-    ROOT_PASSWORD_KEY,
-)
+from constants import CONTAINER_NAME, LEGACY_MYSQL, PASSWORD_LENGTH, PEER, ROOT_PASSWORD_KEY
 from utils import generate_random_password
 
 logger = logging.getLogger(__name__)

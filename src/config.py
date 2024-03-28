@@ -47,6 +47,7 @@ class CharmConfig(BaseConfigModel):
 
     profile: str
     cluster_name: Optional[str]
+    cluster_set_name: Optional[str]
     profile_limit_memory: Optional[int]
     mysql_interface_user: Optional[str]
     mysql_interface_database: Optional[str]
@@ -62,23 +63,23 @@ class CharmConfig(BaseConfigModel):
 
         return value
 
-    @validator("cluster_name")
+    @validator("cluster_name", "cluster_set_name")
     @classmethod
     def cluster_name_validator(cls, value: str) -> Optional[str]:
-        """Check for valid cluster name.
+        """Check for valid cluster, cluster-set name.
 
         Limited to 63 characters, and must start with a letter and
         contain only alphanumeric characters, `-`, `_` and `.`
         """
         if len(value) > 63:
-            raise ValueError("Cluster name must be less than 63 characters")
+            raise ValueError("cluster, cluster-set name must be less than 63 characters")
 
         if not value[0].isalpha():
-            raise ValueError("Cluster name must start with a letter")
+            raise ValueError("cluster, cluster-set name must start with a letter")
 
         if not re.match(r"^[a-zA-Z0-9-_.]*$", value):
             raise ValueError(
-                "Cluster name must contain only alphanumeric characters, "
+                "cluster, cluster-set name must contain only alphanumeric characters, "
                 "hyphens, underscores and periods"
             )
 

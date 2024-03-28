@@ -93,6 +93,7 @@ target-version = ["py38"]
 [tool.isort]
 profile = "black"
 known_third_party = "mysql.connector"
+line_length = 99
 
 # Linting tools configuration
 [tool.flake8]
