@@ -569,7 +569,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         if self.returning_cluster:
             # flag set on prior async relation broken
             # allows the relation to be created with user data so
-            # rejoining to the cluster-set can be done incrementaly
+            # rejoining to the cluster-set can be done incrementally
             # on incompatible user data, join fallbacks to clone
             logger.debug("User data check skipped")
         else:
@@ -593,14 +593,14 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
         self._charm.app.status = MaintenanceStatus("Setting up async replication")
         self._charm.unit.status = WaitingStatus("awaiting sync data from primary cluster")
 
-    def _on_replica_changed(self, event):
+    def _on_replica_changed(self, event):  # noqa: C901
         """Handle the async_replica relation being changed."""
         state = self.state
         logger.debug(f"Replica cluster {state.value=}")
 
         if state == States.SYNCING:
             if self.returning_cluster:
-                # when runing from and async relation broken
+                # when running from and async relation broken
                 # re-create the cluster and wait
                 logger.debug("Recreating cluster prior to sync credentials")
                 self._charm.create_cluster()
@@ -621,7 +621,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
 
             if not self._check_version():
                 self._charm.unit.status = BlockedStatus(
-                    f"MySQL version mismatch with primary cluster. Check logs for details"
+                    "MySQL version mismatch with primary cluster. Check logs for details"
                 )
                 logger.error("MySQL version mismatch with primary cluster. Remove relation.")
                 return
