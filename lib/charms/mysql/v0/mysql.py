@@ -886,11 +886,14 @@ class MySQLBase(ABC):
             config.write(string_io)
             return string_io.getvalue(), dict(config["mysqld"])
 
-    def configure_mysql_users(self):
+    def configure_mysql_users(self, password_needed: bool = True) -> None:
         """Configure the MySQL users for the instance.
 
         Create `<server_config>@%` user with the appropriate privileges, and
         reconfigure `root@localhost` user password.
+
+        Args:
+            password_needed: flag to indicate if the root password is needed. Default is True.
 
         Raises MySQLConfigureMySQLUsersError if the user creation fails.
         """
@@ -930,10 +933,13 @@ class MySQLBase(ABC):
 
         try:
             logger.debug(f"Configuring MySQL users for {self.instance_address}")
-            self._run_mysqlcli_script(
-                "; ".join(configure_users_commands),
-                password=self.root_password,
-            )
+            if password_needed:
+                self._run_mysqlcli_script(
+                    "; ".join(configure_users_commands),
+                    password=self.root_password,
+                )
+            else:
+                self._run_mysqlcli_script("; ".join(configure_users_commands))
         except MySQLClientError as e:
             logger.exception(
                 f"Failed to configure users for: {self.instance_address} with error {e.message}",

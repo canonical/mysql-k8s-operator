@@ -531,7 +531,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         logger.info("Configuring instance")
         # Configure all base users and revoke privileges from the root users
-        self._mysql.configure_mysql_users()
+        self._mysql.configure_mysql_users(password_needed=False)
         # Configure instance as a cluster node
         self._mysql.configure_instance()
 

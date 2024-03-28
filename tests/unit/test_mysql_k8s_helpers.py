@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import MagicMock, call, patch
 
 import tenacity
-from charms.mysql.v0.mysql import MySQLClientError, MySQLConfigureMySQLUsersError
+from charms.mysql.v0.mysql import MySQLClientError
 from ops.pebble import ExecError
 
 from mysql_k8s_helpers import (
@@ -101,55 +101,6 @@ class TestMySQL(unittest.TestCase):
         self.mysql.container = _container
 
         self.assertTrue(not self.mysql.wait_until_mysql_connection(check_port=False))
-
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
-    def test_configure_mysql_users(self, _run_mysqlcli_script):
-        """Test failed to configuring the MySQL users."""
-        privileges_to_revoke = (
-            "SYSTEM_USER",
-            "SYSTEM_VARIABLES_ADMIN",
-            "SUPER",
-            "REPLICATION_SLAVE_ADMIN",
-            "GROUP_REPLICATION_ADMIN",
-            "BINLOG_ADMIN",
-            "SET_USER_ID",
-            "ENCRYPTION_KEY_ADMIN",
-            "VERSION_TOKEN_ADMIN",
-            "CONNECTION_ADMIN",
-        )
-
-        _expected_configure_user_commands = "; ".join(
-            (
-                "CREATE USER 'root'@'%' IDENTIFIED BY 'password'",
-                "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION",
-                "CREATE USER 'serverconfig'@'%' IDENTIFIED BY 'serverconfigpassword'",
-                "GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION",
-                "CREATE USER 'monitoring'@'%' IDENTIFIED BY 'monitoringpassword' WITH MAX_USER_CONNECTIONS 3",
-                "GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%'",
-                "CREATE USER 'backups'@'%' IDENTIFIED BY 'backupspassword'",
-                "GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO 'backups'@'%'",
-                "GRANT SELECT ON performance_schema.log_status TO 'backups'@'%'",
-                "GRANT SELECT ON performance_schema.keyring_component_status TO 'backups'@'%'",
-                "GRANT SELECT ON performance_schema.replication_group_members TO 'backups'@'%'",
-                "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost'",
-                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password'",
-                f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'%'",
-                f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'localhost'",
-                "FLUSH PRIVILEGES",
-            )
-        )
-
-        self.mysql.configure_mysql_users()
-
-        _run_mysqlcli_script.assert_called_once_with(_expected_configure_user_commands)
-
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
-    def test_configure_mysql_users_exception(self, _run_mysqlcli_script):
-        """Test exceptions trying to configuring the MySQL users."""
-        _run_mysqlcli_script.side_effect = MySQLClientError("Error running mysql")
-
-        with self.assertRaises(MySQLConfigureMySQLUsersError):
-            self.mysql.configure_mysql_users()
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_create_database(self, _run_mysqlsh_script):
