@@ -1867,12 +1867,12 @@ class MySQLBase(ABC):
         ro_endpoints = {
             _get_host_ip(v["address"]) if get_ips else v["address"]
             for v in topology.values()
-            if v["memberrole"] == "secondary" and v["status"] == MySQLMemberState.ONLINE
+            if v["mode"] == "r/o" and v["status"] == MySQLMemberState.ONLINE
         }
         rw_endpoints = {
             _get_host_ip(v["address"]) if get_ips else v["address"]
             for v in topology.values()
-            if v["memberrole"] == "primary" and v["status"] == MySQLMemberState.ONLINE
+            if v["mode"] == "r/w" and v["status"] == MySQLMemberState.ONLINE
         }
         # won't get offline endpoints to IP as they maybe unreachable
         no_endpoints = {
