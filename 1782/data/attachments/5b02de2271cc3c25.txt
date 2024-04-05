@@ -1,0 +1,115 @@
+[32mINFO    [0m integration.test_backups:test_backups.py:308 Deploying a new mysql cluster
+[32mINFO    [0m juju.model:model.py:2069 Deploying local:jammy/mysql-k8s-1
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [executing] maintenance: Initialising mysqld
+[33mWARNING [0m juju.model:model.py:1558 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [executing] active: 
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m integration.test_backups:test_backups.py:327 Rotating all mysql credentials
+[32mINFO    [0m integration.test_backups:test_backups.py:346 Syncing credentials for aws
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.test_backups:test_backups.py:362 Restoring backup with id 2024-04-05T01:31:23Z
+[32mINFO    [0m integration.test_backups:test_backups.py:369 Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not
+[32mINFO    [0m integration.test_backups:test_backups.py:383 Inserting value after restore from aws
+[32mINFO    [0m integration.test_backups:test_backups.py:391 Ensuring that pre-backup and post-restore values exist in the database
+[32mINFO    [0m integration.test_backups:test_backups.py:346 Syncing credentials for gcp
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [executing] active: 
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.test_backups:test_backups.py:362 Restoring backup with id 2024-04-05T01:31:56Z
+[32mINFO    [0m integration.test_backups:test_backups.py:369 Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not
+[32mINFO    [0m integration.test_backups:test_backups.py:383 Inserting value after restore from gcp
+[32mINFO    [0m integration.test_backups:test_backups.py:391 Ensuring that pre-backup and post-restore values exist in the database
+[32mINFO    [0m integration.test_backups:test_backups.py:346 Syncing credentials for ceph
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [executing] active: 
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.test_backups:test_backups.py:362 Restoring backup with id 2024-04-05T01:32:24Z
+[32mINFO    [0m integration.test_backups:test_backups.py:369 Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not
+[32mINFO    [0m integration.test_backups:test_backups.py:383 Inserting value after restore from ceph
+[32mINFO    [0m integration.test_backups:test_backups.py:391 Ensuring that pre-backup and post-restore values exist in the database
+[32mINFO    [0m integration.test_backups:test_backups.py:401 Scaling mysql application to 3 units
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s (waiting for exactly 3 units, current : 1)
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [executing] active: Primary
+  another-mysql-k8s/1 [executing] maintenance: Initialising mysqld
+  another-mysql-k8s/2 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  another-mysql-k8s/1 [idle] waiting: waiting to join the cluster
+  another-mysql-k8s/2 [idle] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  another-mysql-k8s/1 [idle] active: 
+  another-mysql-k8s/2 [idle] active: 
+[32mINFO    [0m integration.test_backups:test_backups.py:404 Ensuring inserted values before backup and after restore exist on all units
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:42:37Z
+
+App                Version                  Status  Scale  Charm          Channel  Rev  Address         Exposed  Message
+another-mysql-k8s  8.0.36-0ubuntu0.22.04.1  active      3  mysql-k8s                 1  10.152.183.90   no       
+mysql-k8s          8.0.36-0ubuntu0.22.04.1  active      3  mysql-k8s                 0  10.152.183.239  no       
+s3-integrator                               active      1  s3-integrator  stable    13  10.152.183.51   no       
+
+Unit                  Workload  Agent  Address       Ports  Message
+another-mysql-k8s/0*  active    idle   10.1.143.208         Primary
+another-mysql-k8s/1   active    idle   10.1.143.211         
+another-mysql-k8s/2   active    idle   10.1.143.212         
+mysql-k8s/0*          active    idle   10.1.143.201         Primary
+mysql-k8s/1           active    idle   10.1.143.205         
+mysql-k8s/2           active    idle   10.1.143.206         
+s3-integrator/0*      active    idle   10.1.143.202         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[32mINFO    [0m integration.test_backups:test_backups.py:98 Cleaning backups from cloud buckets
+[31m[1mERROR   [0m asyncio:base_events.py:1758 Task was destroyed but it is pending!
+task: <Task pending name='Task-48' coro=<WebSocketCommonProtocol.keepalive_ping() running at /home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py:1250> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720, gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720]>
+[31m[1mERROR   [0m asyncio:base_events.py:1758 Task was destroyed but it is pending!
+task: <Task pending name='Task_Pinger' coro=<Connection._pinger() running at /home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/juju/client/connection.py:619> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720, gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720]>
+[31m[1mERROR   [0m asyncio:base_events.py:1758 Fatal error on SSL transport
+protocol: <asyncio.sslproto.SSLProtocol object at 0x7fe875ce0ac0>
+transport: <_SelectorSocketTransport closing fd=19>
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 924, in write
+    n = self._sock.send(data)
+OSError: [Errno 9] Bad file descriptor
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/asyncio/sslproto.py", line 690, in _process_write_backlog
+    self._transport.write(chunk)
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 930, in write
+    self._fatal_error(exc, 'Fatal write error on socket transport')
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 725, in _fatal_error
+    self._force_close(exc)
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 737, in _force_close
+    self._loop.call_soon(self._call_connection_lost, exc)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 753, in call_soon
+    self._check_closed()
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 515, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+[31m[1mERROR   [0m asyncio:base_events.py:1758 Task was destroyed but it is pending!
+task: <Task pending name='Task-47' coro=<WebSocketCommonProtocol.transfer_data() running at /home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py:959> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup(), <2 more>, gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720]>
+[31m[1mERROR   [0m asyncio:base_events.py:1758 Task was destroyed but it is pending!
+task: <Task pending name='Task-49' coro=<WebSocketCommonProtocol.close_connection() running at /home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py:1302> wait_for=<Task pending name='Task-47' coro=<WebSocketCommonProtocol.transfer_data() running at /home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py:959> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup(), <2 more>, gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720]> cb=[gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720, gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720]>
+[31m[1mERROR   [0m asyncio:base_events.py:1758 Task was destroyed but it is pending!
+task: <Task pending name='Task_Receiver' coro=<Connection._receiver() running at /home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/juju/client/connection.py:570> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720, gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720]>
+[31m[1mERROR   [0m asyncio:base_events.py:1758 Task was destroyed but it is pending!
+task: <Task pending name='Task-8189' coro=<WebSocketCommonProtocol.recv() running at /home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py:551> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[create_task_with_handler.<locals>._task_result_exp_handler(task_name='tmp', logger=<Logger juju....ection (INFO)>)() at /home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/juju/jasyncio.py:39, <1 more>, gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720]>
+[31m[1mERROR   [0m asyncio:base_events.py:1758 Task was destroyed but it is pending!
+task: <Task pending name='Task-8190' coro=<Event.wait() running at /usr/lib/python3.10/asyncio/locks.py:214> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720, gather.<locals>._done_callback() at /usr/lib/python3.10/asyncio/tasks.py:720]>
