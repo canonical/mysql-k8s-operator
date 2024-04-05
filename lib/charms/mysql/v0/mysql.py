@@ -99,6 +99,7 @@ from constants import (
     PEER,
     ROOT_PASSWORD_KEY,
     ROOT_USERNAME,
+    SECRET_KEY_FALLBACKS,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
@@ -114,7 +115,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 56
+LIBPATCH = 57
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -411,8 +412,8 @@ class MySQLCharmBase(CharmBase, ABC):
             additional_secret_fields=[
                 "key",
                 "csr",
-                "cert",
-                "cauth",
+                "certificate",
+                "certificate-authority",
                 "chain",
             ],
             secret_field_name=SECRET_INTERNAL_LABEL,
@@ -580,6 +581,13 @@ class MySQLCharmBase(CharmBase, ABC):
 
         return len(active_cos_relations) > 0
 
+    def peer_relation_data(self, scope: Scopes) -> DataPeer:
+        """Returns the peer relation data per scope."""
+        if scope == APP_SCOPE:
+            return self.peer_relation_app
+        elif scope == UNIT_SCOPE:
+            return self.peer_relation_unit
+
     def get_secret(
         self,
         scope: Scopes,
@@ -591,11 +599,15 @@ class MySQLCharmBase(CharmBase, ABC):
         Else retrieve from peer databag. This is to account for cases where secrets are stored in
         peer databag but the charm is then refreshed to a newer revision.
         """
+        if scope not in get_args(Scopes):
+            raise ValueError("Unknown secret scope")
+
         peers = self.model.get_relation(PEER)
-        if scope == APP_SCOPE:
-            value = self.peer_relation_app.fetch_my_relation_field(peers.id, key)
-        else:
-            value = self.peer_relation_unit.fetch_my_relation_field(peers.id, key)
+        if not (value := self.peer_relation_data(scope).fetch_my_relation_field(peers.id, key)):
+            if key in SECRET_KEY_FALLBACKS:
+                value = self.peer_relation_data(scope).fetch_my_relation_field(
+                    peers.id, SECRET_KEY_FALLBACKS[key]
+                )
         return value
 
     def set_secret(self, scope: Scopes, key: str, value: Optional[str]) -> None:
@@ -607,13 +619,22 @@ class MySQLCharmBase(CharmBase, ABC):
             raise MySQLSecretError("Can only set app secrets on the leader unit")
 
         if not value:
-            return self.remove_secret(scope, key)
+            if key in SECRET_KEY_FALLBACKS:
+                self.remove_secret(scope, SECRET_KEY_FALLBACKS[key])
+            self.remove_secret(scope, key)
+            return
 
         peers = self.model.get_relation(PEER)
-        if scope == APP_SCOPE:
-            self.peer_relation_app.update_relation_data(peers.id, {key: value})
-        elif scope == UNIT_SCOPE:
-            self.peer_relation_unit.update_relation_data(peers.id, {key: value})
+
+        fallback_key_to_secret_key = {v: k for k, v in SECRET_KEY_FALLBACKS.items()}
+        if key in fallback_key_to_secret_key:
+            if self.peer_relation_data(scope).fetch_my_relation_field(peers.id, key):
+                self.remove_secret(scope, key)
+            self.peer_relation_data(scope).update_relation_data(
+                peers.id, {fallback_key_to_secret_key[key]: value}
+            )
+        else:
+            self.peer_relation_data(scope).update_relation_data(peers.id, {key: value})
 
     def remove_secret(self, scope: Scopes, key: str) -> None:
         """Removing a secret."""
@@ -621,10 +642,7 @@ class MySQLCharmBase(CharmBase, ABC):
             raise RuntimeError("Unknown secret scope.")
 
         peers = self.model.get_relation(PEER)
-        if scope == APP_SCOPE:
-            self.peer_relation_app.delete_relation_data(peers.id, [key])
-        else:
-            self.peer_relation_unit.delete_relation_data(peers.id, [key])
+        self.peer_relation_data(scope).delete_relation_data(peers.id, [key])
 
 
 class MySQLMemberState(str, enum.Enum):
@@ -2616,4 +2634,9 @@ class MySQLBase(ABC):
             password: (optional) password to invoke the mysql cli script with
             timeout: (optional) time before the query should timeout
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def reset_data_dir(self) -> None:
+        """Reset the data directory."""
         raise NotImplementedError
