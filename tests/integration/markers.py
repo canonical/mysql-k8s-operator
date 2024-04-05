@@ -11,3 +11,4 @@ only_with_juju_secrets = pytest.mark.skipif(
 only_without_juju_secrets = pytest.mark.skipif(
     juju_.has_secrets, reason="Requires juju version w/o secrets"
 )
+juju3 = pytest.mark.skipif(juju_.juju_major_version < 3, reason="Requires juju 3+")
