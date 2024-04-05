@@ -144,7 +144,9 @@ class MySQLAsyncReplication(Object):
 
         try:
             self._charm._mysql.promote_cluster_to_primary(cluster_name, force)
-            event.set_results({"message": f"Cluster {cluster_name} promoted to primary"})
+            message = f"Cluster {cluster_name} promoted to primary"
+            logger.info(message)
+            event.set_results({"message": message})
             self._charm._on_update_status(None)
         except MySQLPromoteClusterToPrimaryError:
             logger.exception("Failed to promote cluster to primary")
@@ -202,8 +204,8 @@ class MySQLAsyncReplication(Object):
                     "Replica cluster not dissolved after relation broken"
                 )
                 logger.warning(
-                    "Replica cluster not dissolved after relation broken, by the primary cluster."
-                    "\n\tThe happens when the primary cluster was removed prior to removing the async relation."
+                    "Replica cluster not dissolved after relation broken by the primary cluster."
+                    "\n\tThis happens when the primary cluster was removed prior to removing the async relation."
                     "\n\tThis cluster can be promoted to primary with the `promote-standby-cluster` action."
                 )
                 return
@@ -217,7 +219,6 @@ class MySQLAsyncReplication(Object):
                 logger.info(
                     "\n\tThis is a replica cluster and will be dissolved.\n"
                     "\tThe cluster can be recreated with the `recreate-cluster` action.\n"
-                    "\tData will be wiped out by the action.\n"
                     "\tAlternatively the cluster can be rejoined to the cluster set."
                 )
                 # reset the cluster node count flag
@@ -233,7 +234,14 @@ class MySQLAsyncReplication(Object):
                     if self._charm._mysql.is_cluster_in_cluster_set(cluster_name):
                         self._charm.unit.status = MaintenanceStatus("Removing replica cluster")
                         logger.debug(f"Removing replica cluster {cluster_name}")
-                        self._charm._mysql.remove_replica_cluster(cluster_name)
+
+                        # force removal when cluster is invalidated
+                        force = (
+                            self._charm._mysql.get_replica_cluster_status(cluster_name)
+                            == "invalidated"
+                        )
+
+                        self._charm._mysql.remove_replica_cluster(cluster_name, force=force)
                         logger.debug(f"Replica cluster {cluster_name} removed")
                         self._charm.unit.status = ActiveStatus(self._charm.active_status_message)
                     else:
@@ -313,7 +321,7 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
             replica_status = self._charm._mysql.get_replica_cluster_status(
                 remote_data["cluster-name"]
             )
-            if replica_status == "ok":
+            if replica_status in ["ok", "invalidated"]:
                 return States.READY
             elif replica_status == "unknown":
                 return States.INITIALIZING
@@ -401,12 +409,6 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
             cluster = remote_data["cluster-name"]
             endpoint = remote_data["endpoint"]
             unit_label = remote_data["node-label"]
-
-            if cluster == self.cluster_name:
-                logger.warning(
-                    "Cluster name is the same as the primary cluster. Appending generetade value"
-                )
-                cluster = f"{cluster}{uuid.uuid4().hex[:4]}"
 
             logger.debug("Looking for a donor node")
             _, ro, _ = self._charm._mysql.get_cluster_endpoints(get_ips=False)
@@ -662,6 +664,15 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             del self._charm.app_peer_data["units-added-to-cluster"]
             # reset force rejoin-secondaries flag
             del self._charm.app_peer_data["rejoin-secondaries"]
+
+            if self.remote_relation_data["cluster-name"] == self.cluster_name:
+                # this cluster need a new cluster name
+                logger.warning(
+                    "Cluster name is the same as the primary cluster. Appending generetade value"
+                )
+                self._charm.app_peer_data[
+                    "cluster-name"
+                ] = f"{self.cluster_name}{uuid.uuid4().hex[:4]}"
 
             self._charm.unit.status = MaintenanceStatus("Populate endpoint")
 

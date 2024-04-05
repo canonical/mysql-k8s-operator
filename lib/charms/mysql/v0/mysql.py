@@ -514,8 +514,10 @@ class MySQLCharmBase(CharmBase, ABC):
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Action used  to retrieve the cluster status."""
         if event.params.get("cluster-set"):
+            logger.debug("Getting cluster set status")
             status = self._mysql.get_cluster_set_status(extended=0)
         else:
+            logger.debug("Getting cluster status")
             status = self._mysql.get_cluster_status()
 
         if status:
@@ -662,7 +664,11 @@ class MySQLCharmBase(CharmBase, ABC):
         """Active status message."""
         if self.unit_peer_data.get("member-role") == "primary":
             if self._mysql.is_cluster_replica():
-                return "Primary (standby)"
+                status = self._mysql.get_replica_cluster_status()
+                if status == "ok":
+                    return "Primary (standby)"
+                else:
+                    return f"Primary (standby, {status})"
             elif self._mysql.is_cluster_writes_fenced():
                 return "Primary (fenced writes)"
             else:
@@ -1449,22 +1455,26 @@ class MySQLBase(ABC):
 
         return cluster_name in cs_status["clusters"]
 
-    def remove_replica_cluster(self, replica_cluster_name: str) -> None:
+    def remove_replica_cluster(self, replica_cluster_name: str, force: bool = False) -> None:
         """Remove a replica cluster on the primary cluster.
 
         The removed cluster will be implicitly dissolved.
 
         Args:
             replica_cluster_name: The name of the replica cluster
+            force: Whether to force the removal of the replica cluster
 
         Raises:
             MySQLRemoveReplicaClusterError
         """
-        commands = (
+        commands = [
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             "cs = dba.get_cluster_set()",
-            f"cs.remove_cluster('{replica_cluster_name}')",
-        )
+        ]
+        if force:
+            commands.append(f"cs.remove_cluster('{replica_cluster_name}', {{'force': True}})")
+        else:
+            commands.append(f"cs.remove_cluster('{replica_cluster_name}')")
 
         try:
             logger.debug(f"Removing replica cluster {replica_cluster_name}")
@@ -1762,11 +1772,11 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(status_commands), timeout=30)
+            output = self._run_mysqlsh_script("\n".join(status_commands), timeout=150)
             output_dict = json.loads(output.lower())
             return output_dict
         except MySQLClientError:
-            logger.warning("Failed to get cluster-set status")
+            logger.warning("Failed to get cluster set status")
 
     def get_cluster_names(self) -> set[str]:
         """Get the names of the clusters in the cluster set.
@@ -1779,7 +1789,7 @@ class MySQLBase(ABC):
             return set()
         return set(status["clusters"])
 
-    def get_replica_cluster_status(self, replica_cluster_name: str) -> str:
+    def get_replica_cluster_status(self, replica_cluster_name: Optional[str] = None) -> str:
         """Get the replica cluster status.
 
         Executes script to retrieve replica cluster status.
@@ -1788,6 +1798,8 @@ class MySQLBase(ABC):
         Returns:
             Replica cluster status as a string
         """
+        if not replica_cluster_name:
+            replica_cluster_name = self.cluster_name
         status_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
             "cs = dba.get_cluster_set()",
