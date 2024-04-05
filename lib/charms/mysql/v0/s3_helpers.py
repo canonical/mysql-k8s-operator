@@ -31,7 +31,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 7
+LIBPATCH = 8
 
 # botocore/urllib3 clutter the logs when on debug
 logging.getLogger("botocore").setLevel(logging.WARNING)
@@ -50,17 +50,17 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
 
     Returns: a boolean indicating success.
     """
+    ca_file = None
     try:
         logger.info(f"Uploading content to bucket={s3_parameters['bucket']}, path={content_path}")
-        ca_file = tempfile.NamedTemporaryFile()
         session = boto3.session.Session(
             aws_access_key_id=s3_parameters["access-key"],
             aws_secret_access_key=s3_parameters["secret-key"],
             region_name=s3_parameters["region"] or None,
         )
         verif = True
-        ca_chain = s3_parameters.get("tls-ca-chain")
-        if ca_chain:
+        if ca_chain := s3_parameters.get("tls-ca-chain"):
+            ca_file = tempfile.NamedTemporaryFile()
             ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
             ca_file.write(ca.encode())
             ca_file.flush()
@@ -86,7 +86,8 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
         )
         return False
     finally:
-        ca_file.close()
+        if ca_file:
+            ca_file.close()
 
     return True
 
