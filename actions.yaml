@@ -103,3 +103,12 @@ unfence-writes:
       type: string
       description: |
         The name of the cluster-set. Mandatory option, used for confirmation.
+
+rejoin-cluster:
+  description: |
+    Rejoins an unvalidated cluster to the cluster-set, after a previous failover or switchover.
+  params:
+    cluster-name:
+      type: string
+      description: |
+        The name of the cluster to be rejoined.

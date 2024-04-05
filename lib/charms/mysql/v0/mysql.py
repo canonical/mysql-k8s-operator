@@ -379,6 +379,10 @@ class MySQLFencingWritesError(Error):
     """Exception raised when there is an issue fencing or unfencing writes."""
 
 
+class MySQLRejoinClusterError(Error):
+    """Exception raised when there is an issue trying to rejoin a cluster to the cluster set."""
+
+
 @dataclasses.dataclass
 class RouterUser:
     """MySQL Router user."""
@@ -1454,6 +1458,22 @@ class MySQLBase(ABC):
             return None
 
         return cluster_name in cs_status["clusters"]
+
+    def rejoin_cluster(self, cluster_name) -> None:
+        """Try to rejoin a cluster to the cluster set."""
+        commands = (
+            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            "cs = dba.get_cluster_set()",
+            f"cs.rejoin_cluster('{cluster_name}')",
+        )
+
+        try:
+            logger.debug(f"Rejoining {cluster_name=}")
+            self._run_mysqlsh_script("\n".join(commands))
+            logger.info(f"Rejoined {cluster_name=}")
+        except MySQLClientError:
+            logger.exception("Failed to rejoin cluster")
+            raise MySQLRejoinClusterError
 
     def remove_replica_cluster(self, replica_cluster_name: str, force: bool = False) -> None:
         """Remove a replica cluster on the primary cluster.
