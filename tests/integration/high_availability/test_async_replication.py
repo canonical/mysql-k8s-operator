@@ -67,6 +67,7 @@ async def second_model(
 
 @pytest.mark.juju3
 @pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_build_and_deploy(
     ops_test: OpsTest, first_model: Model, second_model: Model
 ) -> None:
@@ -113,6 +114,7 @@ async def test_build_and_deploy(
 
 @pytest.mark.juju3
 @pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_async_relate(first_model: Model, second_model: Model) -> None:
     """Relate the two mysql clusters."""
     logger.info("Creating offers in first model")
@@ -141,6 +143,7 @@ async def test_async_relate(first_model: Model, second_model: Model) -> None:
 
 @pytest.mark.juju3
 @pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_deploy_router_and_app(first_model: Model) -> None:
     """Deploy the router and the test application."""
     logger.info("Deploying router and application")
@@ -177,6 +180,7 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
 
 @pytest.mark.juju3
 @pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_data_replication(
     first_model: Model, second_model: Model, continuous_writes
 ) -> None:
@@ -189,6 +193,7 @@ async def test_data_replication(
 
 @pytest.mark.juju3
 @pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_standby_promotion(
     ops_test: OpsTest, first_model: Model, second_model: Model, continuous_writes
 ) -> None:
@@ -217,6 +222,7 @@ async def test_standby_promotion(
 
 @pytest.mark.juju3
 @pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
     """Test switchover on primary cluster fail."""
     logger.info("Freezing mysqld on primary cluster units")
@@ -256,6 +262,7 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
 
 @pytest.mark.juju3
 @pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_rejoin_invalidated_cluster(
     first_model: Model, second_model: Model, continuous_writes
 ) -> None:
@@ -275,6 +282,7 @@ async def test_rejoin_invalidated_cluster(
 
 @pytest.mark.juju3
 @pytest.mark.abort_on_fail
+@pytest.mark.group(1)
 async def test_remove_relation_and_relate(
     first_model: Model, second_model: Model, continuous_writes
 ) -> None:
