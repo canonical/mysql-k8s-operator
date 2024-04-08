@@ -245,10 +245,10 @@ class MySQLAsyncReplication(Object):
                         logger.debug(f"Removing replica cluster {cluster_name}")
 
                         # force removal when cluster is invalidated
-                        force = (
-                            self._charm._mysql.get_replica_cluster_status(cluster_name)
-                            == "invalidated"
-                        )
+                        force = self._charm._mysql.get_replica_cluster_status(cluster_name) in [
+                            "invalidated",
+                            "unknown",
+                        ]
 
                         self._charm._mysql.remove_replica_cluster(cluster_name, force=force)
                         logger.debug(f"Replica cluster {cluster_name} removed")
