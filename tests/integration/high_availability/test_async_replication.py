@@ -14,8 +14,6 @@ import yaml
 from juju.model import Model
 from pytest_operator.plugin import OpsTest
 
-from tests.integration import markers
-
 from .. import juju_
 from ..helpers import (
     execute_queries_on_unit,
@@ -24,6 +22,7 @@ from ..helpers import (
     get_relation_data,
     get_unit_address,
 )
+from ..markers import juju3
 from .high_availability_helpers import (
     DATABASE_NAME,
     TABLE_NAME,
@@ -67,7 +66,7 @@ async def second_model(
     await ops_test._controller.destroy_model(second_model_name, destroy_storage=True)
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
 @pytest.mark.group(1)
 async def test_build_and_deploy(
@@ -114,7 +113,7 @@ async def test_build_and_deploy(
     )
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
 @pytest.mark.group(1)
 async def test_async_relate(first_model: Model, second_model: Model) -> None:
@@ -143,7 +142,7 @@ async def test_async_relate(first_model: Model, second_model: Model) -> None:
     )
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
 @pytest.mark.group(1)
 async def test_deploy_router_and_app(first_model: Model) -> None:
@@ -180,7 +179,7 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
     )
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
 @pytest.mark.group(1)
 async def test_data_replication(
@@ -193,7 +192,7 @@ async def test_data_replication(
     assert results[0] > 1, "No data was written to the database"
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
 @pytest.mark.group(1)
 async def test_standby_promotion(
@@ -222,7 +221,7 @@ async def test_standby_promotion(
     ), "standby not promoted to primary"
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
 @pytest.mark.group(1)
 async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
@@ -262,7 +261,7 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
         )
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
 @pytest.mark.group(1)
 async def test_rejoin_invalidated_cluster(
@@ -282,7 +281,7 @@ async def test_rejoin_invalidated_cluster(
     assert results[0] > 1, "No data was written to the database"
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
 @pytest.mark.group(1)
 async def test_remove_relation_and_relate(
