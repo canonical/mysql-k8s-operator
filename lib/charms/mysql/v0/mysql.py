@@ -1969,6 +1969,7 @@ class MySQLBase(ABC):
                 lock_instance or primary_address, unit_label, UNIT_TEARDOWN_LOCKNAME
             )
             if not acquired_lock:
+                skip_release_lock = True
                 raise MySQLRemoveInstanceRetryError("Did not acquire lock to remove unit")
 
             # Remove instance from cluster, or dissolve cluster if no other members remain
