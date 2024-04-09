@@ -1969,7 +1969,7 @@ class MySQLBase(ABC):
                 lock_instance or primary_address, unit_label, UNIT_TEARDOWN_LOCKNAME
             )
             if not acquired_lock:
-                skip_release_lock = True
+                logger.debug(f"Failed to acquire lock to remove unit {unit_label}. Retrying.")
                 raise MySQLRemoveInstanceRetryError("Did not acquire lock to remove unit")
 
             # Remove instance from cluster, or dissolve cluster if no other members remain
@@ -2026,12 +2026,10 @@ class MySQLBase(ABC):
             if skip_release_lock:
                 return
 
-            # The below code should not result in retries of this method since the
-            # instance would already be removed from the cluster.
             try:
                 if not lock_instance:
                     if len(remaining_cluster_member_addresses) == 0:
-                        raise MySQLRemoveInstanceError(
+                        raise MySQLRemoveInstanceRetryError(
                             "No remaining instance to query cluster primary from."
                         )
 
@@ -2049,9 +2047,7 @@ class MySQLBase(ABC):
                 self._release_lock(lock_instance, unit_label, UNIT_TEARDOWN_LOCKNAME)
             except MySQLClientError as e:
                 # Raise an error that does not lead to a retry of this method
-                logger.exception(
-                    f"Failed to release lock on {unit_label} with error {e.message}", exc_info=e
-                )
+                logger.exception(f"Failed to release lock on {unit_label}")
                 raise MySQLRemoveInstanceError(e.message)
 
     def dissolve_cluster(self) -> None:
@@ -2092,7 +2088,7 @@ class MySQLBase(ABC):
         try:
             output = self._run_mysqlsh_script("\n".join(acquire_lock_commands))
         except MySQLClientError:
-            logger.debug("Failed to acquire lock")
+            logger.debug(f"Failed to acquire lock {lock_name}")
             return False
         matches = re.search(r"<ACQUIRED_LOCK>(\d)</ACQUIRED_LOCK>", output)
         if not matches:
