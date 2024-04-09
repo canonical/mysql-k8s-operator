@@ -185,8 +185,18 @@ class MySQLRootRelation(Object):
         password = self._get_or_set_password_in_peer_secrets(username)
 
         try:
+            root_password = self.charm.get_secret("app", ROOT_PASSWORD_KEY)
+            assert root_password, "Root password not set"
             self.charm._mysql.create_database(database)
             self.charm._mysql.create_user(username, password, "mysql-root-legacy-relation")
+            if not self.charm._mysql.does_mysql_user_exist("root", "%"):
+                # create `root@%` user if it doesn't exist
+                # this is needed for the `mysql-root` interface to work
+                self.charm._mysql.create_user(
+                    "root",
+                    root_password,
+                    "mysql-root-legacy-relation",
+                )
             self.charm._mysql.escalate_user_privileges("root")
             self.charm._mysql.escalate_user_privileges(username)
         except (MySQLCreateDatabaseError, MySQLCreateUserError, MySQLEscalateUserPrivilegesError):
@@ -204,7 +214,7 @@ class MySQLRootRelation(Object):
             "host": primary_address.split(":")[0],
             "password": password,
             "port": "3306",
-            "root_password": self.charm.get_secret("app", ROOT_PASSWORD_KEY),
+            "root_password": root_password,
             "user": username,
         }
 
