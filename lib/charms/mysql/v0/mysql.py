@@ -1352,6 +1352,7 @@ class MySQLBase(ABC):
             replica_cluster_name: The name of the replica cluster
             instance_label: The label to apply to the replica cluster instance
             donor: The donor instance address definition to clone from
+            method: The method to use to create the replica cluster (auto, clone)
 
         Raises:
             MySQLCreateReplicaClusterError
@@ -3186,9 +3187,4 @@ class MySQLBase(ABC):
             password: (optional) password to invoke the mysql cli script with
             timeout: (optional) time before the query should timeout
         """
-        raise NotImplementedError
-
-    @abstractmethod
-    def reset_data_dir(self) -> None:
-        """Reset the data directory."""
         raise NotImplementedError

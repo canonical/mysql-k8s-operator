@@ -106,7 +106,7 @@ unfence-writes:
 
 rejoin-cluster:
   description: |
-    Rejoins an unvalidated cluster to the cluster-set, after a previous failover or switchover.
+    Rejoins an invalidated cluster to the cluster-set, after a previous failover or switchover.
   params:
     cluster-name:
       type: string

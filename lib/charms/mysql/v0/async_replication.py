@@ -91,11 +91,6 @@ class MySQLAsyncReplication(Object):
             self._charm.on[REPLICA_RELATION].relation_broken, self.on_async_relation_broken
         )
 
-        # Actions
-        self.framework.observe(
-            self._charm.on.rejoin_cluster_action, self._on_rejoin_cluster_action
-        )
-
     @cached_property
     def role(self) -> ClusterSetInstanceState:
         """Current cluster set role of the unit, after the relation is established."""
@@ -308,8 +303,8 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
     def __init__(self, charm: "MySQLOperatorCharm"):
         super().__init__(charm, PRIMARY_RELATION)
 
-        # Actions observed only on the primary side to avoid duplicated execution
-        # promotion action
+        # Actions observed only on the primary class to avoid duplicated execution
+        # promotion action since both classes are always instantiated
         self.framework.observe(
             self._charm.on.promote_standby_cluster_action, self._on_promote_standby_cluster
         )
@@ -321,6 +316,10 @@ class MySQLAsyncReplicationPrimary(MySQLAsyncReplication):
         # unfence writes action
         self.framework.observe(
             self._charm.on.unfence_writes_action, self._on_fence_unfence_writes_action
+        )
+        # rejoin invalidated cluster action
+        self.framework.observe(
+            self._charm.on.rejoin_cluster_action, self._on_rejoin_cluster_action
         )
 
         if self._charm.unit.is_leader():
@@ -710,7 +709,7 @@ class MySQLAsyncReplicationReplica(MySQLAsyncReplication):
             if self.remote_relation_data["cluster-name"] == self.cluster_name:
                 # this cluster need a new cluster name
                 logger.warning(
-                    "Cluster name is the same as the primary cluster. Appending generetade value"
+                    "Cluster name is the same as the primary cluster. Appending generatade value"
                 )
                 self._charm.app_peer_data[
                     "cluster-name"
