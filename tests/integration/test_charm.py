@@ -153,7 +153,7 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 
         await scale_application(ops_test, APP_NAME, 5)
 
-        cluster_status = await get_cluster_status(ops_test, random_unit)
+        cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
             for _, member in cluster_status["defaultreplicaset"]["topology"].items()
@@ -173,7 +173,7 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         )
 
         random_unit = ops_test.model.applications[APP_NAME].units[0]
-        cluster_status = await get_cluster_status(ops_test, random_unit)
+        cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
             for _, member in cluster_status["defaultreplicaset"]["topology"].items()
@@ -198,7 +198,7 @@ async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
 
         await scale_application(ops_test, APP_NAME, 3)
 
-        cluster_status = await get_cluster_status(ops_test, random_unit)
+        cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
             for _, member in cluster_status["defaultreplicaset"]["topology"].items()

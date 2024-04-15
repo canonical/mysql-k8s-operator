@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 
 import mysql.connector
 import yaml
+from juju.model import Model
 from juju.unit import Unit
 from mysql.connector.errors import (
     DatabaseError,
@@ -40,37 +41,51 @@ def generate_random_string(length: int) -> str:
     return "".join([secrets.choice(choices) for i in range(length)])
 
 
-async def get_unit_address(ops_test: OpsTest, unit_name: str) -> str:
+async def get_unit_address(
+    ops_test: OpsTest, unit_name: str, model: Optional[Model] = None
+) -> str:
     """Get unit IP address.
 
     Args:
         ops_test: The ops test framework instance
         unit_name: The name of the unit
+        model: (Optional) model to use instead of ops_test.model
 
     Returns:
         IP address of the unit
     """
-    status = await ops_test.model.get_status()
+    if model is None:
+        model = ops_test.model
+    status = await model.get_status()
     return status["applications"][unit_name.split("/")[0]].units[unit_name]["address"]
 
 
-async def get_cluster_status(ops_test: OpsTest, unit: Unit) -> Dict:
+async def get_cluster_status(unit: Unit, cluster_set=False) -> Dict:
     """Get the cluster status by running the get-cluster-status action.
 
     Args:
-        ops_test: The ops test framework
         unit: The unit on which to execute the action on
+        cluster_set: A boolean indicating whether to get the cluster set status
 
     Returns:
         A dictionary representing the cluster status
     """
-    results = await juju_.run_action(unit, "get-cluster-status")
+    if cluster_set:
+        results = await juju_.run_action(
+            unit, "get-cluster-status", **{"--wait": "5m", "cluster-set": True}
+        )
+    else:
+        results = await juju_.run_action(unit, "get-cluster-status")
     return results.get("status", {})
 
 
-async def get_leader_unit(ops_test: OpsTest, app_name: str) -> Optional[Unit]:
+async def get_leader_unit(
+    ops_test: OpsTest, app_name: str, model: Optional[Model] = None
+) -> Optional[Unit]:
     leader_unit = None
-    for unit in ops_test.model.applications[app_name].units:
+    if model is None:
+        model = ops_test.model
+    for unit in model.applications[app_name].units:
         if await unit.is_leader_from_status():
             leader_unit = unit
             break
@@ -127,7 +142,7 @@ async def get_primary_unit(
     Returns:
         A juju unit that is a MySQL primary
     """
-    cluster_status = await get_cluster_status(ops_test, unit)
+    cluster_status = await get_cluster_status(unit)
 
     primary_label = [
         label

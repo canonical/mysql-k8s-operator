@@ -113,6 +113,8 @@ class TestCharm(unittest.TestCase):
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("mysql_k8s_helpers.MySQL.rescan_cluster")
+    @patch("charms.mysql.v0.mysql.MySQLCharmBase.active_status_message", return_value="")
     @patch("upgrade.MySQLK8sUpgrade.idle", return_value=True)
     @patch("mysql_k8s_helpers.MySQL.write_content_to_file")
     @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
@@ -151,7 +153,9 @@ class TestCharm(unittest.TestCase):
         _is_data_dir_initialised,
         _create_cluster_set,
         _write_content_to_file,
+        _active_status_message,
         _upgrade_idle,
+        _rescan_cluster,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -169,12 +173,16 @@ class TestCharm(unittest.TestCase):
 
         # After configuration run, plan should be populated
         plan = self.harness.get_container_pebble_plan("mysql")
-        self.assertEqual(plan.to_dict()["services"], self.layer_dict()["services"])
+        self.assertEqual(
+            plan.to_dict()["services"],  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            self.layer_dict()["services"],
+        )
 
         self.harness.add_relation("metrics-endpoint", "test-cos-app")
         plan = self.harness.get_container_pebble_plan("mysql")
         self.assertEqual(
-            plan.to_dict()["services"], self.layer_dict(with_mysqld_exporter=True)["services"]
+            plan.to_dict()["services"],  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            self.layer_dict(with_mysqld_exporter=True)["services"],
         )
 
     @patch("charm.MySQLOperatorCharm.join_unit_to_cluster")
@@ -258,11 +266,59 @@ class TestCharm(unittest.TestCase):
         mysql = self.charm._mysql
         self.assertTrue(isinstance(mysql, MySQL))
 
+    @patch("charm.MySQLOperatorCharm._on_leader_elected")
+    def test_get_secret(self, _):
+        self.harness.set_leader()
+
+        # Test application scope.
+        assert self.charm.get_secret("app", "password") is None
+        self.harness.update_relation_data(
+            self.peer_relation_id, self.charm.app.name, {"password": "test-password"}
+        )
+        assert self.charm.get_secret("app", "password") == "test-password"
+
+        # Test unit scope.
+        assert self.charm.get_secret("unit", "password") is None
+        self.harness.update_relation_data(
+            self.peer_relation_id, self.charm.unit.name, {"password": "test-password"}
+        )
+        assert self.charm.get_secret("unit", "password") == "test-password"
+
+    @pytest.mark.usefixtures("without_juju_secrets")
+    @patch("charm.MySQLOperatorCharm._on_leader_elected")
+    def test_set_secret_databag(self, _):
+        self.harness.set_leader()
+
+        # Test application scope.
+        assert "password" not in self.harness.get_relation_data(
+            self.peer_relation_id, self.charm.app.name
+        )
+        self.charm.set_secret("app", "password", "test-password")
+        assert (
+            self.harness.get_relation_data(self.peer_relation_id, self.charm.app.name)["password"]
+            == "test-password"
+        )
+
+        # Test unit scope.
+        assert "password" not in self.harness.get_relation_data(
+            self.peer_relation_id, self.charm.unit.name
+        )
+        self.charm.set_secret("unit", "password", "test-password")
+        assert (
+            self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)["password"]
+            == "test-password"
+        )
+
+    @patch("charms.mysql.v0.mysql.MySQLBase.is_cluster_replica", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.remove_instance")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
     def test_database_storage_detaching(
-        self, mock_is_instance_in_cluster, mock_get_primary_label, mock_remove_instance
+        self,
+        mock_is_instance_in_cluster,
+        mock_get_primary_label,
+        mock_remove_instance,
+        mock_is_cluster_replica,
     ):
         self.harness.update_relation_data(
             self.peer_relation_id, self.charm.unit.name, {"unit-initialized": "True"}
@@ -275,7 +331,7 @@ class TestCharm(unittest.TestCase):
         mock_get_primary_label.return_value = self.charm.unit_label
 
         self.charm._on_database_storage_detaching(None)
-        mock_remove_instance.assert_called_once_with(self.charm.unit_label)
+        mock_remove_instance.assert_called_once_with(self.charm.unit_label, lock_instance=None)
 
         self.assertEqual(
             self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)[

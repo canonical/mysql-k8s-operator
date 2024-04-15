@@ -1,7 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import asyncio
 import json
 import logging
 import shutil
@@ -33,29 +32,28 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 15 * 60
 
 MYSQL_APP_NAME = "mysql-k8s"
-TEST_APP_NAME = "test-app"
+TEST_APP_NAME = "mysql-test-app"
 
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_deploy_latest(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
-    await asyncio.gather(
-        ops_test.model.deploy(
-            MYSQL_APP_NAME,
-            application_name=MYSQL_APP_NAME,
-            num_units=3,
-            channel="8.0/edge",
-            trust=True,
-            config={"profile": "testing"},
-        ),
-        ops_test.model.deploy(
-            f"mysql-{TEST_APP_NAME}",
-            application_name=TEST_APP_NAME,
-            num_units=1,
-            channel="latest/edge",
-        ),
+    await ops_test.model.deploy(
+        MYSQL_APP_NAME,
+        application_name=MYSQL_APP_NAME,
+        num_units=3,
+        channel="8.0/edge",
+        trust=True,
+        config={"profile": "testing"},
     )
+    await ops_test.model.deploy(
+        TEST_APP_NAME,
+        application_name=TEST_APP_NAME,
+        num_units=1,
+        channel="latest/edge",
+    )
+
     await relate_mysql_and_application(ops_test, MYSQL_APP_NAME, TEST_APP_NAME)
     logger.info("Wait for applications to become active")
     await ops_test.model.wait_for_idle(

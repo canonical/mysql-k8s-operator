@@ -83,7 +83,8 @@ show_missing = true
 [tool.pytest.ini_options]
 minversion = "6.0"
 log_cli_level = "INFO"
-markers = ["unstable"]
+markers = ["unstable", "juju3", "only_with_juju_secrets", "only_without_juju_secrets"]
+asyncio_mode = "auto"
 
 # Formatting tools configuration
 [tool.black]
@@ -93,6 +94,7 @@ target-version = ["py38"]
 [tool.isort]
 profile = "black"
 known_third_party = "mysql.connector"
+line_length = 99
 
 # Linting tools configuration
 [tool.flake8]
