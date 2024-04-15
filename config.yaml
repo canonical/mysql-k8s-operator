@@ -6,7 +6,9 @@ options:
     description: "Optional - Name of the MySQL InnoDB cluster, set once at deployment"
     type: "string"
   cluster-set-name:
-    description: "Optional - Name for async replication cluster set, set once at deployment"
+    description: |
+      Optional - Name for async replication cluster set, set once at deployment.
+      On `recreate-clster` action call, the cluster set name will be re-generated automatically.
     type: "string"
   profile:
     description: |
