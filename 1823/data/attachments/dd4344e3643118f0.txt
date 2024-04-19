@@ -1,0 +1,565 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:53:27Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.36-0ubuntu0.22.04.1  waiting      3  mysql-k8s                      0  10.152.183.188  no       installing agent
+mysql-test-app  0.0.2                    active       1  mysql-test-app  latest/edge   36  10.152.183.199  no       Last written value=2145
+
+Unit               Workload     Agent      Address      Ports  Message
+mysql-k8s/0        active       idle       10.1.92.139         
+mysql-k8s/1*       active       idle       10.1.92.141         
+mysql-k8s/2        maintenance  executing  10.1.92.140         Unable to get member state
+mysql-test-app/0*  active       executing  10.1.92.142         (clear-continuous-writes) Last written value=2145
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:31:25 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:31:37 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:33:04 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:33:26 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:33:48 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:33:50 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:33:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:33:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:34:11 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:34:33 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:34:50 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:34:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:34:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:34:55 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:35:17 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:35:39 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:35:51 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:35:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:35:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:36:01 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:36:23 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:36:45 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:36:50 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:36:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:36:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:37:07 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:37:27 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:37:27 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:37:28 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:37:28 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:37:39 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:37:50 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:37:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:37:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:38:00 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:38:01 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:38:21 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-0: 01:38:22 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:38:41 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:38:41 ERROR unit.mysql-k8s/2.juju-log Error getting member state. Avoiding potential cluster crash recovery
+unit-mysql-k8s-0: 01:38:44 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:39:06 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:39:11 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:39:11 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:39:28 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:39:51 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:40:02 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:40:02Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:40:02Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:40:13 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:40:35 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:40:57 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:41:19 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:41:41 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:41:51 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:41:51Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:41:51Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:42:03 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:42:25 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:42:47 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:42:50 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:42:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:42:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-1: 01:42:54 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:42:54 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:42:58 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:42:58 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:43:01 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-0: 01:43:10 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:43:21 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-0: 01:43:31 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:43:41 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:43:41 ERROR unit.mysql-k8s/2.juju-log Error getting member state. Avoiding potential cluster crash recovery
+unit-mysql-k8s-0: 01:43:53 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:44:11 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:44:11 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:44:15 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:44:37 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:45:00 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:45:02 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:45:02Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:45:02Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:45:22 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:45:44 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:46:06 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:46:28 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:46:50 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:46:50 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:46:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:46:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-2: 01:47:05 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-0: 01:47:05 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:47:05 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:47:06 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:47:06 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:47:17 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:47:25 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-0: 01:47:38 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:47:45 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:47:45 ERROR unit.mysql-k8s/2.juju-log Error getting member state. Avoiding potential cluster crash recovery
+unit-mysql-k8s-0: 01:48:00 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:48:15 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:48:15 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:48:22 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:48:44 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:49:06 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:49:06Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:49:06Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-2: 01:50:50 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:50:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:50:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-test-app-0: 01:51:10 ERROR unit.mysql-test-app/0.juju-log Unable to query the database
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 291, in _open_connection
+    self._cmysql.connect(**cnx_kwargs)
+_mysql_connector.MySQLInterfaceError: Can't connect to MySQL server on 'mysql-k8s-primary.test.svc.cluster.local:3306' (110)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 219, in _stop_continuous_writes
+    last_written_value = self._max_written_value()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 230, in _max_written_value
+    with MySQLConnector(self._database_config) as cursor:
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/connector.py", line 42, in __enter__
+    self.connection = mysql.connector.connect(**self.config)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/pooling.py", line 293, in connect
+    return CMySQLConnection(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 120, in __init__
+    self.connect(**kwargs)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/abstracts.py", line 1181, in connect
+    self._open_connection()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 296, in _open_connection
+    raise get_mysql_exception(
+mysql.connector.errors.DatabaseError: 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-primary.test.svc.cluster.local:3306' (110)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 217, in _stop_continuous_writes
+    for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(5)):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/tenacity/__init__.py", line 384, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/tenacity/__init__.py", line 363, in iter
+    raise retry_exc from fut.exception()
+tenacity.RetryError: RetryError[<Future at 0x7fb3c33a8790 state=finished raised DatabaseError>]
+unit-mysql-k8s-2: 01:51:51 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:51:51Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:51:51Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-2: 01:52:51 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 602, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1535, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1496, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:52:51Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3092, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 607, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-04-19T01:52:51Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:52:54 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:52:54 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:52:55 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:52:55 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1903, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:53:01 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:53:21 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
