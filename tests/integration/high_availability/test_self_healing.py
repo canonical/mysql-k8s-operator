@@ -70,7 +70,7 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
 
     logger.info(f"Sending SIGKILL to unit {primary.name}")
     await send_signal_to_pod_container_process(
-        ops_test,
+        ops_test.model.info.name,
         primary.name,
         MYSQL_CONTAINER_NAME,
         MYSQLD_PROCESS_NAME,
@@ -134,7 +134,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
 
     logger.info(f"Sending SIGSTOP to unit {primary.name}")
     await send_signal_to_pod_container_process(
-        ops_test,
+        ops_test.model.info.name,
         primary.name,
         MYSQL_CONTAINER_NAME,
         MYSQLD_PROCESS_NAME,
@@ -180,7 +180,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
 
     logger.info(f"Sending SIGCONT to {primary.name}")
     await send_signal_to_pod_container_process(
-        ops_test,
+        ops_test.model.info.name,
         primary.name,
         MYSQL_CONTAINER_NAME,
         MYSQLD_PROCESS_NAME,
@@ -253,7 +253,7 @@ async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -
 
     logger.info(f"Sending SIGTERM to unit {primary.name}")
     await send_signal_to_pod_container_process(
-        ops_test,
+        ops_test.model.info.name,
         primary.name,
         MYSQL_CONTAINER_NAME,
         MYSQLD_PROCESS_NAME,
@@ -325,7 +325,7 @@ async def test_network_cut_affecting_an_instance(
     await wait_until_units_in_status(ops_test, [primary], remaining_units[0], "(missing)")
     await wait_until_units_in_status(ops_test, remaining_units, remaining_units[0], "online")
 
-    cluster_status = await get_cluster_status(ops_test, remaining_units[0])
+    cluster_status = await get_cluster_status(remaining_units[0])
 
     isolated_primary_status, isolated_primary_memberrole = [
         (member["status"], member["memberrole"])
@@ -357,7 +357,7 @@ async def test_network_cut_affecting_an_instance(
     logger.info("Wait until all units are online")
     await wait_until_units_in_status(ops_test, mysql_units, mysql_units[0], "online")
 
-    new_cluster_status = await get_cluster_status(ops_test, mysql_units[0])
+    new_cluster_status = await get_cluster_status(mysql_units[0])
 
     logger.info("Ensure isolated instance is now secondary")
     isolated_primary_status, isolated_primary_memberrole = [
@@ -439,7 +439,7 @@ async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_wr
         )
         assert new_pid > unit_mysqld_pids[unit.name], "The mysqld process did not restart"
 
-    cluster_status = await get_cluster_status(ops_test, mysql_units[0])
+    cluster_status = await get_cluster_status(mysql_units[0])
     for member in cluster_status["defaultreplicaset"]["topology"].values():
         assert member["status"] == "online"
 

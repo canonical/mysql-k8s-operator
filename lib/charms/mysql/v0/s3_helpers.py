@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """S3 helper functions for the MySQL charms."""
-
+import base64
 import logging
 import tempfile
 import time
@@ -31,7 +31,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 6
+LIBPATCH = 8
 
 # botocore/urllib3 clutter the logs when on debug
 logging.getLogger("botocore").setLevel(logging.WARNING)
@@ -50,6 +50,7 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
 
     Returns: a boolean indicating success.
     """
+    ca_file = None
     try:
         logger.info(f"Uploading content to bucket={s3_parameters['bucket']}, path={content_path}")
         session = boto3.session.Session(
@@ -57,8 +58,19 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
             aws_secret_access_key=s3_parameters["secret-key"],
             region_name=s3_parameters["region"] or None,
         )
+        verif = True
+        if ca_chain := s3_parameters.get("tls-ca-chain"):
+            ca_file = tempfile.NamedTemporaryFile()
+            ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
+            ca_file.write(ca.encode())
+            ca_file.flush()
+            verif = ca_file.name
 
-        s3 = session.resource("s3", endpoint_url=s3_parameters["endpoint"])
+        s3 = session.resource(
+            "s3",
+            endpoint_url=s3_parameters["endpoint"],
+            verify=verif,
+        )
 
         bucket = s3.Bucket(s3_parameters["bucket"])
 
@@ -73,6 +85,9 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
             exc_info=e,
         )
         return False
+    finally:
+        if ca_file:
+            ca_file.close()
 
     return True
 

@@ -153,7 +153,7 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
 
         await scale_application(ops_test, APP_NAME, 5)
 
-        cluster_status = await get_cluster_status(ops_test, random_unit)
+        cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
             for _, member in cluster_status["defaultreplicaset"]["topology"].items()
@@ -173,7 +173,7 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         )
 
         random_unit = ops_test.model.applications[APP_NAME].units[0]
-        cluster_status = await get_cluster_status(ops_test, random_unit)
+        cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
             for _, member in cluster_status["defaultreplicaset"]["topology"].items()
@@ -198,7 +198,7 @@ async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
 
         await scale_application(ops_test, APP_NAME, 3)
 
-        cluster_status = await get_cluster_status(ops_test, random_unit)
+        cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
             for _, member in cluster_status["defaultreplicaset"]["topology"].items()
@@ -325,7 +325,7 @@ async def test_custom_variables(ops_test: OpsTest) -> None:
     application = ops_test.model.applications[APP_NAME]
 
     custom_vars = {}
-    custom_vars["max_connections"] = 20
+    custom_vars["max_connections"] = 100
     custom_vars["innodb_buffer_pool_size"] = 20971520
     custom_vars["innodb_buffer_pool_chunk_size"] = 1048576
     custom_vars["group_replication_message_cache_size"] = 134217728

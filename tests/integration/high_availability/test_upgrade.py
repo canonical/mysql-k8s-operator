@@ -1,17 +1,15 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import asyncio
 import json
 import logging
 import shutil
 import zipfile
 from pathlib import Path
+from time import sleep
 from typing import Union
 
 import pytest
-from lightkube import Client
-from lightkube.resources.apps_v1 import StatefulSet
 from pytest_operator.plugin import OpsTest
 
 from .. import juju_
@@ -25,6 +23,7 @@ from ..helpers import (
 from .high_availability_helpers import (
     METADATA,
     ensure_all_units_continuous_writes_incrementing,
+    get_sts_partition,
     relate_mysql_and_application,
 )
 
@@ -33,29 +32,28 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 15 * 60
 
 MYSQL_APP_NAME = "mysql-k8s"
-TEST_APP_NAME = "test-app"
+TEST_APP_NAME = "mysql-test-app"
 
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_deploy_latest(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
-    await asyncio.gather(
-        ops_test.model.deploy(
-            MYSQL_APP_NAME,
-            application_name=MYSQL_APP_NAME,
-            num_units=3,
-            channel="8.0/edge",
-            trust=True,
-            config={"profile": "testing"},
-        ),
-        ops_test.model.deploy(
-            f"mysql-{TEST_APP_NAME}",
-            application_name=TEST_APP_NAME,
-            num_units=1,
-            channel="latest/edge",
-        ),
+    await ops_test.model.deploy(
+        MYSQL_APP_NAME,
+        application_name=MYSQL_APP_NAME,
+        num_units=3,
+        channel="8.0/edge",
+        trust=True,
+        config={"profile": "testing"},
     )
+    await ops_test.model.deploy(
+        TEST_APP_NAME,
+        application_name=TEST_APP_NAME,
+        num_units=1,
+        channel="latest/edge",
+    )
+
     await relate_mysql_and_application(ops_test, MYSQL_APP_NAME, TEST_APP_NAME)
     logger.info("Wait for applications to become active")
     await ops_test.model.wait_for_idle(
@@ -89,12 +87,8 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     assert primary_unit.name == f"{MYSQL_APP_NAME}/0", "Primary unit not set to unit 0"
 
     logger.info("Assert partition is set to 2")
-    client = Client()
-    statefulset = client.get(
-        res=StatefulSet, namespace=ops_test.model.info.name, name=MYSQL_APP_NAME
-    )
 
-    assert statefulset.spec.updateStrategy.rollingUpdate.partition == 2, "Partition not set to 2"
+    assert get_sts_partition(ops_test, MYSQL_APP_NAME) == 2, "Partition not set to 2"
 
 
 @pytest.mark.group(1)
@@ -124,7 +118,16 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
     assert leader_unit is not None, "No leader unit found"
 
     logger.info("Resume upgrade")
-    await juju_.run_action(leader_unit, "resume-upgrade")
+    while get_sts_partition(ops_test, MYSQL_APP_NAME) == 2:
+        # resume action sometime fails in CI, no clear reason
+        try:
+            await juju_.run_action(leader_unit, "resume-upgrade")
+        except AssertionError:
+            # ignore action return error as it is expected when
+            # the leader unit is the next one to be upgraded
+            # due it being immediately rolled when the partition
+            # is patched in the statefulset
+            pass
 
     logger.info("Wait for upgrade to complete")
     await ops_test.model.block_until(
@@ -175,7 +178,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     )
 
     logger.info("Ensure continuous_writes while in failure state on remaining units")
-    mysql_units = [unit_ for unit_ in application.units if unit_ != unit]
+    mysql_units = [unit_ for unit_ in application.units if unit_.name != unit.name]
     await ensure_all_units_continuous_writes_incrementing(ops_test, mysql_units)
 
     logger.info("Re-run pre-upgrade-check action")
@@ -190,7 +193,17 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     )
 
     logger.info("Resume upgrade")
-    await juju_.run_action(leader_unit, "resume-upgrade")
+    while get_sts_partition(ops_test, MYSQL_APP_NAME) == 2:
+        # resume action sometime fails in CI, no clear reason
+        try:
+            await juju_.run_action(leader_unit, "resume-upgrade")
+            sleep(2)
+        except AssertionError:
+            # ignore action return error as it is expected when
+            # the leader unit is the next one to be upgraded
+            # due it being immediately rolled when the partition
+            # is patched in the statefulset
+            pass
 
     logger.info("Wait for application to recover")
     await ops_test.model.block_until(

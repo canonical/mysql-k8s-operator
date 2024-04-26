@@ -11,16 +11,12 @@ from typing import List, Optional, Tuple
 
 import kubernetes
 import yaml
+from juju.model import Model
 from juju.unit import Unit
+from lightkube import Client
+from lightkube.resources.apps_v1 import StatefulSet
 from pytest_operator.plugin import OpsTest
-from tenacity import (
-    RetryError,
-    Retrying,
-    retry,
-    stop_after_attempt,
-    stop_after_delay,
-    wait_fixed,
-)
+from tenacity import RetryError, Retrying, retry, stop_after_attempt, stop_after_delay, wait_fixed
 
 from ..helpers import (
     execute_queries_on_unit,
@@ -70,7 +66,7 @@ async def get_max_written_value_in_database(ops_test: OpsTest, unit: Unit) -> in
     return output[0]
 
 
-def get_application_name(ops_test: OpsTest, application_name_substring: str) -> str:
+def get_application_name(ops_test: OpsTest, application_name_substring: str) -> Optional[str]:
     """Returns the name of the application witt the provided application name.
 
     This enables us to retrieve the name of the deployed application in an existing model.
@@ -104,7 +100,7 @@ async def ensure_n_online_mysql_members(
     try:
         for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
             with attempt:
-                cluster_status = await get_cluster_status(ops_test, mysql_unit)
+                cluster_status = await get_cluster_status(mysql_unit)
                 online_members = [
                     label
                     for label, member in cluster_status["defaultreplicaset"]["topology"].items()
@@ -121,6 +117,7 @@ async def deploy_and_scale_mysql(
     check_for_existing_application: bool = True,
     mysql_application_name: str = MYSQL_DEFAULT_APP_NAME,
     num_units: int = 3,
+    model: Optional[Model] = None,
 ) -> str:
     """Deploys and scales the mysql application charm.
 
@@ -130,11 +127,14 @@ async def deploy_and_scale_mysql(
             in the model
         mysql_application_name: The name of the mysql application if it is to be deployed
         num_units: The number of units to deploy
+        model: The model to deploy the mysql application to
     """
     application_name = get_application_name(ops_test, "mysql")
+    if not model:
+        model = ops_test.model
 
     if check_for_existing_application and application_name:
-        if len(ops_test.model.applications[application_name].units) != num_units:
+        if len(model.applications[application_name].units) != num_units:
             async with ops_test.fast_forward("60s"):
                 await scale_application(ops_test, application_name, num_units)
 
@@ -300,12 +300,12 @@ async def high_availability_test_setup(ops_test: OpsTest) -> Tuple[str, str]:
 
 
 async def send_signal_to_pod_container_process(
-    ops_test: OpsTest, unit_name: str, container_name: str, process: str, signal_code: str
+    model_name: str, unit_name: str, container_name: str, process: str, signal_code: str
 ) -> None:
     """Send the specified signal to a pod container process.
 
     Args:
-        ops_test: The ops test framework
+        model_name: The juju model name
         unit_name: The name of the unit to send signal to
         container_name: The name of the container to send signal to
         process: The name of the process to send signal to
@@ -319,7 +319,7 @@ async def send_signal_to_pod_container_process(
     response = kubernetes.stream.stream(
         kubernetes.client.api.core_v1_api.CoreV1Api().connect_get_namespaced_pod_exec,
         pod_name,
-        ops_test.model.info.name,
+        model_name,
         container=container_name,
         command=send_signal_command.split(),
         stdin=False,
@@ -457,19 +457,24 @@ async def clean_up_database_and_table(
 
 
 async def ensure_all_units_continuous_writes_incrementing(
-    ops_test: OpsTest, mysql_units: Optional[List[Unit]] = None
+    ops_test: OpsTest,
+    mysql_units: Optional[List[Unit]] = None,
+    mysql_application_name: Optional[str] = None,
 ) -> None:
     """Ensure that continuous writes is incrementing on all units.
 
     Also, ensure that all continuous writes up to the max written value is available
     on all units (ensure that no committed data is lost).
     """
-    mysql_application_name = get_application_name(ops_test, "mysql")
+    if not mysql_application_name:
+        mysql_application_name = get_application_name(ops_test, "mysql")
 
     if not mysql_units:
         mysql_units = ops_test.model.applications[mysql_application_name].units
 
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
+
+    assert primary, "Primary unit not found"
 
     last_max_written_value = await get_max_written_value_in_database(ops_test, primary)
 
@@ -549,7 +554,7 @@ async def wait_until_units_in_status(
     ops_test: OpsTest, units_to_check: List[Unit], online_unit: Unit, status: str
 ) -> None:
     """Waits until all units specified are in a given status, or timeout occurs."""
-    cluster_status = await get_cluster_status(ops_test, online_unit)
+    cluster_status = await get_cluster_status(online_unit)
 
     for unit in units_to_check:
         assert (
@@ -575,3 +580,9 @@ async def ensure_process_not_running(
     assert (
         return_code != 0
     ), f"Process {process} is still running with pid {pid} on unit {unit_name}, container {container_name}"
+
+
+def get_sts_partition(ops_test: OpsTest, app_name: str) -> int:
+    client = Client()  # type: ignore
+    statefulset = client.get(res=StatefulSet, namespace=ops_test.model.info.name, name=app_name)
+    return statefulset.spec.updateStrategy.rollingUpdate.partition  # type: ignore

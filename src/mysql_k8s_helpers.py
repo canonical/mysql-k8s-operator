@@ -13,13 +13,14 @@ from charms.mysql.v0.mysql import (
     Error,
     MySQLBase,
     MySQLClientError,
-    MySQLConfigureMySQLUsersError,
     MySQLExecError,
+    MySQLGetClusterEndpointsError,
+    MySQLServiceNotRunningError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
 )
 from ops.model import Container
-from ops.pebble import ChangeError, ExecError
+from ops.pebble import ChangeError, ExecError, PathError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -47,7 +48,7 @@ from constants import (
     ROOT_SYSTEM_USER,
     XTRABACKUP_PLUGIN_DIR,
 )
-from k8s_helpers import KubernetesHelpers
+from k8s_helpers import KubernetesClientError, KubernetesHelpers
 from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
@@ -58,10 +59,6 @@ if TYPE_CHECKING:
 
 class MySQLInitialiseMySQLDError(Error):
     """Exception raised when there is an issue initialising an instance."""
-
-
-class MySQLServiceNotRunningError(Error):
-    """Exception raised when the MySQL service is not running."""
 
 
 class MySQLCreateCustomConfigFileError(Error):
@@ -194,14 +191,13 @@ class MySQL(MySQLBase):
             logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
             try:
                 container.exec(
-                    f"chown -R {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP} {MYSQL_DATA_DIR}".split(
-                        " "
-                    )
+                    ["chown", "-R", f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}", MYSQL_DATA_DIR]
                 )
             except ExecError as e:
                 logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
                 raise MySQLInitialiseMySQLDError(e.stderr or "")
 
+    @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
     def initialise_mysqld(self) -> None:
         """Execute instance first run.
 
@@ -216,13 +212,11 @@ class MySQL(MySQLBase):
                 user=MYSQL_SYSTEM_USER,
                 group=MYSQL_SYSTEM_GROUP,
             )
-            process.wait_output()
-        except ExecError as e:
-            logger.error("Exited with code %d. Stderr:", e.exit_code)
-            if e.stderr:
-                for line in e.stderr.splitlines():
-                    logger.error("  %s", line)
-            raise MySQLInitialiseMySQLDError(e.stderr if e.stderr else "")
+            process.wait()
+        except (ExecError, ChangeError, PathError, TimeoutError):
+            logger.exception("Failed to initialise MySQL data directory")
+            self.reset_data_dir()
+            raise MySQLInitialiseMySQLDError
 
     @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
     def wait_until_mysql_connection(self, check_port: bool = True) -> None:
@@ -231,10 +225,13 @@ class MySQL(MySQLBase):
         Retry every 5 seconds for 30 seconds if there is an issue obtaining a connection.
         """
         if not self.container.exists(MYSQLD_SOCK_FILE):
-            raise MySQLServiceNotRunningError()
+            raise MySQLServiceNotRunningError
 
-        if check_port and not self.check_mysqlsh_connection():
-            raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
+        try:
+            if check_port and not self.check_mysqlsh_connection():
+                raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
+        except MySQLClientError:
+            raise MySQLServiceNotRunningError
 
         logger.debug("MySQL connection possible")
 
@@ -257,56 +254,6 @@ class MySQL(MySQLBase):
             owner=ROOT_SYSTEM_USER,
             group=ROOT_SYSTEM_USER,
         )
-
-    def configure_mysql_users(self) -> None:
-        """Configure the MySQL users for the instance.
-
-        Creates base `root@%` and `<server_config>@%` users with the
-        appropriate privileges, and reconfigure `root@localhost` user password.
-
-        Raises MySQLConfigureMySQLUsersError if the user creation fails.
-        """
-        # SYSTEM_USER and SUPER privileges to revoke from the root users
-        # Reference: https://dev.mysql.com/doc/refman/8.0/en/privileges-provided.html#priv_super
-        privileges_to_revoke = (
-            "SYSTEM_USER",
-            "SYSTEM_VARIABLES_ADMIN",
-            "SUPER",
-            "REPLICATION_SLAVE_ADMIN",
-            "GROUP_REPLICATION_ADMIN",
-            "BINLOG_ADMIN",
-            "SET_USER_ID",
-            "ENCRYPTION_KEY_ADMIN",
-            "VERSION_TOKEN_ADMIN",
-            "CONNECTION_ADMIN",
-        )
-
-        # Configure root@%, root@localhost and serverconfig@% users
-        configure_users_commands = (
-            f"CREATE USER 'root'@'%' IDENTIFIED BY '{self.root_password}'",
-            "GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION",
-            f"CREATE USER '{self.server_config_user}'@'%' IDENTIFIED BY '{self.server_config_password}'",
-            f"GRANT ALL ON *.* TO '{self.server_config_user}'@'%' WITH GRANT OPTION",
-            f"CREATE USER '{self.monitoring_user}'@'%' IDENTIFIED BY '{self.monitoring_password}' WITH MAX_USER_CONNECTIONS 3",
-            f"GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO '{self.monitoring_user}'@'%'",
-            f"CREATE USER '{self.backups_user}'@'%' IDENTIFIED BY '{self.backups_password}'",
-            f"GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO '{self.backups_user}'@'%'",
-            f"GRANT SELECT ON performance_schema.log_status TO '{self.backups_user}'@'%'",
-            f"GRANT SELECT ON performance_schema.keyring_component_status TO '{self.backups_user}'@'%'",
-            f"GRANT SELECT ON performance_schema.replication_group_members TO '{self.backups_user}'@'%'",
-            "UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost'",
-            f"ALTER USER 'root'@'localhost' IDENTIFIED BY '{self.root_password}'",
-            f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'%'",
-            f"REVOKE {', '.join(privileges_to_revoke)} ON *.* FROM 'root'@'localhost'",
-            "FLUSH PRIVILEGES",
-        )
-
-        try:
-            logger.debug("Configuring users")
-            self._run_mysqlcli_script("; ".join(configure_users_commands))
-        except MySQLClientError as e:
-            logger.exception("Error configuring MySQL users", exc_info=e)
-            raise MySQLConfigureMySQLUsersError(e.message)
 
     def execute_backup_commands(
         self,
@@ -593,19 +540,6 @@ class MySQL(MySQLBase):
         """Restarts the mysqld exporter service in pebble."""
         self.charm._reconcile_pebble_layer(self.container)
 
-    def stop_group_replication(self) -> None:
-        """Stop Group replication if enabled on the instance."""
-        stop_gr_command = (
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-            "data = session.run_sql('SELECT 1 FROM performance_schema.replication_group_members')",
-            "if len(data.fetch_all()) > 0:",
-            "    session.run_sql('STOP GROUP_REPLICATION')",
-        )
-        try:
-            self._run_mysqlsh_script("\n".join(stop_gr_command))
-        except ExecError:
-            logger.debug("Failed to stop Group Replication for unit")
-
     def _execute_commands(
         self,
         commands: List[str],
@@ -613,6 +547,7 @@ class MySQL(MySQLBase):
         user: Optional[str] = None,
         group: Optional[str] = None,
         env_extra: Optional[Dict] = None,
+        timeout: Optional[float] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         try:
@@ -624,6 +559,7 @@ class MySQL(MySQLBase):
                 user=user,
                 group=group,
                 environment=env_extra,
+                timeout=timeout,
             )
             stdout, stderr = process.wait_output()
             return (stdout, stderr or "")
@@ -673,8 +609,8 @@ class MySQL(MySQLBase):
     def _run_mysqlcli_script(
         self,
         script: str,
-        password: Optional[str] = None,
         user: str = "root",
+        password: Optional[str] = None,
         timeout: Optional[int] = None,
     ) -> str:
         """Execute a MySQL CLI script.
@@ -753,6 +689,14 @@ class MySQL(MySQLBase):
         if self.container.exists(path):
             self.container.remove_path(path)
 
+    def reset_data_dir(self) -> None:
+        """Remove all files from the data directory."""
+        content = self.container.list_files(MYSQL_DATA_DIR)
+        content_set = {item.name for item in content}
+        logger.debug("Resetting MySQL data directory.")
+        for item in content_set:
+            self.container.remove_path(f"{MYSQL_DATA_DIR}/{item}", recursive=True)
+
     def check_if_mysqld_process_stopped(self) -> bool:
         """Checks if the mysqld process is stopped on the container."""
         command = ["ps", "-eo", "comm,stat"]
@@ -820,3 +764,31 @@ class MySQL(MySQLBase):
             return expected_content <= content_set
         except ExecError:
             return False
+
+    def update_endpoints(self) -> None:
+        """Updates pod labels to reflect role of the unit."""
+        logger.debug("Updating pod labels")
+        try:
+            rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+
+            for endpoints, label in (
+                (rw_endpoints, "primary"),
+                (ro_endpoints, "replicas"),
+                (offline, "offline"),
+            ):
+                for pod in (p.split(".")[0] for p in endpoints.split(",")):
+                    if pod:
+                        self.k8s_helper.label_pod(label, pod)
+        except MySQLGetClusterEndpointsError:
+            logger.exception("Failed to get cluster endpoints")
+        except KubernetesClientError:
+            logger.exception("Can't update pod labels")
+
+    def set_cluster_primary(self, new_primary_address: str) -> None:
+        """Set the cluster primary and update pod labels."""
+        super().set_cluster_primary(new_primary_address)
+        self.update_endpoints()
+
+    def fetch_error_log(self) -> Optional[str]:
+        """Fetch the MySQL error log."""
+        return self.read_file_content("/var/log/mysql/error.log")
