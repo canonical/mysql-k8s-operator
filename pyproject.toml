@@ -24,7 +24,8 @@ ops = ">=2.0.0"
 poetry-core = "*"
 pydantic = "^1.10, <2"
 # tls_certificates_interface/v1/tls_certificates.py
-cryptography = "*"
+# tls_certificates lib uses a feature only available in cryptography >=42.0.5
+cryptography = ">=42.0.5"
 jsonschema = "*"
 # loki_k8s.v0.loki_push_api.py
 cosl = ">=0.0.7"
