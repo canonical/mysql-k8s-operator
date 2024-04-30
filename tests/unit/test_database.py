@@ -50,6 +50,7 @@ class TestDatabase(unittest.TestCase):
     def tearDown(self) -> None:
         self.patcher.stop()
 
+    @patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_process_locks")
     @patch("k8s_helpers.KubernetesHelpers.wait_service_ready")
     @patch("mysql_k8s_helpers.MySQL.update_endpoints")
     @patch("k8s_helpers.KubernetesHelpers.create_endpoint_services")
@@ -66,6 +67,7 @@ class TestDatabase(unittest.TestCase):
         _create_endpoint_services,
         _update_endpoints,
         _wait_service_ready,
+        _,
     ):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
