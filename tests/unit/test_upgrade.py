@@ -58,11 +58,12 @@ class TestUpgrade(unittest.TestCase):
         """Test the highest ordinal."""
         self.assertEqual(1, self.charm.upgrade.highest_ordinal)
 
+    @patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_process_locks")
     @patch("mysql_k8s_helpers.MySQL.rescan_cluster")
     @patch("upgrade.MySQLK8sUpgrade._pre_upgrade_prepare")
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=MOCK_STATUS_ONLINE)
     def test_pre_upgrade_check(
-        self, mock_get_cluster_status, mock_pre_upgrade_prepare, mock_rescan_cluster
+        self, mock_get_cluster_status, mock_pre_upgrade_prepare, mock_rescan_cluster, _
     ):
         """Test the pre upgrade check."""
         self.harness.set_leader(True)
@@ -123,6 +124,7 @@ class TestUpgrade(unittest.TestCase):
         ]
         mock_logging.assert_has_calls(calls)
 
+    @patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_process_locks")
     @patch("mysql_k8s_helpers.MySQL.set_dynamic_variable")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label", return_value="mysql-k8s-1")
     @patch("mysql_k8s_helpers.MySQL.set_cluster_primary")
@@ -133,6 +135,7 @@ class TestUpgrade(unittest.TestCase):
         mock_set_cluster_primary,
         mock_get_primary_label,
         mock_set_dynamic_variable,
+        _,
     ):
         """Test the pre upgrade prepare."""
         self.harness.set_leader(True)
