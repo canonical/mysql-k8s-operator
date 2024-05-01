@@ -1,0 +1,28 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:121 Creating offers in first model
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:124 Consume offer in second model
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:127 Relating the two mysql clusters
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:130 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  db1/0 [executing] active: Primary
+  db1/1 [executing] active: 
+  db1/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  db2/0 [executing] active: 
+  db2/1 [executing] active: Primary
+  db2/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  db2/0 [idle] waiting: waiting replica cluster be configured
+  db2/1 [executing] waiting: Waiting for primary cluster
+  db2/2 [idle] waiting: waiting replica cluster be configured
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  db1/0 [executing] maintenance: Adding replica cluster
+  db1/1 [idle] active: 
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  db2/0 [executing] active: 
+  db2/1 [executing] waiting: Waiting for recovery to complete on other units
+  db2/2 [executing] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] active: Primary (standby)
+  db2/2 [idle] active:
