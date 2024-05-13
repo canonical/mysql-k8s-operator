@@ -628,11 +628,22 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Returns:
             bool indicating whether the caller should return
         """
+        if (
+            self.unit.is_leader()
+            and self._mysql.is_data_dir_initialised()
+            and self.app_peer_data.get("units-added-to-cluster") == "0"
+        ):
+            # This state frames a scale-up from 0 units.
+            logger.info("Cluster is empty. Attempting to recover.")
+            self.create_cluster()
+
         if not self.cluster_initialized or not self.unit_peer_data.get("member-role"):
             # health checks are only after cluster and members are initialized
+            logger.debug("Cluster not initialized yet. Skipping.")
             return True
 
         if not self._mysql.is_mysqld_running():
+            logger.debug("MySQL is not running. Skipping.")
             return True
 
         # retrieve and persist state for every unit
@@ -703,15 +714,18 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
             # join cluster test takes precedence over blocked test
             # due to matching criteria
+            logger.debug("Attempting to join cluster")
             self.join_unit_to_cluster()
             return
 
         if self._is_cluster_blocked():
+            logger.debug("Cluster is blocked. Skipping.")
             return
         del self.restart_peers.data[self.unit]["state"]
 
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
+            logger.debug("Container not ready. Skipping.")
             return
 
         if self._handle_potential_cluster_crash_scenario():
@@ -786,6 +800,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         # Inform other hooks of current status
         self.unit_peer_data["unit-status"] = "removing"
+
+        if self.unit.is_leader():
+            # Update 'units-added-to-cluster' counter in the peer relation databag
+            units = int(self.app_peer_data.get("units-added-to-cluster", 1))
+            self.app_peer_data["units-added-to-cluster"] = str(units - 1)
 
 
 if __name__ == "__main__":
