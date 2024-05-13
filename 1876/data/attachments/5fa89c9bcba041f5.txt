@@ -1,0 +1,5 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:239 Ensuring that there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:244 Ensuring that all units have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
