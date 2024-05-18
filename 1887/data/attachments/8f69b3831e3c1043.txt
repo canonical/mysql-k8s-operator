@@ -1,0 +1,12 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:76 Build mysql charm
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:82 Deploying mysql clusters
+[32mINFO    [0m juju.model:model.py:2069 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:2069 Deploying local:mysql-k8s-0
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:101 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  db2/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  db1/0 [allocating] waiting: installing agent
+  db1/1 [allocating] waiting: installing agent
+  db1/2 [allocating] waiting: installing agent
