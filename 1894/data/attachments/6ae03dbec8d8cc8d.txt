@@ -1,0 +1,56 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:207 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:36:08Z
+
+App                       Version                  Status   Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.36-0ubuntu0.22.04.1  waiting      3  mysql-k8s                                  0  10.152.183.218  no       installing agent
+self-signed-certificates                           active       1  self-signed-certificates  latest/stable   72  10.152.183.226  no       
+
+Unit                         Workload  Agent  Address      Ports  Message
+mysql-k8s/0                  active    idle   10.1.114.75         
+mysql-k8s/1                  active    idle   10.1.114.77         
+mysql-k8s/2*                 error     idle   10.1.114.76         hook failed: "certificates-relation-changed"
+self-signed-certificates/0*  active    idle   10.1.114.78         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:34:37 ERROR juju.worker.uniter.context cannot apply changes: creating secrets: Regular expression is invalid: nothing to repeat
+unit-mysql-k8s-2: 01:34:37 ERROR juju.worker.uniter.operation hook "certificates-relation-changed" (via hook dispatching script: dispatch) failed: creating secrets: Regular expression is invalid: nothing to repeat
+unit-mysql-k8s-2: 01:34:43 ERROR juju.worker.uniter.context cannot apply changes: creating secrets: Regular expression is invalid: nothing to repeat
+unit-mysql-k8s-2: 01:34:43 ERROR juju.worker.uniter.operation hook "certificates-relation-changed" (via hook dispatching script: dispatch) failed: creating secrets: Regular expression is invalid: nothing to repeat
+unit-mysql-k8s-2: 01:34:55 ERROR juju.worker.uniter.context cannot apply changes: creating secrets: Regular expression is invalid: nothing to repeat
+unit-mysql-k8s-2: 01:34:55 ERROR juju.worker.uniter.operation hook "certificates-relation-changed" (via hook dispatching script: dispatch) failed: creating secrets: Regular expression is invalid: nothing to repeat
+unit-mysql-k8s-0: 01:35:04 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:35:09 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:35:09 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:35:16 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:35:16 ERROR juju.worker.uniter.context cannot apply changes: creating secrets: Regular expression is invalid: nothing to repeat
+unit-mysql-k8s-2: 01:35:16 ERROR juju.worker.uniter.operation hook "certificates-relation-changed" (via hook dispatching script: dispatch) failed: creating secrets: Regular expression is invalid: nothing to repeat
+unit-mysql-k8s-2: 01:35:57 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:35:57 ERROR juju.worker.uniter.context cannot apply changes: creating secrets: Regular expression is invalid: nothing to repeat
+secret with label "afd8c2bccf834997afce12c2706d2ede------BEGIN CERTIFICATE REQUEST-----\nMIIDIDCCAggCAQAwbTEoMCYGA1UEAwwfbXlzcWwtazhzLTIubXlzcWwtazhzLWVu\nZHBvaW50czEtMCsGA1UELQwkOWFmNTNkZWEtMzg3My00MmM5LTg1NWEtYmE1ZWUz\nNTJmOTQyMRIwEAYDVQQKDAlteXNxbC1rOHMwggEiMA0GCSqGSIb3DQEBAQUAA4IB\nDwAwggEKAoIBAQDFzq4BYsEybwdDMox8AsvlBq9YFEt3L4VW2uxcz/4XVrva63UN\n95Nq//bUtoGJBW0qY6TZY9JYPHYVjuXbzxLPKACqKLj6rL50q+W4kiWEikIxid/n\n27XLezXthBYh7/ioSZ+9+1xzA5ZG0hHgWx5Zd+DCH8Or8zxag194PYqkwdinmhRQ\nyRsGsTY5pjDIWk5d0S3qEoy8zSkMQoba9ulKxEqDgYTs53eDuoDzb5tPCNEmlDgQ\nxE3814uMUEOf6o8YZwIzpt9+kiXh+tlX7nXC662m7D7upWwvIqCboILBxtInYNAc\nL1Nt3stMoQdP6NbR7HR8Rby0FkBzKR3PgpGfAgMBAAGgbjBsBgkqhkiG9w0BCQ4x\nXzBdMFsGA1UdEQRUMFKCNm15c3FsLWs4cy0yLm15c3FsLWs4cy1lbmRwb2ludHMu\ndGVzdC5zdmMuY2x1c3Rlci5sb2NhbIILbXlzcWwtazhzLTKCCzEwLjEuMTE0Ljc2\nMA0GCSqGSIb3DQEBCwUAA4IBAQBwE7qLxj6Ia+5o36lSaQ6jrRSZlXlSncKwpvFC\ni3mvBfGkMTWBx1ZK3CpvSbccxwyB7I11Fn4s3Pti1DmolCG5MseZZwL9p9ToDdGd\n4CUqZDmP238WygPWuCfT/3yYg3M38tqz86hqbR16HuOESwZFYF+PVujNJ/SMHtbD\n33Rsu9Dw8Buh9hJiSY/ILMPAMfnJqhfT7mtHnIQT+XdbtYgux+NdfwD1gJYpDRrT\nrolpVkShhlertEB4VcU1zfJ4QoDeMCvXLEgjZl8XfEumxLkQ8X8DIRW5CsGM3LMl\n2qMto0MnplROP+lZN7geTGoZ6u/565PFOmCsvz5KY5ym2Lxd\n-----END CERTIFICATE REQUEST-----" already exists
+unit-mysql-k8s-2: 01:35:58 ERROR juju.worker.uniter.operation hook "certificates-relation-changed" (via hook dispatching script: dispatch) failed: creating secrets: Regular expression is invalid: nothing to repeat
+secret with label "afd8c2bccf834997afce12c2706d2ede------BEGIN CERTIFICATE REQUEST-----\nMIIDIDCCAggCAQAwbTEoMCYGA1UEAwwfbXlzcWwtazhzLTIubXlzcWwtazhzLWVu\nZHBvaW50czEtMCsGA1UELQwkOWFmNTNkZWEtMzg3My00MmM5LTg1NWEtYmE1ZWUz\nNTJmOTQyMRIwEAYDVQQKDAlteXNxbC1rOHMwggEiMA0GCSqGSIb3DQEBAQUAA4IB\nDwAwggEKAoIBAQDFzq4BYsEybwdDMox8AsvlBq9YFEt3L4VW2uxcz/4XVrva63UN\n95Nq//bUtoGJBW0qY6TZY9JYPHYVjuXbzxLPKACqKLj6rL50q+W4kiWEikIxid/n\n27XLezXthBYh7/ioSZ+9+1xzA5ZG0hHgWx5Zd+DCH8Or8zxag194PYqkwdinmhRQ\nyRsGsTY5pjDIWk5d0S3qEoy8zSkMQoba9ulKxEqDgYTs53eDuoDzb5tPCNEmlDgQ\nxE3814uMUEOf6o8YZwIzpt9+kiXh+tlX7nXC662m7D7upWwvIqCboILBxtInYNAc\nL1Nt3stMoQdP6NbR7HR8Rby0FkBzKR3PgpGfAgMBAAGgbjBsBgkqhkiG9w0BCQ4x\nXzBdMFsGA1UdEQRUMFKCNm15c3FsLWs4cy0yLm15c3FsLWs4cy1lbmRwb2ludHMu\ndGVzdC5zdmMuY2x1c3Rlci5sb2NhbIILbXlzcWwtazhzLTKCCzEwLjEuMTE0Ljc2\nMA0GCSqGSIb3DQEBCwUAA4IBAQBwE7qLxj6Ia+5o36lSaQ6jrRSZlXlSncKwpvFC\ni3mvBfGkMTWBx1ZK3CpvSbccxwyB7I11Fn4s3Pti1DmolCG5MseZZwL9p9ToDdGd\n4CUqZDmP238WygPWuCfT/3yYg3M38tqz86hqbR16HuOESwZFYF+PVujNJ/SMHtbD\n33Rsu9Dw8Buh9hJiSY/ILMPAMfnJqhfT7mtHnIQT+XdbtYgux+NdfwD1gJYpDRrT\nrolpVkShhlertEB4VcU1zfJ4QoDeMCvXLEgjZl8XfEumxLkQ8X8DIRW5CsGM3LMl\n2qMto0MnplROP+lZN7geTGoZ6u/565PFOmCsvz5KY5ym2Lxd\n-----END CERTIFICATE REQUEST-----" already exists
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[31m[1mERROR   [0m websockets.client:protocol.py:1015 data transfer failed
+Traceback (most recent call last):
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 959, in transfer_data
+    message = await self.read_message()
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1029, in read_message
+    frame = await self.read_data_frame(max_size=self.max_size)
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1104, in read_data_frame
+    frame = await self.read_frame(max_size)
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/protocol.py", line 1161, in read_frame
+    frame = await Frame.read(
+  File "/home/runner/work/mysql-k8s-operator/mysql-k8s-operator/.tox/integration/lib/python3.10/site-packages/websockets/legacy/framing.py", line 68, in read
+    data = await reader(2)
+  File "/usr/lib/python3.10/asyncio/streams.py", line 708, in readexactly
+    await self._wait_for_data('readexactly')
+  File "/usr/lib/python3.10/asyncio/streams.py", line 501, in _wait_for_data
+    await self._waiter
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 924, in write
+    n = self._sock.send(data)
+OSError: [Errno 9] Bad file descriptor
