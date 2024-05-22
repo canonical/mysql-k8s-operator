@@ -27,13 +27,13 @@ And if you run `kubectl describe pod mysql-k8s-0`, all the containers will have 
 <a name="hld"></a>
 ## HLD (High Level Design)
 
-The "Charmed MySQL K8s" (`workload` container) based on `mysql-image` resource defined in the [charm metadata.yaml](https://github.com/canonical/mysql-k8s-operator/blob/main/metadata.yaml). It is an official Canonical "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock)" [OCI/ROCK](https://ubuntu.com/server/docs/rock-images/introduction) image, which is recursively based on Canonical SNAP “[charmed-mysql](https://snapcraft.io/charmed-mysql)” (read more about the SNAP details [here](/t/11756)).
+The "Charmed MySQL K8s" (`workload` container) based on `mysql-image` resource defined in the [charm metadata.yaml](https://github.com/canonical/mysql-k8s-operator/blob/main/metadata.yaml). It is an official Canonical "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock)" [OCI/Rock](https://ubuntu.com/server/docs/rock-images/introduction) image, which is recursively based on Canonical SNAP “[charmed-mysql](https://snapcraft.io/charmed-mysql)” (read more about the SNAP details [here](/t/11756)).
 
 [Charmcraft](https://juju.is/docs/sdk/install-charmcraft) uploads an image as a [charm resource](https://charmhub.io/mysql-k8s/resources/mysql-image) to [Charmhub](https://charmhub.io/mysql-k8s) during the [publishing](https://github.com/canonical/mysql-k8s-operator/blob/main/.github/workflows/release.yaml#L40-L53), as described in the [Juju SDK How-to guides](https://juju.is/docs/sdk/publishing).
 
 The charm supports Juju deploymed to all Kubernetes environments: [MicroK8s](https://microk8s.io/), [Charmed Kubernetes](https://ubuntu.com/kubernetes/charmed-k8s), [GKE](https://charmhub.io/mysql-k8s/docs/h-deploy-gke), [Amazon EKS](https://aws.amazon.com/eks/), ...
 
-The OCI/ROCK ships the following components:
+The OCI/Rock ships the following components:
 
 * MySQL Community Edition (based on SNAP "[charmed-mysql](/t/11756)") 
 * MySQL Router (based on SNAP "[charmed-mysql](/t/11756)") 
@@ -43,7 +43,7 @@ The OCI/ROCK ships the following components:
 * Prometheus MySQL Router Exporter (based on SNAP "[charmed-mysql](/t/11756)") 
 * Prometheus Grafana dashboards and Loki alert rules are part of the charm revision and missing in SNAP.
 
-SNAP-based ROCK images guaranties the same components versions and functionality between VM and K8s charm flavors.
+SNAP-based rocks guarantee the same components versions and functionality between VM and K8s charm flavors.
 
 Pebble runs layers of all the currently enabled services, e.g. monitoring, backups, etc: 
 ```shell
@@ -78,7 +78,7 @@ All `exporter` services are activated after the relation with [COS Monitoring](/
 
 > **:warning: Important:** all pebble resources must be executed under the proper user (defined in  user:group options of pebble layer)!
 
-The ROCK "charmed-mysql" also ships list of tools used by charm:
+The rock "charmed-mysql" also ships list of tools used by charm:
 * `mysql` - mysql client to connect `mysqld`.
 * `mysqlsh` - new [mysql-shell](https://dev.mysql.com/doc/mysql-shell/8.0/en/) client to configure MySQL cluster.
 * `xbcloud` - a tool to download and upload full or part of xbstream archive from/to the cloud.
@@ -136,7 +136,7 @@ Accordingly to the [Juju SDK](https://juju.is/docs/sdk/event): “an event is a 
 
 For this charm, the following events are observed:
 
-1. [mysql_pebble_ready](https://juju.is/docs/sdk/container-name-pebble-ready-event): informs charm about the availability of the ROCK "charmed-mysql"-based `workload` K8s container. Also performs basic preparations to bootstrap the cluster on the first leader (or join the already configured cluster). 
+1. [mysql_pebble_ready](https://juju.is/docs/sdk/container-name-pebble-ready-event): informs charm about the availability of the rock "charmed-mysql"-based `workload` K8s container. Also performs basic preparations to bootstrap the cluster on the first leader (or join the already configured cluster). 
 2. [leader-elected](https://juju.is/docs/sdk/leader-elected-event): generate all the secrets to bootstrap the cluster.
 5. [config_changed](https://juju.is/docs/sdk/config-changed-event): usually fired in response to a configuration change using the GUI or CLI. Create and set default cluster and cluster-set names in the peer relation databag (on the leader only).
 6. [update-status](https://juju.is/docs/sdk/update-status-event): Takes care of workload health checks.

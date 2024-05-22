@@ -11,7 +11,7 @@ Before the data migration check all [limitations of the modern Charmed MySQL K8s
 The approach:
 
 * retrieve root/admin level credentials from legacy charm. See examples [here](/t/11992).
-* install [Percona XtraBackup for MySQL](https://www.percona.com/software/mysql-database/percona-xtrabackup) inside the old charm OR remotely. Ensure version is compatible with xtrabackup in `Charmed MySQL K8s` revision you are going to deploy! See [examples](https://docs.percona.com/percona-xtrabackup/8.0/installation.html). BTW, you can use `charmed-mysql` [SNAP](https://snapcraft.io/charmed-mysql)/[ROCK](https://github.com/canonical/charmed-mysql-rock) directly (more details [here](/t/11757#hld)).
+* install [Percona XtraBackup for MySQL](https://www.percona.com/software/mysql-database/percona-xtrabackup) inside the old charm OR remotely. Ensure version is compatible with xtrabackup in `Charmed MySQL K8s` revision you are going to deploy! See [examples](https://docs.percona.com/percona-xtrabackup/8.0/installation.html). BTW, you can use `charmed-mysql` [SNAP](https://snapcraft.io/charmed-mysql)/[rock](https://github.com/canonical/charmed-mysql-rock) directly (more details [here](/t/11757#hld)).
 * configure storage for database backup (local or remote, S3-based is recommended).
 * create a first full logical backup during the off-peak, [example of backup command](https://github.com/canonical/mysql-k8s-operator/blob/bc5f255e579033e2d501c3412d87913593ad62a3/lib/charms/mysql/v0/mysql.py#L2160-L2185).
 * [restore the foreign backup](/t/9661) to Charmed MySQL Lab installation.
