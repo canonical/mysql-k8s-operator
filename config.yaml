@@ -23,6 +23,13 @@ options:
       Amount of memory in Megabytes to limit MySQL and associated process to.
       If unset, this will be decided according to the default memory limit in the selected profile.
       Only comes into effect when the `production` profile is selected.
+  binlog-expire-logs-seconds:
+    description: |
+      The number of seconds before binary logs are recycled. Defaults to 2592000 (30 days).
+      If set to 0, binary logs are not recycled.
+    type: int
+    default: 2592000
+
 # Config options for the legacy 'mysql' interface
   mysql-interface-user:
     description: "The database username for the legacy 'mysql' interface"

@@ -116,3 +116,14 @@ class CharmConfig(BaseConfigModel):
             )
 
         return value
+
+    @validator("binlog_expire_logs_seconds")
+    @classmethod
+    def binlog_expire_logs_seconds_validator(cls, value: int) -> Optional[int]:
+        """Check binlog_expire_logs_seconds."""
+
+        if not (0 < value < MYSQL_MAX_EXPIRE_LOGS_SECONDS):
+            raise ValueError(
+                f"Invalid binlog-expire-logs-seconds value: {value}")
+
+        return value

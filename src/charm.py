@@ -32,6 +32,7 @@ from charms.mysql.v0.mysql import (
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
     MySQLSetClusterPrimaryError,
+    MYSQL_MAX_EXPIRE_LOGS_SECONDS
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
