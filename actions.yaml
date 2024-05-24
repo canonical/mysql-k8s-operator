@@ -62,10 +62,20 @@ pre-upgrade-check:
 resume-upgrade:
   description: Resume a rolling upgrade after asserting successful upgrade of a new revision.
 
-promote-standby-cluster:
+create-replication:
   description: |
-    Promotes this cluster to become the leader in the cluster-set. Used for safe switchover or failover.
-    Must be run against the charm leader unit of a standby cluster.
+    Create replication between two related clusters.
+    This action is must be run on the offer side of the relation.
+  params:
+    name:
+      type: string
+      description: A (optional) name for this replication.
+      default: default
+
+promote-to-primary:
+  description: |
+    Promotes this cluster to become the primary in the cluster-set. Used for safe switchover or failover.
+    Can only be run against the charm leader unit of a standby cluster.
   params:
     cluster-set-name:
       type: string
@@ -85,24 +95,6 @@ recreate-cluster:
     When a standby cluster is removed from an async replication relation, the cluster will be dissolved and
     each unit will be kept in blocked status. Recreating the cluster allows to rejoin the async replication
     relation, or usage as a standalone cluster.
-
-fence-writes:
-  description: |
-    Stops write traffic to a primary cluster of a ClusterSet.
-  params:
-    cluster-set-name:
-      type: string
-      description: |
-        The name of the cluster-set. Mandatory option, used for confirmation.
-
-unfence-writes:
-  description: |
-    Resumes write traffic to a primary cluster of a ClusterSet.
-  params:
-    cluster-set-name:
-      type: string
-      description: |
-        The name of the cluster-set. Mandatory option, used for confirmation.
 
 rejoin-cluster:
   description: |

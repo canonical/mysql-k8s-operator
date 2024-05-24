@@ -16,8 +16,8 @@ from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.mysql.v0.async_replication import (
-    MySQLAsyncReplicationPrimary,
-    MySQLAsyncReplicationReplica,
+    MySQLAsyncReplicationOffer,
+    MySQLAsyncReplicationConsumer,
 )
 from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
@@ -144,8 +144,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.log_rotate_manager.start_log_rotate_manager()
 
         self.rotate_mysql_logs = RotateMySQLLogs(self)
-        self.async_primary = MySQLAsyncReplicationPrimary(self)
-        self.async_replica = MySQLAsyncReplicationReplica(self)
+        self.async_primary = MySQLAsyncReplicationOffer(self)
+        self.async_replica = MySQLAsyncReplicationConsumer(self)
 
     @property
     def _mysql(self) -> MySQL:

@@ -119,25 +119,59 @@ async def test_build_and_deploy(
 async def test_async_relate(first_model: Model, second_model: Model) -> None:
     """Relate the two mysql clusters."""
     logger.info("Creating offers in first model")
-    await first_model.create_offer(f"{MYSQL_APP1}:async-primary")
+    await first_model.create_offer(f"{MYSQL_APP1}:replication-offer")
 
     logger.info("Consume offer in second model")
     await second_model.consume(endpoint=f"admin/{first_model.info.name}.{MYSQL_APP1}")
 
     logger.info("Relating the two mysql clusters")
-    await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:async-replica")
+    await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:replication")
+
+    logger.info("Waiting for the applications to settle")
+    await gather(
+        first_model.block_until(
+            lambda: any(
+                unit.workload_status == "blocked"
+                for unit in first_model.applications[MYSQL_APP1].units
+            ),
+            timeout=5 * MINUTE,
+        ),
+        second_model.block_until(
+            lambda: all(
+                unit.workload_status == "waiting"
+                for unit in second_model.applications[MYSQL_APP2].units
+            ),
+            timeout=5 * MINUTE,
+        ),
+    )
+
+
+@juju3
+@pytest.mark.abort_on_fail
+@pytest.mark.group(1)
+async def test_create_replication(first_model: Model, second_model: Model) -> None:
+    """Run the create replication and wait for the applications to settle."""
+    logger.info("Running create replication action")
+    leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
+    assert leader_unit is not None, "No leader unit found"
+
+    await juju_.run_action(
+        leader_unit,
+        "create-replication",
+        **{"--wait": "5m"},
+    )
 
     logger.info("Waiting for the applications to settle")
     await gather(
         first_model.wait_for_idle(
             apps=[MYSQL_APP1],
             status="active",
-            timeout=10 * MINUTE,
+            timeout=5 * MINUTE,
         ),
         second_model.wait_for_idle(
             apps=[MYSQL_APP2],
             status="active",
-            timeout=10 * MINUTE,
+            timeout=5 * MINUTE,
         ),
     )
 
@@ -298,7 +332,7 @@ async def test_remove_relation_and_relate(
 
     logger.info("Remove async relation")
     await second_model.applications[MYSQL_APP2].remove_relation(
-        f"{MYSQL_APP2}:async-replica", MYSQL_APP1
+        f"{MYSQL_APP2}:replication", MYSQL_APP1
     )
 
     second_model_units = second_model.applications[MYSQL_APP2].units
@@ -323,7 +357,7 @@ async def test_remove_relation_and_relate(
     )
 
     logger.info("Re relating the two mysql clusters")
-    await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:async-replica")
+    await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:replication")
 
     logger.info("Waiting for the applications to settle")
     await gather(

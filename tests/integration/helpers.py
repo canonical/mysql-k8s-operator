@@ -80,7 +80,7 @@ async def get_cluster_status(unit: Unit, cluster_set=False) -> Dict:
 
 
 async def get_leader_unit(
-    ops_test: OpsTest, app_name: str, model: Optional[Model] = None
+    ops_test: Optional[OpsTest], app_name: str, model: Optional[Model] = None
 ) -> Optional[Unit]:
     leader_unit = None
     if model is None:
