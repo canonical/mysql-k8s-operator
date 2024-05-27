@@ -456,7 +456,6 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
                 "secret-id": secret_id,
                 "cluster-name": self.cluster_name,
                 "mysql-version": version,
-                "cluster-set-name": self.cluster_set_name,
                 "replication-name": event.params.get("name", "default"),
             }
         )
@@ -504,6 +503,11 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             event.relation.data[self.model.app]["is-replica"] = "true"
             return
 
+        self.get_local_relation_data(event.relation).update(  # pyright: ignore[reportCallIssue]
+            {
+                "cluster-set-name": self.cluster_set_name,
+            }
+        )
         # sets ok flag
         self._charm.app_peer_data["async-ready"] = "true"
         message = "Ready to create replication"

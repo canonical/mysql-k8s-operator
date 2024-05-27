@@ -241,7 +241,7 @@ async def test_standby_promotion(
     cluster_set_name = relation_data[0]["application-data"]["cluster-set-domain-name"]
     logger.info("Promoting standby cluster to primary")
     await juju_.run_action(
-        leader_unit, "promote-standby-cluster", **{"cluster-set-name": cluster_set_name}
+        leader_unit, "promote-to-primary", **{"cluster-set-name": cluster_set_name}
     )
 
     results = await get_max_written_value(first_model, second_model)
@@ -276,7 +276,7 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
     cluster_set_name = relation_data[0]["application-data"]["cluster-set-domain-name"]
     await juju_.run_action(
         leader_unit,
-        "promote-standby-cluster",
+        "promote-to-primary",
         **{"--wait": "5m", "cluster-set-name": cluster_set_name, "force": True},
     )
 

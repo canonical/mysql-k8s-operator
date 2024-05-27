@@ -1,4 +1,5 @@
 """Secrets related helper classes/functions."""
+
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
@@ -16,7 +17,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 1
+LIBPATCH = 2
 
 
 APP_SCOPE = "app"
@@ -97,7 +98,7 @@ class CachedSecret:
         """Getting cached secret content."""
         if not self._secret_content:
             if self.meta:
-                self._secret_content = self.meta.get_content(refresh=True)
+                self._secret_content = self.meta.get_content()
         return self._secret_content
 
     def set_content(self, content: Dict[str, str]) -> None:
