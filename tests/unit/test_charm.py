@@ -105,7 +105,9 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader()
 
         # > 3.1.7 changed way last revision secret is accessed (peek)
-        secret_data = self.harness.model.get_secret(label="mysql-k8s.app").peek_content()
+        secret_data = self.harness.model.get_secret(
+            label="database-peers.mysql-k8s.app"
+        ).peek_content()
 
         # Test passwords in content and length
         for password in REQUIRED_PASSWORD_KEYS:

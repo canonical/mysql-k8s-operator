@@ -493,6 +493,11 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             self._charm.unit.status = BlockedStatus(f"Remove {RELATION_OFFER} relation and retry")
             return
 
+        if not self._charm.cluster_initialized:
+            logger.info("Cluster not initialized, deferring event")
+            event.defer()
+            return
+
         if self._charm._mysql.is_cluster_replica():
             logger.error(
                 f"This is a replica cluster, cannot be related as {RELATION_OFFER}. Remove relation."
@@ -808,9 +813,9 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
                 logger.warning(
                     "Cluster name is the same as the primary cluster. Appending generated value"
                 )
-                self._charm.app_peer_data[
-                    "cluster-name"
-                ] = f"{self.cluster_name}{uuid.uuid4().hex[:4]}"
+                self._charm.app_peer_data["cluster-name"] = (
+                    f"{self.cluster_name}{uuid.uuid4().hex[:4]}"
+                )
 
             self._charm.unit.status = MaintenanceStatus("Populate endpoint")
 
