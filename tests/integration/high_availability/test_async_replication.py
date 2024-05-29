@@ -360,6 +360,25 @@ async def test_remove_relation_and_relate(
     await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:replication")
 
     logger.info("Waiting for the applications to settle")
+    await first_model.block_until(
+        lambda: any(
+            unit.workload_status == "blocked"
+            for unit in first_model.applications[MYSQL_APP1].units
+        ),
+        timeout=5 * MINUTE,
+    )
+
+    logger.info("Running create replication action")
+    leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
+    assert leader_unit is not None, "No leader unit found"
+
+    await juju_.run_action(
+        leader_unit,
+        "create-replication",
+        **{"--wait": "5m"},
+    )
+
+    logger.info("Waiting for the applications to settle")
     await gather(
         first_model.wait_for_idle(
             apps=[MYSQL_APP1],
