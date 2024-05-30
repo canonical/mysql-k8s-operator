@@ -1,0 +1,53 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:44:10Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.36-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.28   no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   37  10.152.183.137  no       Last written value=3009
+
+Unit               Workload  Agent  Address       Ports  Message
+mysql-k8s/0        active    idle   10.1.154.203         Primary
+mysql-k8s/1        active    idle   10.1.154.205         Primary
+mysql-k8s/2*       active    idle   10.1.154.204         
+mysql-test-app/0*  active    idle   10.1.154.206         Last written value=3009
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:40:58 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:42:36 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-test-app-0: 01:44:09 ERROR unit.mysql-test-app/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 611, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: The MySQL server is running with the --read-only option so it cannot execute this statement
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 446, in <module>
+    main(MySQLTestApplication)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/ops/main.py", line 544, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/ops/main.py", line 520, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/ops/main.py", line 509, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/ops/main.py", line 143, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/ops/framework.py", line 350, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/ops/framework.py", line 849, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/ops/framework.py", line 939, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 298, in _on_clear_continuous_writes_action
+    cursor.execute(
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/cursor_cext.py", line 330, in execute
+    result = self._cnx.cmd_query(
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 619, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.DatabaseError: 1290 (HY000): The MySQL server is running with the --read-only option so it cannot execute this statement
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
