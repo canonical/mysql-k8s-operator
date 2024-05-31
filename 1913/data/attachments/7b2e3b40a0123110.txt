@@ -1,0 +1,32 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.1.7    unsupported  01:32:22Z
+
+App            Version                         Status  Scale  Charm                      Channel           Rev  Address         Exposed  Message
+mysql-k8s      8.0.36-0ubuntu0.22.04.1         active      3  mysql-k8s                                      0  10.152.183.76   no       
+osm-kafka      wurstmeister/kafka:2.12-2.2.1   active      1  charmed-osm-kafka-k8s      latest/stable      21  10.152.183.253  no       ready
+osm-keystone                                   active      1  osm-keystone               latest/beta        10  10.152.183.99   no       
+osm-mongodb    mongo:latest                    active      1  charmed-osm-mongodb-k8s    latest/stable      29  10.152.183.60   no       ready
+osm-pol        res:image@34e75d3               active      1  osm-pol                    latest/candidate    1  10.152.183.66   no       ready
+osm-zookeeper  .../kubernetes-zookeeper:1....  active      1  charmed-osm-zookeeper-k8s  latest/stable      37  10.152.183.62   no       ready
+
+Unit              Workload  Agent  Address      Ports               Message
+mysql-k8s/0       active    idle   10.1.154.17                      
+mysql-k8s/1*      active    idle   10.1.154.19                      Primary
+mysql-k8s/2       active    idle   10.1.154.18                      
+osm-kafka/0*      active    idle   10.1.154.27  9092/TCP            ready
+osm-keystone/0*   active    idle   10.1.154.8                       
+osm-mongodb/0*    active    idle   10.1.154.23  27017/TCP           ready
+osm-pol/0*        active    idle   10.1.154.28  9999/TCP            ready
+osm-zookeeper/0*  active    idle   10.1.154.25  2181,2888,3888/TCP  ready
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+application-osm-pol: 01:28:56 ERROR unit.osm-pol/0.juju-log Relation missing error: Need kafka, mongodb, mysql relations
+application-osm-pol: 01:29:02 ERROR unit.osm-pol/0.juju-log Relation missing error: Need kafka, mongodb, mysql relations
+application-osm-pol: 01:31:27 ERROR unit.osm-pol/0.juju-log mongodb:6: Relation missing error: Need kafka, mysql relations
+application-osm-pol: 01:31:29 ERROR unit.osm-pol/0.juju-log kafka:7: Relation missing error: Need mysql relation
+application-osm-pol: 01:31:32 ERROR unit.osm-pol/0.juju-log mysql:8: Relation missing error: Need mysql relation
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
