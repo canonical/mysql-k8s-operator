@@ -1,0 +1,8 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:120 Deploy TLS operator
+[32mINFO    [0m juju.model:model.py:2069 Deploying ch:amd64/jammy/self-signed-certificates-72
+[32mINFO    [0m juju.model:model.py:2759 Waiting for model:
+  self-signed-certificates/0 [allocating] waiting: installing agent
+[32mINFO    [0m integration.test_tls:test_tls.py:126 Relate to TLS operator
+[33mWARNING [0m juju.model:model.py:1558 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m integration.test_tls:test_tls.py:133 Asserting connections after relation
+[32mINFO    [0m integration.test_tls:test_tls.py:146 Assert TLS file exists
