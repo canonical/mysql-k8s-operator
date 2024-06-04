@@ -36,6 +36,8 @@ from charms.mysql.v0.mysql import (
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
+from charms.tempo_k8s.v1.charm_tracing import trace_charm
+from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
@@ -66,6 +68,8 @@ from constants import (
     S3_INTEGRATOR_RELATION_NAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
+    TRACING_PROTOCOL,
+    TRACING_RELATION_NAME,
 )
 from k8s_helpers import KubernetesHelpers
 from log_rotate_manager import LogRotateManager
@@ -80,6 +84,29 @@ from utils import compare_dictionaries, generate_random_password
 logger = logging.getLogger(__name__)
 
 
+@trace_charm(
+    tracing_endpoint="tracing_endpoint",
+    extra_types=(
+        GrafanaDashboardProvider,
+        KubernetesHelpers,
+        LogProxyConsumer,
+        LogRotateManager,
+        MetricsEndpointProvider,
+        MySQL,
+        MySQLAsyncReplicationPrimary,
+        MySQLAsyncReplicationReplica,
+        MySQLBackups,
+        MySQLConfig,
+        MySQLK8sUpgrade,
+        MySQLProvider,
+        MySQLRelation,
+        MySQLRootRelation,
+        MySQLTLS,
+        RollingOpsManager,
+        RotateMySQLLogs,
+        S3Requirer,
+    ),
+)
 class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     """Operator framework charm for MySQL."""
 
@@ -145,6 +172,16 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.rotate_mysql_logs = RotateMySQLLogs(self)
         self.async_primary = MySQLAsyncReplicationPrimary(self)
         self.async_replica = MySQLAsyncReplicationReplica(self)
+
+        self.tracing = TracingEndpointRequirer(
+            self, protocols=[TRACING_PROTOCOL], relation_name=TRACING_RELATION_NAME
+        )
+
+    @property
+    def tracing_endpoint(self) -> Optional[str]:
+        """Otlp http endpoint for charm instrumentation."""
+        if self.tracing.is_ready():
+            return self.tracing.get_endpoint(TRACING_PROTOCOL)
 
     @property
     def _mysql(self) -> MySQL:
