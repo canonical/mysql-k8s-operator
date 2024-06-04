@@ -70,11 +70,8 @@ class TestCharm(unittest.TestCase):
                     "user": "mysql",
                     "group": "mysql",
                     "environment": {
-                        "DATA_SOURCE_NAME": (
-                            "monitoring:"
-                            f"{self.charm.get_secret('app', 'monitoring-password')}"
-                            "@unix(/var/run/mysqld/mysqld.sock)/"
-                        )
+                        "EXPORTER_USER": "monitoring",
+                        "EXPORTER_PASS": self.charm.get_secret("app", "monitoring-password"),
                     },
                 },
             },

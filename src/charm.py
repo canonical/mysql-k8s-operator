@@ -60,7 +60,6 @@ from constants import (
     MYSQLD_EXPORTER_PORT,
     MYSQLD_EXPORTER_SERVICE,
     MYSQLD_SAFE_SERVICE,
-    MYSQLD_SOCK_FILE,
     PASSWORD_LENGTH,
     PEER,
     ROOT_PASSWORD_KEY,
@@ -198,11 +197,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
                     "environment": {
-                        "DATA_SOURCE_NAME": (
-                            f"{MONITORING_USERNAME}:"
-                            f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
-                            f"@unix({MYSQLD_SOCK_FILE})/"
-                        ),
+                        "EXPORTER_USER": MONITORING_USERNAME,
+                        "EXPORTER_PASS": self.get_secret("app", MONITORING_PASSWORD_KEY),
                     },
                 },
             },

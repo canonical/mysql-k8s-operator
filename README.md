@@ -98,7 +98,7 @@ juju relate mysql-k8s:mysql wordpress-k8s:db
 **Note:** The endpoint `mysql-root` provides the same legacy interface `mysql` with MySQL root-level privileges. It is NOT recommended to use it from security point of view.
 
 ## OCI Images
-This charm uses pinned and tested version of the [charmed-mysql](https://github.com/canonical/charmed-mysql-rock/pkgs/container/charmed-mysql) ROCK image.
+This charm uses pinned and tested version of the [charmed-mysql](https://github.com/canonical/charmed-mysql-rock/pkgs/container/charmed-mysql) rock.
 
 ## Security
 Security issues in the Charmed MySQL K8s Operator can be reported through [LaunchPad](https://wiki.ubuntu.com/DebuggingSecurity#How%20to%20File). Please do not file GitHub issues about security issues.

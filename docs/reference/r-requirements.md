@@ -21,11 +21,11 @@ Make sure your machine meets the following requirements:
 - 8GB of RAM.
 - 2 CPU threads.
 - At least 20GB of available storage.
-- Access to the internet for downloading the required OCI/ROCKs and charms.
+- Access to the internet for downloading the required OCI/Rocks and charms.
 
 ## Supported architectures
 
-The charm is based on [ROCK OCI](https://github.com/canonical/charmed-mysql-rock) named "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock/pkgs/container/charmed-mysql)", which is recursively based on SNAP "[charmed-mysql](https://snapcraft.io/charmed-mysql)", which is currently available for `amd64` only! The architecture `arm64` support is planned. Please [contact us](https://chat.charmhub.io/charmhub/channels/data-platform) if you are interested in new architecture!
+The charm is based on [Rock OCI](https://github.com/canonical/charmed-mysql-rock) named "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock/pkgs/container/charmed-mysql)", which is recursively based on SNAP "[charmed-mysql](https://snapcraft.io/charmed-mysql)", which is currently available for `amd64` only! The architecture `arm64` support is planned. Please [contact us](https://chat.charmhub.io/charmhub/channels/data-platform) if you are interested in new architecture!
 
 <a name="mysql-gr-limits"></a>
 ## MySQL Group Replication requirements
