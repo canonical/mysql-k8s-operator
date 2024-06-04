@@ -144,8 +144,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.log_rotate_manager.start_log_rotate_manager()
 
         self.rotate_mysql_logs = RotateMySQLLogs(self)
-        self.async_primary = MySQLAsyncReplicationOffer(self)
-        self.async_replica = MySQLAsyncReplicationConsumer(self)
+        self.replication_offer = MySQLAsyncReplicationOffer(self)
+        self.replication_consumer = MySQLAsyncReplicationConsumer(self)
 
     @property
     def _mysql(self) -> MySQL:
@@ -692,7 +692,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return True
 
         # avoid changing status while async replication is setting up
-        return not (self.async_replica.idle and self.async_primary.idle)
+        return not (self.replication_consumer.idle and self.replication_offer.idle)
 
     def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
         """Handle the update status event."""

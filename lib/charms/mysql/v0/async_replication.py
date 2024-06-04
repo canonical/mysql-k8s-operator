@@ -24,8 +24,8 @@ from ops import (
     RelationBrokenEvent,
     RelationCreatedEvent,
     RelationDataContent,
-    RelationDepartedEvent,
     Secret,
+    SecretChangedEvent,
     SecretNotFoundError,
     WaitingStatus,
 )
@@ -126,11 +126,27 @@ class MySQLAsyncReplication(Object):
         """Cluster set name."""
         return self._charm.app_peer_data["cluster-set-domain-name"]
 
-    def get_remote_relation_data(self, relation: Relation) -> Optional[RelationDataContent]:
-        """Remote data."""
-        if not relation.app:
+    @property
+    def relation(self) -> Optional[Relation]:
+        """Relation."""
+        if isinstance(self, MySQLAsyncReplicationOffer):
+            return self.model.get_relation(RELATION_OFFER)
+
+        return self.model.get_relation(RELATION_CONSUMER)
+
+    @property
+    def relation_data(self) -> Optional[RelationDataContent]:
+        """Relation data."""
+        if not self.relation:
             return
-        return relation.data[relation.app]
+        return self.relation.data[self.model.app]
+
+    @property
+    def remote_relation_data(self) -> Optional[RelationDataContent]:
+        """Remote relation data."""
+        if not self.relation or not self.relation.app:
+            return
+        return self.relation.data[self.relation.app]
 
     def _on_promote_to_primary(self, event: ActionEvent) -> None:
         """Promote a standby cluster to primary."""
@@ -243,7 +259,7 @@ class MySQLAsyncReplication(Object):
         elif self.role.cluster_role == "primary":
             if self._charm.unit.is_leader():
                 # only leader units can remove replica clusters
-                remote_data = self.get_remote_relation_data(event.relation) or {}
+                remote_data = event.relation.data.get(event.relation.app) or {}
                 if cluster_name := remote_data.get("cluster-name"):
                     if self._charm._mysql.is_cluster_in_cluster_set(cluster_name):
                         self._charm.unit.status = MaintenanceStatus("Removing replica cluster")
@@ -341,28 +357,20 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             self._on_offer_relation_changed,
         )
 
-        # https://bugs.launchpad.net/juju/+bug/2065284
-        # Remove the secret prevents the CMR relation from dying
-        # Skipping the hook until the bug is fixed
-        # self.framework.observe(
-        #     self._charm.on[PRIMARY_RELATION].relation_broken, self._on_primary_relation_broken
-        # )
+        self.framework.observe(
+            self._charm.on[RELATION_OFFER].relation_broken, self._on_offer_relation_broken
+        )
 
-    def get_relation(self) -> Optional[Relation]:
-        """Return the relation."""
-        return self.model.get_relation(RELATION_OFFER)
+        self.framework.observe(self._charm.on.secret_changed, self._on_secret_change)
 
-    def get_local_relation_data(self, relation: Relation) -> Optional[RelationDataContent]:
-        """Local data."""
-        return relation.data[self.model.app]
-
-    def get_state(self, relation: Relation) -> Optional[States]:
+    @property
+    def state(self) -> Optional[States]:
         """State of the relation, on primary side."""
-        if not relation:
+        if not self.relation:
             return States.UNINITIALIZED
 
-        local_data = self.get_local_relation_data(relation)
-        remote_data = self.get_remote_relation_data(relation) or {}
+        local_data = self.relation_data
+        remote_data = self.remote_relation_data or {}
 
         if not local_data:
             return States.UNINITIALIZED
@@ -396,10 +404,17 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             # transitional state between relation created and setup_action
             return False
 
-        for relation in self.model.relations[RELATION_OFFER]:
-            if self.get_state(relation) not in [States.READY, States.UNINITIALIZED]:
-                return False
+        if self.state not in [States.READY, States.UNINITIALIZED]:
+            return False
         return True
+
+    @property
+    def secret(self) -> Optional[Secret]:
+        """Return the async replication secret."""
+        if not self.relation:
+            return
+        if secret_id := self.relation_data.get("secret-id"):
+            return self._charm.model.get_secret(id=secret_id)
 
     def _get_secret(self) -> Secret:
         """Return async replication necessary secrets."""
@@ -431,11 +446,11 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             event.fail("Wait until cluster is initialized")
             return
 
-        if not (relation := self.get_relation()):
+        if not self.relation:
             event.fail(f"{RELATION_OFFER} relation not found")
             return
 
-        if self.get_local_relation_data(relation).get("secret-id"):
+        if self.relation_data.get("secret-id"):
             event.fail("Action already run")
             return
 
@@ -444,14 +459,14 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
         logger.info("Granting secrets access to replication relation")
         secret = self._get_secret()
         secret_id = secret.id or ""
-        secret.grant(relation)
+        secret.grant(self.relation)
 
         # get workload version
         version = self._charm._mysql.get_mysql_version() or "Unset"
 
         logger.debug(f"Sharing {secret_id=} with replica cluster")
         # Set variables for credential sync and validations
-        self.get_local_relation_data(relation).update(  # pyright: ignore[reportCallIssue]
+        self.relation_data.update(  # pyright: ignore[reportCallIssue]
             {
                 "secret-id": secret_id,
                 "cluster-name": self.cluster_name,
@@ -508,7 +523,7 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             event.relation.data[self.model.app]["is-replica"] = "true"
             return
 
-        self.get_local_relation_data(event.relation).update(  # pyright: ignore[reportCallIssue]
+        self.relation_data.update(  # pyright: ignore[reportCallIssue]
             {
                 "cluster-set-name": self.cluster_set_name,
             }
@@ -524,13 +539,13 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
         if not self._charm.unit.is_leader():
             return
 
-        state = self.get_state(event.relation)
+        state = self.state
 
         if state == States.INITIALIZING:
             # Add replica cluster primary node
             logger.info("Creating replica cluster primary node")
             self._charm.unit.status = MaintenanceStatus("Adding replica cluster")
-            remote_data = self.get_remote_relation_data(event.relation) or {}
+            remote_data = self.remote_relation_data or {}
 
             cluster = remote_data["cluster-name"]
             endpoint = remote_data["endpoint"]
@@ -559,16 +574,35 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             # Recover replica cluster
             self._charm.unit.status = MaintenanceStatus("Replica cluster in recovery")
 
-    def _on_offer_relation_broken(self, event: RelationDepartedEvent):
+    def _on_offer_relation_broken(self, event: RelationBrokenEvent):
         """Handle the async_primary relation being broken."""
         if self._charm.unit.is_leader():
-            logger.debug("Removing async replication secret")
             # remove relation secret by id
-            if secret_id := self.get_local_relation_data(event.relation).get("secret-id"):
+            if secret_id := event.relation.data[self.model.app].get("secret-id"):
+                logger.debug("Removing replication secret")
                 secret = self._charm.model.get_secret(id=secret_id)
                 secret.remove_all_revisions()
             else:
-                logger.debug("Secret not set, skipping removal")
+                logger.debug("Secret-id not set, skipping removal")
+
+    def _on_secret_change(self, event: SecretChangedEvent):
+        """Propagates the secret being changed."""
+        if not self._charm.unit.is_leader():
+            return
+
+        if not self.relation:
+            return
+
+        if self.state != States.READY:
+            # skip secret propagation on setup phase
+            return
+
+        if event.secret.label != f"{PEER}.{self.model.app.name}.app":
+            # skip if secret is not main application secret
+            return
+
+        logger.debug("Updating secret on relation")
+        self.secret.set_content(event.secret.peek_content())
 
 
 class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
@@ -596,27 +630,11 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
             self._charm.on[RELATION_CONSUMER].relation_changed,
             self._on_consumer_non_leader_changed,
         )
-
-    @property
-    def relation(self) -> Optional[Relation]:
-        """Relation."""
-        return self.model.get_relation(RELATION_CONSUMER)
-
-    @property
-    def relation_data(self) -> RelationDataContent:
-        """Relation data."""
-        return self.relation.data[self.model.app]
-
-    @property
-    def remote_relation_data(self) -> Optional[RelationDataContent]:
-        """Relation data."""
-        if not self.relation.app:
-            return
-        return self.relation.data[self.relation.app]
+        self.framework.observe(self._charm.on.secret_changed, self._on_secret_change)
 
     @property
     def state(self) -> Optional[States]:
-        """State of the relation, on replica side."""
+        """State of the relation, on consumer side."""
         if not self.relation:
             return None
 
@@ -860,7 +878,7 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
             event.defer()
 
     def _on_consumer_non_leader_created(self, _):
-        """Handle the async_replica relation being created for secondaries/non-leader."""
+        """Handle the consumer relation being created for secondaries/non-leader."""
         # set waiting state to inhibit auto recovery, only when not already set
         if self._charm.unit.is_leader():
             return
@@ -884,3 +902,24 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
             del self._charm.unit_peer_data["unit-initialized"]
             self._charm.unit_peer_data["member-state"] = "waiting"
             self._charm.unit.status = WaitingStatus("waiting to join the cluster")
+
+    def _on_secret_change(self, event: SecretChangedEvent):
+        """Propagates the secret being changed."""
+        if not self._charm.unit.is_leader():
+            return
+
+        if not self.relation:
+            return
+
+        if event.secret.id.removeprefix("secret:") not in self.remote_relation_data.get(
+            "secret-id", "dummy"
+        ):
+            logger.info("Secret not related to replication")
+            return
+
+        logger.debug("Propagating secret change from the relation offer")
+        credentials = self._async_replication_credentials()
+
+        self._charm.model.get_secret(label=f"{PEER}.{self.model.app.name}.app").set_content(
+            credentials
+        )

@@ -79,7 +79,18 @@ import sys
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union, get_args
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    get_args,
+)
 
 import ops
 from charms.data_platform_libs.v0.data_interfaces import DataPeerData, DataPeerUnitData
@@ -108,6 +119,9 @@ from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from charms.mysql.v0.async_replication import MySQLAsyncReplicationOffer
+
 # The unique Charmhub library identifier, never change it
 LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 
@@ -134,7 +148,7 @@ SECRET_DELETED_LABEL = "None"
 
 APP_SCOPE = "app"
 UNIT_SCOPE = "unit"
-Scopes = Literal[APP_SCOPE, UNIT_SCOPE]
+Scopes = Literal["app", "unit"]
 
 
 class Error(Exception):
@@ -402,6 +416,8 @@ class MySQLCharmBase(CharmBase, ABC):
     K8s charms.
     """
 
+    replication_offer: "MySQLAsyncReplicationOffer"
+
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -475,6 +491,10 @@ class MySQLCharmBase(CharmBase, ABC):
         """Action used to update/rotate the system user's password."""
         if not self.unit.is_leader():
             event.fail("set-password action can only be run on the leader unit.")
+            return
+
+        if self.replication_offer.role.relation_side != "replication-offer":
+            event.fail("Only offer side can change password when replications is enabled")
             return
 
         username = event.params.get("username") or ROOT_USERNAME
@@ -2381,8 +2401,12 @@ class MySQLBase(ABC):
         """
         logger.debug(f"Updating password for {username}.")
 
+        # password is set on the global primary
+        if not (instance_address := self.get_cluster_set_global_primary_address()):
+            raise MySQLCheckUserExistenceError("No primary found")
+
         update_user_password_commands = (
-            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{instance_address}')",
             f"session.run_sql(\"ALTER USER '{username}'@'{host}' IDENTIFIED BY '{new_password}';\")",
             'session.run_sql("FLUSH PRIVILEGES;")',
         )
@@ -3079,7 +3103,7 @@ class MySQLBase(ABC):
             'session.run_sql("SET sql_log_bin = 0")',
         ]
 
-        if type(logs_type) is list:
+        if isinstance(logs_type, list):
             flush_logs_commands.extend(
                 [f"session.run_sql('FLUSH {log.value}')" for log in logs_type]
             )

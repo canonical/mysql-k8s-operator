@@ -45,10 +45,10 @@ jobs:
       fail-fast: false
       matrix:
         juju:
-          - agent: 2.9.46
+          - agent: 2.9.49
             libjuju: ^2
             allure: false
-          - agent: 3.1.7
+          - agent: 3.5.1 # TODO: Update to 3.4.3 as soon it's released
             allure: true
     name: Integration test charm | ${{ matrix.juju.agent }}
     needs:
