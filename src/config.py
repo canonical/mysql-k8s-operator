@@ -9,6 +9,7 @@ import re
 from typing import Optional
 
 from charms.data_platform_libs.v0.data_models import BaseConfigModel
+from charms.mysql.v0.mysql import MAX_CONNECTIONS_FLOOR
 from pydantic import validator
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class CharmConfig(BaseConfigModel):
     mysql_interface_database: Optional[str]
     mysql_root_interface_user: Optional[str]
     mysql_root_interface_database: Optional[str]
+    experimental_max_connections: Optional[int]
 
     @validator("profile")
     @classmethod
@@ -113,6 +115,17 @@ class CharmConfig(BaseConfigModel):
             raise ValueError(
                 "Database name cannot contain slashes, dots or characters not"
                 " allowed for directories, and are limited to 64 characters"
+            )
+
+        return value
+
+    @validator("experimental_max_connections")
+    @classmethod
+    def experimental_max_connections_validator(cls, value: int) -> Optional[int]:
+        """Check experimental max connections."""
+        if value < MAX_CONNECTIONS_FLOOR:
+            raise ValueError(
+                f"experimental-max-connections must be greater than {MAX_CONNECTIONS_FLOOR}"
             )
 
         return value

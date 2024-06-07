@@ -36,3 +36,11 @@ options:
   mysql-root-interface-database:
     description: "The database name for the legacy 'mysql' interface (root level access)"
     type: "string"
+# Experimental features
+  experimental-max-connections:
+    type: int
+    description: |
+      Maximum number of connections allowed to the MySQL server.
+      When set max-connections value take precedence over the memory utilizations
+      againts innodb_buffer_pool_size.
+      This is an experimental feature and may be removed in future releases.
