@@ -34,20 +34,20 @@ cosl = "*"
 optional = true
 
 [tool.poetry.group.format.dependencies]
-black = "^23.7.0"
+black = "^24.0.0"
 isort = "^5.12.0"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-black = "^23.7.0"
+black = "^24.0.0"
 isort = "^5.12.0"
-flake8 = "^6.0.0"
+flake8 = "^7.0.0"
 flake8-docstrings = "^1.7.0"
 flake8-copyright = "^0.2.4"
 flake8-builtins = "^2.1.0"
-pyproject-flake8 = "^6.0.0.post1"
+pyproject-flake8 = "^7.0.0"
 pep8-naming = "^0.13.3"
 codespell = "^2.2.5"
 shellcheck-py = "^0.9.0.5"
@@ -60,11 +60,11 @@ parameterized = "^0.9.0"
 
 [tool.poetry.group.integration.dependencies]
 pytest = "^7.4.0"
-pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.0", subdirectory = "python/pytest_plugins/github_secrets"}
-pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.0", subdirectory = "python/pytest_plugins/microceph"}
+pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.3.0", subdirectory = "python/pytest_plugins/github_secrets"}
+pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.3.0", subdirectory = "python/pytest_plugins/microceph"}
 pytest-operator = "^0.28.0"
-pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.0", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
-pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.1.0", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
+pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.3.0", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
+pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.3.0", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
 juju = "^3.2.2"
 ops = "^2.5.0"
 mysql-connector-python = "~8.0.33"
@@ -87,7 +87,6 @@ show_missing = true
 minversion = "6.0"
 log_cli_level = "INFO"
 markers = ["unstable", "juju3", "only_with_juju_secrets", "only_without_juju_secrets"]
-asyncio_mode = "auto"
 
 # Formatting tools configuration
 [tool.black]
