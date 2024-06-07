@@ -30,7 +30,7 @@ def harness():
 
 
 def _check_valid_values(_harness, field: str, accepted_values: list, is_long_field=False) -> None:
-    """Check the correcteness of the passed values for a field."""
+    """Check the correctness of the passed values for a field."""
     for value in accepted_values:
         _harness.update_config({field: value})
         assert _harness.charm.config[field] == value if not is_long_field else int(value)

@@ -16,8 +16,8 @@ from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.mysql.v0.async_replication import (
-    MySQLAsyncReplicationPrimary,
-    MySQLAsyncReplicationReplica,
+    MySQLAsyncReplicationConsumer,
+    MySQLAsyncReplicationOffer,
 )
 from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
@@ -93,8 +93,8 @@ logger = logging.getLogger(__name__)
         LogRotateManager,
         MetricsEndpointProvider,
         MySQL,
-        MySQLAsyncReplicationPrimary,
-        MySQLAsyncReplicationReplica,
+        MySQLAsyncReplicationConsumer,
+        MySQLAsyncReplicationOffer,
         MySQLBackups,
         MySQLConfig,
         MySQLK8sUpgrade,
@@ -170,8 +170,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.log_rotate_manager.start_log_rotate_manager()
 
         self.rotate_mysql_logs = RotateMySQLLogs(self)
-        self.async_primary = MySQLAsyncReplicationPrimary(self)
-        self.async_replica = MySQLAsyncReplicationReplica(self)
+        self.replication_offer = MySQLAsyncReplicationOffer(self)
+        self.replication_consumer = MySQLAsyncReplicationConsumer(self)
 
         self.tracing = TracingEndpointRequirer(
             self, protocols=[TRACING_PROTOCOL], relation_name=TRACING_RELATION_NAME
@@ -725,7 +725,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return True
 
         # avoid changing status while async replication is setting up
-        return not (self.async_replica.idle and self.async_primary.idle)
+        return not (self.replication_consumer.idle and self.replication_offer.idle)
 
     def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
         """Handle the update status event."""

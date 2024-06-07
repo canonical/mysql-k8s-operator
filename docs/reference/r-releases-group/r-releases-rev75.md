@@ -22,7 +22,7 @@ Dear community, this is to inform you that new Canonical Charmed MySQL K8s charm
 ## What is inside the charms:
 
 * Charmed MySQL K8s charm ships the latest MySQL “8.0.32-0ubuntu0.22.04.2”
-* K8s charms [based on our](https://github.com/orgs/canonical/packages?tab=packages&q=charmed) ROCK OCI (Ubuntu LTS “22.04” - ubuntu:22.04-based)
+* K8s charms [based on our](https://github.com/orgs/canonical/packages?tab=packages&q=charmed) rock (Ubuntu LTS “22.04” - ubuntu:22.04-based)
 * Principal charms supports the latest LTS series “22.04” only.
 * Subordinate charms support LTS “22.04” and “20.04” only.
 
@@ -33,7 +33,7 @@ Compatibility with legacy charms:
 
 Please contact us, see details below, if you are considering migrating from other “legacy” charms not mentioned above. Additionally:
 * Tracks description:
-  * Charm MySQL K8s charm follows the SNAP track “8.0” (through repacked ROCK/OCI image).
+  * Charm MySQL K8s charm follows the SNAP track “8.0” (through repacked rock/OCI image).
 * No “latest” track in use (no surprises in tracking “latest/stable”)!
   * Charmed MySQL K8s charms provide [legacy charm](/t/11236) through “latest/stable”.
 * Charm lifecycle flowchart diagrams: [MySQL](https://github.com/canonical/mysql-k8s-operator/tree/main/docs/reference).
