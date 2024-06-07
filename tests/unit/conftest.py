@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 import pytest
+from charms.tempo_k8s.v1.charm_tracing import charm_tracing_disabled
 
 
 @pytest.fixture(autouse=True)
@@ -12,3 +13,9 @@ def with_juju_secrets(monkeypatch):
 @pytest.fixture
 def without_juju_secrets(monkeypatch):
     monkeypatch.setattr("ops.JujuVersion.has_secrets", False)
+
+
+@pytest.fixture(autouse=True)
+def disable_charm_tracing():
+    with charm_tracing_disabled():
+        yield
