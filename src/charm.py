@@ -373,7 +373,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             restart_states = {
                 self.restart_peers.data[unit].get("state", "unset") for unit in self.peers.units
             }
-            if restart_states != {"release"}:
+            if restart_states == {"unset"}:
+                logger.info("Restarting primary")
+            elif restart_states != {"release"}:
                 # Wait other units restart first to minimize primary switchover
                 message = "Primary restart deferred after other units"
                 logger.info(message)
@@ -384,6 +386,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         container = self.unit.get_container(CONTAINER_NAME)
         if container.can_connect():
             container.restart(MYSQLD_SAFE_SERVICE)
+            sleep(10)
+            self._on_update_status(None)
 
     # =========================================================================
     # Charm event handlers
@@ -440,6 +444,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
             profile=self.config.profile,
             memory_limit=memory_limit_bytes,
+            experimental_max_connections=self.config.experimental_max_connections,
         )
 
         changed_config = compare_dictionaries(previous_config_dict, new_config_dict)
@@ -506,6 +511,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_config_content, _ = self._mysql.render_mysqld_configuration(
             profile=self.config.profile,
             memory_limit=memory_limit_bytes,
+            experimental_max_connections=self.config.experimental_max_connections,
         )
         self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
 
