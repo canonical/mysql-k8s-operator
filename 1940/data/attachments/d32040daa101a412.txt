@@ -1,0 +1,3 @@
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:245 Deploying Chaos Mesh
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:257 Ensure chaos mesh is ready
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:44 Destroying chaos mesh
