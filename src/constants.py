@@ -58,3 +58,5 @@ SECRET_KEY_FALLBACKS = {
     "certificate": "cert",
     "certificate-authority": "ca",
 }
+TRACING_RELATION_NAME = "tracing"
+TRACING_PROTOCOL = "otlp_http"

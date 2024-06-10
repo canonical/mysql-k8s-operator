@@ -29,6 +29,8 @@ cryptography = ">=42.0.5"
 jsonschema = "*"
 # loki_k8s/v0/loki_push_api.py and prometheus_k8s/v0/prometheus_scrape.py
 cosl = "*"
+# tempo_k8s/v1/charm_tracing.py
+opentelemetry-exporter-otlp-proto-http = "1.21.0"
 
 [tool.poetry.group.format]
 optional = true
