@@ -1791,8 +1791,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v13.3.0"
-resolved_reference = "e90eb63f28c9abc39c9a4a40dee277ae21896790"
+reference = "workaround-group-collection-duplication"
+resolved_reference = "f6038d0511d965717ddd95070b6fcdc47711d85f"
 subdirectory = "python/pytest_plugins/pytest_operator_groups"
 
 [[package]]
@@ -2347,4 +2347,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "936ba32c8962ac14d2414a1e88f6fbf23bcd5d4b1061cdf1acad1cac32225e34"
+content-hash = "212d119ae370402d28b31d764328be46542c65ca153687b721cee87f7ebdfb81"

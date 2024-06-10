@@ -64,7 +64,7 @@ pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workf
 pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.3.0", subdirectory = "python/pytest_plugins/microceph"}
 pytest-operator = "^0.28.0"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.3.0", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
-pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v13.3.0", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
+pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", branch = "workaround-group-collection-duplication", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
 juju = "^3.2.2"
 ops = "^2.5.0"
 mysql-connector-python = "~8.0.33"
@@ -87,6 +87,7 @@ show_missing = true
 minversion = "6.0"
 log_cli_level = "INFO"
 markers = ["unstable", "juju3", "only_with_juju_secrets", "only_without_juju_secrets"]
+asyncio_mode = "auto"
 
 # Formatting tools configuration
 [tool.black]
