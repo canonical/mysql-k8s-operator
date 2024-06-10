@@ -312,8 +312,10 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.remove_instance")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script", return_value="{}")
     def test_database_storage_detaching(
         self,
+        _,
         mock_is_instance_in_cluster,
         mock_get_primary_label,
         mock_remove_instance,
