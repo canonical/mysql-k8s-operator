@@ -92,4 +92,7 @@ assumes:
           - juju < 3
       - all-of:
           - juju >= 3.4.3
+          - juju < 3.5
+      - all-of:
+          - juju >= 3.5.2
           - juju < 4
