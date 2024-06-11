@@ -245,12 +245,10 @@ def deploy_chaos_mesh(namespace: str) -> None:
     logger.info("Deploying Chaos Mesh")
 
     subprocess.check_output(
-        " ".join(
-            [
-                "tests/integration/high_availability/scripts/deploy_chaos_mesh.sh",
-                namespace,
-            ]
-        ),
+        " ".join([
+            "tests/integration/high_availability/scripts/deploy_chaos_mesh.sh",
+            namespace,
+        ]),
         shell=True,
         env=env,
     )

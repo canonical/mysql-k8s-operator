@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Structured configuration for the MySQL charm."""
+
 import configparser
 import logging
 import re

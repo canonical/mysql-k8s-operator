@@ -50,9 +50,7 @@ def first_model(ops_test: OpsTest) -> Optional[Model]:
 
 
 @pytest.fixture(scope="module")
-async def second_model(
-    ops_test: OpsTest, first_model, request
-) -> Model:  # pyright: ignore [reportInvalidTypeForm]
+async def second_model(ops_test: OpsTest, first_model, request) -> Model:  # pyright: ignore [reportInvalidTypeForm]
     """Create and return the second model."""
     second_model_name = f"{first_model.info.name}-other"
     await ops_test._controller.add_model(second_model_name)

@@ -382,7 +382,7 @@ async def test_network_cut_affecting_an_instance(
 @pytest.mark.unstable
 async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_writes) -> None:
     """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
-    mysql_application_name, application_name = await high_availability_test_setup(ops_test)
+    mysql_application_name, _ = await high_availability_test_setup(ops_test)
 
     logger.info("Ensure there are 3 online mysql members")
     assert await ensure_n_online_mysql_members(

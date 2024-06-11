@@ -155,14 +155,12 @@ class MySQLK8sUpgrade(DataUpgrade):
             run_action = "run-action"
             wait = " --wait"
         logger.critical(
-            "\n".join(
-                (
-                    "Upgrade failed, follow the instructions below to rollback:",
-                    f"  1 - Run `juju {run_action} {self.charm.app.name}/leader pre-upgrade-check{wait}` to configure rollback",
-                    f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback",
-                    f"  3 - Run `juju {run_action} {self.charm.app.name}/leader resume-upgrade{wait}` to resume the rollback",
-                )
-            )
+            "\n".join((
+                "Upgrade failed, follow the instructions below to rollback:",
+                f"  1 - Run `juju {run_action} {self.charm.app.name}/leader pre-upgrade-check{wait}` to configure rollback",
+                f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback",
+                f"  3 - Run `juju {run_action} {self.charm.app.name}/leader resume-upgrade{wait}` to resume the rollback",
+            ))
         )
 
     def _pre_upgrade_prepare(self) -> None:

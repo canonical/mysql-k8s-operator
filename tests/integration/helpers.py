@@ -718,7 +718,7 @@ async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str)
     dispatch_command = juju_exec.strip() or juju_run.strip()
     unit_label = unit_name.replace("/", "-")
 
-    return_code, stdout, stderr = await ops_test.juju(
+    return_code, _, _ = await ops_test.juju(
         "ssh",
         unit_name,
         dispatch_command,
