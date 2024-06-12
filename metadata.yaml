@@ -32,7 +32,7 @@ resources:
   mysql-image:
     type: oci-image
     description: Ubuntu LTS Docker image for MySQL
-    upstream-source: ghcr.io/canonical/charmed-mysql@sha256:5082c99baa7a77c82d73247674e270838dc0a8165c02f7619cf5642d1427cba7
+    upstream-source: ghcr.io/canonical/charmed-mysql@sha256:c5095a975f61afc2930c51d79564ec83e9b6d379c53c4f55a3a5d99031b89585
 
 peers:
   database-peers:
@@ -53,8 +53,9 @@ provides:
     interface: prometheus_scrape
   grafana-dashboard:
     interface: grafana_dashboard
-  async-primary:
-    interface: async_replication
+  replication-offer:
+    interface: mysql_async
+    limit: 1
 
 requires:
   certificates:
@@ -69,8 +70,12 @@ requires:
     interface: loki_push_api
     limit: 1
     optional: true
-  async-replica:
-    interface: async_replication
+  replication:
+    interface: mysql_async
+    limit: 1
+    optional: true
+  tracing:
+    interface: tracing
     limit: 1
     optional: true
 
@@ -86,5 +91,8 @@ assumes:
           - juju >= 2.9.44
           - juju < 3
       - all-of:
-          - juju >= 3.1.5
+          - juju >= 3.4.3
+          - juju < 3.5
+      - all-of:
+          - juju >= 3.5.2
           - juju < 4

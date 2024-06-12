@@ -70,11 +70,8 @@ class TestCharm(unittest.TestCase):
                     "user": "mysql",
                     "group": "mysql",
                     "environment": {
-                        "DATA_SOURCE_NAME": (
-                            "monitoring:"
-                            f"{self.charm.get_secret('app', 'monitoring-password')}"
-                            "@unix(/var/run/mysqld/mysqld.sock)/"
-                        )
+                        "EXPORTER_USER": "monitoring",
+                        "EXPORTER_PASS": self.charm.get_secret("app", "monitoring-password"),
                     },
                 },
             },
@@ -105,7 +102,9 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader()
 
         # > 3.1.7 changed way last revision secret is accessed (peek)
-        secret_data = self.harness.model.get_secret(label="mysql-k8s.app").peek_content()
+        secret_data = self.harness.model.get_secret(
+            label="database-peers.mysql-k8s.app"
+        ).peek_content()
 
         # Test passwords in content and length
         for password in REQUIRED_PASSWORD_KEYS:
@@ -313,8 +312,10 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.remove_instance")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
+    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script", return_value="{}")
     def test_database_storage_detaching(
         self,
+        _,
         mock_is_instance_in_cluster,
         mock_get_primary_label,
         mock_remove_instance,

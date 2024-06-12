@@ -79,11 +79,21 @@ import sys
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, get_args
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    get_args,
+)
 
 import ops
-from charms.data_platform_libs.v0.data_interfaces import DataPeer, DataPeerUnit
-from charms.data_platform_libs.v0.data_secrets import APP_SCOPE, UNIT_SCOPE, Scopes, SecretCache
+from charms.data_platform_libs.v0.data_interfaces import DataPeerData, DataPeerUnitData
 from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from ops.model import Unit
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed, wait_random
@@ -109,6 +119,9 @@ from utils import generate_random_password
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from charms.mysql.v0.async_replication import MySQLAsyncReplicationOffer
+
 # The unique Charmhub library identifier, never change it
 LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 
@@ -117,7 +130,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 58
+LIBPATCH = 60
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -128,10 +141,15 @@ BYTES_1MB = 1000000  # 1 megabyte
 BYTES_1MiB = 1048576  # 1 mebibyte
 RECOVERY_CHECK_TIME = 10  # seconds
 GET_MEMBER_STATE_TIME = 10  # seconds
-MIN_MAX_CONNECTIONS = 100
+MAX_CONNECTIONS_FLOOR = 10
+MIM_MEM_BUFFERS = 200 * BYTES_1MiB
 
 SECRET_INTERNAL_LABEL = "secret-id"
 SECRET_DELETED_LABEL = "None"
+
+APP_SCOPE = "app"
+UNIT_SCOPE = "unit"
+Scopes = Literal["app", "unit"]
 
 
 class Error(Exception):
@@ -399,6 +417,8 @@ class MySQLCharmBase(CharmBase, ABC):
     K8s charms.
     """
 
+    replication_offer: "MySQLAsyncReplicationOffer"
+
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -414,30 +434,15 @@ class MySQLCharmBase(CharmBase, ABC):
             self.unit.status = ops.BlockedStatus("Disabled")
             sys.exit(0)
 
-        self.secrets = SecretCache(self)
-        self.peer_relation_app = DataPeer(
-            self,
+        self.peer_relation_app = DataPeerData(
+            self.model,
             relation_name=PEER,
-            additional_secret_fields=[
-                ROOT_PASSWORD_KEY,
-                SERVER_CONFIG_PASSWORD_KEY,
-                MONITORING_PASSWORD_KEY,
-                CLUSTER_ADMIN_PASSWORD_KEY,
-                BACKUPS_PASSWORD_KEY,
-            ],
             secret_field_name=SECRET_INTERNAL_LABEL,
             deleted_label=SECRET_DELETED_LABEL,
         )
-        self.peer_relation_unit = DataPeerUnit(
-            self,
+        self.peer_relation_unit = DataPeerUnitData(
+            self.model,
             relation_name=PEER,
-            additional_secret_fields=[
-                "key",
-                "csr",
-                "certificate",
-                "certificate-authority",
-                "chain",
-            ],
             secret_field_name=SECRET_INTERNAL_LABEL,
             deleted_label=SECRET_DELETED_LABEL,
         )
@@ -487,6 +492,10 @@ class MySQLCharmBase(CharmBase, ABC):
         """Action used to update/rotate the system user's password."""
         if not self.unit.is_leader():
             event.fail("set-password action can only be run on the leader unit.")
+            return
+
+        if self.replication_offer.role.relation_side != "replication-offer":
+            event.fail("Only offer side can change password when replications is enabled")
             return
 
         username = event.params.get("username") or ROOT_USERNAME
@@ -560,6 +569,7 @@ class MySQLCharmBase(CharmBase, ABC):
         try:
             self.create_cluster()
             self.unit.status = ops.ActiveStatus(self.active_status_message)
+            self.app.status = ops.ActiveStatus()
         except (MySQLCreateClusterError, MySQLCreateClusterSetError) as e:
             logger.exception("Failed to recreate cluster")
             event.fail(str(e))
@@ -671,9 +681,9 @@ class MySQLCharmBase(CharmBase, ABC):
             if self._mysql.is_cluster_replica():
                 status = self._mysql.get_replica_cluster_status()
                 if status == "ok":
-                    return "Primary (standby)"
+                    return "Standby"
                 else:
-                    return f"Primary (standby, {status})"
+                    return f"Standby ({status})"
             elif self._mysql.is_cluster_writes_fenced():
                 return "Primary (fenced writes)"
             else:
@@ -686,7 +696,7 @@ class MySQLCharmBase(CharmBase, ABC):
         """Check if the unit is being removed."""
         return self.unit_peer_data.get("unit-status") == "removing"
 
-    def peer_relation_data(self, scope: Scopes) -> DataPeer:
+    def peer_relation_data(self, scope: Scopes) -> DataPeerData:
         """Returns the peer relation data per scope."""
         if scope == APP_SCOPE:
             return self.peer_relation_app
@@ -707,7 +717,12 @@ class MySQLCharmBase(CharmBase, ABC):
         if scope not in get_args(Scopes):
             raise ValueError("Unknown secret scope")
 
-        peers = self.model.get_relation(PEER)
+        if not (peers := self.model.get_relation(PEER)):
+            logger.warning("Peer relation unavailable.")
+            return
+
+        # NOTE: here we purposefully search both in secrets and in databag by using
+        # the fetch_my_relation_field instead of peer_relation_data(scope).get_secrets().
         if not (value := self.peer_relation_data(scope).fetch_my_relation_field(peers.id, key)):
             if key in SECRET_KEY_FALLBACKS:
                 value = self.peer_relation_data(scope).fetch_my_relation_field(
@@ -723,31 +738,35 @@ class MySQLCharmBase(CharmBase, ABC):
         if scope == APP_SCOPE and not self.unit.is_leader():
             raise MySQLSecretError("Can only set app secrets on the leader unit")
 
+        if not (peers := self.model.get_relation(PEER)):
+            logger.warning("Peer relation unavailable.")
+            return
+
         if not value:
             if key in SECRET_KEY_FALLBACKS:
                 self.remove_secret(scope, SECRET_KEY_FALLBACKS[key])
             self.remove_secret(scope, key)
             return
 
-        peers = self.model.get_relation(PEER)
-
         fallback_key_to_secret_key = {v: k for k, v in SECRET_KEY_FALLBACKS.items()}
         if key in fallback_key_to_secret_key:
             if self.peer_relation_data(scope).fetch_my_relation_field(peers.id, key):
                 self.remove_secret(scope, key)
-            self.peer_relation_data(scope).update_relation_data(
-                peers.id, {fallback_key_to_secret_key[key]: value}
+            self.peer_relation_data(scope).set_secret(
+                peers.id, fallback_key_to_secret_key[key], value
             )
         else:
-            self.peer_relation_data(scope).update_relation_data(peers.id, {key: value})
+            self.peer_relation_data(scope).set_secret(peers.id, key, value)
 
     def remove_secret(self, scope: Scopes, key: str) -> None:
         """Removing a secret."""
         if scope not in get_args(Scopes):
             raise RuntimeError("Unknown secret scope.")
 
-        peers = self.model.get_relation(PEER)
-        self.peer_relation_data(scope).delete_relation_data(peers.id, [key])
+        if peers := self.model.get_relation(PEER):
+            self.peer_relation_data(scope).delete_relation_data(peers.id, [key])
+        else:
+            logger.warning("Peer relation unavailable.")
 
     @staticmethod
     def generate_random_hash() -> str:
@@ -850,6 +869,7 @@ class MySQLBase(ABC):
         *,
         profile: str,
         memory_limit: Optional[int] = None,
+        experimental_max_connections: Optional[int] = None,
         snap_common: str = "",
     ) -> tuple[str, dict]:
         """Render mysqld ini configuration file.
@@ -857,16 +877,18 @@ class MySQLBase(ABC):
         Args:
             profile: profile to use for the configuration (testing, production)
             memory_limit: memory limit to use for the configuration in bytes
+            experimental_max_connections: explicit max connections to use for the configuration
             snap_common: snap common directory (for log files locations in vm)
 
         Returns: a tuple with mysqld ini file string content and a the config dict
         """
+        max_connections = None
         performance_schema_instrument = ""
         if profile == "testing":
             innodb_buffer_pool_size = 20 * BYTES_1MiB
             innodb_buffer_pool_chunk_size = 1 * BYTES_1MiB
             group_replication_message_cache_size = 128 * BYTES_1MiB
-            max_connections = MIN_MAX_CONNECTIONS
+            max_connections = 100
             performance_schema_instrument = "'memory/%=OFF'"
         else:
             available_memory = self.get_available_memory()
@@ -874,12 +896,33 @@ class MySQLBase(ABC):
                 # when memory limit is set, we need to use the minimum
                 # between the available memory and the limit
                 available_memory = min(available_memory, memory_limit)
+
+            if experimental_max_connections:
+                # when set, we use the experimental max connections
+                # and it takes precedence over buffers usage
+                max_connections = experimental_max_connections
+                # we reserve 200MiB for memory buffers
+                # even when there's some overcommittment
+                available_memory = max(
+                    available_memory - max_connections * 12 * BYTES_1MiB, 200 * BYTES_1MiB
+                )
+
             (
                 innodb_buffer_pool_size,
                 innodb_buffer_pool_chunk_size,
                 group_replication_message_cache_size,
             ) = self.get_innodb_buffer_pool_parameters(available_memory)
-            max_connections = max(self.get_max_connections(available_memory), MIN_MAX_CONNECTIONS)
+
+            # constrain max_connections based on the available memory
+            # after innodb_buffer_pool_size calculation
+            available_memory -= innodb_buffer_pool_size + (
+                group_replication_message_cache_size or 0
+            )
+            if not max_connections:
+                max_connections = max(
+                    self.get_max_connections(available_memory), MAX_CONNECTIONS_FLOOR
+                )
+
             if available_memory < 2 * BYTES_1GiB:
                 # disable memory instruments if we have less than 2GiB of RAM
                 performance_schema_instrument = "'memory/%=OFF'"
@@ -2383,8 +2426,12 @@ class MySQLBase(ABC):
         """
         logger.debug(f"Updating password for {username}.")
 
+        # password is set on the global primary
+        if not (instance_address := self.get_cluster_set_global_primary_address()):
+            raise MySQLCheckUserExistenceError("No primary found")
+
         update_user_password_commands = (
-            f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{instance_address}')",
             f"session.run_sql(\"ALTER USER '{username}'@'{host}' IDENTIFIED BY '{new_password}';\")",
             'session.run_sql("FLUSH PRIVILEGES;")',
         )
@@ -3081,7 +3128,7 @@ class MySQLBase(ABC):
             'session.run_sql("SET sql_log_bin = 0")',
         ]
 
-        if type(logs_type) is list:
+        if isinstance(logs_type, list):
             flush_logs_commands.extend(
                 [f"session.run_sql('FLUSH {log.value}')" for log in logs_type]
             )

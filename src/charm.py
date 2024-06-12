@@ -16,8 +16,8 @@ from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.mysql.v0.async_replication import (
-    MySQLAsyncReplicationPrimary,
-    MySQLAsyncReplicationReplica,
+    MySQLAsyncReplicationConsumer,
+    MySQLAsyncReplicationOffer,
 )
 from charms.mysql.v0.backups import MySQLBackups
 from charms.mysql.v0.mysql import (
@@ -36,6 +36,8 @@ from charms.mysql.v0.mysql import (
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
+from charms.tempo_k8s.v1.charm_tracing import trace_charm
+from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
@@ -60,13 +62,14 @@ from constants import (
     MYSQLD_EXPORTER_PORT,
     MYSQLD_EXPORTER_SERVICE,
     MYSQLD_SAFE_SERVICE,
-    MYSQLD_SOCK_FILE,
     PASSWORD_LENGTH,
     PEER,
     ROOT_PASSWORD_KEY,
     S3_INTEGRATOR_RELATION_NAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
+    TRACING_PROTOCOL,
+    TRACING_RELATION_NAME,
 )
 from k8s_helpers import KubernetesHelpers
 from log_rotate_manager import LogRotateManager
@@ -81,6 +84,29 @@ from utils import compare_dictionaries, generate_random_password
 logger = logging.getLogger(__name__)
 
 
+@trace_charm(
+    tracing_endpoint="tracing_endpoint",
+    extra_types=(
+        GrafanaDashboardProvider,
+        KubernetesHelpers,
+        LogProxyConsumer,
+        LogRotateManager,
+        MetricsEndpointProvider,
+        MySQL,
+        MySQLAsyncReplicationConsumer,
+        MySQLAsyncReplicationOffer,
+        MySQLBackups,
+        MySQLConfig,
+        MySQLK8sUpgrade,
+        MySQLProvider,
+        MySQLRelation,
+        MySQLRootRelation,
+        MySQLTLS,
+        RollingOpsManager,
+        RotateMySQLLogs,
+        S3Requirer,
+    ),
+)
 class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     """Operator framework charm for MySQL."""
 
@@ -144,8 +170,18 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.log_rotate_manager.start_log_rotate_manager()
 
         self.rotate_mysql_logs = RotateMySQLLogs(self)
-        self.async_primary = MySQLAsyncReplicationPrimary(self)
-        self.async_replica = MySQLAsyncReplicationReplica(self)
+        self.replication_offer = MySQLAsyncReplicationOffer(self)
+        self.replication_consumer = MySQLAsyncReplicationConsumer(self)
+
+        self.tracing = TracingEndpointRequirer(
+            self, protocols=[TRACING_PROTOCOL], relation_name=TRACING_RELATION_NAME
+        )
+
+    @property
+    def tracing_endpoint(self) -> Optional[str]:
+        """Otlp http endpoint for charm instrumentation."""
+        if self.tracing.is_ready():
+            return self.tracing.get_endpoint(TRACING_PROTOCOL)
 
     @property
     def _mysql(self) -> MySQL:
@@ -198,11 +234,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
                     "environment": {
-                        "DATA_SOURCE_NAME": (
-                            f"{MONITORING_USERNAME}:"
-                            f"{self.get_secret('app', MONITORING_PASSWORD_KEY)}"
-                            f"@unix({MYSQLD_SOCK_FILE})/"
-                        ),
+                        "EXPORTER_USER": MONITORING_USERNAME,
+                        "EXPORTER_PASS": self.get_secret("app", MONITORING_PASSWORD_KEY),
                     },
                 },
             },
@@ -389,7 +422,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             restart_states = {
                 self.restart_peers.data[unit].get("state", "unset") for unit in self.peers.units
             }
-            if restart_states != {"release"}:
+            if restart_states == {"unset"}:
+                logger.info("Restarting primary")
+            elif restart_states != {"release"}:
                 # Wait other units restart first to minimize primary switchover
                 message = "Primary restart deferred after other units"
                 logger.info(message)
@@ -400,6 +435,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         container = self.unit.get_container(CONTAINER_NAME)
         if container.can_connect():
             container.restart(MYSQLD_SAFE_SERVICE)
+            sleep(10)
+            self._on_update_status(None)
 
     # =========================================================================
     # Charm event handlers
@@ -456,6 +493,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
             profile=self.config.profile,
             memory_limit=memory_limit_bytes,
+            experimental_max_connections=self.config.experimental_max_connections,
         )
 
         changed_config = compare_dictionaries(previous_config_dict, new_config_dict)
@@ -522,6 +560,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_config_content, _ = self._mysql.render_mysqld_configuration(
             profile=self.config.profile,
             memory_limit=memory_limit_bytes,
+            experimental_max_connections=self.config.experimental_max_connections,
         )
         self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
 
@@ -720,7 +759,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return True
 
         # avoid changing status while async replication is setting up
-        return not (self.async_replica.idle and self.async_primary.idle)
+        return not (self.replication_consumer.idle and self.replication_offer.idle)
 
     def _on_update_status(self, _: Optional[UpdateStatusEvent]) -> None:
         """Handle the update status event."""
