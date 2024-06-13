@@ -130,7 +130,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 60
+LIBPATCH = 61
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1599,6 +1599,24 @@ class MySQLBase(ABC):
             )
             raise MySQLInitializeJujuOperationsTableError(e.message)
 
+    def rescan_cluster_if_instance_already_in_cluster(
+            self,
+            *,
+            cluster_primary: str,
+            instance_label: str,
+        ) -> None:
+        """Rescan the cluster on the primary if the provided instance is in the cluster.
+
+        This method is used to ensure that a joining unit in the cluster is not
+        already present in the cluster metadata in a non-online (online or recovering)
+        state.
+        """
+        cluster_status = self.get_cluster_status(from_instance=cluster_primary)
+        instances = cluster_status["defaultreplicaset"]["topology"].keys()
+        if instance_label not in instances:
+            return
+        self.rescan_cluster(from_instance=cluster_primary, remove_instances=True)
+
     def add_instance_to_cluster(
         self,
         *,
@@ -1793,7 +1811,7 @@ class MySQLBase(ABC):
             logger.debug(f"Checking existence of unit {unit_label} in cluster {self.cluster_name}")
 
             output = self._run_mysqlsh_script("\n".join(commands))
-            return MySQLMemberState.ONLINE in output.lower()
+            return MySQLMemberState.ONLINE in output.lower() or MySQLMemberState.RECOVERING in output.lower()
         except MySQLClientError:
             # confirmation can fail if the clusteradmin user does not yet exist on the instance
             logger.debug(
@@ -1806,7 +1824,7 @@ class MySQLBase(ABC):
         stop=stop_after_attempt(3),
         retry=retry_if_exception_type(TimeoutError),
     )
-    def get_cluster_status(self, extended: Optional[bool] = False) -> Optional[dict]:
+    def get_cluster_status(self, from_instance: Optional[str] = None, extended: Optional[bool] = False) -> Optional[dict]:
         """Get the cluster status.
 
         Executes script to retrieve cluster status.
@@ -1818,7 +1836,7 @@ class MySQLBase(ABC):
         """
         options = {"extended": extended}
         status_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{from_instance or self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
             f"print(cluster.status({options}))",
         )
