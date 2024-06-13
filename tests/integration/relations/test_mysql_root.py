@@ -75,7 +75,14 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             ops_test.model.deploy(
                 "zookeeper-k8s", application_name="zookeeper", channel="latest/stable"
             ),
-            ops_test.model.deploy("mongodb-k8s", application_name="mongodb", channel="5/edge"),
+            # sticking to revision that support both juju 2.9.x and 3.x
+            ops_test.model.deploy(
+                "mongodb-k8s",
+                application_name="mongodb",
+                channel="5/edge",
+                revision=36,
+                series="jammy",
+            ),
         )
 
         # cannot block until "osm-keystone" units are available since they are not
