@@ -81,7 +81,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
         # cannot block until "osm-keystone" units are available since they are not
         # registered with ops_test.model.applications (due to the way it's deployed)
         await ops_test.model.wait_for_idle(
-            apps=[APP_NAME],
+            apps=[APP_NAME, "mongodb"],
             status="active",
             timeout=1000,
         )
