@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 # The unique Charmhub library identifier, never change it
 LIBID = "4de21f1a022c4e2c87ac8e672ec16f6a"
 LIBAPI = 0
-LIBPATCH = 2
+LIBPATCH = 3
 
 RELATION_OFFER = "replication-offer"
 RELATION_CONSUMER = "replication"
@@ -156,10 +156,6 @@ class MySQLAsyncReplication(Object):
 
         if not self._charm._mysql.is_cluster_replica():
             event.fail("Only a standby cluster can be promoted")
-            return
-
-        if event.params.get("cluster-set-name") != self.cluster_set_name:
-            event.fail("Invalid/empty cluster set name")
             return
 
         # promote cluster to primary
