@@ -1,0 +1,6 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:407 Testing data replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:414 Stopping continuous writes and wait (5s) for replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:421 Querying max value on all units
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
