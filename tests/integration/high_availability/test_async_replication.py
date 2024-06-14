@@ -19,7 +19,6 @@ from ..helpers import (
     execute_queries_on_unit,
     get_cluster_status,
     get_leader_unit,
-    get_relation_data,
     get_unit_address,
 )
 from ..markers import juju3
@@ -237,11 +236,10 @@ async def test_standby_promotion(
 
     assert leader_unit is not None, "No leader unit found on standby cluster"
 
-    relation_data = await get_relation_data(ops_test, MYSQL_APP1, "database-peers")
-    cluster_set_name = relation_data[0]["application-data"]["cluster-set-domain-name"]
     logger.info("Promoting standby cluster to primary")
     await juju_.run_action(
-        leader_unit, "promote-to-primary", **{"cluster-set-name": cluster_set_name}
+        leader_unit,
+        "promote-to-primary",
     )
 
     results = await get_max_written_value(first_model, second_model)
@@ -272,12 +270,10 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
     logger.info("Promoting standby cluster to primary with force flag")
     leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
     assert leader_unit is not None, "No leader unit found"
-    relation_data = await get_relation_data(ops_test, MYSQL_APP1, "database-peers")
-    cluster_set_name = relation_data[0]["application-data"]["cluster-set-domain-name"]
     await juju_.run_action(
         leader_unit,
         "promote-to-primary",
-        **{"--wait": "5m", "cluster-set-name": cluster_set_name, "force": True},
+        **{"--wait": "5m", "force": True},
     )
 
     cluster_set_status = await get_cluster_status(leader_unit, cluster_set=True)

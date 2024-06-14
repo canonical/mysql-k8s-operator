@@ -77,10 +77,6 @@ promote-to-primary:
     Promotes this cluster to become the primary in the cluster-set. Used for safe switchover or failover.
     Can only be run against the charm leader unit of a standby cluster.
   params:
-    cluster-set-name:
-      type: string
-      description: |
-        The name of the cluster-set. Mandatory option, used for confirmation.
     force:
       type: boolean
       default: False
