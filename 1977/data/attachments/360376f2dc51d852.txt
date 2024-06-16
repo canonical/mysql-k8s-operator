@@ -1,0 +1,44 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: DELETE https://10.1.0.110:16443/api/v1/namespaces/test/pods/mysql-k8s-1 "HTTP/1.1 200 OK"
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] maintenance: offline
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] maintenance: offline
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active:
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.3    unsupported  01:42:08Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.36-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.170  no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   37  10.152.183.17   no       Last written value=21568
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0        active    idle   10.1.55.140         Primary
+mysql-k8s/1*       active    idle   10.1.55.147         
+mysql-k8s/2        active    idle   10.1.55.139         
+mysql-test-app/0*  active    idle   10.1.55.142         Last written value=21568
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:38:28 ERROR unit.mysql-k8s/1.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
