@@ -452,7 +452,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.unit_peer_data.setdefault("member-role", "unknown")
         self.unit_peer_data.setdefault("member-state", "waiting")
 
-    def _on_config_changed(self, event: EventBase) -> None:
+    def _on_config_changed(self, _: EventBase) -> None:
         """Handle the config changed event."""
         if not self._is_peer_data_set:
             # skip when not initialized
@@ -461,12 +461,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not self.upgrade.idle:
             # skip when upgrade is in progress
             # the upgrade already restart the daemon
-            return
-
-        if not self._mysql.is_mysqld_running():
-            # defer config-changed event until MySQL is running
-            logger.debug("Deferring config-changed event until MySQL is running")
-            event.defer()
             return
 
         config_content = self._mysql.read_file_content(MYSQLD_CONFIG_FILE)
@@ -492,8 +486,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             # persist config to file
             self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
-            self.on[f"{self.restart.name}"].acquire_lock.emit()
-            return
+
+            if self._mysql.is_mysqld_running():
+                # restart the service
+                self.on[f"{self.restart.name}"].acquire_lock.emit()
+                return
 
         if dynamic_config := self.mysql_config.filter_static_keys(changed_config):
             # if only dynamic config changed, apply it
