@@ -14,82 +14,21 @@ on:
   workflow_call:
 
 jobs:
-  lint:
-    name: Lint
-    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v13.3.0
-
-  unit-test:
-    name: Unit test charm
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install tox & poetry
-        run: |
-          pipx install tox
-          pipx install poetry
-      - name: Run tests
-        run: tox run -e unit
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v4
-
-  lib-check:
-    name: Check libraries
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: |
-          # Workaround for https://github.com/canonical/charmcraft/issues/1389#issuecomment-1880921728
-          touch requirements.txt
-      - name: Check libs
-        uses: canonical/charming-actions/check-libraries@2.6.0
-        with:
-          credentials: ${{ secrets.CHARMHUB_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          use-labels: false
-          fail-build: ${{ github.event_name == 'pull_request' }}
-
   build:
     name: Build charm
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v13.3.0
     with:
       cache: true
 
-  integration-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        juju:
-          - agent: 2.9.49
-            libjuju: ^2
-            allure: false
-          - agent: 3.4.3
-            allure: true
-    name: Integration test charm | ${{ matrix.juju.agent }}
+  release:
+    name: Release charm
     needs:
-      - lint
-      - unit-test
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v13.3.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@charmcraft-multi-arch
     with:
+      channel: 8.0/edge/test-dpw
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
-      cloud: microk8s
-      microk8s-snap-channel: 1.28-strict/stable
-      juju-agent-version: ${{ matrix.juju.agent }}
-      libjuju-version-constraint: ${{ matrix.juju.libjuju }}
-      _beta_allure_report: ${{ matrix.juju.allure }}
+      create-github-release: false
+      charmcraft-snap-channel: 2.x/candidate
     secrets:
-      # GitHub appears to redact each line of a multi-line secret
-      # Avoid putting `{` or `}` on a line by itself so that it doesn't get redacted in logs
-      integration-test: |
-        { "AWS_ACCESS_KEY": "${{ secrets.AWS_ACCESS_KEY }}",
-          "AWS_SECRET_KEY": "${{ secrets.AWS_SECRET_KEY }}",
-          "GCP_ACCESS_KEY": "${{ secrets.GCP_ACCESS_KEY }}",
-          "GCP_SECRET_KEY": "${{ secrets.GCP_SECRET_KEY }}", }
-    permissions:
-      contents: write  # Needed for Allure Report beta
+      charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
