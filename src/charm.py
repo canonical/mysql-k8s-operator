@@ -406,7 +406,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _restart(self, event: EventBase) -> None:
         """Restart the service."""
-        if self._mysql.is_unit_primary(self.unit_label):
+        if self.peers.units != self.restart_peers.units:
+            # defer restart until all units are in the relation
+            logger.debug("Deferring restart until all units are in the relation")
+            event.defer()
+            return
+        if self.peers.units and self._mysql.is_unit_primary(self.unit_label):
+            # delay primary on multi units
             restart_states = {
                 self.restart_peers.data[unit].get("state", "unset") for unit in self.peers.units
             }
