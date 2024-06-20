@@ -185,7 +185,8 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
         MYSQL_ROUTER_APP_NAME,
         application_name=MYSQL_ROUTER_APP_NAME,
         series="jammy",
-        channel="8.0/edge/dpe4643",  # TODO: remove after router is released
+        channel="8.0/edge",
+        revision=119,  # TODO: remove after router is released
         num_units=1,
         trust=True,
     )
