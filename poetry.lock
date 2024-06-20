@@ -16,6 +16,26 @@ allure-python-commons = "2.13.5"
 pytest = ">=4.5.0"
 
 [[package]]
+name = "allure-pytest-collection-report"
+version = "0.1.0"
+description = ""
+optional = false
+python-versions = "^3.8"
+files = []
+develop = false
+
+[package.dependencies]
+allure-pytest = ">=2.13.5"
+pytest = "*"
+
+[package.source]
+type = "git"
+url = "https://github.com/canonical/data-platform-workflows"
+reference = "v16.0.0"
+resolved_reference = "1540c72f5c6b4e280d58acdb20bd7e4d5d253a63"
+subdirectory = "python/pytest_plugins/allure_pytest_collection_report"
+
+[[package]]
 name = "allure-python-commons"
 version = "2.13.5"
 description = "('Contains the API for end users as well as helper functions and classes to build Allure adapters for Python test frameworks',)"
@@ -1856,8 +1876,8 @@ develop = false
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v13.3.0"
-resolved_reference = "e90eb63f28c9abc39c9a4a40dee277ae21896790"
+reference = "v16.0.0"
+resolved_reference = "1540c72f5c6b4e280d58acdb20bd7e4d5d253a63"
 subdirectory = "python/pytest_plugins/github_secrets"
 
 [[package]]
@@ -1876,8 +1896,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v13.3.0"
-resolved_reference = "e90eb63f28c9abc39c9a4a40dee277ae21896790"
+reference = "v16.0.0"
+resolved_reference = "1540c72f5c6b4e280d58acdb20bd7e4d5d253a63"
 subdirectory = "python/pytest_plugins/microceph"
 
 [[package]]
@@ -1931,8 +1951,8 @@ pyyaml = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v13.3.0"
-resolved_reference = "e90eb63f28c9abc39c9a4a40dee277ae21896790"
+reference = "v16.0.0"
+resolved_reference = "1540c72f5c6b4e280d58acdb20bd7e4d5d253a63"
 subdirectory = "python/pytest_plugins/pytest_operator_cache"
 
 [[package]]
@@ -1950,8 +1970,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v13.3.0"
-resolved_reference = "e90eb63f28c9abc39c9a4a40dee277ae21896790"
+reference = "v16.0.0"
+resolved_reference = "1540c72f5c6b4e280d58acdb20bd7e4d5d253a63"
 subdirectory = "python/pytest_plugins/pytest_operator_groups"
 
 [[package]]
@@ -2600,4 +2620,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "82fd810c4e8ca9ce1d50430bc3d09f7b0add89cc72499fa5de5f03bd51d38f05"
+content-hash = "725735ba66057c49b5f64e5a1bf8397886a0a88ad77d4987a658d365bb2acbf0"
