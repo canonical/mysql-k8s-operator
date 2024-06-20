@@ -77,6 +77,7 @@ urllib3 = "^1.26.16"
 lightkube = "^0.14.0"
 kubernetes = "^27.2.0"
 allure-pytest = "^2.13.2"
+allure-pytest-collection-report = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.0.0", subdirectory = "python/pytest_plugins/allure_pytest_collection_report"}
 pytest-asyncio = "^0.21.1"
 
 [tool.coverage.run]
