@@ -2848,7 +2848,7 @@ class MySQLBase(ABC):
         mysql container. This temp dir is supposed to be on the same volume as
         the mysql data directory to reduce latency for IOPS.
         """
-        nproc_command = "nproc".split()
+        nproc_command = ["nproc"]
         make_temp_dir_command = (
             f"mktemp --directory {temp_restore_directory}/#mysql_sst_XXXX".split()
         )
@@ -2865,23 +2865,23 @@ class MySQLBase(ABC):
             logger.exception("Failed to execute commands prior to running xbcloud get")
             raise MySQLRetrieveBackupWithXBCloudError(e.message)
 
-        retrieve_backup_command = f"""
-{xbcloud_location} get
-        --curl-retriable-errors=7
-        --parallel=10
-        --storage=S3
-        --s3-region={s3_parameters["region"]}
-        --s3-bucket={s3_parameters["bucket"]}
-        --s3-endpoint={s3_parameters["endpoint"]}
-        --s3-bucket-lookup={s3_parameters["s3-uri-style"]}
-        --s3-api-version={s3_parameters["s3-api-version"]}
-        {s3_parameters["path"]}/{backup_id}
-    | {xbstream_location}
-        --decompress
-        -x
-        -C {tmp_dir}
-        --parallel={nproc}
-""".split()
+        retrieve_backup_command = (
+            f"{xbcloud_location} get "
+            "--curl-retriable-errors=7 "
+            "--parallel=10 "
+            "--storage=S3 "
+            f"--s3-region={s3_parameters['region']} "
+            f"--s3-bucket={s3_parameters['bucket']} "
+            f"--s3-endpoint={s3_parameters['endpoint']} "
+            f"--s3-bucket-lookup={s3_parameters['s3-uri-style']} "
+            f"--s3-api-version={s3_parameters['s3-api-version']} "
+            f"{s3_parameters['path']}/{backup_id} "
+            f"| {xbstream_location} "
+            "--decompress "
+            "-x "
+            f"-C {tmp_dir} "
+            f"--parallel={nproc}"
+        ).split()
 
         try:
             logger.debug(f"Command to retrieve backup: {' '.join(retrieve_backup_command)}")
@@ -2896,6 +2896,7 @@ class MySQLBase(ABC):
                 },
                 user=user,
                 group=group,
+                stream_output=True,
             )
             return (stdout, stderr, tmp_dir)
         except MySQLExecError as e:
@@ -3038,6 +3039,7 @@ class MySQLBase(ABC):
         user: Optional[str] = None,
         group: Optional[str] = None,
         env_extra: Dict = None,
+        stream_output: bool = False,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         raise NotImplementedError

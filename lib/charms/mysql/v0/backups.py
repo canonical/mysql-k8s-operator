@@ -51,10 +51,13 @@ import pathlib
 import typing
 from typing import Dict, List, Optional, Tuple
 
+from ops import MaintenanceStatus
+
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLCreateClusterError,
+    MySQLCreateClusterSetError,
     MySQLDeleteTempBackupDirectoryError,
     MySQLDeleteTempRestoreDirectoryError,
     MySQLEmptyDataDirectoryError,
@@ -80,7 +83,7 @@ from charms.mysql.v0.s3_helpers import (
 from ops.charm import ActionEvent
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
-from ops.model import ActiveStatus, BlockedStatus
+from ops.model import BlockedStatus
 
 from constants import MYSQL_DATA_DIR
 
@@ -96,7 +99,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 8
+LIBPATCH = 9
 
 
 if typing.TYPE_CHECKING:
@@ -176,11 +179,7 @@ class MySQLBackups(Object):
 
         Returns: bool indicating success
         """
-        logs = f"""Stdout:
-{stdout}
-
-Stderr:
-{stderr}"""
+        logs = f"Stdout:\n{stdout}\n\nStderr:\n{stderr}"
         logger.debug(f"Logs to upload to S3 at location {log_filename}:\n{logs}")
 
         logger.info(
@@ -222,7 +221,9 @@ Stderr:
             event.set_results({"backups": self._format_backups_list(backups)})
         except Exception as e:
             error_message = (
-                e.message if hasattr(e, "message") else "Failed to retrieve backup ids from S3"
+                getattr(e, "message")
+                if hasattr(e, "message")
+                else "Failed to retrieve backup ids from S3"
             )
             logger.error(error_message)
             event.fail(error_message)
@@ -263,12 +264,13 @@ Stderr:
 
         # Test uploading metadata to S3 to test credentials before backup
         juju_version = JujuVersion.from_environ()
-        metadata = f"""Date Backup Requested: {datetime_backup_requested}
-Model Name: {self.model.name}
-Application Name: {self.model.app.name}
-Unit Name: {self.charm.unit.name}
-Juju Version: {str(juju_version)}
-"""
+        metadata = (
+            f"Date Backup Requested: {datetime_backup_requested}\n"
+            f"Model Name: {self.model.name}\n"
+            f"Application Name: {self.model.app.name}\n"
+            f"Unit Name: {self.charm.unit.name}\n"
+            f"Juju Version: {str(juju_version)}"
+        )
 
         if not upload_content_to_s3(metadata, f"{backup_path}.metadata", s3_parameters):
             logger.error("Backup failed: Failed to upload metadata to provided S3")
@@ -381,7 +383,7 @@ Juju Version: {str(juju_version)}
         """
         try:
             logger.info("Running the xtrabackup commands")
-            stdout = self.charm._mysql.execute_backup_commands(
+            stdout, _ = self.charm._mysql.execute_backup_commands(
                 backup_path,
                 s3_parameters,
             )
@@ -500,6 +502,7 @@ Juju Version: {str(juju_version)}
             return
 
         # Run operations to prepare for the restore
+        self.charm.unit.status = MaintenanceStatus("Running pre-restore operations")
         success, error_message = self._pre_restore()
         if not success:
             logger.error(f"Restore failed: {error_message}")
@@ -520,6 +523,7 @@ Juju Version: {str(juju_version)}
             return
 
         # Run post-restore operations
+        self.charm.unit.status = MaintenanceStatus("Running post-restore operations")
         success, error_message = self._post_restore()
         if not success:
             logger.error(f"Restore failed: {error_message}")
@@ -533,22 +537,23 @@ Juju Version: {str(juju_version)}
                 "completed": "ok",
             }
         )
+        # update status as soon as possible
+        self.charm._on_update_status(None)
 
-    def _pre_restore(self) -> Tuple[bool, Optional[str]]:
+    def _pre_restore(self) -> Tuple[bool, str]:
         """Perform operations that need to be done before performing a restore.
 
         Returns: tuple of (success, error_message)
         """
         try:
+            logger.info("Stopping mysqld before restoring the backup")
             self.charm._mysql.stop_mysqld()
         except MySQLStopMySQLDError:
             return False, "Failed to stop mysqld"
 
-        return True, None
+        return True, ""
 
-    def _restore(
-        self, backup_id: str, s3_parameters: Dict[str, str]
-    ) -> Tuple[bool, bool, Optional[str]]:
+    def _restore(self, backup_id: str, s3_parameters: Dict[str, str]) -> Tuple[bool, bool, str]:
         """Run the restore operations.
 
         Args:
@@ -558,12 +563,16 @@ Juju Version: {str(juju_version)}
         Returns: tuple of (success, recoverable_error, error_message)
         """
         try:
-            logger.info("Running xbcloud get commands to retrieve the backup")
+            logger.info(
+                "Running xbcloud get commands to retrieve the backup\n"
+                "This operation can take long time depending on backup size and network speed"
+            )
+            self.charm.unit.status = MaintenanceStatus("Downloading backup...")
             stdout, stderr, backup_location = self.charm._mysql.retrieve_backup_with_xbcloud(
                 backup_id,
                 s3_parameters,
             )
-            logger.debug(f"Stdout of xbcloud get commands: {stdout}")
+            # logger.debug(f"Stdout of xbcloud get commands: {stdout}")
             logger.debug(f"Stderr of xbcloud get commands: {stderr}")
         except MySQLRetrieveBackupWithXBCloudError:
             return False, True, f"Failed to retrieve backup {backup_id}"
@@ -583,6 +592,7 @@ Juju Version: {str(juju_version)}
             return False, False, "Failed to empty the data directory"
 
         try:
+            self.charm.unit.status = MaintenanceStatus("Restoring backup...")
             logger.info("Restoring the backup")
             stdout, stderr = self.charm._mysql.restore_backup(backup_location)
             logger.debug(f"Stdout of xtrabackup move-back command: {stdout}")
@@ -590,9 +600,9 @@ Juju Version: {str(juju_version)}
         except MySQLRestoreBackupError:
             return False, False, f"Failed to restore backup {backup_id}"
 
-        return True, True, None
+        return True, True, ""
 
-    def _clean_data_dir_and_start_mysqld(self) -> Tuple[bool, Optional[str]]:
+    def _clean_data_dir_and_start_mysqld(self) -> Tuple[bool, str]:
         """Run idempotent operations run after restoring a backup.
 
         Returns tuple of (success, error_message)
@@ -613,9 +623,9 @@ Juju Version: {str(juju_version)}
         except MySQLStartMySQLDError:
             return False, "Failed to start mysqld"
 
-        return True, None
+        return True, ""
 
-    def _post_restore(self) -> Tuple[bool, Optional[str]]:
+    def _post_restore(self) -> Tuple[bool, str]:
         """Run operations required after restoring a backup.
 
         Returns: tuple of (success, error_message)
@@ -638,14 +648,15 @@ Juju Version: {str(juju_version)}
             logger.info("Creating cluster on restored node")
             unit_label = self.charm.unit.name.replace("/", "-")
             self.charm._mysql.create_cluster(unit_label)
+            self.charm._mysql.create_cluster_set()
             self.charm._mysql.initialize_juju_units_operations_table()
 
             self.charm._mysql.rescan_cluster()
 
-            logger.info("Retrieving instance cluster state and role")
-            state, role = self.charm._mysql.get_member_state()
         except MySQLCreateClusterError:
             return False, "Failed to create InnoDB cluster on restored instance"
+        except MySQLCreateClusterSetError:
+            return False, "Failed to create InnoDB cluster-set on restored instance"
         except MySQLInitializeJujuOperationsTableError:
             return False, "Failed to initialize the juju operations table"
         except MySQLRescanClusterError:
@@ -653,9 +664,4 @@ Juju Version: {str(juju_version)}
         except MySQLGetMemberStateError:
             return False, "Failed to retrieve member state in restored instance"
 
-        self.charm.unit_peer_data["member-role"] = role
-        self.charm.unit_peer_data["member-state"] = state
-
-        self.charm.unit.status = ActiveStatus()
-
-        return True, None
+        return True, ""
