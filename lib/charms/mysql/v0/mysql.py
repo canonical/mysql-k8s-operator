@@ -2896,7 +2896,7 @@ class MySQLBase(ABC):
                 },
                 user=user,
                 group=group,
-                stream_output=True,
+                stream_output="stderr",
             )
             return (stdout, stderr, tmp_dir)
         except MySQLExecError as e:
@@ -3038,8 +3038,8 @@ class MySQLBase(ABC):
         bash: bool = False,
         user: Optional[str] = None,
         group: Optional[str] = None,
-        env_extra: Dict = None,
-        stream_output: bool = False,
+        env_extra: Dict = {},
+        stream_output: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         raise NotImplementedError
@@ -3087,6 +3087,26 @@ class MySQLBase(ABC):
                 'processes = session.run_sql("'
                 "SELECT processlist_id FROM performance_schema.threads WHERE "
                 "connection_type = 'TCP/IP' AND type = 'FOREGROUND';"
+                '")'
+            ),
+            "process_id_list = [id[0] for id in processes.fetch_all()]",
+            'for process_id in process_id_list:\n  session.run_sql(f"KILL CONNECTION {process_id}")',
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(kill_connections_command))
+        except MySQLClientError:
+            logger.exception("Failed to kill external sessions")
+            raise MySQLKillSessionError
+
+    def kill_client_sessions(self) -> None:
+        """Kill non local, non system open unencrypted connections."""
+        kill_connections_command = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            (
+                'processes = session.run_sql("'
+                "SELECT processlist_id FROM performance_schema.threads WHERE "
+                "type = 'FOREGROUND' and connection_type is not NULL and processlist_id != CONNECTION_ID();"
                 '")'
             ),
             "process_id_list = [id[0] for id in processes.fetch_all()]",

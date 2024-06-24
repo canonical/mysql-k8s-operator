@@ -549,7 +549,7 @@ class MySQL(MySQLBase):
         group: Optional[str] = None,
         env_extra: Optional[Dict] = None,
         timeout: Optional[float] = None,
-        stream_output: bool = False,
+        stream_output: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         try:
@@ -564,8 +564,12 @@ class MySQL(MySQLBase):
                 timeout=timeout,
             )
             if stream_output:
-                for line in process.stdout:
-                    logger.debug(repr(line))
+                if stream_output == "stderr" and process.stderr:
+                    for line in process.stderr:
+                        logger.debug(line.strip())
+                if stream_output == "stdout" and process.stdout:
+                    for line in process.stdout:
+                        logger.debug(line.strip())
             stdout, stderr = process.wait_output()
             return (stdout, stderr or "")
         except ExecError:

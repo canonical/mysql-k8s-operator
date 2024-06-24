@@ -64,6 +64,7 @@ from charms.mysql.v0.mysql import (
     MySQLExecuteBackupCommandsError,
     MySQLGetMemberStateError,
     MySQLInitializeJujuOperationsTableError,
+    MySQLKillSessionError,
     MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLPrepareBackupForRestoreError,
     MySQLRescanClusterError,
@@ -90,6 +91,7 @@ from constants import MYSQL_DATA_DIR
 logger = logging.getLogger(__name__)
 
 MYSQL_BACKUPS = "mysql-backups"
+S3_INTEGRATOR_RELATION_NAME = "s3-parameters"
 
 # The unique Charmhub library identifier, never change it
 LIBID = "183844304be247129572309a5fb1e47c"
@@ -120,6 +122,10 @@ class MySQLBackups(Object):
         self.framework.observe(self.charm.on.restore_action, self._on_restore)
 
     # ------------------ Helpers ------------------
+    @property
+    def _s3_integrator_relation_exists(self) -> bool:
+        """Returns whether a relation with the s3-integrator exists."""
+        return bool(self.model.get_relation(S3_INTEGRATOR_RELATION_NAME))
 
     def _retrieve_s3_parameters(self) -> Tuple[Dict[str, str], List[str]]:
         """Retrieve S3 parameters from the S3 integrator relation.
@@ -205,7 +211,7 @@ class MySQLBackups(Object):
 
         List backups available to restore by this application.
         """
-        if not self.charm.s3_integrator_relation_exists:
+        if not self._s3_integrator_relation_exists:
             event.fail("Missing relation with S3 integrator charm")
             return
 
@@ -234,7 +240,7 @@ class MySQLBackups(Object):
         """Handle the create backup action."""
         logger.info("A backup has been requested on unit")
 
-        if not self.charm.s3_integrator_relation_exists:
+        if not self._s3_integrator_relation_exists:
             logger.error("Backup failed: missing relation with S3 integrator charm")
             event.fail("Missing relation with S3 integrator charm")
             return
@@ -438,7 +444,7 @@ class MySQLBackups(Object):
 
         Returns: a boolean indicating whether restore should be run
         """
-        if not self.charm.s3_integrator_relation_exists:
+        if not self._s3_integrator_relation_exists:
             error_message = "Missing relation with S3 integrator charm"
             logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
@@ -545,9 +551,15 @@ class MySQLBackups(Object):
 
         Returns: tuple of (success, error_message)
         """
+        if not self.charm._mysql.is_mysqld_running():
+            return True, ""
+
         try:
             logger.info("Stopping mysqld before restoring the backup")
+            self.charm._mysql.kill_client_sessions()
             self.charm._mysql.stop_mysqld()
+        except MySQLKillSessionError:
+            return False, "Failed to kill client sessions"
         except MySQLStopMySQLDError:
             return False, "Failed to stop mysqld"
 
