@@ -273,7 +273,7 @@ class MySQLBackups(Object):
             f"Model Name: {self.model.name}\n"
             f"Application Name: {self.model.app.name}\n"
             f"Unit Name: {self.charm.unit.name}\n"
-            f"Juju Version: {str(juju_version)}"
+            f"Juju Version: {str(juju_version)}\n"
         )
 
         if not upload_content_to_s3(metadata, f"{backup_path}.metadata", s3_parameters):
@@ -672,7 +672,5 @@ class MySQLBackups(Object):
             return False, "Failed to initialize the juju operations table"
         except MySQLRescanClusterError:
             return False, "Failed to rescan the cluster"
-        except MySQLGetMemberStateError:
-            return False, "Failed to retrieve member state in restored instance"
 
         return True, ""
