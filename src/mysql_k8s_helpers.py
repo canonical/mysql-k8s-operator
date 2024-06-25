@@ -571,7 +571,7 @@ class MySQL(MySQLBase):
                     for line in process.stdout:
                         logger.debug(line.strip())
             stdout, stderr = process.wait_output()
-            return (stdout, stderr or "")
+            return (stdout.strip(), stderr.strip() if stderr else "")
         except ExecError:
             logger.exception(f"Failed command: {commands=}, {user=}, {group=}")
             raise MySQLExecError
