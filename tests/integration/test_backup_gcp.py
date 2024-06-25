@@ -35,7 +35,7 @@ SERVER_CONFIG_PASSWORD = "serverconfigpassword"
 ROOT_PASSWORD = "rootpassword"
 DATABASE_NAME = "backup-database"
 TABLE_NAME = "backup-table"
-CLOUD = "aws"
+CLOUD = "gcp"
 value_before_backup, value_after_backup = None, None
 
 
@@ -43,8 +43,8 @@ value_before_backup, value_after_backup = None, None
 def cloud_credentials(github_secrets) -> dict[str, str]:
     """Read cloud credentials."""
     return {
-        "access-key": github_secrets["AWS_ACCESS_KEY"],
-        "secret-key": github_secrets["AWS_SECRET_KEY"],
+        "access-key": github_secrets["GCP_ACCESS_KEY"],
+        "secret-key": github_secrets["GCP_SECRET_KEY"],
     }
 
 
@@ -55,10 +55,10 @@ def cloud_configs() -> dict[str, str]:
     path = f"mysql-k8s/{uuid.uuid4()}"
 
     return {
-        "endpoint": "https://s3.amazonaws.com",
+        "endpoint": "https://storage.googleapis.com",
         "bucket": "data-charms-testing",
         "path": path,
-        "region": "us-east-1",
+        "region": "",
     }
 
 

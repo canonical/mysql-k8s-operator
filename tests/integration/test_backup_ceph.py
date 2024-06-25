@@ -4,11 +4,11 @@
 
 import logging
 import socket
-import uuid
 from pathlib import Path
 
 import boto3
 import pytest
+import pytest_microceph
 from pytest_operator.plugin import OpsTest
 
 from . import juju_
@@ -35,30 +35,26 @@ SERVER_CONFIG_PASSWORD = "serverconfigpassword"
 ROOT_PASSWORD = "rootpassword"
 DATABASE_NAME = "backup-database"
 TABLE_NAME = "backup-table"
-CLOUD = "aws"
+CLOUD = "ceph"
 value_before_backup, value_after_backup = None, None
 
 
 @pytest.fixture(scope="session")
-def cloud_credentials(github_secrets) -> dict[str, str]:
+def cloud_credentials(microceph: pytest_microceph.ConnectionInformation) -> dict[str, str]:
     """Read cloud credentials."""
     return {
-        "access-key": github_secrets["AWS_ACCESS_KEY"],
-        "secret-key": github_secrets["AWS_SECRET_KEY"],
+        "access-key": microceph.access_key_id,
+        "secret-key": microceph.secret_access_key,
     }
 
 
 @pytest.fixture(scope="session")
-def cloud_configs() -> dict[str, str]:
-    # Add UUID to path to avoid conflict with tests running in parallel (e.g. multiple Juju
-    # versions on a PR, multiple PRs)
-    path = f"mysql-k8s/{uuid.uuid4()}"
-
+def cloud_configs(microceph: pytest_microceph.ConnectionInformation) -> dict[str, str]:
     return {
-        "endpoint": "https://s3.amazonaws.com",
-        "bucket": "data-charms-testing",
-        "path": path,
-        "region": "us-east-1",
+        "endpoint": f"http://{host_ip}",
+        "bucket": microceph.bucket,
+        "path": "mysql-k8s",
+        "region": "",
     }
 
 
