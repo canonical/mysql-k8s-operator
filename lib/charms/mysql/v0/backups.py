@@ -51,8 +51,6 @@ import pathlib
 import typing
 from typing import Dict, List, Optional, Tuple
 
-from ops import MaintenanceStatus
-
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
@@ -84,7 +82,7 @@ from charms.mysql.v0.s3_helpers import (
 from ops.charm import ActionEvent
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
-from ops.model import BlockedStatus
+from ops.model import BlockedStatus, MaintenanceStatus
 
 from constants import MYSQL_DATA_DIR
 
@@ -321,6 +319,7 @@ class MySQLBackups(Object):
                 "backup-id": datetime_backup_requested,
             }
         )
+        self.charm._on_update_status(None)
 
     def _can_unit_perform_backup(self) -> Tuple[bool, Optional[str]]:
         """Validates whether this unit can perform a backup.
@@ -388,6 +387,7 @@ class MySQLBackups(Object):
         Returns: tuple of (success, error_message)
         """
         try:
+            self.charm.unit.status = MaintenanceStatus("Running backup...")
             logger.info("Running the xtrabackup commands")
             stdout, _ = self.charm._mysql.execute_backup_commands(
                 backup_path,
@@ -489,7 +489,7 @@ class MySQLBackups(Object):
         if not self._pre_restore_checks(event):
             return
 
-        backup_id = event.params.get("backup-id").strip().strip("/")
+        backup_id = event.params["backup-id"].strip().strip("/")
         logger.info(f"A restore with backup-id {backup_id} has been requested on unit")
 
         # Retrieve and validate missing S3 parameters
@@ -584,13 +584,12 @@ class MySQLBackups(Object):
                 backup_id,
                 s3_parameters,
             )
-            # logger.debug(f"Stdout of xbcloud get commands: {stdout}")
-            logger.debug(f"Stderr of xbcloud get commands: {stderr}")
         except MySQLRetrieveBackupWithXBCloudError:
             return False, True, f"Failed to retrieve backup {backup_id}"
 
         try:
             logger.info("Preparing retrieved backup using xtrabackup prepare")
+            self.charm.unit.status = MaintenanceStatus("Preparing for restore backup...")
             stdout, stderr = self.charm._mysql.prepare_backup_for_restore(backup_location)
             logger.debug(f"Stdout of xtrabackup prepare command: {stdout}")
             logger.debug(f"Stderr of xtrabackup prepare command: {stderr}")
