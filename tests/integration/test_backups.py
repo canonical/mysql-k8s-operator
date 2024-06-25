@@ -47,10 +47,6 @@ def cloud_credentials(
 ) -> dict[str, dict[str, str]]:
     """Read cloud credentials."""
     return {
-        "aws": {
-            "access-key": github_secrets["AWS_ACCESS_KEY"],
-            "secret-key": github_secrets["AWS_SECRET_KEY"],
-        },
         "gcp": {
             "access-key": github_secrets["GCP_ACCESS_KEY"],
             "secret-key": github_secrets["GCP_SECRET_KEY"],
@@ -69,12 +65,6 @@ def cloud_configs(microceph: pytest_microceph.ConnectionInformation):
     path = f"mysql-k8s/{uuid.uuid4()}"
 
     return {
-        "aws": {
-            "endpoint": "https://s3.amazonaws.com",
-            "bucket": "data-charms-testing",
-            "path": path,
-            "region": "us-east-1",
-        },
         "gcp": {
             "endpoint": "https://storage.googleapis.com",
             "bucket": "data-charms-testing",
