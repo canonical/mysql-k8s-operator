@@ -460,6 +460,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _on_config_changed(self, _: EventBase) -> None:
         """Handle the config changed event."""
+        container = self.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            # configuration also take places on pebble ready handler
+            return
+
         if not self._is_peer_data_set:
             # skip when not initialized
             return
