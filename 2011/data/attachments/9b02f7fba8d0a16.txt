@@ -1,0 +1,3 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
