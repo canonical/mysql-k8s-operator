@@ -130,7 +130,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 60
+LIBPATCH = 61
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1038,7 +1038,7 @@ class MySQLBase(ABC):
         try:
             output = self._run_mysqlcli_script(
                 "; ".join(user_existence_commands),
-                user=self.server_config_user,
+                username=self.server_config_user,
                 password=self.server_config_password,
             )
             return "USER_EXISTS" in output
@@ -1215,29 +1215,28 @@ class MySQLBase(ABC):
             logger.exception(f"Failed to query and delete users for unit {unit_name}")
             raise MySQLDeleteUsersForUnitError(e.message)
 
-    def delete_users_for_relation(self, relation_id: int) -> None:
+    def delete_users_for_relation(self, username: str) -> None:
         """Delete users for a relation.
 
         Args:
-            relation_id: The id of the relation for which to delete mysql users for
+            username: The username do drop
 
         Raises:
             MySQLDeleteUsersForRelationError if there is an error deleting users for the relation
         """
-        user = f"relation-{str(relation_id)}"
         drop_users_command = [
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-            f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
+            f"session.run_sql(\"DROP USER IF EXISTS '{username}'@'%';\")",
         ]
         # If the relation is with a MySQL Router charm application, delete any users
         # created by that application.
         drop_users_command.extend(
-            self._get_statements_to_delete_users_with_attribute("created_by_user", f"'{user}'")
+            self._get_statements_to_delete_users_with_attribute("created_by_user", f"'{username}'")
         )
         try:
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
-            logger.exception(f"Failed to delete users for relation {relation_id}")
+            logger.exception(f"Failed to delete {username=}")
             raise MySQLDeleteUsersForRelationError(e.message)
 
     def delete_user(self, username: str) -> None:
@@ -1589,7 +1588,7 @@ class MySQLBase(ABC):
 
             self._run_mysqlcli_script(
                 "; ".join(initialize_table_commands),
-                user=self.server_config_user,
+                username=self.server_config_user,
                 password=self.server_config_password,
             )
         except MySQLClientError as e:
@@ -2460,7 +2459,7 @@ class MySQLBase(ABC):
         try:
             output = self._run_mysqlcli_script(
                 member_state_query,
-                user=self.cluster_admin_user,
+                username=self.cluster_admin_user,
                 password=self.cluster_admin_password,
                 timeout=10,
             )
@@ -2591,7 +2590,7 @@ class MySQLBase(ABC):
         try:
             self._run_mysqlcli_script(
                 "; ".join(set_instance_offline_mode_commands),
-                user=self.cluster_admin_user,
+                username=self.cluster_admin_user,
                 password=self.cluster_admin_password,
             )
         except MySQLClientError as e:
@@ -2732,7 +2731,7 @@ class MySQLBase(ABC):
         mysqld_socket_file: str,
         tmp_base_directory: str,
         defaults_config_file: str,
-        user: Optional[str] = None,
+        username: Optional[str] = None,
         group: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Executes commands to create a backup with the given args."""
@@ -2741,7 +2740,9 @@ class MySQLBase(ABC):
 
         try:
             nproc, _ = self._execute_commands(nproc_command)
-            tmp_dir, _ = self._execute_commands(make_temp_dir_command, user=user, group=group)
+            tmp_dir, _ = self._execute_commands(
+                make_temp_dir_command, username=username, group=group
+            )
         except MySQLExecError as e:
             logger.exception("Failed to execute commands prior to running backup")
             raise MySQLExecuteBackupCommandsError(e.message)
@@ -2790,7 +2791,7 @@ class MySQLBase(ABC):
             return self._execute_commands(
                 xtrabackup_commands,
                 bash=True,
-                user=user,
+                username=username,
                 group=group,
                 env_extra={
                     "ACCESS_KEY_ID": s3_parameters["access-key"],
@@ -2809,7 +2810,7 @@ class MySQLBase(ABC):
     def delete_temp_backup_directory(
         self,
         tmp_base_directory: str,
-        user: Optional[str] = None,
+        username: Optional[str] = None,
         group: Optional[str] = None,
     ) -> None:
         """Delete the temp backup directory."""
@@ -2822,7 +2823,7 @@ class MySQLBase(ABC):
 
             self._execute_commands(
                 delete_temp_dir_command,
-                user=user,
+                username=username,
                 group=group,
             )
         except MySQLExecError as e:
@@ -2839,7 +2840,7 @@ class MySQLBase(ABC):
         temp_restore_directory: str,
         xbcloud_location: str,
         xbstream_location: str,
-        user=None,
+        username=None,
         group=None,
     ) -> Tuple[str, str, str]:
         """Retrieve the specified backup from S3.
@@ -2858,7 +2859,7 @@ class MySQLBase(ABC):
 
             tmp_dir, _ = self._execute_commands(
                 make_temp_dir_command,
-                user=user,
+                username=username,
                 group=group,
             )
         except MySQLExecError as e:
@@ -2894,7 +2895,7 @@ class MySQLBase(ABC):
                     "ACCESS_KEY_ID": s3_parameters["access-key"],
                     "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
                 },
-                user=user,
+                username=username,
                 group=group,
             )
             return (stdout, stderr, tmp_dir)
@@ -2910,7 +2911,7 @@ class MySQLBase(ABC):
         backup_location: str,
         xtrabackup_location: str,
         xtrabackup_plugin_dir: str,
-        user=None,
+        username=None,
         group=None,
     ) -> Tuple[str, str]:
         """Prepare the backup in the provided dir for restore."""
@@ -2937,7 +2938,7 @@ class MySQLBase(ABC):
 
             return self._execute_commands(
                 prepare_backup_command,
-                user=user,
+                username=username,
                 group=group,
             )
         except MySQLExecError as e:
@@ -2950,7 +2951,7 @@ class MySQLBase(ABC):
     def empty_data_files(
         self,
         mysql_data_directory: str,
-        user=None,
+        username=None,
         group=None,
     ) -> None:
         """Empty the mysql data directory in preparation of backup restore."""
@@ -2960,7 +2961,7 @@ class MySQLBase(ABC):
             logger.debug(f"Command to empty data directory: {' '.join(empty_data_files_command)}")
             self._execute_commands(
                 empty_data_files_command,
-                user=user,
+                username=username,
                 group=group,
             )
         except MySQLExecError as e:
@@ -2977,7 +2978,7 @@ class MySQLBase(ABC):
         defaults_config_file: str,
         mysql_data_directory: str,
         xtrabackup_plugin_directory: str,
-        user=None,
+        username=None,
         group=None,
     ) -> Tuple[str, str]:
         """Restore the provided prepared backup."""
@@ -2997,7 +2998,7 @@ class MySQLBase(ABC):
 
             return self._execute_commands(
                 restore_backup_command,
-                user=user,
+                username=username,
                 group=group,
             )
         except MySQLExecError as e:
@@ -3010,7 +3011,7 @@ class MySQLBase(ABC):
     def delete_temp_restore_directory(
         self,
         temp_restore_directory: str,
-        user=None,
+        username=None,
         group=None,
     ) -> None:
         """Delete the temp restore directory from the mysql data directory."""
@@ -3023,7 +3024,7 @@ class MySQLBase(ABC):
             )
             self._execute_commands(
                 delete_temp_restore_directory_command,
-                user=user,
+                username=username,
                 group=group,
             )
         except MySQLExecError as e:
@@ -3035,7 +3036,7 @@ class MySQLBase(ABC):
         self,
         commands: List[str],
         bash: bool = False,
-        user: Optional[str] = None,
+        username: Optional[str] = None,
         group: Optional[str] = None,
         env_extra: Dict = None,
     ) -> Tuple[str, str]:
@@ -3070,7 +3071,7 @@ class MySQLBase(ABC):
         try:
             self._run_mysqlcli_script(
                 enable_commands,
-                user=self.server_config_user,
+                username=self.server_config_user,
                 password=self.server_config_password,
             )
         except MySQLClientError:
@@ -3218,7 +3219,7 @@ class MySQLBase(ABC):
     def _run_mysqlcli_script(
         self,
         script: str,
-        user: str = "root",
+        username: str = "root",
         password: Optional[str] = None,
         timeout: Optional[int] = None,
     ) -> str:
