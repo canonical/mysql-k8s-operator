@@ -1,0 +1,10 @@
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s (waiting for exactly 3 units, current : 1)
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/1 [executing] unknown: 
+  mysql-k8s/2 [executing] unknown: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [idle] active:
