@@ -130,7 +130,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 60
+LIBPATCH = 61
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -2736,50 +2736,50 @@ class MySQLBase(ABC):
         group: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Executes commands to create a backup with the given args."""
-        nproc_command = "nproc".split()
+        nproc_command = ["nproc"]
         make_temp_dir_command = f"mktemp --directory {tmp_base_directory}/xtra_backup_XXXX".split()
 
         try:
             nproc, _ = self._execute_commands(nproc_command)
             tmp_dir, _ = self._execute_commands(make_temp_dir_command, user=user, group=group)
-        except MySQLExecError as e:
+        except MySQLExecError:
             logger.exception("Failed to execute commands prior to running backup")
-            raise MySQLExecuteBackupCommandsError(e.message)
-        except Exception as e:
+            raise MySQLExecuteBackupCommandsError
+        except Exception:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
             logger.exception("Failed to execute commands prior to running backup")
-            raise MySQLExecuteBackupCommandsError(e)
+            raise MySQLExecuteBackupCommandsError
 
         # TODO: remove flags --no-server-version-check
         # when MySQL and XtraBackup versions are in sync
-        xtrabackup_commands = f"""
-{xtrabackup_location} --defaults-file={defaults_config_file}
-            --defaults-group=mysqld
-            --no-version-check
-            --parallel={nproc}
-            --user={self.backups_user}
-            --password={self.backups_password}
-            --socket={mysqld_socket_file}
-            --lock-ddl
-            --backup
-            --stream=xbstream
-            --xtrabackup-plugin-dir={xtrabackup_plugin_dir}
-            --target-dir={tmp_dir}
-            --no-server-version-check
-    | {xbcloud_location} put
-            --curl-retriable-errors=7
-            --insecure
-            --parallel=10
-            --md5
-            --storage=S3
-            --s3-region={s3_parameters["region"]}
-            --s3-bucket={s3_parameters["bucket"]}
-            --s3-endpoint={s3_parameters["endpoint"]}
-            --s3-api-version={s3_parameters["s3-api-version"]}
-            --s3-bucket-lookup={s3_parameters["s3-uri-style"]}
-            {s3_path}
-""".split()
+        xtrabackup_commands = [
+            f"{xtrabackup_location} --defaults-file={defaults_config_file}",
+            "--defaults-group=mysqld",
+            "--no-version-check",
+            f"--parallel={nproc}",
+            f"--user={self.backups_user}",
+            f"--password={self.backups_password}",
+            f"--socket={mysqld_socket_file}",
+            "--lock-ddl",
+            "--backup",
+            "--stream=xbstream",
+            f"--xtrabackup-plugin-dir={xtrabackup_plugin_dir}",
+            f"--target-dir={tmp_dir}",
+            "--no-server-version-check",
+            f"| {xbcloud_location} put",
+            "--curl-retriable-errors=7",
+            "--insecure",
+            "--parallel=10",
+            "--md5",
+            "--storage=S3",
+            f"--s3-region={s3_parameters['region']}",
+            f"--s3-bucket={s3_parameters['bucket']}",
+            f"--s3-endpoint={s3_parameters['endpoint']}",
+            f"--s3-api-version={s3_parameters['s3-api-version']}",
+            f"--s3-bucket-lookup={s3_parameters['s3-uri-style']}",
+            f"{s3_path}",
+        ]
 
         try:
             logger.debug(
@@ -2796,15 +2796,16 @@ class MySQLBase(ABC):
                     "ACCESS_KEY_ID": s3_parameters["access-key"],
                     "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
                 },
+                stream_output="stderr",
             )
         except MySQLExecError as e:
             logger.exception("Failed to execute backup commands")
             raise MySQLExecuteBackupCommandsError(e.message)
-        except Exception as e:
+        except Exception:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
             logger.exception("Failed to execute backup commands")
-            raise MySQLExecuteBackupCommandsError(e)
+            raise MySQLExecuteBackupCommandsError
 
     def delete_temp_backup_directory(
         self,
@@ -2848,7 +2849,7 @@ class MySQLBase(ABC):
         mysql container. This temp dir is supposed to be on the same volume as
         the mysql data directory to reduce latency for IOPS.
         """
-        nproc_command = "nproc".split()
+        nproc_command = ["nproc"]
         make_temp_dir_command = (
             f"mktemp --directory {temp_restore_directory}/#mysql_sst_XXXX".split()
         )
@@ -2865,23 +2866,23 @@ class MySQLBase(ABC):
             logger.exception("Failed to execute commands prior to running xbcloud get")
             raise MySQLRetrieveBackupWithXBCloudError(e.message)
 
-        retrieve_backup_command = f"""
-{xbcloud_location} get
-        --curl-retriable-errors=7
-        --parallel=10
-        --storage=S3
-        --s3-region={s3_parameters["region"]}
-        --s3-bucket={s3_parameters["bucket"]}
-        --s3-endpoint={s3_parameters["endpoint"]}
-        --s3-bucket-lookup={s3_parameters["s3-uri-style"]}
-        --s3-api-version={s3_parameters["s3-api-version"]}
-        {s3_parameters["path"]}/{backup_id}
-    | {xbstream_location}
-        --decompress
-        -x
-        -C {tmp_dir}
-        --parallel={nproc}
-""".split()
+        retrieve_backup_command = [
+            f"{xbcloud_location} get",
+            "--curl-retriable-errors=7",
+            "--parallel=10",
+            "--storage=S3",
+            f"--s3-region={s3_parameters['region']}",
+            f"--s3-bucket={s3_parameters['bucket']}",
+            f"--s3-endpoint={s3_parameters['endpoint']}",
+            f"--s3-bucket-lookup={s3_parameters['s3-uri-style']}",
+            f"--s3-api-version={s3_parameters['s3-api-version']}",
+            f"{s3_parameters['path']}/{backup_id}",
+            f"| {xbstream_location}",
+            "--decompress",
+            "-x",
+            f"-C {tmp_dir}",
+            f"--parallel={nproc}",
+        ]
 
         try:
             logger.debug(f"Command to retrieve backup: {' '.join(retrieve_backup_command)}")
@@ -2896,6 +2897,7 @@ class MySQLBase(ABC):
                 },
                 user=user,
                 group=group,
+                stream_output="stderr",
             )
             return (stdout, stderr, tmp_dir)
         except MySQLExecError as e:
@@ -2921,14 +2923,15 @@ class MySQLBase(ABC):
         except MySQLGetAutoTunningParametersError as e:
             raise MySQLPrepareBackupForRestoreError(e.message)
 
-        prepare_backup_command = f"""
-{xtrabackup_location} --prepare
-        --use-memory={innodb_buffer_pool_size}
-        --no-version-check
-        --rollback-prepared-trx
-        --xtrabackup-plugin-dir={xtrabackup_plugin_dir}
-        --target-dir={backup_location}
-""".split()
+        prepare_backup_command = [
+            xtrabackup_location,
+            "--prepare",
+            f"--use-memory={innodb_buffer_pool_size}",
+            "--no-version-check",
+            "--rollback-prepared-trx",
+            f"--xtrabackup-plugin-dir={xtrabackup_plugin_dir}",
+            f"--target-dir={backup_location}",
+        ]
 
         try:
             logger.debug(
@@ -2954,7 +2957,17 @@ class MySQLBase(ABC):
         group=None,
     ) -> None:
         """Empty the mysql data directory in preparation of backup restore."""
-        empty_data_files_command = f"find {mysql_data_directory} -not -path {mysql_data_directory}/#mysql_sst_* -not -path {mysql_data_directory} -delete".split()
+        empty_data_files_command = [
+            "find",
+            mysql_data_directory,
+            "-not",
+            "-path",
+            f"{mysql_data_directory}/#mysql_sst_*",
+            "-not",
+            "-path",
+            mysql_data_directory,
+            "-delete",
+        ]
 
         try:
             logger.debug(f"Command to empty data directory: {' '.join(empty_data_files_command)}")
@@ -2966,9 +2979,9 @@ class MySQLBase(ABC):
         except MySQLExecError as e:
             logger.exception("Failed to empty data directory in prep for backup restore")
             raise MySQLEmptyDataDirectoryError(e.message)
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to empty data directory in prep for backup restore")
-            raise MySQLEmptyDataDirectoryError(e)
+            raise MySQLEmptyDataDirectoryError
 
     def restore_backup(
         self,
@@ -2981,16 +2994,17 @@ class MySQLBase(ABC):
         group=None,
     ) -> Tuple[str, str]:
         """Restore the provided prepared backup."""
-        restore_backup_command = f"""
-{xtrabackup_location} --defaults-file={defaults_config_file}
-        --defaults-group=mysqld
-        --datadir={mysql_data_directory}
-        --no-version-check
-        --move-back
-        --force-non-empty-directories
-        --xtrabackup-plugin-dir={xtrabackup_plugin_directory}
-        --target-dir={backup_location}
-""".split()
+        restore_backup_command = [
+            xtrabackup_location,
+            f"--defaults-file={defaults_config_file}",
+            "--defaults-group=mysqld",
+            f"--datadir={mysql_data_directory}",
+            "--no-version-check",
+            "--move-back",
+            "--force-non-empty-directories",
+            f"--xtrabackup-plugin-dir={xtrabackup_plugin_directory}",
+            f"--target-dir={backup_location}",
+        ]
 
         try:
             logger.debug(f"Command to restore backup: {' '.join(restore_backup_command)}")
@@ -3003,9 +3017,9 @@ class MySQLBase(ABC):
         except MySQLExecError as e:
             logger.exception("Failed to restore backup")
             raise MySQLRestoreBackupError(e.message)
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to restore backup")
-            raise MySQLRestoreBackupError(e)
+            raise MySQLRestoreBackupError
 
     def delete_temp_restore_directory(
         self,
@@ -3015,7 +3029,13 @@ class MySQLBase(ABC):
     ) -> None:
         """Delete the temp restore directory from the mysql data directory."""
         logger.info(f"Deleting temp restore directory in {temp_restore_directory}")
-        delete_temp_restore_directory_command = f"find {temp_restore_directory} -wholename {temp_restore_directory}/#mysql_sst_* -delete".split()
+        delete_temp_restore_directory_command = [
+            "find",
+            temp_restore_directory,
+            "-wholename",
+            f"{temp_restore_directory}/#mysql_sst_*",
+            "-delete",
+        ]
 
         try:
             logger.debug(
@@ -3037,7 +3057,8 @@ class MySQLBase(ABC):
         bash: bool = False,
         user: Optional[str] = None,
         group: Optional[str] = None,
-        env_extra: Dict = None,
+        env_extra: Dict = {},
+        stream_output: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         raise NotImplementedError
@@ -3078,13 +3099,39 @@ class MySQLBase(ABC):
             raise MySQLTLSSetupError("Failed to set custom TLS configuration")
 
     def kill_unencrypted_sessions(self) -> None:
-        """Kill non local, non system open unencrypted connections."""
+        """Kill non local, non system open unencrypted connections.
+
+        Raises: MySQLKillSessionError if there is an issue killing the sessions.
+        """
         kill_connections_command = (
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             (
                 'processes = session.run_sql("'
                 "SELECT processlist_id FROM performance_schema.threads WHERE "
                 "connection_type = 'TCP/IP' AND type = 'FOREGROUND';"
+                '")'
+            ),
+            "process_id_list = [id[0] for id in processes.fetch_all()]",
+            'for process_id in process_id_list:\n  session.run_sql(f"KILL CONNECTION {process_id}")',
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(kill_connections_command))
+        except MySQLClientError:
+            logger.exception("Failed to kill external sessions")
+            raise MySQLKillSessionError
+
+    def kill_client_sessions(self) -> None:
+        """Kill non local, non system open unencrypted connections.
+
+        Raises: MySQLKillSessionError if there is an issue killing the sessions.
+        """
+        kill_connections_command = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            (
+                'processes = session.run_sql("'
+                "SELECT processlist_id FROM performance_schema.threads WHERE "
+                "type = 'FOREGROUND' and connection_type is not NULL and processlist_id != CONNECTION_ID();"
                 '")'
             ),
             "process_id_list = [id[0] for id in processes.fetch_all()]",

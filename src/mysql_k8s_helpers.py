@@ -517,7 +517,8 @@ class MySQL(MySQLBase):
     def stop_mysqld(self) -> None:
         """Stops the mysqld process."""
         try:
-            self.container.stop(MYSQLD_SAFE_SERVICE)
+            # call low-level pebble API to access timeout parameter
+            self.container.pebble.stop_services([MYSQLD_SAFE_SERVICE], timeout=5 * 60)
         except ChangeError:
             error_message = f"Failed to stop service {MYSQLD_SAFE_SERVICE}"
             logger.exception(error_message)
@@ -548,6 +549,7 @@ class MySQL(MySQLBase):
         group: Optional[str] = None,
         env_extra: Optional[Dict] = None,
         timeout: Optional[float] = None,
+        stream_output: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         try:
@@ -561,11 +563,18 @@ class MySQL(MySQLBase):
                 environment=env_extra,
                 timeout=timeout,
             )
+            if stream_output:
+                if stream_output == "stderr" and process.stderr:
+                    for line in process.stderr:
+                        logger.debug(line.strip())
+                if stream_output == "stdout" and process.stdout:
+                    for line in process.stdout:
+                        logger.debug(line.strip())
             stdout, stderr = process.wait_output()
-            return (stdout, stderr or "")
-        except ExecError as e:
-            logger.debug(f"Failed command: {commands=}, {user=}, {group=}")
-            raise MySQLExecError(e.stderr)
+            return (stdout.strip(), stderr.strip() if stderr else "")
+        except ExecError:
+            logger.exception(f"Failed command: {commands=}, {user=}, {group=}")
+            raise MySQLExecError
 
     def _run_mysqlsh_script(
         self, script: str, verbose: int = 1, timeout: Optional[int] = None

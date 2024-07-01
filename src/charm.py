@@ -19,7 +19,7 @@ from charms.mysql.v0.async_replication import (
     MySQLAsyncReplicationConsumer,
     MySQLAsyncReplicationOffer,
 )
-from charms.mysql.v0.backups import MySQLBackups
+from charms.mysql.v0.backups import S3_INTEGRATOR_RELATION_NAME, MySQLBackups
 from charms.mysql.v0.mysql import (
     BYTES_1MB,
     MySQLAddInstanceToClusterError,
@@ -65,7 +65,6 @@ from constants import (
     PASSWORD_LENGTH,
     PEER,
     ROOT_PASSWORD_KEY,
-    S3_INTEGRATOR_RELATION_NAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
     TRACING_PROTOCOL,
@@ -277,10 +276,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             A string representing the fqdn of the unit.
         """
         return getfqdn(self.get_unit_hostname(unit_name))
-
-    def s3_integrator_relation_exists(self) -> bool:
-        """Returns whether a relation with the s3-integrator exists."""
-        return bool(self.model.get_relation(S3_INTEGRATOR_RELATION_NAME))
 
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
