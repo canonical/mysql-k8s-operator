@@ -15,14 +15,13 @@ import yaml
 from juju.model import Model
 from pytest_operator.plugin import OpsTest
 
-from .. import architecture, juju_
+from .. import architecture, juju_, markers
 from ..helpers import (
     execute_queries_on_unit,
     get_cluster_status,
     get_leader_unit,
     get_unit_address,
 )
-from ..markers import juju3
 from .high_availability_helpers import (
     DATABASE_NAME,
     TABLE_NAME,
@@ -71,9 +70,10 @@ async def second_model(
     await ops_test._controller.destroy_model(second_model_name, destroy_storage=True)
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_build_and_deploy(
     ops_test: OpsTest, first_model: Model, second_model: Model
 ) -> None:
@@ -118,9 +118,10 @@ async def test_build_and_deploy(
     )
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_async_relate(first_model: Model, second_model: Model) -> None:
     """Relate the two mysql clusters."""
     logger.info("Creating offers in first model")
@@ -151,9 +152,10 @@ async def test_async_relate(first_model: Model, second_model: Model) -> None:
     )
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_create_replication(first_model: Model, second_model: Model) -> None:
     """Run the create replication and wait for the applications to settle."""
     logger.info("Running create replication action")
@@ -181,9 +183,10 @@ async def test_create_replication(first_model: Model, second_model: Model) -> No
     )
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_deploy_router_and_app(first_model: Model) -> None:
     """Deploy the router and the test application."""
     logger.info("Deploying router and application")
@@ -218,9 +221,10 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
     )
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_data_replication(
     first_model: Model, second_model: Model, continuous_writes
 ) -> None:
@@ -231,9 +235,10 @@ async def test_data_replication(
     assert results[0] > 1, "No data was written to the database"
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_standby_promotion(
     ops_test: OpsTest, first_model: Model, second_model: Model, continuous_writes
 ) -> None:
@@ -259,9 +264,10 @@ async def test_standby_promotion(
     ), "standby not promoted to primary"
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
     """Test switchover on primary cluster fail."""
     logger.info("Freezing mysqld on primary cluster units")
@@ -297,9 +303,10 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
         )
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_rejoin_invalidated_cluster(
     first_model: Model, second_model: Model, continuous_writes
 ) -> None:
@@ -317,9 +324,10 @@ async def test_rejoin_invalidated_cluster(
     assert results[0] > 1, "No data was written to the database"
 
 
-@juju3
-@pytest.mark.abort_on_fail
 @pytest.mark.group(1)
+@markers.juju3
+@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
+@pytest.mark.abort_on_fail
 async def test_remove_relation_and_relate(
     first_model: Model, second_model: Model, continuous_writes
 ) -> None:
