@@ -24,6 +24,8 @@ from charms.mysql.v0.mysql import (
     BYTES_1MB,
     MySQLAddInstanceToClusterError,
     MySQLCharmBase,
+    MySQLConfigureInstanceError,
+    MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
@@ -31,6 +33,7 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
+    MySQLServiceNotRunningError,
     MySQLSetClusterPrimaryError,
 )
 from charms.mysql.v0.tls import MySQLTLS
@@ -73,7 +76,7 @@ from constants import (
 )
 from k8s_helpers import KubernetesHelpers
 from log_rotate_manager import LogRotateManager
-from mysql_k8s_helpers import MySQL
+from mysql_k8s_helpers import MySQL, MySQLInitialiseMySQLDError
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
@@ -114,7 +117,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     # RotateMySQLLogsCharmEvents needs to be defined on the charm object for
     # the log rotate manager process (which runs juju-run/juju-exec to dispatch
     # a custom event)
-    on = RotateMySQLLogsCharmEvents()  # pyright: ignore [reportAssignmentType]
+    on = RotateMySQLLogsCharmEvents()  # type: ignore
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -565,22 +568,34 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # Run mysqld for the first time to
         # bootstrap the data directory and users
         logger.debug("Initializing instance")
-        self._mysql.fix_data_dir(container)
-        self._mysql.initialise_mysqld()
+        try:
+            self._mysql.fix_data_dir(container)
+            self._mysql.initialise_mysqld()
 
-        # Add the pebble layer
-        logger.debug("Adding pebble layer")
-        container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
-        container.restart(MYSQLD_SAFE_SERVICE)
+            # Add the pebble layer
+            logger.debug("Adding pebble layer")
+            container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
+            container.restart(MYSQLD_SAFE_SERVICE)
 
-        logger.debug("Waiting for instance to be ready")
-        self._mysql.wait_until_mysql_connection(check_port=False)
+            logger.debug("Waiting for instance to be ready")
+            self._mysql.wait_until_mysql_connection(check_port=False)
 
-        logger.info("Configuring instance")
-        # Configure all base users and revoke privileges from the root users
-        self._mysql.configure_mysql_users(password_needed=False)
-        # Configure instance as a cluster node
-        self._mysql.configure_instance()
+            logger.info("Configuring instance")
+            # Configure all base users and revoke privileges from the root users
+            self._mysql.configure_mysql_users(password_needed=False)
+            # Configure instance as a cluster node
+            self._mysql.configure_instance()
+        except (
+            MySQLInitialiseMySQLDError,
+            MySQLServiceNotRunningError,
+            MySQLConfigureMySQLUsersError,
+            MySQLConfigureInstanceError,
+        ):
+            # On any error, reset the data directory so hook is retried
+            # on empty data directory
+            # https://github.com/canonical/mysql-k8s-operator/issues/447
+            self._mysql.reset_data_dir()
+            raise
 
         if self.has_cos_relation:
             if container.get_services(MYSQLD_EXPORTER_SERVICE)[
