@@ -1,0 +1,26 @@
+[32mINFO    [0m integration.test_backups:test_backups.py:158 Inserting value before backup
+[32mINFO    [0m integration.test_backups:test_backups.py:168 Setting s3 config for aws
+[32mINFO    [0m integration.test_backups:test_backups.py:170 Syncing credentials for aws
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [executing] blocked: Missing parameters: ['access-key', 'secret-key']
+[32mINFO    [0m integration.test_backups:test_backups.py:184 Listing existing backup ids
+[32mINFO    [0m integration.test_backups:test_backups.py:191 Creating backup
+[32mINFO    [0m integration.test_backups:test_backups.py:197 Listing backup ids post backup
+[32mINFO    [0m integration.test_backups:test_backups.py:168 Setting s3 config for gcp
+[32mINFO    [0m integration.test_backups:test_backups.py:170 Syncing credentials for gcp
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [executing] active: 
+[32mINFO    [0m integration.test_backups:test_backups.py:184 Listing existing backup ids
+[32mINFO    [0m integration.test_backups:test_backups.py:191 Creating backup
+[32mINFO    [0m integration.test_backups:test_backups.py:197 Listing backup ids post backup
+[32mINFO    [0m integration.test_backups:test_backups.py:168 Setting s3 config for ceph
+[32mINFO    [0m integration.test_backups:test_backups.py:170 Syncing credentials for ceph
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [executing] active: 
+[32mINFO    [0m integration.test_backups:test_backups.py:184 Listing existing backup ids
+[32mINFO    [0m integration.test_backups:test_backups.py:191 Creating backup
+[32mINFO    [0m integration.test_backups:test_backups.py:197 Listing backup ids post backup
+[32mINFO    [0m integration.test_backups:test_backups.py:208 Inserting value after backup
