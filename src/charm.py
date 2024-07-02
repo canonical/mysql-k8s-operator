@@ -252,6 +252,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """Return the address of this unit."""
         return self._get_unit_fqdn()
 
+    @property
+    def is_new_unit(self) -> bool:
+        """Return whether the unit is a clean state.
+
+        e.g. scaling from zero units
+        """
+        _default_unit_data_keys = {
+            "egress-subnets",
+            "ingress-address",
+            "private-address",
+            "unit-status",
+        }
+        return self.unit_peer_data.keys() == _default_unit_data_keys
+
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
 
@@ -401,8 +415,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 ].is_running()
             ):
                 container.stop(MYSQLD_EXPORTER_SERVICE)
-
-            self._on_update_status(None)
 
     def _restart(self, event: EventBase) -> None:
         """Restart the service."""
@@ -640,6 +652,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             # Data directory is already initialised, skip configuration
             logger.debug("Data directory is already initialised, skipping configuration")
             self._reconcile_pebble_layer(container)
+            if self.is_new_unit:
+                # when unit is new and has data, it means the app is scaling out
+                # from zero units
+                logger.debug("Scaling out from zero units")
+                if self.unit.is_leader():
+                    # create the cluster due it being dissolved on scale-down
+                    self.create_cluster()
+                else:
+                    # Non-leader units try to join cluster
+                    self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
+                    self.unit_peer_data.update(
+                        {"member-role": "secondary", "member-state": "waiting"}
+                    )
+            self._on_update_status(None)
             return
 
         self.unit.status = MaintenanceStatus("Initialising mysqld")
@@ -677,9 +703,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """
         if not self.cluster_initialized or not self.unit_peer_data.get("member-role"):
             # health checks are only after cluster and members are initialized
+            logger.debug("Cluster not initialized yet. Skipping.")
             return True
 
         if not self._mysql.is_mysqld_running():
+            logger.debug("MySQL is not running. Skipping.")
             return True
 
         # retrieve and persist state for every unit
@@ -750,15 +778,18 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
             # join cluster test takes precedence over blocked test
             # due to matching criteria
+            logger.debug("Attempting to join cluster")
             self.join_unit_to_cluster()
             return
 
         if self._is_cluster_blocked():
+            logger.debug("Cluster is blocked. Skipping.")
             return
         del self.restart_peers.data[self.unit]["state"]
 
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
+            logger.debug("Container not ready. Skipping.")
             return
 
         if self._handle_potential_cluster_crash_scenario():
@@ -833,6 +864,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         # Inform other hooks of current status
         self.unit_peer_data["unit-status"] = "removing"
+
+        if self.unit.is_leader():
+            # Update 'units-added-to-cluster' counter in the peer relation databag
+            units = int(self.app_peer_data.get("units-added-to-cluster", 1))
+            self.app_peer_data["units-added-to-cluster"] = str(units - 1)
 
 
 if __name__ == "__main__":
