@@ -11,38 +11,38 @@ fi
 
 destroy_chaos_mesh() {
 	echo "deleting api-resources"
-	for i in $(kubectl api-resources | awk '/chaos-mesh/ {print $1}'); do
-	    timeout 30 kubectl delete "${i}" --all --all-namespaces || true
+	for i in $(microk8s.kubectl api-resources | awk '/chaos-mesh/ {print $1}'); do
+	    timeout 30 microk8s.kubectl delete "${i}" --all --all-namespaces || true
 	done
 
-	if kubectl get mutatingwebhookconfiguration | grep -q 'chaos-mesh-mutation'; then
-		timeout 30 kubectl delete mutatingwebhookconfiguration chaos-mesh-mutation || true
+	if microk8s.kubectl get mutatingwebhookconfiguration | grep -q 'chaos-mesh-mutation'; then
+		timeout 30 microk8s.kubectl delete mutatingwebhookconfiguration chaos-mesh-mutation || true
 	fi
 
-	if kubectl get validatingwebhookconfiguration | grep -q 'chaos-mesh-validation-auth'; then
-		timeout 30 kubectl delete validatingwebhookconfiguration chaos-mesh-validation-auth || true
+	if microk8s.kubectl get validatingwebhookconfiguration | grep -q 'chaos-mesh-validation-auth'; then
+		timeout 30 microk8s.kubectl delete validatingwebhookconfiguration chaos-mesh-validation-auth || true
 	fi
 
-	if kubectl get validatingwebhookconfiguration | grep -q 'chaos-mesh-validation'; then
-		timeout 30 kubectl delete validatingwebhookconfiguration chaos-mesh-validation || true
+	if microk8s.kubectl get validatingwebhookconfiguration | grep -q 'chaos-mesh-validation'; then
+		timeout 30 microk8s.kubectl delete validatingwebhookconfiguration chaos-mesh-validation || true
 	fi
 
-	if kubectl get clusterrolebinding | grep -q 'chaos-mesh'; then
+	if microk8s.kubectl get clusterrolebinding | grep -q 'chaos-mesh'; then
 		echo "deleting clusterrolebindings"
-		readarray -t args < <(kubectl get clusterrolebinding | awk '/chaos-mesh/ {print $1}')
-		timeout 30 kubectl delete clusterrolebinding "${args[@]}" || true
+		readarray -t args < <(microk8s.kubectl get clusterrolebinding | awk '/chaos-mesh/ {print $1}')
+		timeout 30 microk8s.kubectl delete clusterrolebinding "${args[@]}" || true
 	fi
 
-	if kubectl get clusterrole | grep -q 'chaos-mesh'; then
+	if microk8s.kubectl get clusterrole | grep -q 'chaos-mesh'; then
 		echo "deleting clusterroles"
-		readarray -t args < <(kubectl get clusterrole | awk '/chaos-mesh/ {print $1}')
-		timeout 30 kubectl delete clusterrole "${args[@]}" || true
+		readarray -t args < <(microk8s.kubectl get clusterrole | awk '/chaos-mesh/ {print $1}')
+		timeout 30 microk8s.kubectl delete clusterrole "${args[@]}" || true
 	fi
 
-	if kubectl get crd | grep -q 'chaos-mesh.org'; then
+	if microk8s.kubectl get crd | grep -q 'chaos-mesh.org'; then
 		echo "deleting crds"
-		readarray -t args < <(kubectl get crd | awk '/chaos-mesh.org/ {print $1}')
-		timeout 30 kubectl delete crd "${args[@]}" || true
+		readarray -t args < <(microk8s.kubectl get crd | awk '/chaos-mesh.org/ {print $1}')
+		timeout 30 microk8s.kubectl delete crd "${args[@]}" || true
 	fi
 
 	if [ -n "${chaos_mesh_ns}" ] && sg snap_microk8s -c "microk8s.helm3 repo list --namespace=${chaos_mesh_ns}" | grep -q 'chaos-mesh'; then

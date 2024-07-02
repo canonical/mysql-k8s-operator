@@ -3,6 +3,7 @@
 
 import itertools
 import json
+import pathlib
 import secrets
 import string
 import subprocess
@@ -556,13 +557,13 @@ async def write_content_to_file_in_unit(
     """
     pod_name = unit.name.replace("/", "-")
 
-    with tempfile.NamedTemporaryFile(mode="w") as temp_file:
+    with tempfile.NamedTemporaryFile(mode="w", dir=pathlib.Path.home()) as temp_file:
         temp_file.write(content)
         temp_file.flush()
 
         subprocess.run(
             [
-                "kubectl",
+                "microk8s.kubectl",
                 "cp",
                 "-n",
                 ops_test.model.info.name,
@@ -591,10 +592,10 @@ async def read_contents_from_file_in_unit(
     """
     pod_name = unit.name.replace("/", "-")
 
-    with tempfile.NamedTemporaryFile(mode="r+") as temp_file:
+    with tempfile.NamedTemporaryFile(mode="r+", dir=pathlib.Path.home()) as temp_file:
         subprocess.run(
             [
-                "kubectl",
+                "microk8s.kubectl",
                 "cp",
                 "-n",
                 ops_test.model.info.name,

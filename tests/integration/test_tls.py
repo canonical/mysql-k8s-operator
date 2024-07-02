@@ -11,7 +11,7 @@ from pytest_operator.plugin import OpsTest
 
 from constants import CLUSTER_ADMIN_USERNAME, TLS_SSL_CERT_FILE
 
-from . import juju_
+from . import architecture, juju_
 from .helpers import (
     app_name,
     fetch_credentials,
@@ -31,11 +31,19 @@ MODEL_CONFIG = {"logging-config": "<root>=INFO;unit=DEBUG"}
 TLS_SETUP_SLEEP_TIME = 30
 
 if juju_.has_secrets:
-    TLS_APP_NAME = "self-signed-certificates"
-    TLS_CONFIG = {"ca-common-name": "Test CA"}
+    tls_app_name = "self-signed-certificates"
+    if architecture.architecture == "arm64":
+        tls_channel = "latest/edge"
+    else:
+        tls_channel = "latest/stable"
+    tls_config = {"ca-common-name": "Test CA"}
 else:
-    TLS_APP_NAME = "tls-certificates-operator"
-    TLS_CONFIG = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
+    tls_app_name = "tls-certificates-operator"
+    if architecture.architecture == "arm64":
+        tls_channel = "legacy/edge"
+    else:
+        tls_channel = "legacy/stable"
+    tls_config = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
 
 
 @pytest.mark.group(1)
@@ -119,12 +127,12 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     # Deploy TLS Certificates operator.
     logger.info("Deploy TLS operator")
     async with ops_test.fast_forward("60s"):
-        await ops_test.model.deploy(TLS_APP_NAME, channel="latest/stable", config=TLS_CONFIG)
-        await ops_test.model.wait_for_idle(apps=[TLS_APP_NAME], status="active", timeout=15 * 60)
+        await ops_test.model.deploy(tls_app_name, channel=tls_channel, config=tls_config)
+        await ops_test.model.wait_for_idle(apps=[tls_app_name], status="active", timeout=15 * 60)
 
     # Relate with TLS charm
     logger.info("Relate to TLS operator")
-    await ops_test.model.relate(app, TLS_APP_NAME)
+    await ops_test.model.relate(app, tls_app_name)
 
     # allow time for TLS enablement
     sleep(TLS_SETUP_SLEEP_TIME)
@@ -206,7 +214,7 @@ async def test_disable_tls(ops_test: OpsTest) -> None:
 
     logger.info("Removing relation")
     await ops_test.model.applications[app].remove_relation(
-        f"{app}:certificates", f"{TLS_APP_NAME}:certificates"
+        f"{app}:certificates", f"{tls_app_name}:certificates"
     )
 
     # Allow time for reconfigure

@@ -13,7 +13,7 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
-from .. import juju_
+from .. import juju_, markers
 from ..helpers import get_leader_unit, get_unit_by_index
 from .high_availability_helpers import get_sts_partition
 
@@ -26,6 +26,9 @@ METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
 
 
 @pytest.mark.group(1)
+# TODO: remove after next incompatible MySQL server version released in our snap
+# (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
+@markers.amd64_only
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
@@ -54,6 +57,9 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.group(1)
+# TODO: remove after next incompatible MySQL server version released in our snap
+# (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
+@markers.amd64_only
 @pytest.mark.abort_on_fail
 async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     """Test that the pre-upgrade-check action runs successfully."""
@@ -66,6 +72,9 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.group(1)
+# TODO: remove after next incompatible MySQL server version released in our snap
+# (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
+@markers.amd64_only
 @pytest.mark.abort_on_fail
 async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
     application = ops_test.model.applications[MYSQL_APP_NAME]
@@ -103,6 +112,9 @@ async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.group(1)
+# TODO: remove after next incompatible MySQL server version released in our rock
+# (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
+@markers.amd64_only
 @pytest.mark.abort_on_fail
 async def test_rollback(ops_test) -> None:
     application = ops_test.model.applications[MYSQL_APP_NAME]
