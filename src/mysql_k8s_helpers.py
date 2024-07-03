@@ -218,11 +218,11 @@ class MySQL(MySQLBase):
             self.reset_data_dir()
             raise MySQLInitialiseMySQLDError
 
-    @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
+    @retry(reraise=True, stop=stop_after_delay(120), wait=wait_fixed(2))
     def wait_until_mysql_connection(self, check_port: bool = True) -> None:
         """Wait until a connection to MySQL daemon is possible.
 
-        Retry every 5 seconds for 30 seconds if there is an issue obtaining a connection.
+        Retry every 2 seconds for 120 seconds if there is an issue obtaining a connection.
         """
         if not self.container.exists(MYSQLD_SOCK_FILE):
             raise MySQLServiceNotRunningError
