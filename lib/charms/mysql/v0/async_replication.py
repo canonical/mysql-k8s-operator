@@ -391,8 +391,11 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             else:
                 return States.RECOVERING
         if self.role.relation_side == RELATION_CONSUMER:
-            # if on the consume and is primary, the cluster is ready
-            return States.READY
+            # if on the consume and is primary
+            # the cluster is ready when fully initialized
+            if self._charm.cluster_fully_initialized:
+                return States.READY
+            return States.RECOVERING
 
     @property
     def idle(self) -> bool:
