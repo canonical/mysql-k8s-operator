@@ -99,7 +99,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 9
+LIBPATCH = 10
 
 
 if typing.TYPE_CHECKING:
@@ -557,9 +557,12 @@ class MySQLBackups(Object):
         try:
             logger.info("Stopping mysqld before restoring the backup")
             self.charm._mysql.kill_client_sessions()
+            self.charm._mysql.set_instance_offline_mode(True)
             self.charm._mysql.stop_mysqld()
         except MySQLKillSessionError:
             return False, "Failed to kill client sessions"
+        except MySQLSetInstanceOfflineModeError:
+            return False, "Failed to set instance as offline before restoring the backup"
         except MySQLStopMySQLDError:
             return False, "Failed to stop mysqld"
 
