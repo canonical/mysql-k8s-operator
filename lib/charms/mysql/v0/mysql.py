@@ -1963,11 +1963,17 @@ class MySQLBase(ABC):
             for v in topology.values()
             if v["mode"] == "r/o" and v["status"] == MySQLMemberState.ONLINE
         }
-        rw_endpoints = {
-            _get_host_ip(v["address"]) if get_ips else v["address"]
-            for v in topology.values()
-            if v["mode"] == "r/w" and v["status"] == MySQLMemberState.ONLINE
-        }
+
+        if self.is_cluster_replica():
+            # replica return global primary address
+            global_primary = self.get_cluster_set_global_primary_address()
+            rw_endpoints = {_get_host_ip(global_primary) if get_ips else global_primary}
+        else:
+            rw_endpoints = {
+                _get_host_ip(v["address"]) if get_ips else v["address"]
+                for v in topology.values()
+                if v["mode"] == "r/w" and v["status"] == MySQLMemberState.ONLINE
+            }
         # won't get offline endpoints to IP as they maybe unreachable
         no_endpoints = {
             v["address"] for v in topology.values() if v["status"] != MySQLMemberState.ONLINE
