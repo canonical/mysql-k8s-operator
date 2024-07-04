@@ -96,7 +96,7 @@ class TestDatabase(unittest.TestCase):
 
         username = (
             f"relation-{self.database_relation_id}_{self.harness.model.uuid.replace('-', '')}"
-        )[:32]
+        )[:26]
         self.assertEqual(
             database_relation_databag,
             {

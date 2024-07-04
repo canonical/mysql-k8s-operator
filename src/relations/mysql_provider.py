@@ -81,11 +81,11 @@ class MySQLProvider(Object):
             legacy (bool): If True, generate a username without the model uuid.
 
         Returns:
-            str: A valid unique username (max 32 characters long)
+            str: A valid unique username (limited to 26 characters)
         """
         if legacy:
             return f"relation-{relation_id}"
-        return f"relation-{relation_id}_{self.model.uuid.replace('-', '')}"[:32]
+        return f"relation-{relation_id}_{self.model.uuid.replace('-', '')}"[:26]
 
     # =============
     # Handlers
