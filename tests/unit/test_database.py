@@ -94,12 +94,15 @@ class TestDatabase(unittest.TestCase):
             self.database_relation_id, "app", {"database": "test_db"}
         )
 
+        username = (
+            f"relation-{self.database_relation_id}_{self.harness.model.uuid.replace('-', '')}"
+        )[:26]
         self.assertEqual(
             database_relation_databag,
             {
                 "data": '{"database": "test_db"}',
                 "password": "super_secure_password",
-                "username": f"relation-{self.database_relation_id}",
+                "username": username,
                 "endpoints": "mysql-k8s-primary:3306",
                 "version": "8.0.29-0ubuntu0.20.04.3",
                 "read-only-endpoints": "mysql-k8s-replicas:3306",

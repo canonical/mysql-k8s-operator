@@ -1215,29 +1215,28 @@ class MySQLBase(ABC):
             logger.exception(f"Failed to query and delete users for unit {unit_name}")
             raise MySQLDeleteUsersForUnitError(e.message)
 
-    def delete_users_for_relation(self, relation_id: int) -> None:
+    def delete_users_for_relation(self, username: str) -> None:
         """Delete users for a relation.
 
         Args:
-            relation_id: The id of the relation for which to delete mysql users for
+            username: The username do drop
 
         Raises:
             MySQLDeleteUsersForRelationError if there is an error deleting users for the relation
         """
-        user = f"relation-{str(relation_id)}"
         drop_users_command = [
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-            f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
+            f"session.run_sql(\"DROP USER IF EXISTS '{username}'@'%';\")",
         ]
         # If the relation is with a MySQL Router charm application, delete any users
         # created by that application.
         drop_users_command.extend(
-            self._get_statements_to_delete_users_with_attribute("created_by_user", f"'{user}'")
+            self._get_statements_to_delete_users_with_attribute("created_by_user", f"'{username}'")
         )
         try:
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
-            logger.exception(f"Failed to delete users for relation {relation_id}")
+            logger.exception(f"Failed to delete {username=}")
             raise MySQLDeleteUsersForRelationError(e.message)
 
     def delete_user(self, username: str) -> None:
