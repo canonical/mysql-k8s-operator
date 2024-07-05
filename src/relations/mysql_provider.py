@@ -73,6 +73,20 @@ class MySQLProvider(Object):
         self.database.update_relation_data(relation.id, {"password": password})
         return password
 
+    def _get_username(self, relation_id: int, legacy: bool = False) -> str:
+        """Generate a unique username for the relation using the model uuid and the relation id.
+
+        Args:
+            relation_id (int): The relation id.
+            legacy (bool): If True, generate a username without the model uuid.
+
+        Returns:
+            str: A valid unique username (limited to 26 characters)
+        """
+        if legacy:
+            return f"relation-{relation_id}"
+        return f"relation-{relation_id}_{self.model.uuid.replace('-', '')}"[:26]
+
     # =============
     # Handlers
     # =============
@@ -94,7 +108,7 @@ class MySQLProvider(Object):
         if event.extra_user_roles:
             extra_user_roles = event.extra_user_roles.split(",")
         # user name is derived from the relation id
-        db_user = f"relation-{relation_id}"
+        db_user = self._get_username(relation_id)
         db_pass = self._get_or_set_password(event.relation)
 
         remote_app = event.app.name
@@ -246,7 +260,17 @@ class MySQLProvider(Object):
 
         relation_id = event.relation.id
         try:
-            self.charm._mysql.delete_users_for_relation(relation_id)
+            if self.charm._mysql.does_mysql_user_exist(self._get_username(relation_id), "%"):
+                self.charm._mysql.delete_users_for_relation(self._get_username(relation_id))
+            elif self.charm._mysql.does_mysql_user_exist(
+                self._get_username(relation_id, legacy=True), "%"
+            ):
+                self.charm._mysql.delete_users_for_relation(
+                    self._get_username(relation_id, legacy=True)
+                )
+            else:
+                logger.warning(f"User(s) not found for relation {relation_id}")
+                return
             logger.info(f"Removed user(s) for relation {relation_id}")
         except MySQLDeleteUsersForRelationError:
             logger.error(f"Failed to delete user(s) for relation {relation_id}")
