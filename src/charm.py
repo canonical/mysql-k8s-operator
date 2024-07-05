@@ -361,9 +361,16 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 # Stop GR for cases where the instance was previously part of the cluster
                 # harmless otherwise
                 self._mysql.stop_group_replication()
-                self._mysql.rescan_cluster_if_instance_already_in_cluster(
-                    cluster_primary=cluster_primary, instance_label=instance_label
-                )
+
+                # If instance already in cluster, rescan cluster on primary before
+                # attempting to add the instance to the cluster
+                cluster_status = self._mysql.get_cluster_status(from_instance=cluster_primary)
+                instances = cluster_status["defaultreplicaset"]["topology"].keys()
+                if instance_label in instances:
+                    self._mysql.rescan_cluster(
+                        from_instance=cluster_primary, remove_instances=True
+                    )
+
                 self._mysql.add_instance_to_cluster(
                     instance_address=instance_address,
                     instance_unit_label=instance_label,

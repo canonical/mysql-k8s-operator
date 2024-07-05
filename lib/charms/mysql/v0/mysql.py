@@ -1599,24 +1599,6 @@ class MySQLBase(ABC):
             )
             raise MySQLInitializeJujuOperationsTableError(e.message)
 
-    def rescan_cluster_if_instance_already_in_cluster(
-            self,
-            *,
-            cluster_primary: str,
-            instance_label: str,
-        ) -> None:
-        """Rescan the cluster on the primary if the provided instance is in the cluster.
-
-        This method is used to ensure that a joining unit in the cluster is not
-        already present in the cluster metadata in a non-online (online or recovering)
-        state.
-        """
-        cluster_status = self.get_cluster_status(from_instance=cluster_primary)
-        instances = cluster_status["defaultreplicaset"]["topology"].keys()
-        if instance_label not in instances:
-            return
-        self.rescan_cluster(from_instance=cluster_primary, remove_instances=True)
-
     def add_instance_to_cluster(
         self,
         *,
