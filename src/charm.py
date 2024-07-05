@@ -19,11 +19,13 @@ from charms.mysql.v0.async_replication import (
     MySQLAsyncReplicationConsumer,
     MySQLAsyncReplicationOffer,
 )
-from charms.mysql.v0.backups import MySQLBackups
+from charms.mysql.v0.backups import S3_INTEGRATOR_RELATION_NAME, MySQLBackups
 from charms.mysql.v0.mysql import (
     BYTES_1MB,
     MySQLAddInstanceToClusterError,
     MySQLCharmBase,
+    MySQLConfigureInstanceError,
+    MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
@@ -31,6 +33,7 @@ from charms.mysql.v0.mysql import (
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLRebootFromCompleteOutageError,
+    MySQLServiceNotRunningError,
     MySQLSetClusterPrimaryError,
 )
 from charms.mysql.v0.tls import MySQLTLS
@@ -65,7 +68,6 @@ from constants import (
     PASSWORD_LENGTH,
     PEER,
     ROOT_PASSWORD_KEY,
-    S3_INTEGRATOR_RELATION_NAME,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
     TRACING_PROTOCOL,
@@ -73,7 +75,7 @@ from constants import (
 )
 from k8s_helpers import KubernetesHelpers
 from log_rotate_manager import LogRotateManager
-from mysql_k8s_helpers import MySQL
+from mysql_k8s_helpers import MySQL, MySQLInitialiseMySQLDError
 from relations.mysql import MySQLRelation
 from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
@@ -114,7 +116,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     # RotateMySQLLogsCharmEvents needs to be defined on the charm object for
     # the log rotate manager process (which runs juju-run/juju-exec to dispatch
     # a custom event)
-    on = RotateMySQLLogsCharmEvents()  # pyright: ignore [reportAssignmentType]
+    on = RotateMySQLLogsCharmEvents()  # type: ignore
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -292,10 +294,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """
         return getfqdn(self.get_unit_hostname(unit_name))
 
-    def s3_integrator_relation_exists(self) -> bool:
-        """Returns whether a relation with the s3-integrator exists."""
-        return bool(self.model.get_relation(S3_INTEGRATOR_RELATION_NAME))
-
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
         return self._is_cluster_blocked()
@@ -418,7 +416,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _restart(self, event: EventBase) -> None:
         """Restart the service."""
-        if self._mysql.is_unit_primary(self.unit_label):
+        if self.peers.units != self.restart_peers.units:
+            # defer restart until all units are in the relation
+            logger.debug("Deferring restart until all units are in the relation")
+            event.defer()
+            return
+        if self.peers.units and self._mysql.is_unit_primary(self.unit_label):
+            # delay primary on multi units
             restart_states = {
                 self.restart_peers.data[unit].get("state", "unset") for unit in self.peers.units
             }
@@ -464,8 +468,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.unit_peer_data.setdefault("member-role", "unknown")
         self.unit_peer_data.setdefault("member-state", "waiting")
 
-    def _on_config_changed(self, event: EventBase) -> None:
+    def _on_config_changed(self, _: EventBase) -> None:
         """Handle the config changed event."""
+        container = self.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            # configuration also take places on pebble ready handler
+            return
+
         if not self._is_peer_data_set:
             # skip when not initialized
             return
@@ -473,12 +482,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not self.upgrade.idle:
             # skip when upgrade is in progress
             # the upgrade already restart the daemon
-            return
-
-        if not self._mysql.is_mysqld_running():
-            # defer config-changed event until MySQL is running
-            logger.debug("Deferring config-changed event until MySQL is running")
-            event.defer()
             return
 
         config_content = self._mysql.read_file_content(MYSQLD_CONFIG_FILE)
@@ -504,8 +507,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             # persist config to file
             self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
-            self.on[f"{self.restart.name}"].acquire_lock.emit()
-            return
+
+            if self._mysql.is_mysqld_running():
+                # restart the service
+                self.on[f"{self.restart.name}"].acquire_lock.emit()
+                return
 
         if dynamic_config := self.mysql_config.filter_static_keys(changed_config):
             # if only dynamic config changed, apply it
@@ -569,22 +575,34 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # Run mysqld for the first time to
         # bootstrap the data directory and users
         logger.debug("Initializing instance")
-        self._mysql.fix_data_dir(container)
-        self._mysql.initialise_mysqld()
+        try:
+            self._mysql.fix_data_dir(container)
+            self._mysql.initialise_mysqld()
 
-        # Add the pebble layer
-        logger.debug("Adding pebble layer")
-        container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
-        container.restart(MYSQLD_SAFE_SERVICE)
+            # Add the pebble layer
+            logger.debug("Adding pebble layer")
+            container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
+            container.restart(MYSQLD_SAFE_SERVICE)
 
-        logger.debug("Waiting for instance to be ready")
-        self._mysql.wait_until_mysql_connection(check_port=False)
+            logger.debug("Waiting for instance to be ready")
+            self._mysql.wait_until_mysql_connection(check_port=False)
 
-        logger.info("Configuring instance")
-        # Configure all base users and revoke privileges from the root users
-        self._mysql.configure_mysql_users(password_needed=False)
-        # Configure instance as a cluster node
-        self._mysql.configure_instance()
+            logger.info("Configuring instance")
+            # Configure all base users and revoke privileges from the root users
+            self._mysql.configure_mysql_users(password_needed=False)
+            # Configure instance as a cluster node
+            self._mysql.configure_instance()
+        except (
+            MySQLInitialiseMySQLDError,
+            MySQLServiceNotRunningError,
+            MySQLConfigureMySQLUsersError,
+            MySQLConfigureInstanceError,
+        ):
+            # On any error, reset the data directory so hook is retried
+            # on empty data directory
+            # https://github.com/canonical/mysql-k8s-operator/issues/447
+            self._mysql.reset_data_dir()
+            raise
 
         if self.has_cos_relation:
             if container.get_services(MYSQLD_EXPORTER_SERVICE)[
