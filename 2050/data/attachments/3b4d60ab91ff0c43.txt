@@ -1,0 +1,2 @@
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:66 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:70 Run pre-upgrade-check action
