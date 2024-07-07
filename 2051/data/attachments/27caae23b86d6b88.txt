@@ -1,0 +1,474 @@
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:457 Scale mysql application to 1 unit that is active
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:463 Delete pod for the the mysql unit
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: DELETE https://10.1.0.223:16443/api/v1/namespaces/test/pods/mysql-k8s-0 "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:467 Wait for a new pod to be created by k8s
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] maintenance: offline
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] maintenance: offline
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:477 Write data to unit and verify that data was written
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.3    unsupported  02:02:27Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                      0  10.152.183.21   no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   46  10.152.183.191  no       
+
+Unit               Workload  Agent  Address       Ports  Message
+mysql-k8s/0*       active    idle   10.1.188.147         Primary
+mysql-test-app/0*  active    idle   10.1.188.142         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:39:06 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:39:18 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:40:47 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:41:50 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 611, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1630, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1591, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-07-07T01:41:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3191, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 616, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-07-07T01:41:50Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-2: 01:42:05 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:42:25 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:42:45 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:42:45 ERROR unit.mysql-k8s/2.juju-log Error getting member state. Avoiding potential cluster crash recovery
+unit-mysql-k8s-2: 01:43:15 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:43:15 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:44:06 ERROR unit.mysql-k8s/2.juju-log Failed to flush [<MySQLTextLogs.ERROR: 'ERROR LOGS'>, <MySQLTextLogs.GENERAL: 'GENERAL LOGS'>, <MySQLTextLogs.SLOW: 'SLOW LOGS'>] logs.
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 611, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1630, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1591, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-07-07T01:44:06Z ERROR timed out after 50s: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 3191, in flush_mysql_logs
+    self._run_mysqlsh_script("\n".join(flush_logs_commands), timeout=50)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 616, in _run_mysqlsh_script
+    raise MySQLClientError(e)
+charms.mysql.v0.mysql.MySQLClientError: cannot perform the following tasks:
+- exec command "/usr/bin/mysqlsh" (timed out after 50s: context deadline exceeded)
+----- Logs from task 0 -----
+2024-07-07T01:44:06Z ERROR timed out after 50s: context deadline exceeded
+-----
+unit-mysql-k8s-0: 01:48:15 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:50:24 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c48b53] "unit-mysql-k8s-2" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-2: 01:50:31 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c48b53] "unit-mysql-k8s-2" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-2: 01:50:39 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c48b53] "unit-mysql-k8s-2" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-2: 01:50:48 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c48b53] "unit-mysql-k8s-2" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-2: 01:51:00 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c48b53] "unit-mysql-k8s-2" cannot open api: try was stopped
+unit-mysql-k8s-2: 01:51:14 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:51:14 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:51:20 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:51:20 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:51:22 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:51:22 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:51:29 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 849, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 652, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 392, in _reconcile_pebble_layer
+    container.replan()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/model.py", line 2211, in replan
+    self._pebble.replan_services()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1993, in replan_services
+    return self._services_action('replan', [], timeout, delay)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 2090, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "mysqld_safe" (cannot start service while terminating)
+----- Logs from task 0 -----
+2024-07-07T01:51:29Z ERROR cannot start service while terminating
+-----
+unit-mysql-k8s-2: 01:51:29 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:51:29 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:51:34 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:51:34 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:51:36 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 849, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 652, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 392, in _reconcile_pebble_layer
+    container.replan()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/model.py", line 2211, in replan
+    self._pebble.replan_services()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1993, in replan_services
+    return self._services_action('replan', [], timeout, delay)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 2090, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "mysqld_safe" (cannot start service: exited quickly with code 1)
+----- Logs from task 0 -----
+2024-07-07T01:51:36Z INFO Most recent service output:
+    2024-07-07T01:51:36.331047Z mysqld_safe Logging to '/var/log/mysql/error.log'.
+    2024-07-07T01:51:36.351644Z mysqld_safe A mysqld process already exists
+2024-07-07T01:51:36Z ERROR cannot start service: exited quickly with code 1
+-----
+unit-mysql-k8s-2: 01:51:36 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:51:36 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:51:39 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 849, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 652, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 392, in _reconcile_pebble_layer
+    container.replan()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/model.py", line 2211, in replan
+    self._pebble.replan_services()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1993, in replan_services
+    return self._services_action('replan', [], timeout, delay)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 2090, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "mysqld_safe" (cannot start service: exited quickly with code 1)
+----- Logs from task 0 -----
+2024-07-07T01:51:39Z INFO Most recent service output:
+    2024-07-07T01:51:39.538812Z mysqld_safe Logging to '/var/log/mysql/error.log'.
+    2024-07-07T01:51:39.553903Z mysqld_safe A mysqld process already exists
+2024-07-07T01:51:39Z ERROR cannot start service: exited quickly with code 1
+-----
+unit-mysql-k8s-2: 01:51:39 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:51:39 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:51:44 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 849, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 652, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 392, in _reconcile_pebble_layer
+    container.replan()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/model.py", line 2211, in replan
+    self._pebble.replan_services()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1993, in replan_services
+    return self._services_action('replan', [], timeout, delay)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 2090, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "mysqld_safe" (cannot start service: exited quickly with code 1)
+----- Logs from task 0 -----
+2024-07-07T01:51:44Z INFO Most recent service output:
+    2024-07-07T01:51:44.915333Z mysqld_safe Logging to '/var/log/mysql/error.log'.
+    2024-07-07T01:51:44.950625Z mysqld_safe A mysqld process already exists
+2024-07-07T01:51:44Z ERROR cannot start service: exited quickly with code 1
+-----
+unit-mysql-k8s-2: 01:51:45 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:51:45 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:51:49 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 849, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 652, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/./src/charm.py", line 392, in _reconcile_pebble_layer
+    container.replan()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/model.py", line 2211, in replan
+    self._pebble.replan_services()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1993, in replan_services
+    return self._services_action('replan', [], timeout, delay)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 2090, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "mysqld_safe" (cannot start service: exited quickly with code 1)
+----- Logs from task 0 -----
+2024-07-07T01:51:49Z INFO Most recent service output:
+    2024-07-07T01:51:49.500511Z mysqld_safe Logging to '/var/log/mysql/error.log'.
+    2024-07-07T01:51:49.515170Z mysqld_safe A mysqld process already exists
+2024-07-07T01:51:49Z ERROR cannot start service: exited quickly with code 1
+-----
+unit-mysql-k8s-2: 01:51:49 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:51:49 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:51:53 ERROR juju.worker.uniter container "mysql": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/mysql/pebble.socket: connect: connection refused
+unit-mysql-k8s-2: 01:55:24 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:55:24 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:55:24 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:55:24 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:55:24 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:55:24 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:55:26 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:55:26 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:55:26 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:55:26 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:55:26 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:55:26 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:55:28 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:55:28 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:55:28 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:55:28 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:55:28 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:55:28 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:56:27 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:56:27 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:56:30 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:56:30 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 781, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1945, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 02:00:37 ERROR unit.mysql-k8s/0.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
