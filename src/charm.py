@@ -41,7 +41,7 @@ from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from charms.tempo_k8s.v1.charm_tracing import trace_charm
 from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
-from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
+from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent, Unit
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, Container, MaintenanceStatus, WaitingStatus
@@ -253,6 +253,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def unit_address(self) -> str:
         """Return the address of this unit."""
         return self._get_unit_fqdn()
+
+    def get_unit_address(self, unit: Unit) -> str:
+        """Return the address of a unit."""
+        return self._get_unit_fqdn(unit.name)
 
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.

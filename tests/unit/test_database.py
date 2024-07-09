@@ -50,6 +50,7 @@ class TestDatabase(unittest.TestCase):
     def tearDown(self) -> None:
         self.patcher.stop()
 
+    @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
     @patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_process_locks")
     @patch("k8s_helpers.KubernetesHelpers.wait_service_ready")
     @patch("mysql_k8s_helpers.MySQL.update_endpoints")
@@ -68,6 +69,7 @@ class TestDatabase(unittest.TestCase):
         _update_endpoints,
         _wait_service_ready,
         _,
+        _cluster_metadata_exists,
     ):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
@@ -79,11 +81,6 @@ class TestDatabase(unittest.TestCase):
         )
         database_relation = self.charm.model.get_relation(DB_RELATION_NAME)
         app_unit = list(database_relation.units)[0]
-
-        # simulate cluster initialized by editing the flag
-        self.harness.update_relation_data(
-            self.peer_relation_id, self.charm.app.name, {"units-added-to-cluster": "1"}
-        )
 
         self.assertEqual(database_relation_databag, {})
         self.assertEqual(database_relation.data.get(app_unit), {})

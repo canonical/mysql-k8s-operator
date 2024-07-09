@@ -130,7 +130,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 61
+LIBPATCH = 62
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -467,6 +467,12 @@ class MySQLCharmBase(CharmBase, ABC):
         """Return unit hostname."""
         raise NotImplementedError
 
+    @abstractmethod
+    def get_unit_address(self, unit: Unit) -> str:
+        """Return unit address."""
+        # each platform has its own way to get an arbitrary unit address
+        raise NotImplementedError
+
     def _on_get_password(self, event: ActionEvent) -> None:
         """Action used to retrieve the system user's password."""
         username = event.params.get("username") or ROOT_USERNAME
@@ -601,7 +607,14 @@ class MySQLCharmBase(CharmBase, ABC):
     @property
     def cluster_initialized(self) -> bool:
         """Returns True if the cluster is initialized."""
-        return int(self.app_peer_data.get("units-added-to-cluster", "0")) >= 1
+        if not self.app_peer_data.get("cluster-name"):
+            return False
+
+        for unit in self.app_units:
+            if self._mysql.cluster_metadata_exists(self.get_unit_address(unit)):
+                return True
+
+        return False
 
     @property
     def cluster_fully_initialized(self) -> bool:
@@ -1519,6 +1532,29 @@ class MySQLBase(ABC):
             return None
 
         return cluster_name in cs_status["clusters"]
+
+    def cluster_metadata_exists(self, from_instance: str) -> bool:
+        """Check if this cluster metadata exists on database.
+
+        Args:
+            from_instance: The instance to check
+        """
+        check_cluster_metadata_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{from_instance}')",
+            (
+                'result = session.run_sql("SELECT cluster_name FROM mysql_innodb_cluster_metadata'
+                f".clusters where cluster_name = '{self.cluster_name}';\")"
+            ),
+            "print(bool(result.fetch_one()))",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+        except MySQLClientError:
+            logger.warning(f"Failed to check if cluster metadata exists {from_instance=}")
+            return False
+
+        return output.strip() == "True"
 
     def rejoin_cluster(self, cluster_name) -> None:
         """Try to rejoin a cluster to the cluster set."""

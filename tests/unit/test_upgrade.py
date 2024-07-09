@@ -147,6 +147,7 @@ class TestUpgrade(unittest.TestCase):
         mock_set_rolling_update_partition.assert_called_once()
         assert mock_set_dynamic_variable.call_count == 2
 
+    @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
     @patch("mysql_k8s_helpers.MySQL.setup_logrotate_config")
     @patch("charm.MySQLOperatorCharm._reconcile_pebble_layer")
     @patch("charm.MySQLOperatorCharm._write_mysqld_configuration")
@@ -164,6 +165,7 @@ class TestUpgrade(unittest.TestCase):
         mock_write_mysqld_configuration,
         mock_reconcile_pebble_layer,
         mock_setup_logrotate_config,
+        mock_cluster_metadata_exists,
     ):
         """Test the pebble ready."""
         self.charm.on.config_changed.emit()
