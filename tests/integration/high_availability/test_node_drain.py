@@ -10,11 +10,13 @@ from pytest_operator.plugin import OpsTest
 from ..helpers import get_primary_unit
 from .high_availability_helpers import (
     delete_pvcs,
+    delete_pvs,
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
     evict_pod,
     get_pod,
     get_pod_pvcs,
+    get_pod_pvs,
     high_availability_test_setup,
 )
 
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 MYSQL_CONTAINER_NAME = "mysql"
 MYSQLD_PROCESS_NAME = "mysqld"
-TIMEOUT = 40 * 60
+TIMEOUT = 5 * 60
 
 
 @pytest.mark.group(1)
@@ -53,17 +55,20 @@ async def test_pod_eviction_and_pvc_deletion(ops_test: OpsTest, continuous_write
     logger.info(f"Evicting primary node {primary.name} and deleting its PVCs")
     primary_pod = get_pod(ops_test, primary.name)
     primary_pod_pvcs = get_pod_pvcs(primary_pod)
+    primary_pod_pvs = get_pod_pvs(primary_pod)
     evict_pod(primary_pod)
     delete_pvcs(primary_pod_pvcs)
+    delete_pvs(primary_pod_pvs)
 
-    logger.info("Waiting for evicted primary pod to be rescheduled")
-    await ops_test.model.wait_for_idle(
-        apps=[mysql_application_name],
-        status="active",
-        raise_on_blocked=True,
-        timeout=TIMEOUT,
-        wait_for_exact_units=3,
-    )
+    async with ops_test.fast_forward("5s"):
+        logger.info("Waiting for evicted primary pod to be rescheduled")
+        await ops_test.model.wait_for_idle(
+            apps=[mysql_application_name],
+            status="active",
+            raise_on_blocked=True,
+            timeout=TIMEOUT,
+            wait_for_exact_units=3,
+        )
 
     logger.info("Waiting until 3 mysql instances are online")
     assert await ensure_n_online_mysql_members(

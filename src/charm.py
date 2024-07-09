@@ -27,6 +27,7 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLGetClusterNameError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
@@ -287,6 +288,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _get_primary_from_online_peer(self) -> Optional[str]:
         """Get the primary address from an online peer."""
         for unit in self.peers.units:
+            if unit == self.unit:
+                continue
+
             if self.peers.data[unit].get("member-state") == "online":
                 try:
                     return self._mysql.get_cluster_primary_address(
@@ -295,6 +299,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 except MySQLGetClusterPrimaryAddressError:
                     # try next unit
                     continue
+
+    def _get_cluster_name_from_peers(self) -> Optional[str]:
+        """Get the cluster name from a peer."""
+        for unit in self.peers.units:
+            if unit == self.unit:
+                continue
+
+            try:
+                return self._mysql.get_cluster_name(
+                    connect_instance_address=self._get_unit_fqdn(unit.name)
+                )
+            except MySQLGetClusterNameError:
+                # try the next unit
+                continue
 
     def _is_unit_waiting_to_join_cluster(self) -> bool:
         """Return if the unit is waiting to join the cluster."""
@@ -667,7 +685,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # First run setup
         self._configure_instance(container)
 
-        if not self.unit.is_leader():
+        if (
+            not self.unit.is_leader()
+            or self._get_cluster_name_from_peers() == self.app_peer_data["cluster-name"]
+        ):
             # Non-leader units try to join cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})

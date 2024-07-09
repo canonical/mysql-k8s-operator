@@ -17,8 +17,7 @@ from juju.unit import Unit
 from lightkube import Client
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
-from lightkube.resources.core_v1 import PersistentVolumeClaim, Pod
-from lightkube.types import CascadeType
+from lightkube.resources.core_v1 import PersistentVolume, PersistentVolumeClaim, Pod
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, retry, stop_after_attempt, stop_after_delay, wait_fixed
 
@@ -605,6 +604,7 @@ def get_pod(ops_test: OpsTest, unit_name: str) -> Pod:
 
 
 def get_pod_pvcs(pod: Pod) -> list[PersistentVolumeClaim]:
+    """Get a pod's PVCs."""
     if pod.spec is None:
         return []
 
@@ -627,7 +627,21 @@ def get_pod_pvcs(pod: Pod) -> list[PersistentVolumeClaim]:
     return pod_pvcs
 
 
+def get_pod_pvs(pod: Pod) -> list[PersistentVolume]:
+    """Get a pod's PVs."""
+    if pod.spec is None:
+        return []
+
+    pod_pvs = []
+    client = lightkube.Client()
+    for pv in client.list(res=PersistentVolume, namespace=pod.metadata.namespace):
+        if pv.spec.claimRef.name.endswith(pod.metadata.name):
+            pod_pvs.append(pv)
+    return pod_pvs
+
+
 def evict_pod(pod: Pod) -> None:
+    """Evict a pod."""
     if pod.metadata is None:
         return
 
@@ -639,7 +653,21 @@ def evict_pod(pod: Pod) -> None:
     client.create(eviction, name=str(pod.metadata.name))
 
 
+def delete_pvs(pvs: list[PersistentVolume]) -> None:
+    """Delete the provided PVs."""
+    for pv in pvs:
+        logger.info(f"Deleting PV {pv.spec.claimRef.name}")
+        client = lightkube.Client()
+        client.delete(
+            PersistentVolume,
+            pv.metadata.name,
+            namespace=pv.spec.claimRef.namespace,
+            grace_period=0,
+        )
+
+
 def delete_pvcs(pvcs: list[PersistentVolumeClaim]) -> None:
+    """Delete the provided PVCs."""
     for pvc in pvcs:
         if pvc.metadata is None:
             continue
@@ -651,5 +679,4 @@ def delete_pvcs(pvcs: list[PersistentVolumeClaim]) -> None:
             pvc.metadata.name,
             namespace=pvc.metadata.namespace,
             grace_period=0,
-            cascade=CascadeType.FOREGROUND,
         )
