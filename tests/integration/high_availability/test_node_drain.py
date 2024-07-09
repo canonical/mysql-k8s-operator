@@ -28,7 +28,7 @@ TIMEOUT = 5 * 60
 
 
 @pytest.mark.group(1)
-@pytest.mark.skip_if_deployedju
+@pytest.mark.skip_if_deployed
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
     await high_availability_test_setup(ops_test)

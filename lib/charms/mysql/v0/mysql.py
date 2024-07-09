@@ -3154,19 +3154,19 @@ class MySQLBase(ABC):
             logger.exception("Failed to kill external sessions")
             raise MySQLKillSessionError
 
-    def get_cluster_name(self, connect_instance_address: Optional[str]) -> str:
+    def get_cluster_name(self, connect_instance_address: Optional[str]) -> Optional[str]:
         if not connect_instance_address:
             connect_instance_address = self.instance_address
 
         logger.debug(f"Getting cluster name from {connect_instance_address}")
-        get_cluster_primary_commands = (
-            f"shell.connect_to_primary('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
+        get_cluster_name_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
             "cluster_name = session.run_sql(\"SELECT cluster_name FROM mysql_innodb_cluster_metadata.clusters;\")",
-            "print(f'<CLUSTER_NAME>{cluster_name}</CLUSTER_NAME>')",
+            "print(f'<CLUSTER_NAME>{cluster_name.fetch_one()[0]}</CLUSTER_NAME>')",
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(get_cluster_primary_commands))
+            output = self._run_mysqlsh_script("\n".join(get_cluster_name_commands))
         except MySQLClientError as e:
             logger.warning("Failed to get cluster name")
             raise MySQLGetClusterNameError(e.message)
