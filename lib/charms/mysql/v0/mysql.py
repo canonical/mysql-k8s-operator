@@ -1810,7 +1810,7 @@ class MySQLBase(ABC):
         stop=stop_after_attempt(3),
         retry=retry_if_exception_type(TimeoutError),
     )
-    def get_cluster_status(self, extended: Optional[bool] = False) -> Optional[dict]:
+    def get_cluster_status(self, from_instance: Optional[str] = None, extended: Optional[bool] = False) -> Optional[dict]:
         """Get the cluster status.
 
         Executes script to retrieve cluster status.
@@ -1822,7 +1822,7 @@ class MySQLBase(ABC):
         """
         options = {"extended": extended}
         status_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{from_instance or self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
             f"print(cluster.status({options}))",
         )
