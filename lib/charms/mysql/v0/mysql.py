@@ -1219,29 +1219,28 @@ class MySQLBase(ABC):
             logger.exception(f"Failed to query and delete users for unit {unit_name}")
             raise MySQLDeleteUsersForUnitError(e.message)
 
-    def delete_users_for_relation(self, relation_id: int) -> None:
+    def delete_users_for_relation(self, username: str) -> None:
         """Delete users for a relation.
 
         Args:
-            relation_id: The id of the relation for which to delete mysql users for
+            username: The username do drop
 
         Raises:
             MySQLDeleteUsersForRelationError if there is an error deleting users for the relation
         """
-        user = f"relation-{str(relation_id)}"
         drop_users_command = [
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
-            f"session.run_sql(\"DROP USER IF EXISTS '{user}'@'%';\")",
+            f"session.run_sql(\"DROP USER IF EXISTS '{username}'@'%';\")",
         ]
         # If the relation is with a MySQL Router charm application, delete any users
         # created by that application.
         drop_users_command.extend(
-            self._get_statements_to_delete_users_with_attribute("created_by_user", f"'{user}'")
+            self._get_statements_to_delete_users_with_attribute("created_by_user", f"'{username}'")
         )
         try:
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
-            logger.exception(f"Failed to delete users for relation {relation_id}")
+            logger.exception(f"Failed to delete {username=}")
             raise MySQLDeleteUsersForRelationError(e.message)
 
     def delete_user(self, username: str) -> None:
@@ -1797,7 +1796,10 @@ class MySQLBase(ABC):
             logger.debug(f"Checking existence of unit {unit_label} in cluster {self.cluster_name}")
 
             output = self._run_mysqlsh_script("\n".join(commands))
-            return MySQLMemberState.ONLINE in output.lower()
+            return (
+                MySQLMemberState.ONLINE in output.lower()
+                or MySQLMemberState.RECOVERING in output.lower()
+            )
         except MySQLClientError:
             # confirmation can fail if the clusteradmin user does not yet exist on the instance
             logger.debug(
@@ -1810,7 +1812,9 @@ class MySQLBase(ABC):
         stop=stop_after_attempt(3),
         retry=retry_if_exception_type(TimeoutError),
     )
-    def get_cluster_status(self, from_instance: Optional[str] = None, extended: Optional[bool] = False) -> Optional[dict]:
+    def get_cluster_status(
+        self, from_instance: Optional[str] = None, extended: Optional[bool] = False
+    ) -> Optional[dict]:
         """Get the cluster status.
 
         Executes script to retrieve cluster status.
@@ -2265,6 +2269,29 @@ class MySQLBase(ABC):
             raise MySQLGetClusterPrimaryAddressError(e.message)
         matches = re.search(r"<PRIMARY_ADDRESS>(.+)</PRIMARY_ADDRESS>", output)
 
+        if not matches:
+            return None
+
+        return matches.group(1)
+
+    def get_cluster_name(self, connect_instance_address: Optional[str]) -> Optional[str]:
+        if not connect_instance_address:
+            connect_instance_address = self.instance_address
+
+        logger.debug(f"Getting cluster name from {connect_instance_address}")
+        get_cluster_name_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
+            "cluster_name = session.run_sql(\"SELECT cluster_name FROM mysql_innodb_cluster_metadata.clusters;\")",
+            "print(f'<CLUSTER_NAME>{cluster_name.fetch_one()[0]}</CLUSTER_NAME>')",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(get_cluster_name_commands))
+        except MySQLClientError as e:
+            logger.warning("Failed to get cluster name")
+            raise MySQLGetClusterNameError(e.message)
+
+        matches = re.search(r"<CLUSTER_NAME>(.+)</CLUSTER_NAME>", output)
         if not matches:
             return None
 
@@ -3153,29 +3180,6 @@ class MySQLBase(ABC):
         except MySQLClientError:
             logger.exception("Failed to kill external sessions")
             raise MySQLKillSessionError
-
-    def get_cluster_name(self, connect_instance_address: Optional[str]) -> Optional[str]:
-        if not connect_instance_address:
-            connect_instance_address = self.instance_address
-
-        logger.debug(f"Getting cluster name from {connect_instance_address}")
-        get_cluster_name_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
-            "cluster_name = session.run_sql(\"SELECT cluster_name FROM mysql_innodb_cluster_metadata.clusters;\")",
-            "print(f'<CLUSTER_NAME>{cluster_name.fetch_one()[0]}</CLUSTER_NAME>')",
-        )
-
-        try:
-            output = self._run_mysqlsh_script("\n".join(get_cluster_name_commands))
-        except MySQLClientError as e:
-            logger.warning("Failed to get cluster name")
-            raise MySQLGetClusterNameError(e.message)
-
-        matches = re.search(r"<CLUSTER_NAME>(.+)</CLUSTER_NAME>", output)
-        if not matches:
-            return None
-
-        return matches.group(1)
 
     def check_mysqlsh_connection(self) -> bool:
         """Checks if it is possible to connect to the server with mysqlsh."""
