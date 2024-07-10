@@ -2275,13 +2275,18 @@ class MySQLBase(ABC):
         return matches.group(1)
 
     def get_cluster_name(self, connect_instance_address: Optional[str]) -> Optional[str]:
+        """Get the cluster name from instance.
+
+        Uses the mysql_innodb_cluster_metadata.clusters table in case instance connecting
+        to is offline and thus cannot use mysqlsh.dba.get_cluster().
+        """
         if not connect_instance_address:
             connect_instance_address = self.instance_address
 
         logger.debug(f"Getting cluster name from {connect_instance_address}")
         get_cluster_name_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance_address}')",
-            "cluster_name = session.run_sql(\"SELECT cluster_name FROM mysql_innodb_cluster_metadata.clusters;\")",
+            'cluster_name = session.run_sql("SELECT cluster_name FROM mysql_innodb_cluster_metadata.clusters;")',
             "print(f'<CLUSTER_NAME>{cluster_name.fetch_one()[0]}</CLUSTER_NAME>')",
         )
 
