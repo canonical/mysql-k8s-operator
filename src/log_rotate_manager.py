@@ -34,7 +34,7 @@ class LogRotateManager(Object):
         if (
             not isinstance(self.charm.unit.status, ActiveStatus)
             or self.charm.peers is None
-            or self.charm.unit_peer_data.get("unit-initialized") != "True"
+            or not self.charm.unit_initialized
         ):
             return
 

@@ -3,7 +3,7 @@
 
 import os
 import unittest
-from unittest.mock import call, patch
+from unittest.mock import PropertyMock, call, patch
 
 from charms.data_platform_libs.v0.upgrade import ClusterNotReadyError, KubernetesClientError
 from charms.mysql.v0.mysql import MySQLSetClusterPrimaryError, MySQLSetVariableError
@@ -44,6 +44,7 @@ class TestUpgrade(unittest.TestCase):
         self.peer_relation_id = self.harness.add_relation("database-peers", "mysql-k8s")
         for rel_id in (self.upgrade_relation_id, self.peer_relation_id):
             self.harness.add_relation_unit(rel_id, "mysql-k8s/1")
+        self.harness.disable_hooks()
         self.harness.update_relation_data(
             self.upgrade_relation_id, "mysql-k8s/1", {"state": "idle"}
         )
@@ -52,6 +53,7 @@ class TestUpgrade(unittest.TestCase):
             "mysql-k8s",
             {"cluster-name": "test_cluster", "cluster-set-domain-name": "test_cluster_set"},
         )
+        self.harness.enable_hooks()
         self.charm = self.harness.charm
 
     def test_highest_ordinal(self):
@@ -188,8 +190,13 @@ class TestUpgrade(unittest.TestCase):
         self.harness.container_pebble_ready("mysql")
         self.assertTrue(isinstance(self.charm.unit.status, BlockedStatus))
 
+    @patch(
+        "charm.MySQLOperatorCharm.unit_initialized", new_callable=PropertyMock(return_value=True)
+    )
     @patch("k8s_helpers.KubernetesHelpers.set_rolling_update_partition")
-    def test_set_rolling_update_partition(self, mock_set_rolling_update_partition):
+    def test_set_rolling_update_partition(
+        self, mock_set_rolling_update_partition, mock_unit_initialized
+    ):
         """Test the set rolling update partition."""
         self.charm.upgrade._set_rolling_update_partition(partition=1)
         mock_set_rolling_update_partition.assert_called_once()

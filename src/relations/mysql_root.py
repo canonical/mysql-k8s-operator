@@ -154,9 +154,7 @@ class MySQLRootRelation(Object):
 
         # Wait until on-config-changed event is executed
         # (wait for root password to have been set) or wait until the unit is initialized
-        if not self.charm._is_peer_data_set or not self.charm.unit_peer_data.get(
-            "unit-initialized"
-        ):
+        if not (self.charm._is_peer_data_set and self.charm.unit_initialized):
             event.defer()
             return
 

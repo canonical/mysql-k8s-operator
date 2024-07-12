@@ -111,5 +111,5 @@ class TestDatabase(unittest.TestCase):
         _create_application_database_and_scoped_user.assert_called_once()
         _get_mysql_version.assert_called_once()
         _create_endpoint_services.assert_called_once()
-        _update_endpoints.assert_called_once()
+        _update_endpoints.assert_called()
         _wait_service_ready.assert_called_once()

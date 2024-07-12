@@ -307,9 +307,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         return (
             self.unit.get_container(CONTAINER_NAME).can_connect()
             and self.unit_peer_data.get("member-state") == "waiting"
-            and self._mysql.is_data_dir_initialised()
-            and not self.unit_peer_data.get("unit-initialized")
-            and int(self.app_peer_data.get("units-added-to-cluster", 0)) > 0
+            and self.unit_configured
+            and not self.unit_initialized
+            and self.cluster_initialized
         )
 
     def join_unit_to_cluster(self) -> None:
@@ -379,7 +379,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 return
 
         # Update 'units-added-to-cluster' counter in the peer relation databag
-        self.unit_peer_data["unit-initialized"] = "True"
         self.unit_peer_data["member-state"] = "online"
         self.unit.status = ActiveStatus(self.active_status_message)
         logger.debug(f"Instance {instance_label} is cluster member")
@@ -442,16 +441,18 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self, event: RelationCreatedEvent | RelationBrokenEvent
     ) -> None:
         """Handle a COS relation created or broken event."""
-        if not self.unit_peer_data.get("unit-initialized"):
-            # wait unit initialization to avoid messing
-            # with the pebble layer before the unit is initialized
-            logger.debug("Defer reconcile mysqld exporter")
-            event.defer()
+        container = self.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            # reconciliation is done on pebble ready
+            logger.debug("Skip reconcile mysqld exporter: container not ready")
+            return
+
+        if not container.pebble.get_plan():
+            # reconciliation is done on pebble ready
+            logger.debug("Skip reconcile mysqld exporter: empty pebble layer")
             return
 
         self.current_event = event
-
-        container = self.unit.get_container(CONTAINER_NAME)
         self._reconcile_pebble_layer(container)
 
     def _on_peer_relation_joined(self, _) -> None:
@@ -815,7 +816,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _on_database_storage_detaching(self, _) -> None:
         """Handle the database storage detaching event."""
         # Only executes if the unit was initialised
-        if not self.unit_peer_data.get("unit-initialized"):
+        if not self.unit_initialized:
             return
 
         # No need to remove the instance from the cluster if it is not a member of the cluster
