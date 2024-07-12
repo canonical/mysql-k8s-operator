@@ -308,7 +308,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self.unit.get_container(CONTAINER_NAME).can_connect()
             and self.unit_peer_data.get("member-state") == "waiting"
             and self.unit_configured
-            and not self.unit_initialized
+            and (
+                not self.unit_initialized
+                or not self._mysql.is_instance_in_cluster(self.unit_label)
+            )
             and self.cluster_initialized
         )
 
@@ -389,7 +392,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_layer = self._pebble_layer
 
         if new_layer.services != current_layer.services:
-            logger.info("Adding pebble layer")
+            logger.info("Reconciling the pebble layer")
 
             container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
             container.replan()
@@ -650,9 +653,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         logger.info("Setting up the logrotate configurations")
         self._mysql.setup_logrotate_config()
 
-        self.unit_peer_data["unit-status"] = "alive"
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration
+            self.unit.status = MaintenanceStatus("Reconciling mysqld")
             logger.debug("Data directory is already initialised, skipping configuration")
             self._reconcile_pebble_layer(container)
             return
