@@ -1,0 +1,87 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:335 Stopping continuous writes after 5s
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:343 Remove async relation
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:349 waiting for units to be blocked
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:355 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [idle] blocked: Standalone read-only unit.
+  db2/1 [idle] blocked: Standalone read-only unit.
+  db2/2 [idle] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:369 Re relating the two mysql clusters
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:372 Waiting for the applications to settle
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:381 Running create replication action
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:391 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Wait until unit is initialized before running create-replication on offer side
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [executing] active: 
+  db1/1 [executing] active: 
+  db1/2 [executing] maintenance: Sharing credentials with replica cluster
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [idle] maintenance: Sharing credentials with replica cluster
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] active: 
+  db2/1 [executing] active: 
+  db2/2 [executing] maintenance: Syncing credentials
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] waiting: waiting to join the cluster
+  db2/1 [executing] waiting: waiting to join the cluster
+  db2/2 [executing] waiting: Waiting for recovery to complete on other units
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] maintenance: joining the cluster
+  db2/1 [idle] active: 
+  db2/2 [executing] waiting: Waiting for recovery to complete on other units
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] active: 
+  db2/2 [idle] active: Standby
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:417 Testing data replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:424 Stopping continuous writes and wait (5s) for replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:431 Querying max value on all units
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:69 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.3    unsupported  01:49:50Z
+
+App               Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+db1               8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s                        0  10.152.183.36   no       
+mysql-router-k8s  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     136  10.152.183.180  no       
+mysql-test-app    0.0.2                    active      1  mysql-test-app    latest/edge   46  10.152.183.105  no       
+
+Unit                 Workload  Agent      Address      Ports  Message
+db1/0                active    executing  10.1.94.204         
+db1/1                active    executing  10.1.94.206         
+db1/2*               active    executing  10.1.94.205         Primary
+mysql-router-k8s/0*  active    idle       10.1.94.213         
+mysql-test-app/0*    active    idle       10.1.94.214         
+
+Offer  Application  Charm      Rev  Connected  Endpoint           Interface    Role
+db1    db1          mysql-k8s  0    1/1        replication-offer  mysql_async  provider
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
