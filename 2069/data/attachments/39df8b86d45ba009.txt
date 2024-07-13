@@ -1,0 +1,10 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m juju.model:model.py:2097 Deploying local:jammy/mysql-k8s-1
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  another-mysql/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  another-mysql/0 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  another-mysql/0 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
