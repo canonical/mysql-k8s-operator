@@ -302,8 +302,12 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _is_unit_waiting_to_join_cluster(self) -> bool:
         """Return if the unit is waiting to join the cluster."""
-        # alternatively, we could check if the instance is configured
-        # and have an empty performance_schema.replication_group_members table
+        # check base conditions for join a unit to the cluster
+        # - workload accessible
+        # - unit waiting flag set
+        # - unit configured (users created/unit set to be a cluster node)
+        # - unit not node of this cluster or cluster does not report this unit as member
+        # - cluster is initialized on any unit
         return (
             self.unit.get_container(CONTAINER_NAME).can_connect()
             and self.unit_peer_data.get("member-state") == "waiting"
@@ -655,7 +659,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration
-            self.unit.status = MaintenanceStatus("Reconciling mysqld")
+            self.unit.status = MaintenanceStatus("Starting mysqld")
             logger.debug("Data directory is already initialised, skipping configuration")
             self._reconcile_pebble_layer(container)
             return
