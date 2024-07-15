@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from ops.testing import Harness
 
@@ -34,6 +34,11 @@ SAMPLE_CLUSTER_STATUS = {
 }
 
 
+@patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
+@patch("charm.MySQLOperatorCharm.unit_initialized", new_callable=PropertyMock, return_value=True)
+@patch(
+    "charm.MySQLOperatorCharm.cluster_initialized", new_callable=PropertyMock, return_value=True
+)
 class TestDatabase(unittest.TestCase):
     def setUp(self):
         self.patcher = patch("lightkube.core.client.GenericSyncClient")
@@ -43,6 +48,11 @@ class TestDatabase(unittest.TestCase):
         self.harness.begin()
         self.peer_relation_id = self.harness.add_relation("database-peers", "database-peers")
         self.harness.add_relation_unit(self.peer_relation_id, f"{APP_NAME}/1")
+        self.harness.update_relation_data(
+            self.peer_relation_id,
+            "mysql-k8s",
+            {"cluster-name": "test_cluster", "cluster-set-domain-name": "test_cluster_set"},
+        )
         self.database_relation_id = self.harness.add_relation(DB_RELATION_NAME, "app")
         self.harness.add_relation_unit(self.database_relation_id, "app/0")
         self.charm = self.harness.charm
@@ -68,6 +78,9 @@ class TestDatabase(unittest.TestCase):
         _update_endpoints,
         _wait_service_ready,
         _,
+        __,
+        ___,
+        ____,
     ):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
@@ -79,11 +92,6 @@ class TestDatabase(unittest.TestCase):
         )
         database_relation = self.charm.model.get_relation(DB_RELATION_NAME)
         app_unit = list(database_relation.units)[0]
-
-        # simulate cluster initialized by editing the flag
-        self.harness.update_relation_data(
-            self.peer_relation_id, self.charm.app.name, {"units-added-to-cluster": "1"}
-        )
 
         self.assertEqual(database_relation_databag, {})
         self.assertEqual(database_relation.data.get(app_unit), {})
@@ -114,5 +122,5 @@ class TestDatabase(unittest.TestCase):
         _create_application_database_and_scoped_user.assert_called_once()
         _get_mysql_version.assert_called_once()
         _create_endpoint_services.assert_called_once()
-        _update_endpoints.assert_called_once()
+        _update_endpoints.assert_called()
         _wait_service_ready.assert_called_once()

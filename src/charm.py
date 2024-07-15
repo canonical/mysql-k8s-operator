@@ -27,7 +27,6 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
-    MySQLGetClusterNameError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
@@ -45,7 +44,14 @@ from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, Container, MaintenanceStatus, WaitingStatus
+from ops.model import (
+    ActiveStatus,
+    BlockedStatus,
+    Container,
+    MaintenanceStatus,
+    Unit,
+    WaitingStatus,
+)
 from ops.pebble import Layer
 
 from config import CharmConfig, MySQLConfig
@@ -190,7 +196,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
-            self._get_unit_fqdn(),
+            self.get_unit_address(),
             self.app_peer_data["cluster-name"],
             self.app_peer_data["cluster-set-domain-name"],
             self.get_secret("app", ROOT_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
@@ -253,7 +259,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     @property
     def unit_address(self) -> str:
         """Return the address of this unit."""
-        return self._get_unit_fqdn()
+        return self.get_unit_address()
 
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
@@ -269,17 +275,15 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         unit_name = unit_name or self.unit.name
         return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
 
-    def _get_unit_fqdn(self, unit_name: Optional[str] = None) -> str:
-        """Create a fqdn for a unit.
+    def get_unit_address(self, unit: Optional[Unit] = None) -> str:
+        """Get fqdn/address for a unit.
 
         Translate juju unit name to resolvable hostname.
-
-        Args:
-            unit_name: unit name
-        Returns:
-            A string representing the fqdn of the unit.
         """
-        return getfqdn(self.get_unit_hostname(unit_name))
+        if not unit:
+            unit = self.unit
+
+        return getfqdn(self.get_unit_hostname(unit.name))
 
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
@@ -288,31 +292,14 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _get_primary_from_online_peer(self) -> Optional[str]:
         """Get the primary address from an online peer."""
         for unit in self.peers.units:
-            if unit == self.unit:
-                continue
-
             if self.peers.data[unit].get("member-state") == "online":
                 try:
                     return self._mysql.get_cluster_primary_address(
-                        connect_instance_address=self._get_unit_fqdn(unit.name),
+                        connect_instance_address=self.get_unit_address(unit),
                     )
                 except MySQLGetClusterPrimaryAddressError:
                     # try next unit
                     continue
-
-    def _get_cluster_name_from_peers(self) -> Optional[str]:
-        """Get the cluster name from a peer."""
-        for unit in self.peers.units:
-            if unit == self.unit:
-                continue
-
-            try:
-                return self._mysql.get_cluster_name(
-                    connect_instance_address=self._get_unit_fqdn(unit.name)
-                )
-            except MySQLGetClusterNameError:
-                # try the next unit
-                continue
 
     def _is_unit_waiting_to_join_cluster(self) -> bool:
         """Return if the unit is waiting to join the cluster."""
@@ -322,8 +309,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self.unit.get_container(CONTAINER_NAME).can_connect()
             and self.unit_peer_data.get("member-state") == "waiting"
             and self._mysql.is_data_dir_initialised()
-            and not self.unit_peer_data.get("unit-initialized")
-            and int(self.app_peer_data.get("units-added-to-cluster", 0)) > 0
+            and not self.unit_initialized
+            and self.cluster_initialized
         )
 
     def join_unit_to_cluster(self) -> None:
@@ -332,7 +319,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Try to join the unit from the primary unit.
         """
         instance_label = self.unit.name.replace("/", "-")
-        instance_address = self._get_unit_fqdn(self.unit.name)
+        instance_address = self.get_unit_address(self.unit)
 
         if not self._mysql.is_instance_in_cluster(instance_label):
             # Add new instance to the cluster
@@ -402,8 +389,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 logger.debug("waiting: failed to acquire lock when adding instance to cluster")
                 return
 
-        # Update 'units-added-to-cluster' counter in the peer relation databag
-        self.unit_peer_data["unit-initialized"] = "True"
         self.unit_peer_data["member-state"] = "online"
         self.unit.status = ActiveStatus(self.active_status_message)
         logger.debug(f"Instance {instance_label} is cluster member")
@@ -466,7 +451,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self, event: RelationCreatedEvent | RelationBrokenEvent
     ) -> None:
         """Handle a COS relation created or broken event."""
-        if not self.unit_peer_data.get("unit-initialized"):
+        if not self.unit_initialized:
             # wait unit initialization to avoid messing
             # with the pebble layer before the unit is initialized
             logger.debug("Defer reconcile mysqld exporter")
@@ -685,10 +670,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # First run setup
         self._configure_instance(container)
 
-        if (
-            not self.unit.is_leader()
-            or self._get_cluster_name_from_peers() == self.app_peer_data["cluster-name"]
-        ):
+        if not self.unit.is_leader() or self.cluster_initialized:
             # Non-leader units try to join cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
@@ -812,10 +794,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _set_app_status(self) -> None:
         """Set the application status based on the cluster state."""
-        nodes = self._mysql.get_cluster_node_count()
-        if nodes > 0:
-            self.app_peer_data["units-added-to-cluster"] = str(nodes)
-
         try:
             primary_address = self._mysql.get_cluster_primary_address()
         except MySQLGetClusterPrimaryAddressError:
@@ -842,7 +820,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _on_database_storage_detaching(self, _) -> None:
         """Handle the database storage detaching event."""
         # Only executes if the unit was initialised
-        if not self.unit_peer_data.get("unit-initialized"):
+        if not self.unit_initialized:
             return
 
         # No need to remove the instance from the cluster if it is not a member of the cluster
@@ -857,7 +835,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.info("Switching primary to unit 0")
             try:
                 self._mysql.set_cluster_primary(
-                    new_primary_address=self._get_unit_fqdn(f"{self.app.name}/0")
+                    new_primary_address=getfqdn(self.get_unit_hostname(f"{self.app.name}/0"))
                 )
             except MySQLSetClusterPrimaryError:
                 logger.warning("Failed to switch primary to unit 0")

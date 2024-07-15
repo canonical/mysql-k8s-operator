@@ -31,6 +31,9 @@ REQUIRED_PASSWORD_KEYS = [
 ]
 
 
+@patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
+@patch("charm.MySQLOperatorCharm.unit_initialized", new_callable=PropertyMock)
+@patch("charm.MySQLOperatorCharm.cluster_initialized", new_callable=PropertyMock)
 class TestCharm(unittest.TestCase):
     def setUp(self) -> None:
         self.patcher = patch("lightkube.core.client.GenericSyncClient")
@@ -41,6 +44,11 @@ class TestCharm(unittest.TestCase):
         self.peer_relation_id = self.harness.add_relation("database-peers", "database-peers")
         self.restart_relation_id = self.harness.add_relation("restart", "restart")
         self.harness.add_relation_unit(self.peer_relation_id, f"{APP_NAME}/1")
+        self.harness.update_relation_data(
+            self.peer_relation_id,
+            "mysql-k8s",
+            {"cluster-name": "test_cluster", "cluster-set-domain-name": "test_cluster_set"},
+        )
         self.charm = self.harness.charm
         self.maxDiff = None
 
@@ -80,13 +88,13 @@ class TestCharm(unittest.TestCase):
     def tearDown(self) -> None:
         self.patcher.stop()
 
-    def test_mysqld_layer(self):
+    def test_mysqld_layer(self, _, __, ___):
         # Test layer property
         # Comparing output dicts
         self.assertEqual(self.charm._pebble_layer.to_dict(), self.layer_dict())
 
     @pytest.mark.usefixtures("without_juju_secrets")
-    def test_on_leader_elected(self):
+    def test_on_leader_elected(self, _, __, ___):
         # Test leader election setting of
         # peer relation data
         self.harness.set_leader()
@@ -97,7 +105,7 @@ class TestCharm(unittest.TestCase):
                 peer_data[password].isalnum() and len(peer_data[password]) == PASSWORD_LENGTH
             )
 
-    def test_on_leader_elected_secrets(self):
+    def test_on_leader_elected_secrets(self, _, __, ___):
         # Test leader election setting of secret data
         self.harness.set_leader()
 
@@ -134,11 +142,9 @@ class TestCharm(unittest.TestCase):
     )
     @patch("mysql_k8s_helpers.MySQL.get_max_connections", return_value=120)
     @patch("mysql_k8s_helpers.MySQL.setup_logrotate_config")
-    @patch("mysql_k8s_helpers.MySQL.get_cluster_name")
     def test_mysql_pebble_ready(
         self,
         _,
-        __,
         _get_max_connections,
         _get_innodb_buffer_pool_parameters,
         _get_member_state,
@@ -157,6 +163,9 @@ class TestCharm(unittest.TestCase):
         _active_status_message,
         _upgrade_idle,
         _rescan_cluster,
+        __,
+        ___,
+        ____,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -192,29 +201,40 @@ class TestCharm(unittest.TestCase):
     @patch("upgrade.MySQLK8sUpgrade.idle", return_value=True)
     @patch("charm.MySQLOperatorCharm._mysql")
     def test_pebble_ready_set_data(
-        self, mock_mysql, mock_upgrade_idle, mock_write_conf, mock_conf, mock_join
+        self,
+        mock_mysql,
+        mock_upgrade_idle,
+        mock_write_conf,
+        mock_conf,
+        mock_join,
+        _cluster_metadata_exists,
+        _cluster_intialized,
+        _unit_intialized,
     ):
         mock_mysql.is_data_dir_initialised.return_value = False
         mock_mysql.get_member_state.return_value = ("online", "primary")
         self.harness.set_can_connect("mysql", True)
         self.harness.set_leader()
+        _cluster_metadata_exists.return_value = False
+        _cluster_intialized.return_value = True
+        _unit_intialized.return_value = False
 
         # test on non leader
         self.harness.set_leader(is_leader=False)
         self.harness.container_pebble_ready("mysql")
-        self.assertEqual(self.charm.unit_peer_data.get("unit-initialized"), None)
         self.assertEqual(self.charm.unit_peer_data["member-role"], "secondary")
         self.assertEqual(self.charm.unit_peer_data["member-state"], "waiting")
+
+        _cluster_intialized.return_value = False
 
         # test on leader
         self.harness.set_leader(is_leader=True)
         self.harness.container_pebble_ready("mysql")
-        self.assertEqual(self.charm.unit_peer_data["unit-initialized"], "True")
         self.assertEqual(self.charm.unit_peer_data["member-state"], "online")
         self.assertEqual(self.charm.unit_peer_data["member-role"], "primary")
 
     @patch("charm.MySQLOperatorCharm._mysql", new_callable=PropertyMock)
-    def test_mysql_pebble_ready_non_leader(self, _mysql_mock):
+    def test_mysql_pebble_ready_non_leader(self, _mysql_mock, _, __, ___):
         # Test pebble ready when not leader
         # Expect unit to be in waiting status
         self.harness.update_relation_data(
@@ -226,7 +246,7 @@ class TestCharm(unittest.TestCase):
         self.assertTrue(isinstance(self.charm.unit.status, WaitingStatus))
 
     @patch("charm.MySQLOperatorCharm._mysql")
-    def test_mysql_pebble_ready_exception(self, _mysql_mock):
+    def test_mysql_pebble_ready_exception(self, _mysql_mock, _, __, ___):
         # Test exception raised in bootstrapping
         self.harness.set_leader()
         self.charm._mysql = _mysql_mock
@@ -238,7 +258,12 @@ class TestCharm(unittest.TestCase):
 
         self.assertFalse(isinstance(self.charm.unit.status, ActiveStatus))
 
-    def test_on_config_changed(self):
+    def test_on_config_changed(self, _, __, ___):
+        self.harness.update_relation_data(
+            self.peer_relation_id,
+            "mysql-k8s",
+            {"cluster-name": "", "cluster-set-domain-name": "test_cluster_set"},
+        )
         # Test config changed set of cluster name
         self.assertEqual(self.charm.peers.data[self.charm.app].get("cluster-name"), None)
         self.harness.set_leader()
@@ -249,7 +274,7 @@ class TestCharm(unittest.TestCase):
         )
 
     @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
-    def test_mysql_property(self, _):
+    def test_mysql_property(self, _, __, ___, ____):
         # Test mysql property instance of mysql_k8s_helpers.MySQL
         # set leader and populate peer relation data
         self.harness.set_leader()
@@ -268,7 +293,7 @@ class TestCharm(unittest.TestCase):
         self.assertTrue(isinstance(mysql, MySQL))
 
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
-    def test_get_secret(self, _):
+    def test_get_secret(self, _, __, ___, ____):
         self.harness.set_leader()
 
         # Test application scope.
@@ -287,7 +312,7 @@ class TestCharm(unittest.TestCase):
 
     @pytest.mark.usefixtures("without_juju_secrets")
     @patch("charm.MySQLOperatorCharm._on_leader_elected")
-    def test_set_secret_databag(self, _):
+    def test_set_secret_databag(self, _, __, ___, ____):
         self.harness.set_leader()
 
         # Test application scope.
@@ -322,6 +347,9 @@ class TestCharm(unittest.TestCase):
         mock_get_primary_label,
         mock_remove_instance,
         mock_is_cluster_replica,
+        __,
+        ___,
+        ____,
     ):
         self.harness.update_relation_data(
             self.peer_relation_id, self.charm.unit.name, {"unit-initialized": "True"}
