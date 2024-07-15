@@ -32,4 +32,4 @@ Both scaling-up and scaling-down operations are performed using `juju scale-appl
 juju scale-application mysql-k8s <desired_num_of_units>
 ```
 
-Warning: scaling-down to zero units will destroy your data!
+> **:warning: Warning**: be careful with removing all units! It can destroy your data ([Juju storage provider](https://juju.is/docs/juju/storage-provider) dependent)!

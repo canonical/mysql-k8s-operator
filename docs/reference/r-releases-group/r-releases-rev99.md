@@ -44,15 +44,15 @@ Canonical Data issues are now public on both [Jira](https://warthogs.atlassian.n
 * CLI mysql-shell updated to "8.0.34-0ubuntu0.22.04.1~ppa1"
 * Backup tools xtrabackup/xbcloud  updated to "8.0.34-29"
 * The Prometheus mysqld-exporter is "0.14.0-0ubuntu0.22.04.1~ppa1"
-* K8s charms [based on our](https://github.com/orgs/canonical/packages?tab=packages&q=charmed) rock (Ubuntu LTS “22.04” - ubuntu:22.04-based)
+* K8s charms [based on our](https://github.com/orgs/canonical/packages?tab=packages&q=charmed) ROCK OCI (Ubuntu LTS “22.04” - ubuntu:22.04-based)
 * Principal charms supports the latest LTS series “22.04” only.
 * Subordinate charms support LTS “22.04” and “20.04” only.
 
 ## Technical notes:
 
 * Upgrade (`juju refresh`) from the old-stable revision 75 to the current-revision 99 is **NOT** supported!!! The [upgrade](/t/11754) functionality is new and supported for revision 99+ only!
-
-Please check additionally [the previously posted restrictions](/t/11879).
+* Please check additionally [the previously posted restrictions](/t/11879).
+* Ensure [the charm requirements](/t/11421) met.
 
 ## How to reach us:
 

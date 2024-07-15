@@ -25,6 +25,7 @@ class MySQLConfig:
         "innodb_buffer_pool_chunk_size",
         "group_replication_message_cache_size",
         "log_error",
+        "report_host",
     }
 
     def keys_requires_restart(self, keys: set) -> bool:

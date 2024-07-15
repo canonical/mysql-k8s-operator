@@ -157,6 +157,7 @@ juju scale-application mysql-k8s <unit_count>
 ```
 
 An example on the following video:
+
 [![asciicast](https://asciinema.org/a/7ZMAsPWU3wv7ynZI1JvgRFG31.png)](https://asciinema.org/a/7ZMAsPWU3wv7ynZI1JvgRFG31)
 
 ## Step 8: Check

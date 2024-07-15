@@ -6,7 +6,6 @@
 import enum
 import logging
 import typing
-import uuid
 from functools import cached_property
 from time import sleep
 
@@ -55,7 +54,7 @@ logger = logging.getLogger(__name__)
 # The unique Charmhub library identifier, never change it
 LIBID = "4de21f1a022c4e2c87ac8e672ec16f6a"
 LIBAPI = 0
-LIBPATCH = 2
+LIBPATCH = 4
 
 RELATION_OFFER = "replication-offer"
 RELATION_CONSUMER = "replication"
@@ -129,10 +128,9 @@ class MySQLAsyncReplication(Object):
     @property
     def relation(self) -> Optional[Relation]:
         """Relation."""
-        if isinstance(self, MySQLAsyncReplicationOffer):
-            return self.model.get_relation(RELATION_OFFER)
-
-        return self.model.get_relation(RELATION_CONSUMER)
+        return self.model.get_relation(RELATION_OFFER) or self.model.get_relation(
+            RELATION_CONSUMER
+        )
 
     @property
     def relation_data(self) -> Optional[RelationDataContent]:
@@ -158,10 +156,6 @@ class MySQLAsyncReplication(Object):
             event.fail("Only a standby cluster can be promoted")
             return
 
-        if event.params.get("cluster-set-name") != self.cluster_set_name:
-            event.fail("Invalid/empty cluster set name")
-            return
-
         # promote cluster to primary
         cluster_name = self.cluster_name
         force = event.params.get("force", False)
@@ -172,6 +166,10 @@ class MySQLAsyncReplication(Object):
             logger.info(message)
             event.set_results({"message": message})
             self._charm._on_update_status(None)
+            # write counter to propagate status update on the other side
+            self.relation_data["switchover"] = str(
+                int(self.relation_data.get("switchover", 0)) + 1
+            )
         except MySQLPromoteClusterToPrimaryError:
             logger.exception("Failed to promote cluster to primary")
             event.fail("Failed to promote cluster to primary")
@@ -392,6 +390,12 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
                 return States.INITIALIZING
             else:
                 return States.RECOVERING
+        if self.role.relation_side == RELATION_CONSUMER:
+            # if on the consume and is primary
+            # the cluster is ready when fully initialized
+            if self._charm.cluster_fully_initialized:
+                return States.READY
+            return States.RECOVERING
 
     @property
     def idle(self) -> bool:
@@ -574,6 +578,11 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             # Recover replica cluster
             self._charm.unit.status = MaintenanceStatus("Replica cluster in recovery")
 
+        elif state == States.READY:
+            # trigger update status on relation update when ready
+            # speeds up status on switchover
+            self._charm._on_update_status(None)
+
     def _on_offer_relation_broken(self, event: RelationBrokenEvent):
         """Handle the async_primary relation being broken."""
         if self._charm.unit.is_leader():
@@ -646,11 +655,15 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
             # and did not synced credentials
             return States.SYNCING
 
-        if self.replica_initialized:
-            # cluster added to cluster-set by primary cluster
-            if self._charm.cluster_fully_initialized:
-                return States.READY
-            return States.RECOVERING
+        if self.model.get_relation(RELATION_CONSUMER):
+            if self.replica_initialized:
+                # cluster added to cluster-set by primary cluster
+                if self._charm.cluster_fully_initialized:
+                    return States.READY
+                return States.RECOVERING
+        else:
+            return States.READY
+
         return States.INITIALIZING
 
     @property
@@ -676,7 +689,7 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
 
     @property
     def replica_initialized(self) -> bool:
-        """Whether the replica cluster is initialized as such."""
+        """Whether the replica cluster was initialized."""
         return self.remote_relation_data.get("replica-state") == "initialized"
 
     def _check_version(self) -> bool:
@@ -689,7 +702,8 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
 
         if remote_version != local_version:
             logger.error(
-                f"Primary cluster MySQL version {remote_version} is not compatible with this cluster MySQL version {local_version}"
+                f"Primary cluster MySQL version {remote_version} is not compatible with this"
+                f"cluster MySQL version {local_version}"
             )
             return False
 
@@ -828,11 +842,12 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
 
             if self.remote_relation_data["cluster-name"] == self.cluster_name:  # pyright: ignore
                 # this cluster need a new cluster name
+                # we append the model uuid, trimming to a max of 63 characters
                 logger.warning(
-                    "Cluster name is the same as the primary cluster. Appending generated value"
+                    "Cluster name is the same as the primary cluster. Appending model uuid"
                 )
                 self._charm.app_peer_data["cluster-name"] = (
-                    f"{self.cluster_name}{uuid.uuid4().hex[:4]}"
+                    f"{self.cluster_name}{self.model.uuid.replace('-', '')}"[:63]
                 )
 
             self._charm.unit.status = MaintenanceStatus("Populate endpoint")

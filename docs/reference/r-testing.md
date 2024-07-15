@@ -63,5 +63,4 @@ Please check the "[Contributing](https://github.com/canonical/mysql-k8s-operator
 Please check/deploy the charm [mysql-bundle](https://charmhub.io/mysql-k8s-bundle) ([Git](https://github.com/canonical/mysql-k8s-bundle)). It deploy and test all the necessary parts at once.
 
 ## Performance test
-
-Please check the separate [document](/t/11073).
+Refer to the [sysbench documentation](https://discourse.charmhub.io/t/charmed-sysbench-documentation-home/13945).
