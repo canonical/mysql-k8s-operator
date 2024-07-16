@@ -112,6 +112,7 @@ class TestCharm(unittest.TestCase):
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.rescan_cluster")
     @patch("charms.mysql.v0.mysql.MySQLCharmBase.active_status_message", return_value="")
     @patch("upgrade.MySQLK8sUpgrade.idle", return_value=True)
@@ -155,6 +156,7 @@ class TestCharm(unittest.TestCase):
         _active_status_message,
         _upgrade_idle,
         _rescan_cluster,
+        _cluster_metadata_exists,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -200,14 +202,12 @@ class TestCharm(unittest.TestCase):
         # test on non leader
         self.harness.set_leader(is_leader=False)
         self.harness.container_pebble_ready("mysql")
-        self.assertEqual(self.charm.unit_peer_data.get("unit-initialized"), None)
         self.assertEqual(self.charm.unit_peer_data["member-role"], "secondary")
         self.assertEqual(self.charm.unit_peer_data["member-state"], "waiting")
 
         # test on leader
         self.harness.set_leader(is_leader=True)
         self.harness.container_pebble_ready("mysql")
-        self.assertEqual(self.charm.unit_peer_data["unit-initialized"], "True")
         self.assertEqual(self.charm.unit_peer_data["member-state"], "online")
         self.assertEqual(self.charm.unit_peer_data["member-role"], "primary")
 
@@ -308,6 +308,7 @@ class TestCharm(unittest.TestCase):
             == "test-password"
         )
 
+    @patch("charm.MySQLOperatorCharm.unit_initialized", return_value=True)
     @patch("charms.mysql.v0.mysql.MySQLBase.is_cluster_replica", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.remove_instance")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label")
@@ -320,10 +321,8 @@ class TestCharm(unittest.TestCase):
         mock_get_primary_label,
         mock_remove_instance,
         mock_is_cluster_replica,
+        mock_unit_initialized,
     ):
-        self.harness.update_relation_data(
-            self.peer_relation_id, self.charm.unit.name, {"unit-initialized": "True"}
-        )
         self.harness.update_relation_data(
             self.peer_relation_id,
             self.charm.app.name,

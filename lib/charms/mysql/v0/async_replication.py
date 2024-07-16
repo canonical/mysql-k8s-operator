@@ -237,7 +237,6 @@ class MySQLAsyncReplication(Object):
             self._charm.unit.status = BlockedStatus("Standalone read-only unit.")
             # reset flag to allow instances rejoining the cluster
             self._charm.unit_peer_data["member-state"] = "waiting"
-            del self._charm.unit_peer_data["unit-initialized"]
             if not self._charm.unit.is_leader():
                 # delay non leader to avoid `update_status` running before
                 # leader updates app peer data
@@ -914,7 +913,6 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
             logger.debug("Reset secondary unit to allow cluster rejoin")
             # reset unit flag to allow cluster rejoin after primary recovery
             # the unit will rejoin on the next peer relation changed or update status
-            del self._charm.unit_peer_data["unit-initialized"]
             self._charm.unit_peer_data["member-state"] = "waiting"
             self._charm.unit.status = WaitingStatus("waiting to join the cluster")
 

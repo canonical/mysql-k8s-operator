@@ -197,7 +197,13 @@ class MySQLProvider(Object):
         container_restarts = int(self.charm.unit_peer_data.get(CONTAINER_RESTARTS, "0"))
         self.charm.unit_peer_data[CONTAINER_RESTARTS] = str(container_restarts + 1)
 
-        self._configure_endpoints(None)
+        try:
+            self._configure_endpoints(None)
+        except Exception:
+            # catch all exception to avoid uncommitted databag keys
+            # from other pebble-ready handlers succeed
+            # see: https://github.com/canonical/mysql-k8s-operator/issues/457
+            logger.exception("Failed to update endpoints on database provider pebble ready event")
 
     def _configure_endpoints(self, _) -> None:
         """Update the endpoints + read_only_endpoints."""

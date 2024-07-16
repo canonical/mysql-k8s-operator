@@ -128,9 +128,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-# Increment this PATCH version before using `charmcraft publish-lib` or reset
-# to 0 if you are raising the major API version
-LIBPATCH = 61
+LIBPATCH = 62
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -467,6 +465,12 @@ class MySQLCharmBase(CharmBase, ABC):
         """Return unit hostname."""
         raise NotImplementedError
 
+    @abstractmethod
+    def get_unit_address(self, unit: Unit) -> str:
+        """Return unit address."""
+        # each platform has its own way to get an arbitrary unit address
+        raise NotImplementedError
+
     def _on_get_password(self, event: ActionEvent) -> None:
         """Action used to retrieve the system user's password."""
         username = event.params.get("username") or ROOT_USERNAME
@@ -589,9 +593,7 @@ class MySQLCharmBase(CharmBase, ABC):
 
         state, role = self._mysql.get_member_state()
 
-        self.unit_peer_data.update(
-            {"member-state": state, "member-role": role, "unit-initialized": "True"}
-        )
+        self.unit_peer_data.update({"member-state": state, "member-role": role})
 
     @property
     def peers(self) -> Optional[ops.model.Relation]:
@@ -601,7 +603,14 @@ class MySQLCharmBase(CharmBase, ABC):
     @property
     def cluster_initialized(self) -> bool:
         """Returns True if the cluster is initialized."""
-        return int(self.app_peer_data.get("units-added-to-cluster", "0")) >= 1
+        if not self.app_peer_data.get("cluster-name"):
+            return False
+
+        for unit in self.app_units:
+            if self._mysql.cluster_metadata_exists(self.get_unit_address(unit)):
+                return True
+
+        return False
 
     @property
     def cluster_fully_initialized(self) -> bool:
@@ -614,9 +623,16 @@ class MySQLCharmBase(CharmBase, ABC):
         )
 
     @property
+    def unit_configured(self) -> bool:
+        """Check if the unit is configured to be part of the cluster."""
+        return self._mysql.is_instance_configured_for_innodb(
+            self.get_unit_address(self.unit), self.unit_label
+        )
+
+    @property
     def unit_initialized(self) -> bool:
-        """Return True if the unit is initialized."""
-        return self.unit_peer_data.get("unit-initialized") == "True"
+        """Check if the unit is added to the cluster."""
+        return self._mysql.cluster_metadata_exists(self.get_unit_address(self.unit))
 
     @property
     def app_peer_data(self) -> Union[ops.RelationDataContent, dict]:
@@ -835,22 +851,7 @@ class MySQLBase(ABC):
         backups_user: str,
         backups_password: str,
     ):
-        """Initialize the MySQL class.
-
-        Args:
-            instance_address: address of the targeted instance
-            cluster_name: cluster name
-            cluster_set_name: cluster set domain name
-            root_password: password for the 'root' user
-            server_config_user: user name for the server config user
-            server_config_password: password for the server config user
-            cluster_admin_user: user name for the cluster admin user
-            cluster_admin_password: password for the cluster admin user
-            monitoring_user: user name for the mysql exporter
-            monitoring_password: password for the monitoring user
-            backups_user: user name used to create backups
-            backups_password: password for the backups user
-        """
+        """Initialize the MySQL class."""
         self.instance_address = instance_address
         self.cluster_name = cluster_name
         self.cluster_set_name = cluster_set_name
@@ -872,16 +873,7 @@ class MySQLBase(ABC):
         experimental_max_connections: Optional[int] = None,
         snap_common: str = "",
     ) -> tuple[str, dict]:
-        """Render mysqld ini configuration file.
-
-        Args:
-            profile: profile to use for the configuration (testing, production)
-            memory_limit: memory limit to use for the configuration in bytes
-            experimental_max_connections: explicit max connections to use for the configuration
-            snap_common: snap common directory (for log files locations in vm)
-
-        Returns: a tuple with mysqld ini file string content and a the config dict
-        """
+        """Render mysqld ini configuration file."""
         max_connections = None
         performance_schema_instrument = ""
         if profile == "testing":
@@ -958,16 +950,7 @@ class MySQLBase(ABC):
             return string_io.getvalue(), dict(config["mysqld"])
 
     def configure_mysql_users(self, password_needed: bool = True) -> None:
-        """Configure the MySQL users for the instance.
-
-        Create `<server_config>@%` user with the appropriate privileges, and
-        reconfigure `root@localhost` user password.
-
-        Args:
-            password_needed: flag to indicate if the root password is needed. Default is True.
-
-        Raises MySQLConfigureMySQLUsersError if the user creation fails.
-        """
+        """Configure the MySQL users for the instance."""
         # SYSTEM_USER and SUPER privileges to revoke from the root users
         # Reference: https://dev.mysql.com/doc/refman/8.0/en/privileges-provided.html#priv_super
         privileges_to_revoke = (
@@ -1019,18 +1002,7 @@ class MySQLBase(ABC):
             raise MySQLConfigureMySQLUsersError(e.message)
 
     def does_mysql_user_exist(self, username: str, hostname: str) -> bool:
-        """Checks if a mysqlrouter user already exists.
-
-        Args:
-            username: The username for the mysql user
-            hostname: The hostname for the mysql user
-
-        Returns:
-            A boolean indicating whether the provided mysql user exists
-
-        Raises MySQLCheckUserExistenceError
-            if there is an issue confirming that the mysql user exists
-        """
+        """Checks if a mysql user already exists."""
         user_existence_commands = (
             f"select if((select count(*) from mysql.user where user = '{username}' and host = '{hostname}'), 'USER_EXISTS', 'USER_DOES_NOT_EXIST') as ''",
         )
@@ -1052,17 +1024,7 @@ class MySQLBase(ABC):
     def configure_mysqlrouter_user(
         self, username: str, password: str, hostname: str, unit_name: str
     ) -> None:
-        """Configure a mysqlrouter user and grant the appropriate permissions to the user.
-
-        Args:
-            username: The username for the mysqlrouter user
-            password: The password for the mysqlrouter user
-            hostname: The hostname for the mysqlrouter user
-            unit_name: The name of unit from which the mysqlrouter user will be accessed
-
-        Raises MySQLConfigureRouterUserError
-            if there is an issue creating and configuring the mysqlrouter user
-        """
+        """Configure a mysqlrouter user and grant the appropriate permissions to the user."""
         try:
             escaped_mysqlrouter_user_attributes = json.dumps({"unit_name": unit_name}).replace(
                 '"', r"\""
@@ -1105,19 +1067,7 @@ class MySQLBase(ABC):
         unit_name: Optional[str] = None,
         create_database: bool = True,
     ) -> None:
-        """Create an application database and a user scoped to the created database.
-
-        Args:
-            database_name: The name of the database to create
-            username: The username of the scoped user
-            password: The password of the scoped user
-            hostname: The hostname of the scoped user
-            unit_name: The name of the unit from which the user will be accessed
-            create_database: Whether to create database
-
-        Raises MySQLCreateApplicationDatabaseAndScopedUserError
-            if there is an issue creating the application database or a user scoped to the database
-        """
+        """Create an application database and a user scoped to the created database."""
         attributes = {}
         if unit_name is not None:
             attributes["unit_name"] = unit_name
@@ -1157,11 +1107,8 @@ class MySQLBase(ABC):
     ) -> list[str]:
         """Generate mysqlsh statements to delete users with an attribute.
 
-        Args:
-            attribute_name: Name of the attribute
-            attribute_value: Value of the attribute.
-                If the value of the attribute is a string, include single quotes in the string.
-                (e.g. "'bar'")
+        If the value of the attribute is a string, include single quotes in the string.
+        (e.g. "'bar'")
         """
         return [
             f"session.run_sql(\"SELECT IFNULL(CONCAT('DROP USER ', GROUP_CONCAT(QUOTE(USER), '@', QUOTE(HOST))), 'SELECT 1') INTO @sql FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE ATTRIBUTE->'$.{attribute_name}'={attribute_value}\")",
@@ -1173,10 +1120,7 @@ class MySQLBase(ABC):
     def get_mysql_router_users_for_unit(
         self, *, relation_id: int, mysql_router_unit_name: str
     ) -> list[RouterUser]:
-        """Get users for related MySQL Router unit.
-
-        For each user, get username & router ID attribute.
-        """
+        """Get users for related MySQL Router unit."""
         relation_user = f"relation-{relation_id}"
         command = [
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
@@ -1194,15 +1138,7 @@ class MySQLBase(ABC):
         return [RouterUser(username=row[0], router_id=row[1]) for row in rows]
 
     def delete_users_for_unit(self, unit_name: str) -> None:
-        """Delete users for a unit.
-
-        Args:
-            unit_name: The name of the unit for which to delete mysql users for
-
-        Raises:
-            MySQLDeleteUsersForUnitError if there is an error deleting users for the unit
-        """
-        # Using server_config_user as we are sure it has drop user grants
+        """Delete users for a unit."""
         drop_users_command = [
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
         ]
@@ -1216,14 +1152,7 @@ class MySQLBase(ABC):
             raise MySQLDeleteUsersForUnitError(e.message)
 
     def delete_users_for_relation(self, username: str) -> None:
-        """Delete users for a relation.
-
-        Args:
-            username: The username do drop
-
-        Raises:
-            MySQLDeleteUsersForRelationError if there is an error deleting users for the relation
-        """
+        """Delete users for a relation."""
         drop_users_command = [
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"session.run_sql(\"DROP USER IF EXISTS '{username}'@'%';\")",
@@ -1271,17 +1200,7 @@ class MySQLBase(ABC):
         persist: bool = False,
         instance_address: Optional[str] = None,
     ) -> None:
-        """Set a dynamic variable value for the instance.
-
-        Args:
-            variable: The name of the variable to set
-            value: The value to set the variable to
-            persist: Whether to persist the variable value across restarts
-            instance_address: instance address to set the variable, default to current
-
-        Raises:
-            MySQLSetVariableError
-        """
+        """Set a dynamic variable value for the instance."""
         if not instance_address:
             instance_address = self.instance_address
 
@@ -1302,11 +1221,7 @@ class MySQLBase(ABC):
             raise MySQLSetVariableError
 
     def configure_instance(self, create_cluster_admin: bool = True) -> None:
-        """Configure the instance to be used in an InnoDB cluster.
-
-        Raises MySQLConfigureInstanceError
-            if the was an error configuring the instance for use in an InnoDB cluster.
-        """
+        """Configure the instance to be used in an InnoDB cluster."""
         options = {
             "restart": "true",
         }
@@ -1335,10 +1250,7 @@ class MySQLBase(ABC):
             raise MySQLConfigureInstanceError(e.message)
 
     def create_cluster(self, unit_label: str) -> None:
-        """Create an InnoDB cluster with Group Replication enabled.
-
-        Raises MySQLCreateClusterError if there was an issue creating the cluster.
-        """
+        """Create an InnoDB cluster with Group Replication enabled."""
         # defaulting group replication communication stack to MySQL instead of XCOM
         # since it will encrypt gr members communication by default
         options = {
@@ -1362,10 +1274,7 @@ class MySQLBase(ABC):
             raise MySQLCreateClusterError(e.message)
 
     def create_cluster_set(self) -> None:
-        """Create a cluster set for the cluster on cluster primary.
-
-        Raises MySQLCreateClusterSetError on cluster set creation failure.
-        """
+        """Create a cluster set for the cluster on cluster primary."""
         commands = (
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
@@ -1387,18 +1296,7 @@ class MySQLBase(ABC):
         donor: Optional[str] = None,
         method: Optional[str] = "auto",
     ) -> None:
-        """Create a replica cluster from the primary cluster.
-
-        Args:
-            endpoint: The endpoint of the replica cluster leader unit
-            replica_cluster_name: The name of the replica cluster
-            instance_label: The label to apply to the replica cluster instance
-            donor: The donor instance address definition to clone from
-            method: The method to use to create the replica cluster (auto, clone)
-
-        Raises:
-            MySQLCreateReplicaClusterError
-        """
+        """Create a replica cluster from the primary cluster."""
         options = {
             "recoveryProgress": 0,
             "recoveryMethod": method,
@@ -1436,15 +1334,7 @@ class MySQLBase(ABC):
                 raise MySQLCreateReplicaClusterError
 
     def promote_cluster_to_primary(self, cluster_name: str, force: bool = False) -> None:
-        """Promote a cluster to become the primary cluster on the cluster set.
-
-        Args:
-            cluster_name: The name of the cluster to promote
-            force: Whether to force the promotion (due to a unreachable cluster)
-
-        Raises:
-            MySQLPromoteClusterToActiveError
-        """
+        """Promote a cluster to become the primary cluster on the cluster set."""
         commands = (
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             "cs = dba.get_cluster_set()",
@@ -1463,11 +1353,7 @@ class MySQLBase(ABC):
             raise MySQLPromoteClusterToPrimaryError
 
     def fence_writes(self) -> None:
-        """Fence writes on the primary cluster.
-
-        Raises:
-            MySQLFenceUnfenceWritesError
-        """
+        """Fence writes on the primary cluster."""
         commands = (
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             "c = dba.get_cluster()",
@@ -1481,11 +1367,7 @@ class MySQLBase(ABC):
             raise MySQLFencingWritesError
 
     def unfence_writes(self) -> None:
-        """Unfence writes on the primary cluster and reset read_only flag.
-
-        Raises:
-            MySQLFenceUnfenceWritesError
-        """
+        """Unfence writes on the primary cluster and reset read_only flag."""
         commands = (
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             "c = dba.get_cluster()",
@@ -1500,11 +1382,7 @@ class MySQLBase(ABC):
             raise MySQLFencingWritesError
 
     def is_cluster_writes_fenced(self) -> Optional[bool]:
-        """Check if the cluster is fenced against writes.
-
-        Returns:
-            True if the cluster is fenced, False otherwise
-        """
+        """Check if the cluster is fenced against writes."""
         status = self.get_cluster_status()
         if not status:
             return
@@ -1519,6 +1397,25 @@ class MySQLBase(ABC):
             return None
 
         return cluster_name in cs_status["clusters"]
+
+    def cluster_metadata_exists(self, from_instance: str) -> bool:
+        """Check if this cluster metadata exists on database."""
+        check_cluster_metadata_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{from_instance}')",
+            (
+                'result = session.run_sql("SELECT cluster_name FROM mysql_innodb_cluster_metadata'
+                f".clusters where cluster_name = '{self.cluster_name}';\")"
+            ),
+            "print(bool(result.fetch_one()))",
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+        except MySQLClientError:
+            logger.warning(f"Failed to check if cluster metadata exists {from_instance=}")
+            return False
+
+        return output.strip() == "True"
 
     def rejoin_cluster(self, cluster_name) -> None:
         """Try to rejoin a cluster to the cluster set."""
@@ -1537,17 +1434,7 @@ class MySQLBase(ABC):
             raise MySQLRejoinClusterError
 
     def remove_replica_cluster(self, replica_cluster_name: str, force: bool = False) -> None:
-        """Remove a replica cluster on the primary cluster.
-
-        The removed cluster will be implicitly dissolved.
-
-        Args:
-            replica_cluster_name: The name of the replica cluster
-            force: Whether to force the removal of the replica cluster
-
-        Raises:
-            MySQLRemoveReplicaClusterError
-        """
+        """Remove a replica cluster from the cluster-set."""
         commands = [
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             "cs = dba.get_cluster_set()",
@@ -1565,12 +1452,7 @@ class MySQLBase(ABC):
             raise MySQLRemoveReplicaClusterError
 
     def initialize_juju_units_operations_table(self) -> None:
-        """Initialize the mysql.juju_units_operations table using the serverconfig user.
-
-        Raises
-            MySQLInitializeJujuOperationsTableError if there is an issue
-                initializing the juju_units_operations table
-        """
+        """Initialize the mysql.juju_units_operations table using the serverconfig user."""
         initialize_table_commands = (
             "DROP TABLE IF EXISTS mysql.juju_units_operations",
             "CREATE TABLE mysql.juju_units_operations (task varchar(20), executor "
@@ -1607,21 +1489,7 @@ class MySQLBase(ABC):
         lock_instance: Optional[str] = None,
         method: str = "auto",
     ) -> None:
-        """Add an instance to the InnoDB cluster.
-
-        This method is only called from the juju leader unit (thus locks are
-        obtained locally)
-
-        Raises MySQLADDInstanceToClusterError
-            if there was an issue adding the instance to the cluster.
-
-        Args:
-            instance_address: address of the instance to add to the cluster
-            instance_unit_label: the label/name of the unit
-            from_instance: address of the adding instance, e.g. primary
-            lock_instance: address of the instance to lock on
-            method: recovery method to use, either "auto" or "clone"
-        """
+        """Add an instance to the InnoDB cluster."""
         options = {
             "password": self.cluster_admin_password,
             "label": instance_unit_label,
@@ -1682,15 +1550,7 @@ class MySQLBase(ABC):
     def is_instance_configured_for_innodb(
         self, instance_address: str, instance_unit_label: str
     ) -> bool:
-        """Confirm if instance is configured for use in an InnoDB cluster.
-
-        Args:
-            instance_address: The instance address for which to confirm InnoDB configuration
-            instance_unit_label: The label of the instance unit to confirm InnoDB configuration
-
-        Returns:
-            Boolean indicating whether the instance is configured for use in an InnoDB cluster
-        """
+        """Confirm if instance is configured for use in an InnoDB cluster."""
         commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{instance_address}')",
             "instance_configured = dba.check_instance_configuration()['status'] == 'ok'",
@@ -1712,14 +1572,7 @@ class MySQLBase(ABC):
             return False
 
     def are_locks_acquired(self, from_instance: Optional[str] = None) -> bool:
-        """Report if any topology change is being executed.
-
-        Query the mysql.juju_units_operations table for any
-        in-progress lock for either unit add or removal.
-
-        Args:
-            from_instance: member instance to run the command from (fallback to current one)
-        """
+        """Report if any topology change is being executed."""
         commands = (
             (
                 f"shell.connect('{self.server_config_user}:{self.server_config_password}"
@@ -1745,13 +1598,7 @@ class MySQLBase(ABC):
         remove_instances: bool = False,
         add_instances: bool = False,
     ) -> None:
-        """Rescan the cluster.
-
-        Args:
-            from_instance: member instance to run the command from (fallback to current one)
-            remove_instances: whether to remove non-active instances from the metadata
-            add_instances: whether to add new instances to the metadata
-        """
+        """Rescan the cluster for topology changes."""
         options = {}
         if remove_instances:
             options["removeInstances"] = "auto"
@@ -1774,14 +1621,7 @@ class MySQLBase(ABC):
             raise MySQLRescanClusterError(e.message)
 
     def is_instance_in_cluster(self, unit_label: str) -> bool:
-        """Confirm if instance is in the cluster.
-
-        Args:
-            unit_label: The label of unit to check existence in cluster for
-
-        Returns:
-            Boolean indicating whether the unit is a member of the cluster
-        """
+        """Confirm if instance is in the cluster."""
         commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
@@ -1792,7 +1632,10 @@ class MySQLBase(ABC):
             logger.debug(f"Checking existence of unit {unit_label} in cluster {self.cluster_name}")
 
             output = self._run_mysqlsh_script("\n".join(commands))
-            return MySQLMemberState.ONLINE in output.lower()
+            return (
+                MySQLMemberState.ONLINE in output.lower()
+                or MySQLMemberState.RECOVERING in output.lower()
+            )
         except MySQLClientError:
             # confirmation can fail if the clusteradmin user does not yet exist on the instance
             logger.debug(
@@ -1805,19 +1648,13 @@ class MySQLBase(ABC):
         stop=stop_after_attempt(3),
         retry=retry_if_exception_type(TimeoutError),
     )
-    def get_cluster_status(self, extended: Optional[bool] = False) -> Optional[dict]:
-        """Get the cluster status.
-
-        Executes script to retrieve cluster status.
-        Won't raise errors.
-
-        Returns:
-            Cluster status as a dictionary,
-            or None if running the status script fails.
-        """
+    def get_cluster_status(
+        self, from_instance: Optional[str] = None, extended: Optional[bool] = False
+    ) -> Optional[dict]:
+        """Get the cluster status dictionary."""
         options = {"extended": extended}
         status_commands = (
-            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{from_instance or self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
             f"print(cluster.status({options}))",
         )
@@ -1832,19 +1669,7 @@ class MySQLBase(ABC):
     def get_cluster_set_status(
         self, extended: Optional[int] = 1, from_instance: Optional[str] = None
     ) -> Optional[dict]:
-        """Get the cluster-set status.
-
-        Executes script to retrieve cluster-set status.
-        Won't raise errors.
-
-        Args:
-            extended: whether to return extended status (default: 1)
-            from_instance: member instance to run the command from (fallback to current)
-
-        Returns:
-            Cluster-set status as a dictionary,
-            or None if running the status script fails.
-        """
+        """Get the cluster-set status dictionary."""
         options = {"extended": extended}
         status_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{from_instance or self.instance_address}')",
@@ -1860,25 +1685,14 @@ class MySQLBase(ABC):
             logger.warning("Failed to get cluster set status")
 
     def get_cluster_names(self) -> set[str]:
-        """Get the names of the clusters in the cluster set.
-
-        Returns:
-            A set of cluster names
-        """
+        """Get the names of the clusters in the cluster set."""
         status = self.get_cluster_set_status()
         if not status:
             return set()
         return set(status["clusters"])
 
     def get_replica_cluster_status(self, replica_cluster_name: Optional[str] = None) -> str:
-        """Get the replica cluster status.
-
-        Executes script to retrieve replica cluster status.
-        Won't raise errors.
-
-        Returns:
-            Replica cluster status as a string
-        """
+        """Get the replica cluster status."""
         if not replica_cluster_name:
             replica_cluster_name = self.cluster_name
         status_commands = (
@@ -1897,15 +1711,7 @@ class MySQLBase(ABC):
     def get_cluster_node_count(
         self, from_instance: Optional[str] = None, node_status: Optional[MySQLMemberState] = None
     ) -> int:
-        """Retrieve current count of cluster nodes.
-
-        Args:
-            from_instance: member instance to run the command from (fallback to current)
-            node_status: status of the nodes to count
-
-        Returns:
-            Amount of cluster nodes.
-        """
+        """Retrieve current count of cluster nodes, optionally filtered by status."""
         if not node_status:
             query = "SELECT COUNT(*) FROM performance_schema.replication_group_members"
         else:
@@ -1931,14 +1737,7 @@ class MySQLBase(ABC):
         return int(matches.group(1)) if matches else 0
 
     def get_cluster_endpoints(self, get_ips: bool = True) -> Tuple[str, str, str]:
-        """Use get_cluster_status to return endpoints tuple.
-
-        Args:
-            get_ips: Whether to return IP addresses or hostnames, default to IP
-
-        Returns:
-            A tuple of strings with endpoints, read-only-endpoints and offline endpoints
-        """
+        """Return (rw, ro, ofline) endpoints tuple names or IPs."""
         status = self.get_cluster_status()
 
         if not status:
@@ -1993,15 +1792,6 @@ class MySQLBase(ABC):
         locks on the cluster primary. There is a retry mechanism for any issues
         obtaining the lock, removing instances/dissolving the cluster, or releasing
         the lock.
-
-        Raises:
-            MySQLRemoveInstanceRetryError - to retry this method if there was an issue
-                obtaining a lock or removing the instance
-            MySQLRemoveInstanceError - if there is an issue releasing
-                the lock after the instance is removed from the cluster (avoids retries)
-
-        Args:
-            unit_label: The label for this unit's instance (to be torn down)
         """
         remaining_cluster_member_addresses = list()
         skip_release_lock = False
@@ -2110,19 +1900,7 @@ class MySQLBase(ABC):
         self._run_mysqlsh_script("\n".join(dissolve_cluster_commands))
 
     def _acquire_lock(self, primary_address: str, unit_label: str, lock_name: str) -> bool:
-        """Attempts to acquire a lock by using the mysql.juju_units_operations table.
-
-        Note that there must exist the appropriate rows in the table, created in the
-        initialize_juju_units_operations_table() method.
-
-        Args:
-            primary_address: The address of the cluster's primary
-            unit_label: The label of the unit for which to obtain the lock
-            lock_name: The name of the lock to obtain
-
-        Returns:
-            Boolean indicating whether the lock was obtained
-        """
+        """Attempts to acquire a lock by using the mysql.juju_units_operations table."""
         logger.debug(
             f"Attempting to acquire lock {lock_name} on {primary_address} for unit {unit_label}"
         )
@@ -2146,16 +1924,7 @@ class MySQLBase(ABC):
         return bool(int(matches.group(1)))
 
     def _release_lock(self, primary_address: str, unit_label: str, lock_name: str) -> None:
-        """Releases a lock in the mysql.juju_units_operations table.
-
-        Note that there must exist the appropriate rows in the table, created in the
-        initialize_juju_units_operations_table() method.
-
-        Args:
-            primary_address: The address of the cluster's primary
-            unit_label: The label of the unit to release the lock for
-            lock_name: The name of the lock to release
-        """
+        """Releases a lock in the mysql.juju_units_operations table."""
         logger.debug(f"Releasing lock {lock_name} on {primary_address} for unit {unit_label}")
 
         release_lock_commands = (
@@ -2166,15 +1935,7 @@ class MySQLBase(ABC):
         self._run_mysqlsh_script("\n".join(release_lock_commands))
 
     def _get_cluster_member_addresses(self, exclude_unit_labels: List = []) -> Tuple[List, bool]:
-        """Get the addresses of the cluster's members.
-
-        Keyword args:
-            exclude_unit_labels: (Optional) unit labels to exclude when retrieving cluster members
-
-        Returns:
-            ([member_addresses], valid): a list of member addresses and
-                whether the method's execution was valid
-        """
+        """Get the addresses of the cluster's members."""
         logger.debug(f"Getting cluster member addresses, excluding units {exclude_unit_labels}")
 
         get_cluster_members_commands = (
@@ -2200,14 +1961,7 @@ class MySQLBase(ABC):
     def get_cluster_primary_address(
         self, connect_instance_address: Optional[str] = None
     ) -> Optional[str]:
-        """Get the cluster primary's address.
-
-        Args:
-            connect_instance_address: address for a cluster instance to query from
-
-        Returns:
-            The address of the cluster's primary
-        """
+        """Get the cluster primary's address."""
         if not connect_instance_address:
             connect_instance_address = self.instance_address
         logger.debug(f"Getting cluster primary member's address from {connect_instance_address}")
@@ -2233,13 +1987,7 @@ class MySQLBase(ABC):
     def get_cluster_set_global_primary_address(
         self, connect_instance_address: Optional[str] = None
     ) -> Optional[str]:
-        """Get the cluster set global primary's address.
-
-        The global primary is the primary instance on the primary cluster set.
-
-        Args:
-            connect_instance_address: address for a cluster instance to query from
-        """
+        """Get the cluster set global primary's address."""
         if not connect_instance_address:
             connect_instance_address = self.instance_address
         logger.debug(
@@ -2275,23 +2023,12 @@ class MySQLBase(ABC):
                 return label
 
     def is_unit_primary(self, unit_label: str) -> bool:
-        """Test if a given unit is the cluster primary.
-
-        Args:
-            unit_label: The label of the unit to test
-        """
+        """Test if a given unit is the cluster primary."""
         primary_label = self.get_primary_label()
         return primary_label == unit_label
 
     def set_cluster_primary(self, new_primary_address: str) -> None:
-        """Set the cluster primary.
-
-        Args:
-            new_primary_address: Address of node to set as cluster's primary
-
-        Raises:
-            MySQLSetClusterPrimaryError: If the cluster primary could not be set
-        """
+        """Set the cluster primary."""
         logger.debug(f"Setting cluster primary to {new_primary_address}")
 
         set_cluster_primary_commands = (
@@ -2306,11 +2043,7 @@ class MySQLBase(ABC):
             raise MySQLSetClusterPrimaryError(e.message)
 
     def get_cluster_members_addresses(self) -> Optional[Iterable[str]]:
-        """Get the addresses of the cluster's members.
-
-        Returns:
-            Iterable of members addresses
-        """
+        """Get the addresses of the cluster's members."""
         get_cluster_members_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
@@ -2332,11 +2065,7 @@ class MySQLBase(ABC):
         return set(matches.group(1).split(","))
 
     def verify_server_upgradable(self, instance: Optional[str] = None) -> None:
-        """Wrapper for API check_for_server_upgrade.
-
-        Raises:
-            MySQLServerUpgradableError: If the server is not upgradable
-        """
+        """Wrapper for API check_for_server_upgrade."""
         check_command = [
             f"shell.connect('{self.server_config_user}"
             f":{self.server_config_password}@{instance or self.instance_address}')",
@@ -2368,11 +2097,7 @@ class MySQLBase(ABC):
             raise MySQLServerNotUpgradableError("Failed to check for server upgrade")
 
     def get_mysql_version(self) -> Optional[str]:
-        """Get the MySQL version.
-
-        Returns:
-            The MySQL full version
-        """
+        """Get the running mysqld version."""
         logger.debug("Getting InnoDB version")
 
         get_version_commands = (
@@ -2397,17 +2122,7 @@ class MySQLBase(ABC):
     def grant_privileges_to_user(
         self, username, hostname, privileges, with_grant_option=False
     ) -> None:
-        """Grants specified privileges to the provided user.
-
-        Args:
-            username: The username of user to grant privileges to
-            hostname: The hostname of user to grant privileges to
-            privileges: A list of privileges to grant to the user
-            with_grant_option: Indicating whether to provide with grant option to user
-
-        Raises:
-            MySQLGrantPrivilegesToUserError if there is an issue granting privileges to a user
-        """
+        """Grants specified privileges to the provided database user."""
         grant_privileges_commands = (
             f"shell.connect_to_primary('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             f"session.run_sql(\"GRANT {', '.join(privileges)} ON *.* TO '{username}'@'{hostname}'{' WITH GRANT OPTION' if with_grant_option else ''}\")",
@@ -2420,15 +2135,7 @@ class MySQLBase(ABC):
             raise MySQLGrantPrivilegesToUserError(e.message)
 
     def update_user_password(self, username: str, new_password: str, host: str = "%") -> None:
-        """Updates user password in MySQL database.
-
-        Args:
-            username: The username of user to update the password for
-            new_password: The new password to be set for the user mentioned in username arg
-
-        Raises:
-            MySQLCheckUserExistenceError if there is an issue updating the user's password
-        """
+        """Updates user password in MySQL database."""
         logger.debug(f"Updating password for {username}.")
 
         # password is set on the global primary
@@ -2452,11 +2159,7 @@ class MySQLBase(ABC):
 
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(GET_MEMBER_STATE_TIME))
     def get_member_state(self) -> Tuple[str, str]:
-        """Get member status in cluster.
-
-        Returns:
-            A tuple(str) with the MEMBER_STATE and MEMBER_ROLE within the cluster.
-        """
+        """Get member status (MEMBER_STATE, MEMBER_ROLE) in the cluster."""
         member_state_query = (
             "SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid"
             " FROM performance_schema.replication_group_members"
@@ -2498,14 +2201,7 @@ class MySQLBase(ABC):
         raise MySQLGetMemberStateError("No member state retrieved")
 
     def is_cluster_replica(self, from_instance: Optional[str] = None) -> Optional[bool]:
-        """Check if cluster is a replica.
-
-        Args:
-            from_instance: The instance to run the command from (optional)
-
-        Returns:
-            True if cluster is a replica, False otherwise.
-        """
+        """Check if this cluster is a replica in a cluster set."""
         cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
         if not cs_status:
             return
@@ -2513,14 +2209,7 @@ class MySQLBase(ABC):
         return cs_status["clusters"][self.cluster_name.lower()]["clusterrole"] == "replica"
 
     def cluster_set_cluster_count(self, from_instance: Optional[str] = None) -> int:
-        """Get the number of clusters in the cluster set.
-
-        Args:
-            from_instance: The instance to run the command from (optional)
-
-        Returns:
-            The number of clusters in the cluster set.
-        """
+        """Get the number of clusters in the cluster set."""
         cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
         if not cs_status:
             return 0
@@ -2528,14 +2217,7 @@ class MySQLBase(ABC):
         return len(cs_status["clusters"])
 
     def get_cluster_set_name(self, from_instance: Optional[str] = None) -> Optional[str]:
-        """Get cluster set name.
-
-        Args:
-            from_instance: The instance to run the command from (optional)
-
-        Returns:
-            The cluster set name.
-        """
+        """Get cluster set name."""
         cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
         if not cs_status:
             return None
@@ -2582,14 +2264,7 @@ class MySQLBase(ABC):
                 break
 
     def set_instance_offline_mode(self, offline_mode: bool = False) -> None:
-        """Sets the instance offline_mode.
-
-        Args:
-            offline_mode: Value of offline_mode to set
-
-        Raises:
-            MySQLSetInstanceOfflineModeError - if issue setting instance offline_mode.
-        """
+        """Sets the instance offline_mode."""
         mode = "ON" if offline_mode else "OFF"
         set_instance_offline_mode_commands = (f"SET @@GLOBAL.offline_mode = {mode}",)
 
@@ -2604,15 +2279,7 @@ class MySQLBase(ABC):
             raise MySQLSetInstanceOfflineModeError(e.message)
 
     def set_instance_option(self, option: str, value: Any) -> None:
-        """Sets an instance option.
-
-        Args:
-            option: The option to set for the instance
-            value: The option value to set
-
-        Raises:
-            MySQLSetInstanceOptionError - if there is an error setting instance option
-        """
+        """Sets an instance option."""
         set_instance_option_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
             f"cluster = dba.get_cluster('{self.cluster_name}')",
@@ -2626,11 +2293,7 @@ class MySQLBase(ABC):
             raise MySQLSetInstanceOptionError
 
     def offline_mode_and_hidden_instance_exists(self) -> bool:
-        """Indicates whether an instance exists in offline_mode and hidden from router.
-
-        The pre_backup operations switch an instance to offline_mode and hide it
-        from the mysql-router.
-        """
+        """Indicates whether an instance exists in offline_mode and hidden from router."""
         offline_mode_message = "Instance has offline_mode enabled"
         commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
@@ -2655,15 +2318,7 @@ class MySQLBase(ABC):
     def get_innodb_buffer_pool_parameters(
         self, available_memory: int
     ) -> Tuple[int, Optional[int], Optional[int]]:
-        """Get innodb buffer pool parameters for the instance.
-
-        Args:
-            available_memory: The amount (bytes) of memory available to the instance
-
-        Returns:
-            a tuple of (innodb_buffer_pool_size, optional(innodb_buffer_pool_chunk_size),
-            optional(group_replication_message_cache)) in bytes
-        """
+        """Calculate innodb buffer pool parameters for the instance."""
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
 
@@ -2702,11 +2357,7 @@ class MySQLBase(ABC):
             raise MySQLGetAutoTunningParametersError("Error computing buffer pool parameters")
 
     def get_max_connections(self, available_memory: int) -> int:
-        """Calculate max_connections parameter for the instance.
-
-        Args:
-            available_memory: The available memory for mysql-server.
-        """
+        """Calculate max_connections parameter for the instance."""
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L61-L70
 
@@ -2720,11 +2371,7 @@ class MySQLBase(ABC):
 
     @abstractmethod
     def get_available_memory(self) -> int:
-        """Platform dependent method to get the available memory for mysql-server.
-
-        Raises:
-            MySQLGetAvailableMemoryError: If the available memory cannot be determined.
-        """
+        """Platform dependent method to get the available memory for mysql-server."""
         raise NotImplementedError
 
     def execute_backup_commands(
@@ -2848,12 +2495,7 @@ class MySQLBase(ABC):
         user=None,
         group=None,
     ) -> Tuple[str, str, str]:
-        """Retrieve the specified backup from S3.
-
-        The backup is retrieved using xbcloud and stored in a temp dir in the
-        mysql container. This temp dir is supposed to be on the same volume as
-        the mysql data directory to reduce latency for IOPS.
-        """
+        """Retrieve the specified backup from S3."""
         nproc_command = ["nproc"]
         make_temp_dir_command = (
             f"mktemp --directory {temp_restore_directory}/#mysql_sst_XXXX".split()
@@ -3075,16 +2717,7 @@ class MySQLBase(ABC):
         cert_path: str = "server-cert.pem",
         require_tls: bool = False,
     ) -> None:
-        """Setup TLS files and requirement mode.
-
-        When no arguments, restore to default configuration, i.e. SSL not required.
-
-        Args:
-            ca_path: Path to the CA certificate
-            key_path: Path to the server key_path
-            cert_path: Path to the server certificate
-            require_tls: Require encryption
-        """
+        """Setup TLS files and requirement mode."""
         enable_commands = (
             f"SET PERSIST ssl_ca='{ca_path}';"
             f"SET PERSIST ssl_key='{key_path}';"
@@ -3104,10 +2737,7 @@ class MySQLBase(ABC):
             raise MySQLTLSSetupError("Failed to set custom TLS configuration")
 
     def kill_unencrypted_sessions(self) -> None:
-        """Kill non local, non system open unencrypted connections.
-
-        Raises: MySQLKillSessionError if there is an issue killing the sessions.
-        """
+        """Kill non local, non system open unencrypted connections."""
         kill_connections_command = (
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             (
@@ -3127,10 +2757,7 @@ class MySQLBase(ABC):
             raise MySQLKillSessionError
 
     def kill_client_sessions(self) -> None:
-        """Kill non local, non system open unencrypted connections.
-
-        Raises: MySQLKillSessionError if there is an issue killing the sessions.
-        """
+        """Kill non local, non system open unencrypted connections."""
         kill_connections_command = (
             f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
             (
