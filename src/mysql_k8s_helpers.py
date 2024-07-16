@@ -112,10 +112,6 @@ class MySQLDeleteTempBackupDirectoryError(Error):
     """Exception raised when there is an error deleting the temp backup directory."""
 
 
-class MySQLDeleteTempRestoreDirectory(Error):
-    """Exception raised when there is an error deleting the temp restore directory."""
-
-
 class MySQL(MySQLBase):
     """Class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -190,14 +186,12 @@ class MySQL(MySQLBase):
         if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
             logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
             try:
-                container.exec(
-                    [
-                        "chown",
-                        "-R",
-                        f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}",
-                        MYSQL_DATA_DIR,
-                    ]
-                )
+                container.exec([
+                    "chown",
+                    "-R",
+                    f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}",
+                    MYSQL_DATA_DIR,
+                ])
             except ExecError as e:
                 logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
                 raise MySQLInitialiseMySQLDError(e.stderr or "")
@@ -591,6 +585,7 @@ class MySQL(MySQLBase):
         Args:
             script: mysql-shell python script string
             verbose: mysqlsh verbosity level
+            timeout: timeout to wait for the script
 
         Returns:
             stdout of the script

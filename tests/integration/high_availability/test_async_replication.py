@@ -424,7 +424,7 @@ async def get_max_written_value(first_model: Model, second_model: Model) -> list
     await juju_.run_action(application_unit, "stop-continuous-writes")
 
     sleep(5)
-    results = list()
+    results = []
 
     logger.info("Querying max value on all units")
     for unit in first_model_units + second_model_units:

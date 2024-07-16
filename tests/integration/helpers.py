@@ -216,6 +216,7 @@ async def fetch_credentials(unit: Unit, username: str = None) -> Dict:
 
     Args:
         unit: The juju unit on which to run the get-password action for credentials
+        username: The username for which to fetch credentials
 
     Returns:
         A dictionary with the server config username and password
@@ -231,6 +232,8 @@ async def rotate_credentials(unit: Unit, username: str = None, password: str = N
 
     Args:
         unit: The juju unit on which to run the set-password action for credentials
+        username: The username for which to rotate credentials
+        password: The password with which to rotate credentials
 
     Returns:
         A dictionary with the action result
@@ -625,7 +628,7 @@ async def ls_la_in_unit(
     Args:
         ops_test: The ops test framework
         unit_name: The name of unit in which to run ls -la
-        path: The path from which to run ls -la
+        directory: The directory from which to run ls -la
         container_name: The container where to run ls -la
 
     Returns:

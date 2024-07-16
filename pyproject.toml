@@ -43,6 +43,7 @@ optional = true
 
 [tool.poetry.group.lint.dependencies]
 ruff = "^0.4.5"
+codespell = "^2.3.0"
 shellcheck-py = "^0.9.0.5"
 
 [tool.poetry.group.unit.dependencies]
@@ -83,31 +84,44 @@ log_cli_level = "INFO"
 markers = ["unstable", "juju3", "only_with_juju_secrets", "only_without_juju_secrets"]
 asyncio_mode = "auto"
 
-# Formatting tools configuration
-[tool.ruff]
-line-length = 99
-exclude = ["lib"]
-target-version = "py38"
-
-[tool.isort]
-profile = "black"
-known_third_party = "mysql.connector"
-line_length = 99
-
 # Linting tools configuration
-[tool.flake8]
-max-line-length = 99
-max-doc-length = 99
-max-complexity = 10
-exclude = [".git", "__pycache__", ".tox", "build", "dist", "*.egg_info", "venv"]
-select = ["E", "W", "F", "C", "N", "R", "D", "H"]
-# Ignore W503, E501 because using black creates errors with this
+[tool.ruff]
+# preview and explicit preview are enabled for CPY001
+preview = true
+target-version = "py38"
+src = ["src", "."]
+line-length = 99
+
+[tool.ruff.lint]
+explicit-preview-rules = true
+select = ["A", "E", "W", "F", "C", "N", "D", "I001", "CPY001"]
+extend-ignore = [
+    "D203",
+    "D204",
+    "D213",
+    "D215",
+    "D400",
+    "D404",
+    "D406",
+    "D407",
+    "D408",
+    "D409",
+    "D413",
+]
+# Ignore E501 because using  creates errors with this
 # Ignore D107 Missing docstring in __init__
-ignore = ["W503", "E501", "D107"]
-# D100, D101, D102, D103: Ignore missing docstrings in tests
-per-file-ignores = ["tests/*:D100,D101,D102,D103,D104"]
-docstring-convention = "google"
+ignore = ["E501", "D107"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D100", "D101", "D102", "D103", "D104"]
+
+[tool.ruff.lint.flake8-copyright]
 # Check for properly formatted copyright header in each file
-copyright-check = "True"
-copyright-author = "Canonical Ltd."
-copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
+author = "Canonical Ltd."
+notice-rgx = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
