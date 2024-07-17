@@ -45,9 +45,9 @@ class RotateMySQLLogs(Object):
         """Rotate the mysql logs."""
         if (
             self.charm.peers is None
-            or self.charm.unit_peer_data.get("unit-initialized") != "True"
-            or not self.charm.upgrade.idle
             or not self.charm._mysql.is_mysqld_running()
+            or not self.charm.unit_initialized
+            or not self.charm.upgrade.idle
         ):
             # skip when not initialized, during an upgrade, or when mysqld is not running
             return
