@@ -1,0 +1,33 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m juju.model:model.py:2097 Deploying ch:amd64/jammy/mongodb-k8s-36
+[32mINFO    [0m juju.model:model.py:2097 Deploying ch:amd64/jammy/osm-pol-337
+[32mINFO    [0m juju.model:model.py:2097 Deploying ch:amd64/focal/kafka-k8s-5
+[32mINFO    [0m juju.model:model.py:2097 Deploying ch:amd64/focal/zookeeper-k8s-10
+[32mINFO    [0m juju.model:model.py:2097 Deploying local:jammy/mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mongodb/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mongodb/0 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: Initialising mysqld
+  mongodb/0 [idle] unknown: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mongodb/0 [idle] active: Primary
+[32mINFO    [0m integration.relations.test_mysql_root:test_mysql_root.py:114 Relate kafka and zookeeper
+[33mWARNING [0m juju.model:model.py:1563 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m integration.relations.test_mysql_root:test_mysql_root.py:126 Relate keystone and mysql
+[33mWARNING [0m juju.model:model.py:1563 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  osm-keystone/0 [executing] blocked: mysql relation is missing
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m integration.relations.test_mysql_root:test_mysql_root.py:139 Relate osm-pol and mongo
+[33mWARNING [0m juju.model:model.py:1563 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m integration.relations.test_mysql_root:test_mysql_root.py:145 Relate osm-pol and kafka
+[33mWARNING [0m juju.model:model.py:1563 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m integration.relations.test_mysql_root:test_mysql_root.py:151 Relate osm-pol and mysql
+[33mWARNING [0m juju.model:model.py:1563 relate is deprecated and will be removed. Use integrate instead.
