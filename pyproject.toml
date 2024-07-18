@@ -94,7 +94,7 @@ line-length = 99
 
 [tool.ruff.lint]
 explicit-preview-rules = true
-select = ["A", "E", "W", "F", "C", "N", "D", "I001", "CPY001"]
+select = ["A", "E", "W", "F", "C", "N", "D", "I", "CPY001"]
 # Ignore E501 because using  creates errors with this
 # Ignore D107 Missing docstring in __init__
 ignore = [
