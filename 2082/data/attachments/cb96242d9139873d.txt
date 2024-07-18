@@ -1,0 +1,57 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:145 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:149 Run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:162 Inject dependency fault
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:167 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:170 Get first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:174 Wait for upgrade to fail on first upgrading unit
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.3    unsupported  01:56:00Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s                      1  10.152.183.53   no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   46  10.152.183.184  no       Last written value=89702
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0        active    idle   10.1.253.20         
+mysql-k8s/1        active    idle   10.1.253.19         Primary
+mysql-k8s/2*       active    idle   10.1.253.18         
+mysql-test-app/0*  active    idle   10.1.253.11         Last written value=89702
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:40:45 ERROR unit.mysql-k8s/2.juju-log Failed to set variable innodb_fast_shutdown to 0
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 611, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/ops/pebble.py", line 1635, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=1', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nverbose: 2024-07-18T01:40:45Z: Loading startup files...\nverbose: 2024-07-18T01:40:45Z: Loading plugins...\nverbose: 2024-07-18T01:40:45Z: Connecting to MySQL at: serverconfig@10-1-253-16.mysql-k8s-primary.test.svc.cluster.local\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2005): Shell.connect: No such host is known \'10-1-253-16.mysql-k8s-primary.test.svc.cluster.local\'\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1218, in set_dynamic_variable
+    self._run_mysqlsh_script("\n".join(set_var_command))
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 614, in _run_mysqlsh_script
+    raise MySQLClientError(e.stderr)
+charms.mysql.v0.mysql.MySQLClientError: Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+verbose: 2024-07-18T01:40:45Z: Loading startup files...
+verbose: 2024-07-18T01:40:45Z: Loading plugins...
+verbose: 2024-07-18T01:40:45Z: Connecting to MySQL at: serverconfig@10-1-253-16.mysql-k8s-primary.test.svc.cluster.local
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+mysqlsh.DBError: MySQL Error (2005): Shell.connect: No such host is known '10-1-253-16.mysql-k8s-primary.test.svc.cluster.local'
+
+unit-mysql-k8s-2: 01:40:45 ERROR unit.mysql-k8s/2.juju-log charms.data_platform_libs.v0.upgrade.ClusterNotReadyError - {'message': 'Pre-upgrade check failed. Cannot upgrade.', 'cause': 'Failed to set slow shutdown', 'resolution': 'Check the cluster status'}
+unit-mysql-k8s-2: 01:41:18 ERROR unit.mysql-k8s/2.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+unit-mysql-k8s-1: 01:42:02 ERROR unit.mysql-k8s/1.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+unit-mysql-k8s-0: 01:42:44 ERROR unit.mysql-k8s/0.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
