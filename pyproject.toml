@@ -95,7 +95,10 @@ line-length = 99
 [tool.ruff.lint]
 explicit-preview-rules = true
 select = ["A", "E", "W", "F", "C", "N", "D", "I001", "CPY001"]
-extend-ignore = [
+# Ignore E501 because using  creates errors with this
+# Ignore D107 Missing docstring in __init__
+ignore = [
+    "D107",
     "D203",
     "D204",
     "D213",
@@ -107,13 +110,11 @@ extend-ignore = [
     "D408",
     "D409",
     "D413",
+    "E501",
 ]
-# Ignore E501 because using  creates errors with this
-# Ignore D107 Missing docstring in __init__
-ignore = ["E501", "D107"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D100", "D101", "D102", "D103", "D104"]
+"tests/*" = ["D1"]
 
 [tool.ruff.lint.flake8-copyright]
 # Check for properly formatted copyright header in each file

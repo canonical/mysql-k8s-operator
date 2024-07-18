@@ -102,7 +102,7 @@ async def test_relation_creation_databag(ops_test: OpsTest):
 
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
-    assert set("password", "username") <= set(relation_data[0]["application-data"])
+    assert {"password", "username"} <= {relation_data[0]["application-data"]}
 
 
 @pytest.mark.group(1)
@@ -119,7 +119,7 @@ async def test_relation_creation(ops_test: OpsTest):
 
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
-    assert not set("password", "username") <= set(relation_data[0]["application-data"])
+    assert not {"password", "username"} <= {relation_data[0]["application-data"]}
     assert "secret-user" in relation_data[0]["application-data"]
 
 
