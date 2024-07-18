@@ -303,13 +303,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _is_unit_waiting_to_join_cluster(self) -> bool:
         """Return if the unit is waiting to join the cluster."""
-        # alternatively, we could check if the instance is configured
-        # and have an empty performance_schema.replication_group_members table
+        # check base conditions for join a unit to the cluster
+        # - workload accessible
+        # - unit waiting flag set
+        # - unit configured (users created/unit set to be a cluster node)
+        # - unit not node of this cluster or cluster does not report this unit as member
+        # - cluster is initialized on any unit
         return (
             self.unit.get_container(CONTAINER_NAME).can_connect()
             and self.unit_peer_data.get("member-state") == "waiting"
-            and self._mysql.is_data_dir_initialised()
-            and not self.unit_initialized
+            and self.unit_configured
+            and (
+                not self.unit_initialized
+                or not self._mysql.is_instance_in_cluster(self.unit_label)
+            )
             and self.cluster_initialized
         )
 
@@ -399,7 +406,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_layer = self._pebble_layer
 
         if new_layer.services != current_layer.services:
-            logger.info("Adding pebble layer")
+            logger.info("Reconciling the pebble layer")
 
             container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
             container.replan()
@@ -451,16 +458,18 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self, event: RelationCreatedEvent | RelationBrokenEvent
     ) -> None:
         """Handle a COS relation created or broken event."""
-        if not self.unit_initialized:
-            # wait unit initialization to avoid messing
-            # with the pebble layer before the unit is initialized
-            logger.debug("Defer reconcile mysqld exporter")
-            event.defer()
+        container = self.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            # reconciliation is done on pebble ready
+            logger.debug("Skip reconcile mysqld exporter: container not ready")
+            return
+
+        if not container.pebble.get_plan():
+            # reconciliation is done on pebble ready
+            logger.debug("Skip reconcile mysqld exporter: empty pebble layer")
             return
 
         self.current_event = event
-
-        container = self.unit.get_container(CONTAINER_NAME)
         self._reconcile_pebble_layer(container)
 
     def _on_peer_relation_joined(self, _) -> None:
@@ -658,9 +667,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         logger.info("Setting up the logrotate configurations")
         self._mysql.setup_logrotate_config()
 
-        self.unit_peer_data["unit-status"] = "alive"
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration
+            self.unit.status = MaintenanceStatus("Starting mysqld")
             logger.debug("Data directory is already initialised, skipping configuration")
             self._reconcile_pebble_layer(container)
             return

@@ -45,23 +45,16 @@ class TestUpgrade(unittest.TestCase):
         self.peer_relation_id = self.harness.add_relation("database-peers", "mysql-k8s")
         for rel_id in (self.upgrade_relation_id, self.peer_relation_id):
             self.harness.add_relation_unit(rel_id, "mysql-k8s/1")
-        with patch(
-            "charm.MySQLOperatorCharm.unit_initialized",
-            new_callable=PropertyMock,
-            return_value=True,
-        ), patch(
-            "charm.MySQLOperatorCharm.cluster_initialized",
-            new_callable=PropertyMock,
-            return_value=True,
-        ):
-            self.harness.update_relation_data(
-                self.peer_relation_id,
-                "mysql-k8s",
-                {"cluster-name": "test_cluster", "cluster-set-domain-name": "test_cluster_set"},
-            )
-            self.harness.update_relation_data(
-                self.upgrade_relation_id, "mysql-k8s/1", {"state": "idle"}
-            )
+        self.harness.disable_hooks()
+        self.harness.update_relation_data(
+            self.upgrade_relation_id, "mysql-k8s/1", {"state": "idle"}
+        )
+        self.harness.update_relation_data(
+            self.peer_relation_id,
+            "mysql-k8s",
+            {"cluster-name": "test_cluster", "cluster-set-domain-name": "test_cluster_set"},
+        )
+        self.harness.enable_hooks()
         self.charm = self.harness.charm
 
     def test_highest_ordinal(self):
@@ -157,6 +150,7 @@ class TestUpgrade(unittest.TestCase):
         mock_set_rolling_update_partition.assert_called_once()
         assert mock_set_dynamic_variable.call_count == 2
 
+    @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
     @patch("mysql_k8s_helpers.MySQL.setup_logrotate_config")
     @patch("charm.MySQLOperatorCharm._reconcile_pebble_layer")
     @patch("charm.MySQLOperatorCharm._write_mysqld_configuration")
@@ -174,6 +168,7 @@ class TestUpgrade(unittest.TestCase):
         mock_write_mysqld_configuration,
         mock_reconcile_pebble_layer,
         mock_setup_logrotate_config,
+        mock_cluster_metadata_exists,
     ):
         """Test the pebble ready."""
         self.charm.on.config_changed.emit()
@@ -214,8 +209,13 @@ class TestUpgrade(unittest.TestCase):
             self.harness.container_pebble_ready("mysql")
         self.assertTrue(isinstance(self.charm.unit.status, BlockedStatus))
 
+    @patch(
+        "charm.MySQLOperatorCharm.unit_initialized", new_callable=PropertyMock(return_value=True)
+    )
     @patch("k8s_helpers.KubernetesHelpers.set_rolling_update_partition")
-    def test_set_rolling_update_partition(self, mock_set_rolling_update_partition):
+    def test_set_rolling_update_partition(
+        self, mock_set_rolling_update_partition, mock_unit_initialized
+    ):
         """Test the set rolling update partition."""
         self.charm.upgrade._set_rolling_update_partition(partition=1)
         mock_set_rolling_update_partition.assert_called_once()

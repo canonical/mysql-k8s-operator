@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 import unittest
-from unittest.mock import PropertyMock, patch
+from unittest.mock import patch
 
 from ops.testing import Harness
 
@@ -34,11 +34,6 @@ SAMPLE_CLUSTER_STATUS = {
 }
 
 
-@patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
-@patch("charm.MySQLOperatorCharm.unit_initialized", new_callable=PropertyMock, return_value=True)
-@patch(
-    "charm.MySQLOperatorCharm.cluster_initialized", new_callable=PropertyMock, return_value=True
-)
 class TestDatabase(unittest.TestCase):
     def setUp(self):
         self.patcher = patch("lightkube.core.client.GenericSyncClient")
@@ -60,6 +55,7 @@ class TestDatabase(unittest.TestCase):
     def tearDown(self) -> None:
         self.patcher.stop()
 
+    @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
     @patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_process_locks")
     @patch("k8s_helpers.KubernetesHelpers.wait_service_ready")
     @patch("mysql_k8s_helpers.MySQL.update_endpoints")
@@ -78,9 +74,7 @@ class TestDatabase(unittest.TestCase):
         _update_endpoints,
         _wait_service_ready,
         _,
-        __,
-        ___,
-        ____,
+        _cluster_metadata_exists,
     ):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
