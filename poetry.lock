@@ -31,8 +31,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v16.2.1"
-resolved_reference = "ddb4b5112daf309a5665e14caa5dfee03b96eae0"
+reference = "v16.3.3"
+resolved_reference = "15ad93a8ca9fc16ac6e826b760bfeb1b9e5462f5"
 subdirectory = "python/pytest_plugins/allure_pytest_collection_report"
 
 [[package]]
@@ -1876,8 +1876,8 @@ develop = false
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v16.2.1"
-resolved_reference = "ddb4b5112daf309a5665e14caa5dfee03b96eae0"
+reference = "v16.3.3"
+resolved_reference = "15ad93a8ca9fc16ac6e826b760bfeb1b9e5462f5"
 subdirectory = "python/pytest_plugins/github_secrets"
 
 [[package]]
@@ -1896,8 +1896,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v16.2.1"
-resolved_reference = "ddb4b5112daf309a5665e14caa5dfee03b96eae0"
+reference = "v16.3.3"
+resolved_reference = "15ad93a8ca9fc16ac6e826b760bfeb1b9e5462f5"
 subdirectory = "python/pytest_plugins/microceph"
 
 [[package]]
@@ -1951,8 +1951,8 @@ pyyaml = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v16.2.1"
-resolved_reference = "ddb4b5112daf309a5665e14caa5dfee03b96eae0"
+reference = "v16.3.3"
+resolved_reference = "15ad93a8ca9fc16ac6e826b760bfeb1b9e5462f5"
 subdirectory = "python/pytest_plugins/pytest_operator_cache"
 
 [[package]]
@@ -1970,8 +1970,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v16.2.1"
-resolved_reference = "ddb4b5112daf309a5665e14caa5dfee03b96eae0"
+reference = "v16.3.3"
+resolved_reference = "15ad93a8ca9fc16ac6e826b760bfeb1b9e5462f5"
 subdirectory = "python/pytest_plugins/pytest_operator_groups"
 
 [[package]]
@@ -2631,4 +2631,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "9811eb73a598d1ad0d5b9a39fd95cb160f406bd9f7182c24883b840231b07f3f"
+content-hash = "ad3c8d020204f2688f1ea86be92954d2996f615cde32bc5cd5b0cfe5b03c1065"
