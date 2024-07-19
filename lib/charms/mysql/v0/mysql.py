@@ -1778,6 +1778,24 @@ class MySQLBase(ABC):
 
         return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
+    def execute_remove_instance(self, connect_instance: Optional[str] = None) -> None:
+        """Execute the remove_instance() script with mysqlsh.
+
+        Args:
+            connect_instance: (optional) The instance from where to run the remove_instance()
+        """
+        remove_instance_options = {
+            "password": self.cluster_admin_password,
+            "force": "true",
+        }
+        remove_instance_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance or self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            "cluster.remove_instance("
+            f"'{self.cluster_admin_user}@{self.instance_address}', {remove_instance_options})",
+        )
+        self._run_mysqlsh_script("\n".join(remove_instance_commands))
+
     @retry(
         retry=retry_if_exception_type(MySQLRemoveInstanceRetryError),
         stop=stop_after_attempt(15),
@@ -1841,17 +1859,7 @@ class MySQLBase(ABC):
                     )
 
                 # Just remove instance
-                remove_instance_options = {
-                    "password": self.cluster_admin_password,
-                    "force": "true",
-                }
-                remove_instance_commands = (
-                    f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
-                    f"cluster = dba.get_cluster('{self.cluster_name}')",
-                    "cluster.remove_instance("
-                    f"'{self.cluster_admin_user}@{self.instance_address}', {remove_instance_options})",
-                )
-                self._run_mysqlsh_script("\n".join(remove_instance_commands))
+                self.execute_remove_instance()
         except MySQLClientError as e:
             # In case of an error, raise an error and retry
             logger.warning(

@@ -372,14 +372,17 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 # harmless otherwise
                 self._mysql.stop_group_replication()
 
-                # If instance already in cluster, rescan cluster on primary before
-                # attempting to add the instance to the cluster
-                cluster_status = self._mysql.get_cluster_status(from_instance=cluster_primary)
-                instances = cluster_status["defaultreplicaset"]["topology"].keys()
-                if instance_label in instances:
-                    self._mysql.rescan_cluster(
-                        from_instance=cluster_primary, remove_instances=True
-                    )
+                # If instance already in cluster, before adding instance to cluster,
+                # remove the instance from the cluster and call rescan_cluster()
+                # without adding/removing instances to clean up stale users
+                if (
+                    instance_label
+                    in self._mysql.get_cluster_status(from_instance=cluster_primary)[
+                        "defaultreplicaset"
+                    ]["topology"].keys()
+                ):
+                    self._mysql.execute_remove_instance(connect_instance=cluster_primary)
+                    self._mysql.rescan_cluster(from_instance=cluster_primary)
 
                 self._mysql.add_instance_to_cluster(
                     instance_address=instance_address,

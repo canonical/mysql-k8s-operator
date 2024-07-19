@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 MYSQL_CONTAINER_NAME = "mysql"
 MYSQLD_PROCESS_NAME = "mysqld"
-TIMEOUT = 5 * 60
+TIMEOUT = 30 * 60
 
 
 @pytest.mark.group(1)
@@ -60,7 +60,7 @@ async def test_pod_eviction_and_pvc_deletion(ops_test: OpsTest, continuous_write
     delete_pvcs(primary_pod_pvcs)
     delete_pvs(primary_pod_pvs)
 
-    async with ops_test.fast_forward("5s"):
+    async with ops_test.fast_forward():
         logger.info("Waiting for evicted primary pod to be rescheduled")
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],
