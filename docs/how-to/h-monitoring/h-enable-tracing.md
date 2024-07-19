@@ -130,7 +130,7 @@ tempo-k8s:tracing         mysql-k8s:tracing         tracing      regular
 
 <a href="#heading--view"><h2 id="heading--view"> View traces </h2></a>
 
-After this is complete, the Tempo traces will be accessible from Grafana under the `Explore` section with `tempo-k8s` as the data source. You will be able to select `mysql` as the `Service Name` under the `Search` tab to view traces belonging to Charmed MySQL.
+After this is complete, the Tempo traces will be accessible from Grafana under the `Explore` section with `tempo-k8s` as the data source. You will be able to select `mysql-k8s` as the `Service Name` under the `Search` tab to view traces belonging to Charmed MySQL.
 
 Below is a screenshot demonstrating a Charmed MySQL trace:
 
