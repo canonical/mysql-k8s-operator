@@ -1,0 +1,14 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:192 Deploying router and application
+[32mINFO    [0m juju.model:model.py:2097 Deploying ch:amd64/jammy/mysql-router-k8s-142
+[32mINFO    [0m juju.model:model.py:2097 Deploying ch:amd64/jammy/mysql-test-app-46
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:209 Relate app and router
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:214 Relate router and db
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-router-k8s/0 [allocating] waiting: installing agent
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-router-k8s/0 [executing] maintenance: Waiting for container
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-router-k8s/0 [idle] active: 
+  mysql-test-app/0 [idle] active:
