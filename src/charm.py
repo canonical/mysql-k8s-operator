@@ -381,7 +381,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                         "defaultreplicaset"
                     ]["topology"].keys()
                 ):
-                    self._mysql.execute_remove_instance(connect_instance=cluster_primary)
+                    self._mysql.execute_remove_instance(
+                        connect_instance=cluster_primary, force=True
+                    )
                     self._mysql.rescan_cluster(from_instance=cluster_primary)
 
                 self._mysql.add_instance_to_cluster(
