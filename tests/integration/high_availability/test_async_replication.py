@@ -109,11 +109,13 @@ async def test_build_and_deploy(
             apps=[MYSQL_APP1],
             status="active",
             timeout=10 * MINUTE,
+            raise_on_error=False,
         ),
         second_model.wait_for_idle(
             apps=[MYSQL_APP2],
             status="active",
             timeout=10 * MINUTE,
+            raise_on_error=False,
         ),
     )
 

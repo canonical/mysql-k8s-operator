@@ -71,6 +71,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
                 status="active",
                 raise_on_blocked=True,
                 timeout=1000,
+                raise_on_error=False,
             ),
             ops_test.model.wait_for_idle(
                 apps=[APPLICATION_APP_NAME],

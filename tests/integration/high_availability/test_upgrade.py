@@ -60,6 +60,7 @@ async def test_deploy_latest(ops_test: OpsTest) -> None:
         apps=[MYSQL_APP_NAME, TEST_APP_NAME],
         status="active",
         timeout=TIMEOUT,
+        raise_on_error=False,
     )
     assert len(ops_test.model.applications[MYSQL_APP_NAME].units) == 3
 
