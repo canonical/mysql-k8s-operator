@@ -128,7 +128,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 63
+LIBPATCH = 64
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1778,15 +1778,18 @@ class MySQLBase(ABC):
 
         return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
-    def execute_remove_instance(self, connect_instance: Optional[str] = None) -> None:
+    def execute_remove_instance(
+        self, connect_instance: Optional[str] = None, force: bool = False
+    ) -> None:
         """Execute the remove_instance() script with mysqlsh.
 
         Args:
             connect_instance: (optional) The instance from where to run the remove_instance()
+            force: (optional) Whether to force the removal of the instance
         """
         remove_instance_options = {
             "password": self.cluster_admin_password,
-            "force": "true",
+            "force": "true" if force else "false",
         }
         remove_instance_commands = (
             f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance or self.instance_address}')",
@@ -1859,7 +1862,7 @@ class MySQLBase(ABC):
                     )
 
                 # Just remove instance
-                self.execute_remove_instance()
+                self.execute_remove_instance(force=True)
         except MySQLClientError as e:
             # In case of an error, raise an error and retry
             logger.warning(
