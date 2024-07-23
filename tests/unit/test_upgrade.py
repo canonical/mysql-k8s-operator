@@ -31,6 +31,7 @@ MOCK_STATUS_OFFLINE = {
 }
 
 
+# @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
 class TestUpgrade(unittest.TestCase):
     """Test the upgrade class."""
 
@@ -174,7 +175,16 @@ class TestUpgrade(unittest.TestCase):
         self.harness.update_relation_data(
             self.upgrade_relation_id, "mysql-k8s/0", {"state": "upgrading"}
         )
-        self.harness.container_pebble_ready("mysql")
+        with patch(
+            "charm.MySQLOperatorCharm.unit_initialized",
+            new_callable=PropertyMock,
+            return_value=True,
+        ), patch(
+            "charm.MySQLOperatorCharm.cluster_initialized",
+            new_callable=PropertyMock,
+            return_value=True,
+        ):
+            self.harness.container_pebble_ready("mysql")
         self.assertEqual(
             self.harness.get_relation_data(self.upgrade_relation_id, "mysql-k8s/1")["state"],
             "idle",  # change to `completed` - behavior not yet set in the lib
@@ -187,7 +197,16 @@ class TestUpgrade(unittest.TestCase):
         # setup for exception
         mock_is_instance_in_cluster.return_value = False
 
-        self.harness.container_pebble_ready("mysql")
+        with patch(
+            "charm.MySQLOperatorCharm.unit_initialized",
+            new_callable=PropertyMock,
+            return_value=True,
+        ), patch(
+            "charm.MySQLOperatorCharm.cluster_initialized",
+            new_callable=PropertyMock,
+            return_value=True,
+        ):
+            self.harness.container_pebble_ready("mysql")
         self.assertTrue(isinstance(self.charm.unit.status, BlockedStatus))
 
     @patch(

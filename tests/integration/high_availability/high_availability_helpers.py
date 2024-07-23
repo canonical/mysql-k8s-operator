@@ -10,11 +10,14 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 import kubernetes
+import lightkube
 import yaml
 from juju.model import Model
 from juju.unit import Unit
 from lightkube import Client
+from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.resources.core_v1 import PersistentVolume, PersistentVolumeClaim, Pod
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, retry, stop_after_attempt, stop_after_delay, wait_fixed
 
@@ -291,9 +294,13 @@ async def high_availability_test_setup(ops_test: OpsTest) -> Tuple[str, str]:
     Args:
         ops_test: The ops test framework
     """
+    logger.info("Deploying mysql-k8s and scaling to 3 units")
     mysql_application_name = await deploy_and_scale_mysql(ops_test)
+
+    logger.info("Deploying mysql-test-app")
     application_name = await deploy_and_scale_application(ops_test)
 
+    logger.info("Relating mysql-k8s with mysql-test-app")
     await relate_mysql_and_application(ops_test, mysql_application_name, application_name)
 
     return mysql_application_name, application_name
@@ -586,3 +593,90 @@ def get_sts_partition(ops_test: OpsTest, app_name: str) -> int:
     client = Client()  # type: ignore
     statefulset = client.get(res=StatefulSet, namespace=ops_test.model.info.name, name=app_name)
     return statefulset.spec.updateStrategy.rollingUpdate.partition  # type: ignore
+
+
+def get_pod(ops_test: OpsTest, unit_name: str) -> Pod:
+    """Retrieve the PVs of a pod."""
+    client = lightkube.Client()
+    return client.get(
+        res=Pod, namespace=ops_test.model.info.name, name=unit_name.replace("/", "-")
+    )
+
+
+def get_pod_pvcs(pod: Pod) -> list[PersistentVolumeClaim]:
+    """Get a pod's PVCs."""
+    if pod.spec is None:
+        return []
+
+    client = lightkube.Client()
+    pod_pvcs = []
+
+    for volume in pod.spec.volumes:
+        if volume.persistentVolumeClaim is None:
+            continue
+
+        pvc_name = volume.persistentVolumeClaim.claimName
+        pod_pvcs.append(
+            client.get(
+                res=PersistentVolumeClaim,
+                name=pvc_name,
+                namespace=pod.metadata.namespace,
+            )
+        )
+
+    return pod_pvcs
+
+
+def get_pod_pvs(pod: Pod) -> list[PersistentVolume]:
+    """Get a pod's PVs."""
+    if pod.spec is None:
+        return []
+
+    pod_pvs = []
+    client = lightkube.Client()
+    for pv in client.list(res=PersistentVolume, namespace=pod.metadata.namespace):
+        if pv.spec.claimRef.name.endswith(pod.metadata.name):
+            pod_pvs.append(pv)
+    return pod_pvs
+
+
+def evict_pod(pod: Pod) -> None:
+    """Evict a pod."""
+    if pod.metadata is None:
+        return
+
+    logger.info(f"Evicting pod {pod.metadata.name}")
+    client = lightkube.Client()
+    eviction = Pod.Eviction(
+        metadata=ObjectMeta(name=pod.metadata.name, namespace=pod.metadata.namespace),
+    )
+    client.create(eviction, name=str(pod.metadata.name))
+
+
+def delete_pvs(pvs: list[PersistentVolume]) -> None:
+    """Delete the provided PVs."""
+    for pv in pvs:
+        logger.info(f"Deleting PV {pv.spec.claimRef.name}")
+        client = lightkube.Client()
+        client.delete(
+            PersistentVolume,
+            pv.metadata.name,
+            namespace=pv.spec.claimRef.namespace,
+            grace_period=0,
+        )
+
+
+def delete_pvcs(pvcs: list[PersistentVolumeClaim]) -> None:
+    """Delete the provided PVCs."""
+    for pvc in pvcs:
+        if pvc.metadata is None:
+            continue
+
+        logger.info(f"Deleting PVC {pvc.metadata.name}")
+        client = lightkube.Client()
+        client.delete(
+            PersistentVolumeClaim,
+            pvc.metadata.name,
+            namespace=pvc.metadata.namespace,
+            grace_period=0,
+        )

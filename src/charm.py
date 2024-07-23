@@ -41,10 +41,17 @@ from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from charms.tempo_k8s.v1.charm_tracing import trace_charm
 from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
-from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent, Unit
+from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, Container, MaintenanceStatus, WaitingStatus
+from ops.model import (
+    ActiveStatus,
+    BlockedStatus,
+    Container,
+    MaintenanceStatus,
+    Unit,
+    WaitingStatus,
+)
 from ops.pebble import Layer
 
 from config import CharmConfig, MySQLConfig
@@ -189,7 +196,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
-            self._get_unit_fqdn(),
+            self.get_unit_address(),
             self.app_peer_data["cluster-name"],
             self.app_peer_data["cluster-set-domain-name"],
             self.get_secret("app", ROOT_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
@@ -252,11 +259,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     @property
     def unit_address(self) -> str:
         """Return the address of this unit."""
-        return self._get_unit_fqdn()
-
-    def get_unit_address(self, unit: Unit) -> str:
-        """Return the address of a unit."""
-        return self._get_unit_fqdn(unit.name)
+        return self.get_unit_address()
 
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
@@ -272,17 +275,15 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         unit_name = unit_name or self.unit.name
         return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
 
-    def _get_unit_fqdn(self, unit_name: Optional[str] = None) -> str:
-        """Create a fqdn for a unit.
+    def get_unit_address(self, unit: Optional[Unit] = None) -> str:
+        """Get fqdn/address for a unit.
 
         Translate juju unit name to resolvable hostname.
-
-        Args:
-            unit_name: unit name
-        Returns:
-            A string representing the fqdn of the unit.
         """
-        return getfqdn(self.get_unit_hostname(unit_name))
+        if not unit:
+            unit = self.unit
+
+        return getfqdn(self.get_unit_hostname(unit.name))
 
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
@@ -294,7 +295,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             if self.peers.data[unit].get("member-state") == "online":
                 try:
                     return self._mysql.get_cluster_primary_address(
-                        connect_instance_address=self._get_unit_fqdn(unit.name),
+                        connect_instance_address=self.get_unit_address(unit),
                     )
                 except MySQLGetClusterPrimaryAddressError:
                     # try next unit
@@ -325,7 +326,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Try to join the unit from the primary unit.
         """
         instance_label = self.unit.name.replace("/", "-")
-        instance_address = self._get_unit_fqdn(self.unit.name)
+        instance_address = self.get_unit_address(self.unit)
 
         if not self._mysql.is_instance_in_cluster(instance_label):
             # Add new instance to the cluster
@@ -370,6 +371,21 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 # Stop GR for cases where the instance was previously part of the cluster
                 # harmless otherwise
                 self._mysql.stop_group_replication()
+
+                # If instance already in cluster, before adding instance to cluster,
+                # remove the instance from the cluster and call rescan_cluster()
+                # without adding/removing instances to clean up stale users
+                if (
+                    instance_label
+                    in self._mysql.get_cluster_status(from_instance=cluster_primary)[
+                        "defaultreplicaset"
+                    ]["topology"].keys()
+                ):
+                    self._mysql.execute_remove_instance(
+                        connect_instance=cluster_primary, force=True
+                    )
+                    self._mysql.rescan_cluster(from_instance=cluster_primary)
+
                 self._mysql.add_instance_to_cluster(
                     instance_address=instance_address,
                     instance_unit_label=instance_label,
@@ -385,7 +401,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 logger.debug("waiting: failed to acquire lock when adding instance to cluster")
                 return
 
-        # Update 'units-added-to-cluster' counter in the peer relation databag
         self.unit_peer_data["member-state"] = "online"
         self.unit.status = ActiveStatus(self.active_status_message)
         logger.debug(f"Instance {instance_label} is cluster member")
@@ -669,7 +684,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # First run setup
         self._configure_instance(container)
 
-        if not self.unit.is_leader():
+        if not self.unit.is_leader() or self.cluster_initialized:
             # Non-leader units try to join cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
@@ -793,10 +808,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
     def _set_app_status(self) -> None:
         """Set the application status based on the cluster state."""
-        nodes = self._mysql.get_cluster_node_count()
-        if nodes > 0:
-            self.app_peer_data["units-added-to-cluster"] = str(nodes)
-
         try:
             primary_address = self._mysql.get_cluster_primary_address()
         except MySQLGetClusterPrimaryAddressError:
@@ -838,7 +849,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.info("Switching primary to unit 0")
             try:
                 self._mysql.set_cluster_primary(
-                    new_primary_address=self._get_unit_fqdn(f"{self.app.name}/0")
+                    new_primary_address=getfqdn(self.get_unit_hostname(f"{self.app.name}/0"))
                 )
             except MySQLSetClusterPrimaryError:
                 logger.warning("Failed to switch primary to unit 0")
