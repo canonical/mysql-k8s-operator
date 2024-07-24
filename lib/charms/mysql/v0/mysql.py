@@ -128,7 +128,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 62
+LIBPATCH = 64
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -589,7 +589,6 @@ class MySQLCharmBase(CharmBase, ABC):
         # rescan cluster for cleanup of unused
         # recovery users
         self._mysql.rescan_cluster()
-        self.app_peer_data["units-added-to-cluster"] = "1"
 
         state, role = self._mysql.get_member_state()
 
@@ -1779,6 +1778,27 @@ class MySQLBase(ABC):
 
         return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
+    def execute_remove_instance(
+        self, connect_instance: Optional[str] = None, force: bool = False
+    ) -> None:
+        """Execute the remove_instance() script with mysqlsh.
+
+        Args:
+            connect_instance: (optional) The instance from where to run the remove_instance()
+            force: (optional) Whether to force the removal of the instance
+        """
+        remove_instance_options = {
+            "password": self.cluster_admin_password,
+            "force": "true" if force else "false",
+        }
+        remove_instance_commands = (
+            f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{connect_instance or self.instance_address}')",
+            f"cluster = dba.get_cluster('{self.cluster_name}')",
+            "cluster.remove_instance("
+            f"'{self.cluster_admin_user}@{self.instance_address}', {remove_instance_options})",
+        )
+        self._run_mysqlsh_script("\n".join(remove_instance_commands))
+
     @retry(
         retry=retry_if_exception_type(MySQLRemoveInstanceRetryError),
         stop=stop_after_attempt(15),
@@ -1842,17 +1862,7 @@ class MySQLBase(ABC):
                     )
 
                 # Just remove instance
-                remove_instance_options = {
-                    "password": self.cluster_admin_password,
-                    "force": "true",
-                }
-                remove_instance_commands = (
-                    f"shell.connect('{self.cluster_admin_user}:{self.cluster_admin_password}@{self.instance_address}')",
-                    f"cluster = dba.get_cluster('{self.cluster_name}')",
-                    "cluster.remove_instance("
-                    f"'{self.cluster_admin_user}@{self.instance_address}', {remove_instance_options})",
-                )
-                self._run_mysqlsh_script("\n".join(remove_instance_commands))
+                self.execute_remove_instance(force=True)
         except MySQLClientError as e:
             # In case of an error, raise an error and retry
             logger.warning(
