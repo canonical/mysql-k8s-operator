@@ -1,0 +1,22 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:69 Destroying second model
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] maintenance: installing charm software
+  db2/1 [executing] maintenance: installing charm software
+  db2/2 [executing] maintenance: installing charm software
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.3    unsupported  01:41:59Z
+
+App  Version  Status   Scale  Charm      Channel  Rev  Address        Exposed  Message
+db1           waiting      3  mysql-k8s             0  10.152.183.95  no       installing agent
+
+Unit    Workload  Agent      Address     Ports  Message
+db1/0*  unknown   executing  10.1.30.77         
+db1/1   unknown   executing  10.1.30.76         
+db1/2   error     idle       10.1.30.78         hook failed: "upgrade-relation-changed"
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

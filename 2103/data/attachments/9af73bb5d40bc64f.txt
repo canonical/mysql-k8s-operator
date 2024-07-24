@@ -1,0 +1,200 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.3    unsupported  01:57:07Z
+
+App           Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+kafka                                  waiting      1  kafka-k8s      latest/stable    5  10.152.183.226  no       installing agent
+mongodb                                active       1  mongodb-k8s    5/edge          36  10.152.183.28   no       Primary
+mysql-k8s     8.0.37-0ubuntu0.22.04.3  active       1  mysql-k8s                       0  10.152.183.101  no       
+osm-keystone                           waiting      1  osm-keystone   latest/beta     10  10.152.183.114  no       installing agent
+osm-pol                                waiting      1  osm-pol        latest/beta    337  10.152.183.134  no       installing agent
+zookeeper                              active       1  zookeeper-k8s  latest/stable   10  10.152.183.190  no       
+
+Unit             Workload  Agent  Address     Ports  Message
+kafka/0*         blocked   idle   10.1.39.15         need zookeeper relation
+mongodb/0*       active    idle   10.1.39.11         Primary
+mysql-k8s/0*     active    idle   10.1.39.16         Primary
+osm-keystone/0*  blocked   idle   10.1.39.8          mysql relation is missing
+osm-pol/0*       blocked   idle   10.1.39.12         need kafka, mongodb, mysql relations
+zookeeper/0*     active    idle   10.1.39.17         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:42:33 ERROR unit.mysql-k8s/0.juju-log upgrade:3: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/./src/charm.py", line 872, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/upgrade.py", line 207, in _on_upgrade_changed
+    if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 634, in unit_initialized
+    return self._mysql.cluster_metadata_exists(self.get_unit_address(self.unit))
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1412, in cluster_metadata_exists
+    output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 594, in _run_mysqlsh_script
+    self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/model.py", line 2390, in push
+    self._pebble.push(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 2358, in push
+    response = self._request_raw('POST', '/v1/files', None, headers, data)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 1912, in _request_raw
+    raise ConnectionError(
+ops.pebble.ConnectionError: Could not connect to Pebble: socket not found at '/charm/containers/mysql/pebble.socket' (container restarted?)
+unit-mysql-k8s-0: 01:42:33 ERROR juju.worker.uniter.operation hook "upgrade-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-0: 01:42:39 ERROR unit.mysql-k8s/0.juju-log upgrade:3: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/./src/charm.py", line 872, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/upgrade.py", line 207, in _on_upgrade_changed
+    if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 634, in unit_initialized
+    return self._mysql.cluster_metadata_exists(self.get_unit_address(self.unit))
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1412, in cluster_metadata_exists
+    output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 594, in _run_mysqlsh_script
+    self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/model.py", line 2390, in push
+    self._pebble.push(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 2358, in push
+    response = self._request_raw('POST', '/v1/files', None, headers, data)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 1912, in _request_raw
+    raise ConnectionError(
+ops.pebble.ConnectionError: Could not connect to Pebble: socket not found at '/charm/containers/mysql/pebble.socket' (container restarted?)
+unit-mysql-k8s-0: 01:42:39 ERROR juju.worker.uniter.operation hook "upgrade-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-0: 01:42:50 ERROR unit.mysql-k8s/0.juju-log upgrade:3: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/./src/charm.py", line 872, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/upgrade.py", line 207, in _on_upgrade_changed
+    if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 634, in unit_initialized
+    return self._mysql.cluster_metadata_exists(self.get_unit_address(self.unit))
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1412, in cluster_metadata_exists
+    output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 594, in _run_mysqlsh_script
+    self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/model.py", line 2390, in push
+    self._pebble.push(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 2358, in push
+    response = self._request_raw('POST', '/v1/files', None, headers, data)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 1912, in _request_raw
+    raise ConnectionError(
+ops.pebble.ConnectionError: Could not connect to Pebble: socket not found at '/charm/containers/mysql/pebble.socket' (container restarted?)
+unit-mysql-k8s-0: 01:42:51 ERROR juju.worker.uniter.operation hook "upgrade-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:43:01 ERROR unit.mongodb/0.juju-log Failed to get pbm status.
+unit-mysql-k8s-0: 01:43:12 ERROR unit.mysql-k8s/0.juju-log upgrade:3: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/./src/charm.py", line 872, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 548, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 527, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 516, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/upgrade.py", line 207, in _on_upgrade_changed
+    if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 634, in unit_initialized
+    return self._mysql.cluster_metadata_exists(self.get_unit_address(self.unit))
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1412, in cluster_metadata_exists
+    output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 594, in _run_mysqlsh_script
+    self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/model.py", line 2390, in push
+    self._pebble.push(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 2358, in push
+    response = self._request_raw('POST', '/v1/files', None, headers, data)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/ops/pebble.py", line 1912, in _request_raw
+    raise ConnectionError(
+ops.pebble.ConnectionError: Could not connect to Pebble: socket not found at '/charm/containers/mysql/pebble.socket' (container restarted?)
+unit-mysql-k8s-0: 01:43:12 ERROR juju.worker.uniter.operation hook "upgrade-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:43:59 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:44:56 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:45:49 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:46:50 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:47:39 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:48:31 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:49:32 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:50:27 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:51:35 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:52:37 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:53:32 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:54:25 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:55:28 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:56:17 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

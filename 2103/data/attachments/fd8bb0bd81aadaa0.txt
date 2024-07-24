@@ -1,0 +1,10 @@
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:125 Inserting value before backup
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:132 Setting s3 config
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:134 Syncing credentials
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [executing] active: 
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:148 Listing existing backup ids
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:155 Creating backup
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:161 Listing backup ids post backup
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:170 Inserting value after backup

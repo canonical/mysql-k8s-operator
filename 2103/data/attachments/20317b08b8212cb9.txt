@@ -1,0 +1,17 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.3    unsupported  01:41:25Z
+
+App        Version  Status  Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s           error     0/3  mysql-k8s             0  10.152.183.211  no       create Pod mysql-k8s-2 in StatefulSet mysql-k8s failed error: failed to create PVC mysql-k8s-database-ab1e488d-mysql-...
+
+Unit          Workload  Agent       Address      Ports  Message
+mysql-k8s/0   waiting   allocating  10.1.158.75         agent initialising
+mysql-k8s/1   waiting   allocating  10.1.158.77         agent initialising
+mysql-k8s/2*  waiting   allocating  10.1.158.76         agent initialising
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
