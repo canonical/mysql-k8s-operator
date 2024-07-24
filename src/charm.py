@@ -201,17 +201,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self.app_peer_data["cluster-set-domain-name"],
             self.get_secret("app", ROOT_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
             SERVER_CONFIG_USERNAME,
-            self.get_secret(
-                "app", SERVER_CONFIG_PASSWORD_KEY
-            ),  # pyright: ignore [reportArgumentType]
+            self.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
             CLUSTER_ADMIN_USERNAME,
-            self.get_secret(
-                "app", CLUSTER_ADMIN_PASSWORD_KEY
-            ),  # pyright: ignore [reportArgumentType]
+            self.get_secret("app", CLUSTER_ADMIN_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
             MONITORING_USERNAME,
-            self.get_secret(
-                "app", MONITORING_PASSWORD_KEY
-            ),  # pyright: ignore [reportArgumentType]
+            self.get_secret("app", MONITORING_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
             BACKUPS_USERNAME,
             self.get_secret("app", BACKUPS_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
             self.unit.get_container(CONTAINER_NAME),
