@@ -1,0 +1,24 @@
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:295 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:298 Deploying mysql-test-app
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:301 Relating mysql-k8s with mysql-test-app
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s (waiting for exactly 4 units, current : 3)
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [executing] active: 
+  mysql-k8s/3 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+  mysql-k8s/3 [idle] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+  mysql-k8s/3 [executing] active: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s (waiting for exactly 3 units, current : 4)
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s (waiting for exactly 3 units, current : 4)
