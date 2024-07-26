@@ -1238,13 +1238,13 @@ files = [
 
 [[package]]
 name = "ops"
-version = "2.14.0"
+version = "2.15.0"
 description = "The Python library behind great charms"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "ops-2.14.0-py3-none-any.whl", hash = "sha256:b1d7b03f87fa154bf0f2c0d688cb117d5ad8a2830966498fc66ba46987ae375d"},
-    {file = "ops-2.14.0.tar.gz", hash = "sha256:23d64b5e9433176f171895fbe3f21ad1963eaa073a20ae01f0f38171c688eb1a"},
+    {file = "ops-2.15.0-py3-none-any.whl", hash = "sha256:8e47ab8a814301776b0ff42b32544ebdece7f1639168d2c86dc7a25930d2e493"},
+    {file = "ops-2.15.0.tar.gz", hash = "sha256:f3bad7417e98e8f390523fad097702eed16e99b38a25e9fe856aad226474b057"},
 ]
 
 [package.dependencies]
@@ -2388,4 +2388,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "a53362c690ec46796fa38bff64cd481ab64d948617827a8e3b26c4c934436c3b"
+content-hash = "403f2876a5085412e22187528ac92ea41323dd18c46847f41c7b656223abcbc2"
