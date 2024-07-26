@@ -43,6 +43,11 @@ class TestDatabase(unittest.TestCase):
         self.harness.begin()
         self.peer_relation_id = self.harness.add_relation("database-peers", "database-peers")
         self.harness.add_relation_unit(self.peer_relation_id, f"{APP_NAME}/1")
+        self.harness.update_relation_data(
+            self.peer_relation_id,
+            "mysql-k8s",
+            {"cluster-name": "test_cluster", "cluster-set-domain-name": "test_cluster_set"},
+        )
         self.database_relation_id = self.harness.add_relation(DB_RELATION_NAME, "app")
         self.harness.add_relation_unit(self.database_relation_id, "app/0")
         self.charm = self.harness.charm

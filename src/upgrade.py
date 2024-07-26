@@ -5,6 +5,7 @@
 
 import json
 import logging
+from socket import getfqdn
 from typing import TYPE_CHECKING
 
 from charms.data_platform_libs.v0.upgrade import (
@@ -155,14 +156,12 @@ class MySQLK8sUpgrade(DataUpgrade):
             run_action = "run-action"
             wait = " --wait"
         logger.critical(
-            "\n".join(
-                (
-                    "Upgrade failed, follow the instructions below to rollback:",
-                    f"  1 - Run `juju {run_action} {self.charm.app.name}/leader pre-upgrade-check{wait}` to configure rollback",
-                    f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback",
-                    f"  3 - Run `juju {run_action} {self.charm.app.name}/leader resume-upgrade{wait}` to resume the rollback",
-                )
-            )
+            "\n".join((
+                "Upgrade failed, follow the instructions below to rollback:",
+                f"  1 - Run `juju {run_action} {self.charm.app.name}/leader pre-upgrade-check{wait}` to configure rollback",
+                f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback",
+                f"  3 - Run `juju {run_action} {self.charm.app.name}/leader resume-upgrade{wait}` to resume the rollback",
+            ))
         )
 
     def _pre_upgrade_prepare(self) -> None:
@@ -174,12 +173,12 @@ class MySQLK8sUpgrade(DataUpgrade):
         """
         if self.charm._mysql.get_primary_label() != f"{self.charm.app.name}-0":
             # set the primary to the first unit for switchover mitigation
-            new_primary = self.charm._get_unit_fqdn(f"{self.charm.app.name}/0")
+            new_primary = getfqdn(self.charm.get_unit_hostname(f"{self.charm.app.name}/0"))
             self.charm._mysql.set_cluster_primary(new_primary)
 
         # set slow shutdown on all instances
         for unit in self.app_units:
-            unit_address = self.charm._get_unit_fqdn(unit.name)
+            unit_address = self.charm.get_unit_address(unit)
             self.charm._mysql.set_dynamic_variable(
                 variable="innodb_fast_shutdown", value="0", instance_address=unit_address
             )
@@ -293,9 +292,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         if self.charm.unit_label == f"{self.charm.app.name}/1":
             # penultimate unit, reset the primary for faster switchover
             try:
-                self.charm._mysql.set_cluster_primary(
-                    self.charm._get_unit_fqdn(self.charm.unit.name)
-                )
+                self.charm._mysql.set_cluster_primary(self.charm.get_unit_address(self.charm.unit))
             except MySQLSetClusterPrimaryError:
                 logger.debug("Failed to set primary")
 
@@ -322,7 +319,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         if len(self.upgrade_stack or []) < self.charm.app.planned_units():
             # check is done for 1st upgrading unit
             return
-        instance = self.charm._get_unit_fqdn(f"{self.charm.app.name}/0")
+        instance = getfqdn(self.charm.get_unit_hostname(f"{self.charm.app.name}/0"))
         self.charm._mysql.verify_server_upgradable(instance=instance)
         logger.debug("MySQL server is upgradeable")
 

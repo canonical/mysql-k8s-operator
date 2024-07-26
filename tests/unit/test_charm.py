@@ -41,6 +41,11 @@ class TestCharm(unittest.TestCase):
         self.peer_relation_id = self.harness.add_relation("database-peers", "database-peers")
         self.restart_relation_id = self.harness.add_relation("restart", "restart")
         self.harness.add_relation_unit(self.peer_relation_id, f"{APP_NAME}/1")
+        self.harness.update_relation_data(
+            self.peer_relation_id,
+            "mysql-k8s",
+            {"cluster-name": "test_cluster", "cluster-set-domain-name": "test_cluster_set"},
+        )
         self.charm = self.harness.charm
         self.maxDiff = None
 
@@ -186,30 +191,45 @@ class TestCharm(unittest.TestCase):
             self.layer_dict(with_mysqld_exporter=True)["services"],
         )
 
+    @patch("charm.MySQLOperatorCharm.unit_initialized", new_callable=PropertyMock)
+    @patch("charm.MySQLOperatorCharm.cluster_initialized", new_callable=PropertyMock)
     @patch("charm.MySQLOperatorCharm.join_unit_to_cluster")
     @patch("charm.MySQLOperatorCharm._configure_instance")
     @patch("charm.MySQLOperatorCharm._write_mysqld_configuration")
     @patch("upgrade.MySQLK8sUpgrade.idle", return_value=True)
     @patch("charm.MySQLOperatorCharm._mysql")
     def test_pebble_ready_set_data(
-        self, mock_mysql, mock_upgrade_idle, mock_write_conf, mock_conf, mock_join
+        self,
+        mock_mysql,
+        mock_upgrade_idle,
+        mock_write_conf,
+        mock_conf,
+        mock_join,
+        _cluster_intialized,
+        _unit_intialized,
     ):
         mock_mysql.is_data_dir_initialised.return_value = False
         mock_mysql.get_member_state.return_value = ("online", "primary")
         self.harness.set_can_connect("mysql", True)
         self.harness.set_leader()
 
-        # test on non leader
-        self.harness.set_leader(is_leader=False)
-        self.harness.container_pebble_ready("mysql")
-        self.assertEqual(self.charm.unit_peer_data["member-role"], "secondary")
-        self.assertEqual(self.charm.unit_peer_data["member-state"], "waiting")
+        mock_mysql.cluster_metadata_exists.return_value = False
+        _cluster_intialized.return_value = False
+        _unit_intialized.return_value = False
 
         # test on leader
         self.harness.set_leader(is_leader=True)
         self.harness.container_pebble_ready("mysql")
         self.assertEqual(self.charm.unit_peer_data["member-state"], "online")
         self.assertEqual(self.charm.unit_peer_data["member-role"], "primary")
+
+        _cluster_intialized.return_value = True
+
+        # test on non leader
+        self.harness.set_leader(is_leader=False)
+        self.harness.container_pebble_ready("mysql")
+        self.assertEqual(self.charm.unit_peer_data["member-role"], "secondary")
+        self.assertEqual(self.charm.unit_peer_data["member-state"], "waiting")
 
     @patch("charm.MySQLOperatorCharm._mysql", new_callable=PropertyMock)
     def test_mysql_pebble_ready_non_leader(self, _mysql_mock):
@@ -237,6 +257,11 @@ class TestCharm(unittest.TestCase):
         self.assertFalse(isinstance(self.charm.unit.status, ActiveStatus))
 
     def test_on_config_changed(self):
+        self.harness.update_relation_data(
+            self.peer_relation_id,
+            "mysql-k8s",
+            {"cluster-name": "", "cluster-set-domain-name": "test_cluster_set"},
+        )
         # Test config changed set of cluster name
         self.assertEqual(self.charm.peers.data[self.charm.app].get("cluster-name"), None)
         self.harness.set_leader()
