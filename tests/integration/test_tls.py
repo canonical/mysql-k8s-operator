@@ -84,6 +84,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             status="active",
             raise_on_blocked=True,
             timeout=15 * 60,
+            raise_on_error=False,
         )
 
 

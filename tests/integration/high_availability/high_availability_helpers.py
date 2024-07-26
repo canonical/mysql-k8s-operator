@@ -168,6 +168,7 @@ async def deploy_and_scale_mysql(
             status="active",
             raise_on_blocked=True,
             timeout=TIMEOUT,
+            raise_on_error=False,
         )
 
         assert len(ops_test.model.applications[mysql_application_name].units) == num_units

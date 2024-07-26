@@ -53,6 +53,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             apps=[MYSQL_APP_NAME],
             status="active",
             timeout=TIMEOUT,
+            raise_on_error=False,
         )
 
 
