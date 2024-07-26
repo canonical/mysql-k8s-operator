@@ -14,7 +14,7 @@ groups:
 
       # 2.1.2
       # customized: 80% -> 90%
-      - alert: MySQLTooManyConnections(>80%)
+      - alert: MySQLTooManyConnections(>90%)
         expr: max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 90
         for: 2m
         labels:
