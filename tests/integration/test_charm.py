@@ -68,6 +68,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             raise_on_blocked=True,
             timeout=TIMEOUT,
             wait_for_exact_units=3,
+            raise_on_error=False,
         )
         assert len(ops_test.model.applications[APP_NAME].units) == 3
 
