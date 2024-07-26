@@ -1,0 +1,6 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:295 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:298 Deploying mysql-test-app
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:301 Relating mysql-k8s with mysql-test-app
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
