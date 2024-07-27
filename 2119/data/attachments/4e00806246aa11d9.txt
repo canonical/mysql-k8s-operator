@@ -1,0 +1,33 @@
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-test-app/0 [executing] active: 
+  mysql-test-app/1 [executing] active: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] active: 
+  mysql-k8s/1 [executing] active: Primary
+  mysql-k8s/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:35:54Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.37-0ubuntu0.22.04.3  active       3  mysql-k8s                      0  10.152.183.40   no       
+mysql-test-app  0.0.2                    waiting      2  mysql-test-app  latest/edge   46  10.152.183.245  no       installing agent
+
+Unit               Workload  Agent  Address     Ports  Message
+mysql-k8s/0        active    idle   10.1.15.13         
+mysql-k8s/1*       active    idle   10.1.15.15         Primary
+mysql-k8s/2        active    idle   10.1.15.14         
+mysql-test-app/0*  waiting   idle   10.1.15.8          
+mysql-test-app/1   waiting   idle   10.1.15.9          
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:35:25 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "70ca00c3-6305-4c99-8167-eb84e05c725e:r#4#mysql-test-app": settings 70ca00c3-6305-4c99-8167-eb84e05c725e:r#4#mysql-test-app not found (not found)
+unit-mysql-k8s-2: 01:35:25 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "70ca00c3-6305-4c99-8167-eb84e05c725e:r#4#mysql-test-app": settings 70ca00c3-6305-4c99-8167-eb84e05c725e:r#4#mysql-test-app not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
