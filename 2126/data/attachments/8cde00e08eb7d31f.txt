@@ -1,0 +1,27 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:36:51Z
+
+App           Version                  Status  Scale  Charm          Channel        Rev  Address         Exposed  Message
+kafka                                  active      1  kafka-k8s      latest/stable    5  10.152.183.231  no       
+mongodb                                active      1  mongodb-k8s    5/edge          36  10.152.183.121  no       Primary
+mysql-k8s     8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                       0  10.152.183.49   no       
+osm-keystone                           active      1  osm-keystone   latest/beta     10  10.152.183.107  no       
+osm-pol                                active      1  osm-pol        latest/beta    337  10.152.183.182  no       
+zookeeper                              active      1  zookeeper-k8s  latest/stable   10  10.152.183.249  no       
+
+Unit             Workload  Agent  Address      Ports  Message
+kafka/0*         active    idle   10.1.60.208         
+mongodb/0*       active    idle   10.1.60.204         Primary
+mysql-k8s/0*     active    idle   10.1.60.209         Primary
+osm-keystone/0*  active    idle   10.1.60.200         
+osm-pol/0*       active    idle   10.1.60.206         
+zookeeper/0*     active    idle   10.1.60.207         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mongodb-0: 01:35:16 ERROR unit.mongodb/0.juju-log Failed to get pbm status.
+unit-mongodb-0: 01:36:10 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
