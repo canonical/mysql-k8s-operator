@@ -1,0 +1,31 @@
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:125 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:130 Run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:133 Refresh with previous charm
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:140 Wait for upgrade to start
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:147 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:154 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.202:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.202:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:167 Wait for application to recover
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:36:45Z
+
+App        Version                  Status   Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s  8.0.34-0ubuntu0.22.04.1  waiting      3  mysql-k8s             1  10.152.183.133  no       waiting for units to settle down
+
+Unit          Workload  Agent      Address     Ports  Message
+mysql-k8s/0*  active    executing  10.1.90.17         
+mysql-k8s/1   active    executing  10.1.90.16         
+mysql-k8s/2   active    executing  10.1.90.15         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:34:02 ERROR unit.mysql-k8s/2.juju-log Unit failed to rejoin the cluster after upgrade
+unit-mysql-k8s-2: 01:34:02 CRITICAL unit.mysql-k8s/2.juju-log Upgrade failed, follow the instructions below to rollback:
+  1 - Run `juju run mysql-k8s/leader pre-upgrade-check` to configure rollback
+  2 - Run `juju refresh --revision <previous-revision> mysql-k8s` to initiate the rollback
+  3 - Run `juju run mysql-k8s/leader resume-upgrade` to resume the rollback
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
