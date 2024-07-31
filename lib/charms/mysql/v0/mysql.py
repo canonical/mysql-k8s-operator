@@ -128,7 +128,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 64
+LIBPATCH = 65
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -863,6 +863,14 @@ class MySQLBase(ABC):
         self.monitoring_password = monitoring_password
         self.backups_user = backups_user
         self.backups_password = backups_password
+
+        self.passwords = [
+            self.root_password,
+            self.server_config_password,
+            self.cluster_admin_password,
+            self.monitoring_password,
+            self.backups_password,
+        ]
 
     def render_mysqld_configuration(
         self,
@@ -2406,12 +2414,12 @@ class MySQLBase(ABC):
             tmp_dir, _ = self._execute_commands(make_temp_dir_command, user=user, group=group)
         except MySQLExecError:
             logger.exception("Failed to execute commands prior to running backup")
-            raise MySQLExecuteBackupCommandsError
+            raise MySQLExecuteBackupCommandsError from None
         except Exception:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
-            logger.exception("Failed to execute commands prior to running backup")
-            raise MySQLExecuteBackupCommandsError
+            logger.exception("Failed unexpectedly to execute commands prior to running backup")
+            raise MySQLExecuteBackupCommandsError from None
 
         # TODO: remove flags --no-server-version-check
         # when MySQL and XtraBackup versions are in sync
@@ -2462,12 +2470,12 @@ class MySQLBase(ABC):
             )
         except MySQLExecError as e:
             logger.exception("Failed to execute backup commands")
-            raise MySQLExecuteBackupCommandsError(e.message)
+            raise MySQLExecuteBackupCommandsError from None
         except Exception:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
-            logger.exception("Failed to execute backup commands")
-            raise MySQLExecuteBackupCommandsError
+            logger.exception("Failed unexpectedly to execute backup commands")
+            raise MySQLExecuteBackupCommandsError from None
 
     def delete_temp_backup_directory(
         self,
@@ -2849,6 +2857,13 @@ class MySQLBase(ABC):
             "performance_schema",
             "sys",
         }
+
+    def strip_off_passwords(self, input: str) -> str:
+        """Strips off passwords from the input string"""
+        stripped_input = input
+        for password in self.passwords:
+            stripped_input = stripped_input.replace(password, "xxxxxxxxxxxx")
+        return stripped_input
 
     @abstractmethod
     def is_mysqld_running(self) -> bool:
