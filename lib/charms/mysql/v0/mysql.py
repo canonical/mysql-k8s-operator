@@ -2414,12 +2414,12 @@ class MySQLBase(ABC):
             tmp_dir, _ = self._execute_commands(make_temp_dir_command, user=user, group=group)
         except MySQLExecError:
             logger.exception("Failed to execute commands prior to running backup")
-            raise MySQLExecuteBackupCommandsError from None
+            raise MySQLExecuteBackupCommandsError
         except Exception:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
             logger.exception("Failed unexpectedly to execute commands prior to running backup")
-            raise MySQLExecuteBackupCommandsError from None
+            raise MySQLExecuteBackupCommandsError
 
         # TODO: remove flags --no-server-version-check
         # when MySQL and XtraBackup versions are in sync
@@ -2470,12 +2470,12 @@ class MySQLBase(ABC):
             )
         except MySQLExecError as e:
             logger.exception("Failed to execute backup commands")
-            raise MySQLExecuteBackupCommandsError from None
+            raise MySQLExecuteBackupCommandsError
         except Exception:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
             logger.exception("Failed unexpectedly to execute backup commands")
-            raise MySQLExecuteBackupCommandsError from None
+            raise MySQLExecuteBackupCommandsError
 
     def delete_temp_backup_directory(
         self,
