@@ -57,6 +57,7 @@ class CharmConfig(BaseConfigModel):
     mysql_root_interface_user: Optional[str]
     mysql_root_interface_database: Optional[str]
     experimental_max_connections: Optional[int]
+    plugin_audit_enabled: bool
 
     @validator("profile")
     @classmethod
