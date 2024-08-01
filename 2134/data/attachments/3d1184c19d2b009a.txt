@@ -1,0 +1,29 @@
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:98 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:104 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:107 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:110 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:121 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.142:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.142:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.142:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:134 Wait for upgrade to complete
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:140 Ensure continuous_writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:40:01Z
+
+App        Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s  8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s                      0  10.152.183.173  no       
+test-app   0.0.2                    active      1  mysql-test-app  latest/edge   46  10.152.183.18   no       Last written value=20529
+
+Unit          Workload  Agent      Address       Ports  Message
+mysql-k8s/0   active    idle       10.1.218.209         
+mysql-k8s/1*  active    idle       10.1.218.208         
+mysql-k8s/2   active    executing  10.1.218.207         Primary
+test-app/0*   active    idle       10.1.218.200         Last written value=20529
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
