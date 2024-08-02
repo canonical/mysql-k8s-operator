@@ -7,7 +7,7 @@ import string
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import kubernetes
 import lightkube
@@ -285,24 +285,6 @@ def destroy_chaos_mesh(namespace: str) -> None:
         shell=True,
         env=env,
     )
-
-
-async def high_availability_test_setup(ops_test: OpsTest) -> Tuple[str, str]:
-    """Run the set up for high availability tests.
-
-    Args:
-        ops_test: The ops test framework
-    """
-    logger.info("Deploying mysql-k8s and scaling to 3 units")
-    mysql_application_name = await deploy_and_scale_mysql(ops_test)
-
-    logger.info("Deploying mysql-test-app")
-    application_name = await deploy_and_scale_application(ops_test)
-
-    logger.info("Relating mysql-k8s with mysql-test-app")
-    await relate_mysql_and_application(ops_test, mysql_application_name, application_name)
-
-    return mysql_application_name, application_name
 
 
 async def send_signal_to_pod_container_process(

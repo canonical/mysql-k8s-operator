@@ -10,6 +10,10 @@ bases:
     channel: "22.04"
     architectures: [arm64]
 parts:
+  files:
+    plugin: nil
+    prime:
+      - scripts/log_rotate_dispatcher.py
   charm:
     override-pull: |
       craftctl default
@@ -25,5 +29,3 @@ parts:
       - pkg-config
       - rustc
       - cargo
-    prime:
-      - scripts
