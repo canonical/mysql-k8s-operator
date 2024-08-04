@@ -1,0 +1,41 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  02:01:03Z
+
+App           Version  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+kafka                  waiting      1  kafka-k8s      latest/stable    5  10.152.183.99   no       installing agent
+mongodb                active       1  mongodb-k8s    5/edge          36  10.152.183.98   no       Primary
+mysql-k8s              waiting      1  mysql-k8s                       0  10.152.183.194  no       installing agent
+osm-keystone           waiting      1  osm-keystone   latest/beta     10  10.152.183.219  no       installing agent
+osm-pol                waiting      1  osm-pol        latest/beta    337  10.152.183.228  no       installing agent
+zookeeper              active       1  zookeeper-k8s  latest/stable   10  10.152.183.187  no       
+
+Unit             Workload  Agent  Address       Ports  Message
+kafka/0*         blocked   idle   10.1.235.209         need zookeeper relation
+mongodb/0*       active    idle   10.1.235.205         Primary
+mysql-k8s/0*     unknown   idle   10.1.235.202         
+osm-keystone/0*  blocked   idle   10.1.235.201         mysql relation is missing
+osm-pol/0*       blocked   idle   10.1.235.206         need kafka, mongodb, mysql relations
+zookeeper/0*     active    idle   10.1.235.208         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mongodb-0: 01:46:13 ERROR unit.mongodb/0.juju-log Failed to get pbm status.
+unit-mongodb-0: 01:47:03 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:48:04 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:48:56 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:50:04 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:51:02 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:52:08 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:53:05 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:53:58 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:55:03 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:55:54 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:56:47 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:57:45 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:58:33 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 01:59:36 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+unit-mongodb-0: 02:00:30 ERROR unit.mongodb/0.juju-log Failed to get pbm status: Password for 'app', 'backup' couldn't be retrieved
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

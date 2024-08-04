@@ -1,0 +1,1 @@
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:125 Inserting value before backup

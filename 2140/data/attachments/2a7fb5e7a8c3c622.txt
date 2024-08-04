@@ -1,0 +1,18 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:67 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:54:19Z
+
+App  Version  Status   Scale  Charm      Channel  Rev  Address         Exposed  Message
+db1           waiting      3  mysql-k8s             0  10.152.183.242  no       installing agent
+
+Unit    Workload  Agent  Address      Ports  Message
+db1/0   unknown   idle   10.1.210.78         
+db1/1*  unknown   idle   10.1.210.81         
+db1/2   unknown   idle   10.1.210.79         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
