@@ -3,13 +3,13 @@
 
 options:
   cluster-name:
-    description: "Optional - Name of the MySQL InnoDB cluster, set once at deployment"
-    type: "string"
+    description: Optional - Name of the MySQL InnoDB cluster, set once at deployment
+    type: string
   cluster-set-name:
     description: |
       Optional - Name for async replication cluster set, set once at deployment.
       On `recreate-clster` action call, the cluster set name will be re-generated automatically.
-    type: "string"
+    type: string
   profile:
     description: |
       profile representing the scope of deployment, and used to be able to enable high-level
@@ -25,21 +25,27 @@ options:
       Only comes into effect when the `production` profile is selected.
 # Config options for the legacy 'mysql' interface
   mysql-interface-user:
-    description: "The database username for the legacy 'mysql' interface"
-    type: "string"
+    description: The database username for the legacy 'mysql' interface
+    type: string
   mysql-interface-database:
-    description: "The database name for the legacy 'mysql' interface"
-    type: "string"
+    description: The database name for the legacy 'mysql' interface
+    type: string
   mysql-root-interface-user:
-    description: "The database username for the legacy 'mysql' interface (root level access)"
-    type: "string"
+    description: The database username for the legacy 'mysql' interface (root level access)
+    type: string
   mysql-root-interface-database:
-    description: "The database name for the legacy 'mysql' interface (root level access)"
-    type: "string"
+    description: The database name for the legacy 'mysql' interface (root level access)
+    type: string
   plugin-audit-enabled:
-    description: "Enable the audit plugin"
-    type: "boolean"
+    description: Enable the audit plugin
+    type: boolean
     default: true
+  plugin-audit-strategy:
+    description: |
+      Audit log plugin strategy. Allowed values are: "semi-async" and "async".
+      Ref. at https://docs.percona.com/percona-server/8.0/audit-log-plugin.html#audit_log_strategy
+    type: string
+    default: async
 # Experimental features
   experimental-max-connections:
     type: int

@@ -477,7 +477,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.unit_peer_data.setdefault("member-role", "unknown")
         self.unit_peer_data.setdefault("member-state", "waiting")
 
-    def _on_config_changed(self, _: EventBase) -> None:
+    def _on_config_changed(self, _: EventBase) -> None:  # noqa: C901
         """Handle the config changed event."""
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
@@ -504,6 +504,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
         new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
             profile=self.config.profile,
+            audit_log_enabled=self.config.plugin_audit_enabled,
+            audit_log_strategy=self.config.plugin_audit_strategy,
             memory_limit=memory_limit_bytes,
             experimental_max_connections=self.config.experimental_max_connections,
         )
@@ -512,12 +514,19 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         if self.mysql_config.keys_requires_restart(changed_config):
             # there are static configurations in changed keys
-            logger.info("Configuration change requires restart")
+            logger.info("Persisting configuration changes to file")
 
             # persist config to file
             self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
 
             if self._mysql.is_mysqld_running():
+                logger.info("Configuration change requires restart")
+                if "loose-audit_log_format" in changed_config:
+                    # plugins are manipulated running daemon
+                    if self.config.plugin_audit_enabled:
+                        self._mysql.install_plugins(["audit_log", "audit_log_filter"])
+                    else:
+                        self._mysql.uninstall_plugins(["audit_log", "audit_log_filter"])
                 # restart the service
                 self.on[f"{self.restart.name}"].acquire_lock.emit()
                 return
@@ -574,6 +583,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
         new_config_content, _ = self._mysql.render_mysqld_configuration(
             profile=self.config.profile,
+            audit_log_enabled=self.config.plugin_audit_enabled,
+            audit_log_strategy=self.config.plugin_audit_strategy,
             memory_limit=memory_limit_bytes,
             experimental_max_connections=self.config.experimental_max_connections,
         )

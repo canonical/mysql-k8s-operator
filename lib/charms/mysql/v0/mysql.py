@@ -875,10 +875,12 @@ class MySQLBase(ABC):
         self.backups_user = backups_user
         self.backups_password = backups_password
 
-    def render_mysqld_configuration(
+    def render_mysqld_configuration(  # noqa: C901
         self,
         *,
         profile: str,
+        audit_log_enabled: bool,
+        audit_log_strategy: str,
         memory_limit: Optional[int] = None,
         experimental_max_connections: Optional[int] = None,
         snap_common: str = "",
@@ -945,10 +947,18 @@ class MySQLBase(ABC):
             "general_log": "ON",
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
             "slow_query_log_file": f"{snap_common}/var/log/mysql/slowquery.log",
-            "loose-audit_log_format": "JSON",
             "loose-audit_log_policy": "LOGINS",
             "loose-audit_log_file": f"{snap_common}/var/log/mysql/audit.log",
         }
+
+        if audit_log_enabled:
+            # This is used for being able to know the current state of the
+            # audit plugin on config changes
+            config["mysqld"]["loose-audit_log_format"] = "JSON"
+        if audit_log_strategy == "async":
+            config["mysqld"]["loose-audit_log_strategy"] = "ASYNCHRONOUS"
+        else:
+            config["mysqld"]["loose-audit_log_strategy"] = "SEMISYNCHRONOUS"
 
         if innodb_buffer_pool_chunk_size:
             config["mysqld"]["innodb_buffer_pool_chunk_size"] = str(innodb_buffer_pool_chunk_size)
@@ -1055,8 +1065,11 @@ class MySQLBase(ABC):
 
     def uninstall_plugins(self, plugins: list[str]) -> None:
         """Uninstall plugins."""
+        super_read_only = self.get_variable_value("super_read_only").lower() == "on"
         try:
             installed_plugins = self._get_installed_plugins()
+            # disable super_read_only to uninstall plugins
+            self.set_dynamic_variable("super_read_only", "OFF")
             for plugin in plugins:
                 if plugin not in installed_plugins:
                     # skip if the plugin is not installed
@@ -1072,6 +1085,10 @@ class MySQLBase(ABC):
                 f"Failed to uninstall {plugin=}",  # type: ignore
             )
             raise MySQLPluginInstallError
+        finally:
+            # restore original super_read_only value
+            if super_read_only:
+                self.set_dynamic_variable("super_read_only", "ON")
 
     def _get_installed_plugins(self) -> set[str]:
         """Return a set of explicitly installed plugins."""
@@ -2928,7 +2945,8 @@ class MySQLBase(ABC):
                 for log in logs_type
                 if log != MySQLTextLogs.AUDIT
             ])
-            flush_logs_commands.append("session.run_sql(\"set global audit_log_flush='ON'\")")
+            if MySQLTextLogs.AUDIT in logs_type:
+                flush_logs_commands.append("session.run_sql(\"set global audit_log_flush='ON'\")")
         elif logs_type != MySQLTextLogs.AUDIT:
             flush_logs_commands.append(f'session.run_sql("FLUSH {logs_type.value}")')  # type: ignore
         else:
