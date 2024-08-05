@@ -176,8 +176,10 @@ import functools
 import inspect
 import logging
 import os
+import shutil
 from contextlib import contextmanager
 from contextvars import Context, ContextVar, copy_context
+from importlib.metadata import distributions
 from pathlib import Path
 from typing import (
     Any,
@@ -217,7 +219,7 @@ LIBAPI = 1
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
 
-LIBPATCH = 11
+LIBPATCH = 13
 
 PYDEPS = ["opentelemetry-exporter-otlp-proto-http==1.21.0"]
 
@@ -359,6 +361,30 @@ def _get_server_cert(
     return server_cert
 
 
+def _remove_stale_otel_sdk_packages():
+    """Hack to remove stale opentelemetry sdk packages from the charm's python venv.
+
+    See https://github.com/canonical/grafana-agent-operator/issues/146 and
+    https://bugs.launchpad.net/juju/+bug/2058335 for more context. This patch can be removed after
+    this juju issue is resolved and sufficient time has passed to expect most users of this library
+    have migrated to the patched version of juju.
+
+    This only does something if executed on an upgrade-charm event.
+    """
+    if os.getenv("JUJU_DISPATCH_PATH") == "hooks/upgrade-charm":
+        logger.debug("Executing _remove_stale_otel_sdk_packages patch on charm upgrade")
+        # Find any opentelemetry_sdk distributions
+        otel_sdk_distributions = list(distributions(name="opentelemetry_sdk"))
+        # If there is more than 1, inspect each and if it has 0 entrypoints, infer that it is stale
+        if len(otel_sdk_distributions) > 1:
+            for distribution in otel_sdk_distributions:
+                if len(distribution.entry_points) == 0:
+                    # Distribution appears to be empty. Remove it
+                    path = distribution._path  # type: ignore
+                    logger.debug(f"Removing empty opentelemetry_sdk distribution at: {path}")
+                    shutil.rmtree(path)
+
+
 def _setup_root_span_initializer(
     charm_type: _CharmType,
     tracing_endpoint_attr: str,
@@ -391,6 +417,10 @@ def _setup_root_span_initializer(
         _service_name = service_name or f"{self.app.name}-charm"
 
         unit_name = self.unit.name
+        # apply hacky patch to remove stale opentelemetry sdk packages on upgrade-charm.
+        # it could be trouble if someone ever decides to implement their own tracer parallel to
+        # ours and before the charm has inited. We assume they won't.
+        _remove_stale_otel_sdk_packages()
         resource = Resource.create(
             attributes={
                 "service.name": _service_name,
@@ -612,38 +642,58 @@ def trace_type(cls: _T) -> _T:
             dev_logger.info(f"skipping {method} (dunder)")
             continue
 
-        new_method = trace_method(method)
-        if isinstance(inspect.getattr_static(cls, method.__name__), staticmethod):
+        # the span title in the general case should be:
+        #   method call: MyCharmWrappedMethods.b
+        # if the method has a name (functools.wrapped or regular method), let
+        # _trace_callable use its default algorithm to determine what name to give the span.
+        trace_method_name = None
+        try:
+            qualname_c0 = method.__qualname__.split(".")[0]
+            if not hasattr(cls, method.__name__):
+                # if the callable doesn't have a __name__ (probably a decorated method),
+                # it probably has a bad qualname too (such as my_decorator.<locals>.wrapper) which is not
+                # great for finding out what the trace is about. So we use the method name instead and
+                # add a reference to the decorator name. Result:
+                #   method call: @my_decorator(MyCharmWrappedMethods.b)
+                trace_method_name = f"@{qualname_c0}({cls.__name__}.{name})"
+        except Exception:  # noqa: failsafe
+            pass
+
+        new_method = trace_method(method, name=trace_method_name)
+
+        if isinstance(inspect.getattr_static(cls, name), staticmethod):
             new_method = staticmethod(new_method)
         setattr(cls, name, new_method)
 
     return cls
 
 
-def trace_method(method: _F) -> _F:
+def trace_method(method: _F, name: Optional[str] = None) -> _F:
     """Trace this method.
 
     A span will be opened when this method is called and closed when it returns.
     """
-    return _trace_callable(method, "method")
+    return _trace_callable(method, "method", name=name)
 
 
-def trace_function(function: _F) -> _F:
+def trace_function(function: _F, name: Optional[str] = None) -> _F:
     """Trace this function.
 
     A span will be opened when this function is called and closed when it returns.
     """
-    return _trace_callable(function, "function")
+    return _trace_callable(function, "function", name=name)
 
 
-def _trace_callable(callable: _F, qualifier: str) -> _F:
+def _trace_callable(callable: _F, qualifier: str, name: Optional[str] = None) -> _F:
     dev_logger.info(f"instrumenting {callable}")
 
     # sig = inspect.signature(callable)
     @functools.wraps(callable)
     def wrapped_function(*args, **kwargs):  # type: ignore
-        name = getattr(callable, "__qualname__", getattr(callable, "__name__", str(callable)))
-        with _span(f"{qualifier} call: {name}"):  # type: ignore
+        name_ = name or getattr(
+            callable, "__qualname__", getattr(callable, "__name__", str(callable))
+        )
+        with _span(f"{qualifier} call: {name_}"):  # type: ignore
             return callable(*args, **kwargs)  # type: ignore
 
     # wrapped_function.__signature__ = sig

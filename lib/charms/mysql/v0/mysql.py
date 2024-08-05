@@ -128,7 +128,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 64
+LIBPATCH = 65
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -421,9 +421,7 @@ class MySQLCharmBase(CharmBase, ABC):
         super().__init__(*args)
 
         # disable support
-        disable_file = Path(
-            f"{os.environ.get('CHARM_DIR')}/disable"
-        )  # pyright: ignore [reportArgumentType]
+        disable_file = Path(f"{os.environ.get('CHARM_DIR')}/disable")  # pyright: ignore [reportArgumentType]
         if disable_file.exists():
             logger.warning(
                 f"\n\tDisable file `{disable_file.resolve()}` found, the charm will skip all events."
@@ -539,19 +537,15 @@ class MySQLCharmBase(CharmBase, ABC):
             status = self._mysql.get_cluster_status()
 
         if status:
-            event.set_results(
-                {
-                    "success": True,
-                    "status": status,
-                }
-            )
+            event.set_results({
+                "success": True,
+                "status": status,
+            })
         else:
-            event.set_results(
-                {
-                    "success": False,
-                    "message": "Failed to read cluster status.  See logs for more information.",
-                }
-            )
+            event.set_results({
+                "success": False,
+                "message": "Failed to read cluster status.  See logs for more information.",
+            })
 
     def _recreate_cluster(self, event: ActionEvent) -> None:
         """Action used to recreate the cluster, for special cases."""
@@ -564,9 +558,9 @@ class MySQLCharmBase(CharmBase, ABC):
             del self.app_peer_data["removed-from-cluster-set"]
 
         # reset cluster-set-name to config or previous value
-        hash = self.generate_random_hash()
+        random_hash = self.generate_random_hash()
         self.app_peer_data["cluster-set-domain-name"] = self.model.config.get(
-            "cluster-set-name", f"cluster-set-{hash}"
+            "cluster-set-name", f"cluster-set-{random_hash}"
         )
 
         logger.info("Recreating cluster")
@@ -1226,12 +1220,10 @@ class MySQLBase(ABC):
         }
 
         if create_cluster_admin:
-            options.update(
-                {
-                    "clusterAdmin": self.cluster_admin_user,
-                    "clusterAdminPassword": self.cluster_admin_password,
-                }
-            )
+            options.update({
+                "clusterAdmin": self.cluster_admin_user,
+                "clusterAdminPassword": self.cluster_admin_password,
+            })
 
         configure_instance_command = (
             f"dba.configure_instance('{self.server_config_user}:{self.server_config_password}@{self.instance_address}', {json.dumps(options)})",
@@ -1805,7 +1797,7 @@ class MySQLBase(ABC):
         reraise=True,
         wait=wait_random(min=4, max=30),
     )
-    def remove_instance(self, unit_label: str, lock_instance: Optional[str] = None) -> None:
+    def remove_instance(self, unit_label: str, lock_instance: Optional[str] = None) -> None:  # noqa: C901
         """Remove instance from the cluster.
 
         This method is called from each unit being torn down, thus we must obtain
@@ -1813,7 +1805,7 @@ class MySQLBase(ABC):
         obtaining the lock, removing instances/dissolving the cluster, or releasing
         the lock.
         """
-        remaining_cluster_member_addresses = list()
+        remaining_cluster_member_addresses = []
         skip_release_lock = False
         try:
             # Get the cluster primary's address to direct lock acquisition request to.
@@ -2818,9 +2810,9 @@ class MySQLBase(ABC):
         ]
 
         if isinstance(logs_type, list):
-            flush_logs_commands.extend(
-                [f"session.run_sql('FLUSH {log.value}')" for log in logs_type]
-            )
+            flush_logs_commands.extend([
+                f"session.run_sql('FLUSH {log.value}')" for log in logs_type
+            ])
         else:
             flush_logs_commands.append(f'session.run_sql("FLUSH {logs_type.value}")')  # type: ignore
 
