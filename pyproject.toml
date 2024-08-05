@@ -10,7 +10,7 @@ authors = []
 
 [tool.poetry.dependencies]
 python = "^3.10"
-ops = "^2.7.0"
+ops = "^2.15.0"
 lightkube = "^0.14.0"
 tenacity = "^8.2.2"
 boto3 = "^1.28.22"
@@ -60,7 +60,7 @@ pytest-operator = "^0.28.0"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v18.0.0", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
 pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v18.0.0", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
 juju = "^3.2.2"
-ops = "^2.5.0"
+ops = "^2.15.0"
 mysql-connector-python = "~8.0.33"
 tenacity = "^8.2.2"
 boto3 = "^1.28.22"
