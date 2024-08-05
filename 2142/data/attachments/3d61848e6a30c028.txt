@@ -1,0 +1,16 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:56:20Z
+
+App        Version  Status   Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s           waiting      1  mysql-k8s             0  10.152.183.150  no       installing agent
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0*  unknown   idle   10.1.51.137         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:70 Cleaning backups from buckets

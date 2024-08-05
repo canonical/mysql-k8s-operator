@@ -1,0 +1,1 @@
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:121 Inserting value before backup

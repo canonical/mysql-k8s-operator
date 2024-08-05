@@ -1,0 +1,7 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:98 Ensure continuous_writes
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:104 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:107 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:110 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes

@@ -1,0 +1,23 @@
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:98 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:104 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:107 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:110 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:59:15Z
+
+App        Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s  8.0.36-0ubuntu0.22.04.1  waiting      3  mysql-k8s                      0  10.152.183.248  no       installing agent
+test-app   0.0.2                    active       1  mysql-test-app  latest/edge   46  10.152.183.245  no       Last written value=86248
+
+Unit          Workload     Agent  Address      Ports  Message
+mysql-k8s/0   active       idle   10.1.47.204         Primary
+mysql-k8s/1   active       idle   10.1.47.205         
+mysql-k8s/2*  maintenance  idle   10.1.47.207         
+test-app/0*   active       idle   10.1.47.200         Last written value=86248
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

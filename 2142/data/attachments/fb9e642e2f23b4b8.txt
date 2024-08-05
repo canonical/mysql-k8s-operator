@@ -1,0 +1,1 @@
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:125 Inserting value before backup
