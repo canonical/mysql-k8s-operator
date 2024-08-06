@@ -1,0 +1,108 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:335 Stopping continuous writes after 5s
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:343 Remove async relation
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:349 waiting for units to be blocked
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:355 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [idle] blocked: Standalone read-only unit.
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:369 Re relating the two mysql clusters
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:372 Waiting for the applications to settle
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:381 Running create replication action
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:391 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [executing] active: 
+  db1/1 [executing] active: 
+  db1/2 [executing] maintenance: Sharing credentials with replica cluster
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Wait until unit is initialized before running create-replication on offer side
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [idle] maintenance: Sharing credentials with replica cluster
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] active: 
+  db2/2 [executing] maintenance: Syncing credentials
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [executing] maintenance: joining the cluster
+  db2/1 [executing] waiting: waiting to join the cluster
+  db2/2 [idle] waiting: Waiting for recovery to complete on other units
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [executing] maintenance: joining the cluster
+  db2/2 [idle] waiting: Waiting for recovery to complete on other units
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:417 Testing data replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:424 Stopping continuous writes and wait (5s) for replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:431 Querying max value on all units
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:67 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:55:50Z
+
+App               Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+db1               8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s                        0  10.152.183.51   no       
+mysql-router-k8s  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     142  10.152.183.100  no       
+mysql-test-app    0.0.2                    active      1  mysql-test-app    latest/edge   46  10.152.183.191  no       
+
+Unit                 Workload  Agent      Address     Ports  Message
+db1/0                active    executing  10.1.67.12         
+db1/1                active    executing  10.1.67.14         
+db1/2*               active    executing  10.1.67.13         Primary
+mysql-router-k8s/0*  active    idle       10.1.67.21         
+mysql-test-app/0*    active    idle       10.1.67.22         
+
+Offer  Application  Charm      Rev  Connected  Endpoint           Interface    Role
+db1    db1          mysql-k8s  0    1/1        replication-offer  mysql_async  provider
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-test-app-0: 01:46:46 ERROR unit.mysql-test-app/0.juju-log Unable to query the database
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 611, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Table 'continuous_writes_database.data' doesn't exist
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 224, in _stop_continuous_writes
+    last_written_value = self._max_written_value()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 236, in _max_written_value
+    cursor.execute(
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/cursor_cext.py", line 330, in execute
+    result = self._cnx.cmd_query(
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 619, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1146 (42S02): Table 'continuous_writes_database.data' doesn't exist
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 222, in _stop_continuous_writes
+    for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(5)):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/tenacity/__init__.py", line 384, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/tenacity/__init__.py", line 363, in iter
+    raise retry_exc from fut.exception()
+tenacity.RetryError: RetryError[<Future at 0x7fdcfc9c5d80 state=finished raised ProgrammingError>]
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
