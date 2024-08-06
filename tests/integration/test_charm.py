@@ -348,9 +348,14 @@ async def test_log_rotation(ops_test: OpsTest) -> None:
     await ops_test.model.set_config({"update-status-hook-interval": "60m"})
 
     # Exclude slowquery log files as slowquery logs are not enabled by default
-    log_types = ["error", "general"]
-    log_files = ["error.log", "general.log"]
-    archive_directories = ["archive_error", "archive_general", "archive_slowquery"]
+    log_types = ["error", "general", "audit"]
+    log_files = ["error.log", "general.log", "audit.log"]
+    archive_directories = [
+        "archive_error",
+        "archive_general",
+        "archive_slowquery",
+        "archive_audit",
+    ]
 
     logger.info("Overwriting the log rotate dispatcher script")
     unit_label = unit.name.replace("/", "-")
