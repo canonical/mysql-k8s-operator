@@ -207,6 +207,10 @@ class MySQLProvider(Object):
 
     def _configure_endpoints(self, _) -> None:
         """Update the endpoints + read_only_endpoints."""
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            return
+
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
         if not relations or not self.charm.unit_initialized:
             return
