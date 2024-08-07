@@ -933,6 +933,7 @@ class MySQLBase(ABC):
             "general_log": "ON",
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
             "slow_query_log_file": f"{snap_common}/var/log/mysql/slowquery.log",
+            "binlog_expire_logs_seconds": "604800",
         }
 
         if innodb_buffer_pool_chunk_size:
