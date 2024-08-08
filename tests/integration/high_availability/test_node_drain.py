@@ -14,10 +14,10 @@ from .high_availability_helpers import (
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
     evict_pod,
+    get_application_name,
     get_pod,
     get_pod_pvcs,
     get_pod_pvs,
-    high_availability_test_setup,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,18 +28,12 @@ TIMEOUT = 30 * 60
 
 
 @pytest.mark.group(1)
-@pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest) -> None:
-    """Simple test to ensure that the mysql and application charms get deployed."""
-    await high_availability_test_setup(ops_test)
-
-
-@pytest.mark.group(1)
-@pytest.mark.abort_on_fail
-async def test_pod_eviction_and_pvc_deletion(ops_test: OpsTest, continuous_writes) -> None:
+async def test_pod_eviction_and_pvc_deletion(
+    ops_test: OpsTest, highly_available_cluster, continuous_writes
+) -> None:
     """Test behavior when node drains - pod is evicted and pvs are rotated."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     logger.info("Waiting until 3 mysql instances are online")
     # ensure all units in the cluster are online

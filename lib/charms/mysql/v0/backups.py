@@ -99,7 +99,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 10
+LIBPATCH = 11
 
 
 if typing.TYPE_CHECKING:
@@ -314,11 +314,9 @@ class MySQLBackups(Object):
             return
 
         logger.info(f"Backup succeeded: with backup-id {datetime_backup_requested}")
-        event.set_results(
-            {
-                "backup-id": datetime_backup_requested,
-            }
-        )
+        event.set_results({
+            "backup-id": datetime_backup_requested,
+        })
         self.charm._on_update_status(None)
 
     def _can_unit_perform_backup(self) -> Tuple[bool, Optional[str]]:
@@ -538,11 +536,9 @@ class MySQLBackups(Object):
             return
 
         logger.info("Restore succeeded")
-        event.set_results(
-            {
-                "completed": "ok",
-            }
-        )
+        event.set_results({
+            "completed": "ok",
+        })
         # update status as soon as possible
         self.charm._on_update_status(None)
 
