@@ -11,9 +11,8 @@ bases:
     architectures: [arm64]
 parts:
   files:
-    plugin: nil
-    prime:
-      - scripts/log_rotate_dispatcher.py
+    plugin: dump
+    source: scripts/
   charm:
     override-pull: |
       craftctl default
