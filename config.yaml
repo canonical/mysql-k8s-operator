@@ -36,6 +36,10 @@ options:
   mysql-root-interface-database:
     description: "The database name for the legacy 'mysql' interface (root level access)"
     type: "string"
+  binlog_retention_days:
+    description: Number of days for binary logs retention
+    type: int
+    default: 7
 # Experimental features
   experimental-max-connections:
     type: int
