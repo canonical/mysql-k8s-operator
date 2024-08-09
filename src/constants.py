@@ -33,7 +33,11 @@ MYSQL_DATA_DIR = "/var/lib/mysql"
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
 MYSQLD_CONFIG_FILE = "/etc/mysql/mysql.conf.d/z-custom.cnf"
-MYSQL_LOG_FILES = ["/var/log/mysql/error.log"]
+MYSQL_LOG_FILES = [
+    "/var/log/mysql/error.log",
+    "/var/log/mysql/audit.log",
+    "/var/log/mysql/general.log",
+]
 MYSQL_SYSTEM_USER = "mysql"
 MYSQL_SYSTEM_GROUP = "mysql"
 CHARMED_MYSQL_XTRABACKUP_LOCATION = "xtrabackup"
