@@ -1,0 +1,13 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:26 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:28 Starting continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:296 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:299 Deploying mysql-test-app
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:302 Relating mysql-k8s with mysql-test-app
+[32mINFO    [0m juju.model:model.py:2097 Deploying local:jammy/mysql-k8s-1
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  another-mysql/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  another-mysql/0 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  another-mysql/0 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:33 Clearing continuous writes

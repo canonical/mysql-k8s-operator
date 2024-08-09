@@ -1,0 +1,27 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:216 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  01:42:41Z
+
+App                       Version                  Status  Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s                                  0  10.152.183.74   no       
+self-signed-certificates                           active      1  self-signed-certificates  latest/stable  155  10.152.183.228  no       
+
+Unit                         Workload  Agent  Address      Ports  Message
+mysql-k8s/0*                 active    idle   10.1.216.13         
+mysql-k8s/1                  active    idle   10.1.216.12         
+mysql-k8s/2                  active    idle   10.1.216.11         
+self-signed-certificates/0*  active    idle   10.1.216.14         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:41:34 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:41:38 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:41:40 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:41:42 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:41:44 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:41:47 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-self-signed-certificates-0: 01:42:15 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "9473b81f-2e3a-4ef3-8ec3-7f700e596171:r#3#mysql-k8s": settings 9473b81f-2e3a-4ef3-8ec3-7f700e596171:r#3#mysql-k8s not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
