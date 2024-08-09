@@ -59,6 +59,7 @@ class CharmConfig(BaseConfigModel):
     mysql_root_interface_user: Optional[str]
     mysql_root_interface_database: Optional[str]
     experimental_max_connections: Optional[int]
+    binlog_retention_days: int
     plugin_audit_enabled: bool
     plugin_audit_strategy: str
 
@@ -133,6 +134,15 @@ class CharmConfig(BaseConfigModel):
             raise ValueError(
                 f"experimental-max-connections must be greater than {MAX_CONNECTIONS_FLOOR}"
             )
+
+        return value
+
+    @validator("binlog_retention_days")
+    @classmethod
+    def binlog_retention_days_validator(cls, value: int) -> int:
+        """Check binlog retention days."""
+        if value < 1:
+            raise ValueError("binlog-retention-days must be greater than 0")
 
         return value
 

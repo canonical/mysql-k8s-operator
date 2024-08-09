@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """S3 helper functions for the MySQL charms."""
+
 import base64
 import logging
 import tempfile
@@ -31,7 +32,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 8
+LIBPATCH = 9
 
 # botocore/urllib3 clutter the logs when on debug
 logging.getLogger("botocore").setLevel(logging.WARNING)

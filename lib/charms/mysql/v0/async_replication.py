@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 # The unique Charmhub library identifier, never change it
 LIBID = "4de21f1a022c4e2c87ac8e672ec16f6a"
 LIBAPI = 0
-LIBPATCH = 5
+LIBPATCH = 6
 
 RELATION_OFFER = "replication-offer"
 RELATION_CONSUMER = "replication"
@@ -778,9 +778,10 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
                 logger.debug("Recreating cluster prior to sync credentials")
                 self._charm.create_cluster()
                 # (re)set flags
-                self._charm.app_peer_data.update(
-                    {"removed-from-cluster-set": "", "rejoin-secondaries": "true"}
-                )
+                self._charm.app_peer_data.update({
+                    "removed-from-cluster-set": "",
+                    "rejoin-secondaries": "true",
+                })
                 event.defer()
                 return
             if not self._charm.cluster_fully_initialized:
