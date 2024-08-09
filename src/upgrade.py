@@ -16,6 +16,7 @@ from charms.data_platform_libs.v0.upgrade import (
 )
 from charms.mysql.v0.mysql import (
     MySQLGetMySQLVersionError,
+    MySQLPluginInstallError,
     MySQLRebootFromCompleteOutageError,
     MySQLRescanClusterError,
     MySQLServerNotUpgradableError,
@@ -232,9 +233,17 @@ class MySQLK8sUpgrade(DataUpgrade):
                 self._recover_multi_unit_cluster()
             else:
                 self._recover_single_unit_cluster()
+            if self.charm.config.plugin_audit_enabled:
+                self.charm._mysql.install_plugins(["audit_log", "audit_log_filter"])
             self._complete_upgrade()
         except MySQLRebootFromCompleteOutageError:
             logger.error("Failed to reboot single unit from outage after upgrade")
+            self.set_unit_failed()
+            self.charm.unit.status = BlockedStatus(
+                "upgrade failed. Check logs for rollback instruction"
+            )
+        except MySQLPluginInstallError:
+            logger.error("Failed to install audit plugin")
             self.set_unit_failed()
             self.charm.unit.status = BlockedStatus(
                 "upgrade failed. Check logs for rollback instruction"

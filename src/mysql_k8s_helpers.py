@@ -158,6 +158,7 @@ class MySQL(MySQLBase):
         """
         super().__init__(
             instance_address=instance_address,
+            socket_path=MYSQLD_SOCK_FILE,
             cluster_name=cluster_name,
             cluster_set_name=cluster_set_name,
             root_password=root_password,
