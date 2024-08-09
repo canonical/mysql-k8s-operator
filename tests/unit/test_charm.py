@@ -117,6 +117,7 @@ class TestCharm(unittest.TestCase):
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("mysql_k8s_helpers.MySQL.install_plugins")
     @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.rescan_cluster")
     @patch("charms.mysql.v0.mysql.MySQLCharmBase.active_status_message", return_value="")
@@ -162,6 +163,7 @@ class TestCharm(unittest.TestCase):
         _upgrade_idle,
         _rescan_cluster,
         _cluster_metadata_exists,
+        _install_plugins,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
