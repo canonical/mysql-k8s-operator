@@ -1,0 +1,32 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.4    unsupported  02:06:54Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.37-0ubuntu0.22.04.3  waiting    2/3  mysql-k8s                      0  10.152.183.192  no       installing agent
+mysql-test-app  0.0.2                    active       1  mysql-test-app  latest/edge   46  10.152.183.79   no       Last written value=9212
+
+Unit               Workload  Agent      Address      Ports  Message
+mysql-k8s/0        error     lost       10.1.175.11         crash loop backoff: back-off 5m0s restarting failed container=charm pod=mysql-k8s-0_test(be867944-1dad-42fc-91a6-e113...
+mysql-k8s/1        active    executing  10.1.175.13         Primary
+mysql-k8s/2*       active    executing  10.1.175.12         (get-password) 
+mysql-test-app/0*  active    idle       10.1.175.14         Last written value=9212
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:43:32 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:45:26 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:46:47 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 01:46:47 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 782, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 647, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1859, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:49:58 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
