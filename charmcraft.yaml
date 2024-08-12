@@ -12,7 +12,9 @@ bases:
 parts:
   files:
     plugin: dump
-    source: scripts/
+    source: .
+    prime:
+      - scripts
   charm:
     override-pull: |
       craftctl default
