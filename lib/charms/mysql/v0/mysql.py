@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 66
+LIBPATCH = 67
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -874,6 +874,13 @@ class MySQLBase(ABC):
         self.monitoring_password = monitoring_password
         self.backups_user = backups_user
         self.backups_password = backups_password
+        self.passwords = [
+            self.root_password,
+            self.server_config_password,
+            self.cluster_admin_password,
+            self.monitoring_password,
+            self.backups_password,
+        ]
 
     def render_mysqld_configuration(  # noqa: C901
         self,
@@ -2532,7 +2539,7 @@ class MySQLBase(ABC):
         except Exception:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
-            logger.exception("Failed to execute commands prior to running backup")
+            logger.exception("Failed unexpectedly to execute commands prior to running backup")
             raise MySQLExecuteBackupCommandsError
 
         # TODO: remove flags --no-server-version-check
@@ -2582,13 +2589,13 @@ class MySQLBase(ABC):
                 },
                 stream_output="stderr",
             )
-        except MySQLExecError as e:
+        except MySQLExecError:
             logger.exception("Failed to execute backup commands")
-            raise MySQLExecuteBackupCommandsError(e.message)
+            raise MySQLExecuteBackupCommandsError
         except Exception:
             # Catch all other exceptions to prevent the database being stuck in
             # a bad state due to pre-backup operations
-            logger.exception("Failed to execute backup commands")
+            logger.exception("Failed unexpectedly to execute backup commands")
             raise MySQLExecuteBackupCommandsError
 
     def delete_temp_backup_directory(
@@ -2977,6 +2984,13 @@ class MySQLBase(ABC):
             "performance_schema",
             "sys",
         }
+
+    def strip_off_passwords(self, input_string: str) -> str:
+        """Strips off passwords from the input string."""
+        stripped_input = input_string
+        for password in self.passwords:
+            stripped_input = stripped_input.replace(password, "xxxxxxxxxxxx")
+        return stripped_input
 
     @abstractmethod
     def is_mysqld_running(self) -> bool:
