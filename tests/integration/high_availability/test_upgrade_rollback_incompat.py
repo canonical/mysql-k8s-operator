@@ -34,7 +34,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
     charm = await charm_local_build(ops_test)
 
-    config = {"profile": "testing"}
+    config = {"profile": "testing", "plugin-audit-enabled": "false"}
     # MySQL 8.0.34 image, last known minor version incompatible
     resources = {
         "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
