@@ -10,6 +10,11 @@ bases:
     channel: "22.04"
     architectures: [arm64]
 parts:
+  files:
+    plugin: dump
+    source: .
+    prime:
+      - scripts
   charm:
     override-pull: |
       craftctl default
@@ -25,5 +30,3 @@ parts:
       - pkg-config
       - rustc
       - cargo
-    prime:
-      - scripts

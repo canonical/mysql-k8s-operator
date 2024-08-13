@@ -23,7 +23,7 @@ from .high_availability_helpers import (
     deploy_and_scale_mysql,
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
-    high_availability_test_setup,
+    get_application_name,
     insert_data_into_mysql_and_validate_replication,
 )
 
@@ -33,16 +33,12 @@ TIMEOUT = 15 * 60
 
 
 @pytest.mark.group(1)
-async def test_build_and_deploy(ops_test: OpsTest) -> None:
-    """Simple test to ensure that the mysql and application charms get deployed."""
-    await high_availability_test_setup(ops_test)
-
-
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
+async def test_check_consistency(
+    ops_test: OpsTest, highly_available_cluster, continuous_writes
+) -> None:
     """Test to write to primary, and read the same data back from replicas."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     # assert that there are 3 units in the mysql cluster
     assert len(ops_test.model.applications[mysql_application_name].units) == 3
@@ -54,11 +50,13 @@ async def test_check_consistency(ops_test: OpsTest, continuous_writes) -> None:
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
 
-@pytest.mark.group(1)
+@pytest.mark.group(2)
 @pytest.mark.abort_on_fail
-async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writes) -> None:
+async def test_no_replication_across_clusters(
+    ops_test: OpsTest, highly_available_cluster, continuous_writes
+) -> None:
     """Test to ensure that writes to one cluster do not replicate to another cluster."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     # assert that there are 3 units in the mysql cluster
     assert len(ops_test.model.applications[mysql_application_name].units) == 3
@@ -112,15 +110,15 @@ async def test_no_replication_across_clusters(ops_test: OpsTest, continuous_writ
     await clean_up_database_and_table(ops_test, database_name, table_name)
 
 
-@pytest.mark.group(1)
+@pytest.mark.group(3)
 @pytest.mark.abort_on_fail
-async def test_scaling_without_data_loss(ops_test: OpsTest) -> None:
+async def test_scaling_without_data_loss(ops_test: OpsTest, highly_available_cluster) -> None:
     """Test to ensure that data is preserved when a unit is scaled up and then down.
 
     Ensures that there are no running continuous writes as the extra data in the
     database makes scaling up slower.
     """
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     # assert that there are 3 units in the mysql cluster
     assert len(ops_test.model.applications[mysql_application_name].units) == 3
@@ -191,13 +189,13 @@ async def test_scaling_without_data_loss(ops_test: OpsTest) -> None:
     await clean_up_database_and_table(ops_test, database_name, table_name)
 
 
-# TODO: move test immediately after "test_build_and_deploy" once the following issue is resolved
-# https://github.com/canonical/mysql-k8s-operator/issues/102
-@pytest.mark.group(1)
+@pytest.mark.group(4)
 @pytest.mark.abort_on_fail
-async def test_kill_primary_check_reelection(ops_test: OpsTest, continuous_writes) -> None:
+async def test_kill_primary_check_reelection(
+    ops_test: OpsTest, highly_available_cluster, continuous_writes
+) -> None:
     """Test to kill the primary under load and ensure re-election of primary."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     await ensure_all_units_continuous_writes_incrementing(ops_test)
 
