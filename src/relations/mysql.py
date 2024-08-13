@@ -136,12 +136,12 @@ class MySQLRelation(Object):
         if not (relation_data := self.charm.app_peer_data.get(MYSQL_RELATION_DATA_KEY)):
             return
 
-        if not self.charm.unit_initialized:
-            # Skip update status for uninitialized unit
-            return
-
         container = self.charm.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
+            return
+
+        if not self.charm.unit_initialized:
+            # Skip update status for uninitialized unit
             return
 
         if not self.charm.unit.is_leader():
