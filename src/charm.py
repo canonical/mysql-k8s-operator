@@ -445,7 +445,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.unit.status = MaintenanceStatus("restarting MySQL")
         container = self.unit.get_container(CONTAINER_NAME)
         if container.can_connect():
-            container.restart(MYSQLD_SAFE_SERVICE)
+            logger.debug("Restarting mysqld")
+            container.pebble.restart_services([MYSQLD_SAFE_SERVICE], timeout=3600)
             sleep(10)
             self._on_update_status(None)
 
