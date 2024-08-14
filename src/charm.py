@@ -509,6 +509,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             audit_log_strategy=self.config.plugin_audit_strategy,
             memory_limit=memory_limit_bytes,
             experimental_max_connections=self.config.experimental_max_connections,
+            binlog_retention_days=self.config.binlog_retention_days,
         )
 
         changed_config = compare_dictionaries(previous_config_dict, new_config_dict)
@@ -588,6 +589,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             audit_log_strategy=self.config.plugin_audit_strategy,
             memory_limit=memory_limit_bytes,
             experimental_max_connections=self.config.experimental_max_connections,
+            binlog_retention_days=self.config.binlog_retention_days,
         )
         self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
 

@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 67
+LIBPATCH = 69
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -890,6 +890,7 @@ class MySQLBase(ABC):
         audit_log_strategy: str,
         memory_limit: Optional[int] = None,
         experimental_max_connections: Optional[int] = None,
+        binlog_retention_days: int,
         snap_common: str = "",
     ) -> tuple[str, dict]:
         """Render mysqld ini configuration file."""
@@ -939,6 +940,7 @@ class MySQLBase(ABC):
                 # disable memory instruments if we have less than 2GiB of RAM
                 performance_schema_instrument = "'memory/%=OFF'"
 
+        binlog_retention_seconds = binlog_retention_days * 24 * 60 * 60
         config = configparser.ConfigParser(interpolation=None)
 
         # do not enable slow query logs, but specify a log file path in case
@@ -954,6 +956,7 @@ class MySQLBase(ABC):
             "general_log": "ON",
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
             "slow_query_log_file": f"{snap_common}/var/log/mysql/slowquery.log",
+            "binlog_expire_logs_seconds": f"{binlog_retention_seconds}",
             "loose-audit_log_policy": "LOGINS",
             "loose-audit_log_file": f"{snap_common}/var/log/mysql/audit.log",
         }
@@ -1044,7 +1047,6 @@ class MySQLBase(ABC):
         try:
             installed_plugins = self._get_installed_plugins()
             # disable super_read_only to install plugins
-            self.set_dynamic_variable("super_read_only", "OFF")
             for plugin in plugins:
                 if plugin in installed_plugins:
                     # skip if the plugin is already installed
@@ -1054,9 +1056,15 @@ class MySQLBase(ABC):
                     logger.warning(f"{plugin=} is not supported")
                     continue
 
+                command = supported_plugins[plugin]
+                if super_read_only:
+                    command = (
+                        f"SET GLOBAL super_read_only=OFF; {command}"
+                        "SET GLOBAL super_read_only=ON;"
+                    )
                 logger.info(f"Installing {plugin=}")
                 self._run_mysqlcli_script(
-                    supported_plugins[plugin],
+                    command,
                     user=self.server_config_user,
                     password=self.server_config_password,
                 )
@@ -1065,10 +1073,6 @@ class MySQLBase(ABC):
                 f"Failed to install {plugin=}",  # type: ignore
             )
             raise MySQLPluginInstallError
-        finally:
-            # restore original super_read_only value
-            if super_read_only:
-                self.set_dynamic_variable("super_read_only", "ON")
 
     def uninstall_plugins(self, plugins: list[str]) -> None:
         """Uninstall plugins."""
@@ -1076,14 +1080,20 @@ class MySQLBase(ABC):
         try:
             installed_plugins = self._get_installed_plugins()
             # disable super_read_only to uninstall plugins
-            self.set_dynamic_variable("super_read_only", "OFF")
             for plugin in plugins:
                 if plugin not in installed_plugins:
                     # skip if the plugin is not installed
                     continue
                 logger.debug(f"Uninstalling plugin {plugin}")
+
+                command = f"UNINSTALL PLUGIN {plugin};"
+                if super_read_only:
+                    command = (
+                        f"SET GLOBAL super_read_only=OFF; {command}"
+                        "SET GLOBAL super_read_only=ON;"
+                    )
                 self._run_mysqlcli_script(
-                    f"UNINSTALL PLUGIN {plugin}",
+                    command,
                     user=self.server_config_user,
                     password=self.server_config_password,
                 )
@@ -1092,10 +1102,6 @@ class MySQLBase(ABC):
                 f"Failed to uninstall {plugin=}",  # type: ignore
             )
             raise MySQLPluginInstallError
-        finally:
-            # restore original super_read_only value
-            if super_read_only:
-                self.set_dynamic_variable("super_read_only", "ON")
 
     def _get_installed_plugins(self) -> set[str]:
         """Return a set of explicitly installed plugins."""

@@ -23,7 +23,7 @@ options:
       Amount of memory in Megabytes to limit MySQL and associated process to.
       If unset, this will be decided according to the default memory limit in the selected profile.
       Only comes into effect when the `production` profile is selected.
-# Config options for the legacy 'mysql' interface
+  # Config options for the legacy 'mysql' interface
   mysql-interface-user:
     description: The database username for the legacy 'mysql' interface
     type: string
@@ -46,7 +46,11 @@ options:
       Ref. at https://docs.percona.com/percona-server/8.0/audit-log-plugin.html#audit_log_strategy
     type: string
     default: async
-# Experimental features
+  binlog_retention_days:
+    description: Number of days for binary logs retention
+    type: int
+    default: 7
+  # Experimental features
   experimental-max-connections:
     type: int
     description: |
