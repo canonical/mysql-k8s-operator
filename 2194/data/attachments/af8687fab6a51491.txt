@@ -1,0 +1,42 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:146 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:150 Run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:163 Inject dependency fault
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:168 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:171 Get first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:175 Wait for upgrade to fail on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:181 Ensure continuous_writes while in failure state on remaining units
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:185 Re-run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:188 Re-refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:191 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:196 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.123:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.123:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:209 Wait for application to recover
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:215 Ensure continuous_writes after rollback procedure
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.5    unsupported  01:41:08Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s                      2  10.152.183.88   no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   46  10.152.183.234  no       Last written value=14927
+
+Unit               Workload  Agent  Address       Ports  Message
+mysql-k8s/0        active    idle   10.1.181.213         
+mysql-k8s/1        active    idle   10.1.181.212         
+mysql-k8s/2*       active    idle   10.1.181.211         Primary
+mysql-test-app/0*  active    idle   10.1.181.203         Last written value=14927
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:37:44 ERROR unit.mysql-k8s/2.juju-log charms.data_platform_libs.v0.upgrade.VersionError - {'message': 'Versions incompatible, charm 1 can not be upgraded to 999.999.999', 'cause': 'Upgrades only supported for specific versions, charm versions satisfying requirement >1', 'resolution': ''}
+unit-mysql-k8s-2: 01:37:44 CRITICAL unit.mysql-k8s/2.juju-log Upgrade failed, follow the instructions below to rollback:
+  1 - Run `juju run mysql-k8s/leader pre-upgrade-check` to configure rollback
+  2 - Run `juju refresh --revision <previous-revision> mysql-k8s` to initiate the rollback
+  3 - Run `juju run mysql-k8s/leader resume-upgrade` to resume the rollback
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
