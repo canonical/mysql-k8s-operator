@@ -62,6 +62,8 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 "--channel=latest/beta",
                 "--resource",
                 "keystone-image=opensourcemano/keystone:testing-daily",
+                "--base",
+                "ubuntu@22.04",
                 "osm-keystone",
             ),
             ops_test.model.deploy(
