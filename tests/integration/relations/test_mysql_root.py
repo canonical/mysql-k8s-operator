@@ -78,13 +78,13 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 "kafka-k8s",
                 application_name="kafka",
                 trust=True,
-                channel="latest/stable",
+                channel="3/stable",
                 base="ubuntu@22.04",
             ),
             ops_test.model.deploy(
                 "zookeeper-k8s",
                 application_name="zookeeper",
-                channel="latest/stable",
+                channel="3/stable",
                 base="ubuntu@22.04",
             ),
             # sticking to revision that support both juju 2.9.x and 3.x
