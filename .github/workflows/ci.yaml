@@ -7,7 +7,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
+# TODO: uncomment below line before merging
+  # pull_request:
   schedule:
     - cron: '53 0 * * *' # Daily at 00:53 UTC
   # Triggered on push to branch "main" by .github/workflows/release.yaml
