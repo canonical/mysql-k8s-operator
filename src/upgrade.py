@@ -203,7 +203,7 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         Run update status for every unit when the upgrade is completed.
         """
-        if not self.charm.unit.get_container(CONTAINER_NAME).can_connect:
+        if not self.charm.unit.get_container(CONTAINER_NAME).can_connect():
             return
         if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
             self.charm._on_update_status(None)
