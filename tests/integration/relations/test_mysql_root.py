@@ -51,7 +51,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 resources=resources,
                 config=config,
                 num_units=1,
-                series="jammy",
+                base="ubuntu@22.04",
                 trust=True,
             ),
             # Deploy the osm-keystone charm
@@ -70,12 +70,20 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 channel="latest/beta",
                 resources=osm_pol_resources,
                 trust=True,
+                base="ubuntu@22.04",
             ),
             ops_test.model.deploy(
-                "kafka-k8s", application_name="kafka", trust=True, channel="latest/stable"
+                "kafka-k8s",
+                application_name="kafka",
+                trust=True,
+                channel="latest/stable",
+                base="ubuntu@22.04",
             ),
             ops_test.model.deploy(
-                "zookeeper-k8s", application_name="zookeeper", channel="latest/stable"
+                "zookeeper-k8s",
+                application_name="zookeeper",
+                channel="latest/stable",
+                base="ubuntu@22.04",
             ),
             # sticking to revision that support both juju 2.9.x and 3.x
             ops_test.model.deploy(
@@ -83,7 +91,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 application_name="mongodb",
                 channel="5/edge",
                 revision=36,
-                series="jammy",
+                base="ubuntu@22.04",
             ),
         )
 

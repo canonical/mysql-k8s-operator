@@ -47,6 +47,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             num_units=3,
             resources=resources,
             trust=True,
+            base="ubuntu@22.04",
         )
 
         await ops_test.model.wait_for_idle(
