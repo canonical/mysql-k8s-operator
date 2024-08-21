@@ -34,7 +34,7 @@ from tenacity.wait import wait_fixed
 from typing_extensions import override
 
 import k8s_helpers
-from constants import MYSQLD_SAFE_SERVICE
+from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE
 
 if TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -203,6 +203,8 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         Run update status for every unit when the upgrade is completed.
         """
+        if not self.charm.unit.get_container(CONTAINER_NAME).can_connect:
+            return
         if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
             self.charm._on_update_status(None)
 
