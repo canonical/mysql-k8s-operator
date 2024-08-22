@@ -53,8 +53,8 @@ async def test_build_and_deploy(ops_test: OpsTest):
 async def test_relate_all(ops_test: OpsTest):
     """Relate all the applications to the database."""
     for i in range(1, 7):
-        await ops_test.model.integrate("mysql:database", f"router{i}:backend-database")
-        await ops_test.model.integrate(f"app{i}:database", f"router{i}:database")
+        await ops_test.model.relate("mysql:database", f"router{i}:backend-database")
+        await ops_test.model.relate(f"app{i}:database", f"router{i}:database")
 
     await ops_test.model.block_until(
         lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values()),
