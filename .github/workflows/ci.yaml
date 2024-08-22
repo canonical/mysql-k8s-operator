@@ -7,8 +7,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-# TODO: uncomment below line before merging
-  # pull_request:
+  pull_request:
   schedule:
     - cron: '53 0 * * *' # Daily at 00:53 UTC
   # Triggered on push to branch "main" by .github/workflows/release.yaml
@@ -71,6 +70,8 @@ jobs:
             allure_on_amd64: false
           - agent: 3.4.5  # renovate: juju-agent-pin-minor
             allure_on_amd64: true
+          - snap_channel: 3.6/beta
+            allure_on_amd64: false
         architecture:
           - amd64
         include:
@@ -78,18 +79,23 @@ jobs:
               agent: 3.4.5  # renovate: juju-agent-pin-minor
               allure_on_amd64: true
             architecture: arm64
-    name: Integration | ${{ matrix.juju.agent }} | ${{ matrix.architecture }}
+          - juju:
+              snap_channel: 3.6/beta
+              allure_on_amd64: false
+            architecture: arm64
+    name: Integration | ${{ matrix.juju.agent || matrix.juju.snap_channel }} | ${{ matrix.architecture }}
     needs:
       - lint
       - unit-test
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v18.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v21.0.0
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
       architecture: ${{ matrix.architecture }}
       cloud: microk8s
-      microk8s-snap-channel: 1.28-strict/stable
+      microk8s-snap-channel: 1.28-strict/stable  # renovate: latest microk8s
       juju-agent-version: ${{ matrix.juju.agent }}
+      juju-snap-channel: ${{ matrix.juju.snap_channel }}
       libjuju-version-constraint: ${{ matrix.juju.libjuju }}
       _beta_allure_report: ${{ matrix.juju.allure_on_amd64 && matrix.architecture == 'amd64' }}
     secrets:
