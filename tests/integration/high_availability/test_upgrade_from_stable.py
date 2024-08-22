@@ -92,7 +92,7 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
 @pytest.mark.group(1)
 @markers.amd64_only  # TODO: remove after arm64 stable release
 @pytest.mark.abort_on_fail
-async def test_upgrade_from_stable(ops_test: OpsTest):
+async def test_upgrade_from_stable(ops_test: OpsTest, credentials):
     """Test updating from stable channel."""
     application = ops_test.model.applications[MYSQL_APP_NAME]
     logger.info("Build charm locally")
@@ -138,4 +138,4 @@ async def test_upgrade_from_stable(ops_test: OpsTest):
     )
 
     logger.info("Ensure continuous_writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
