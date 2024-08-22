@@ -83,7 +83,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             assert unit.workload_status == "active"
 
             unit_address = await get_unit_address(ops_test, unit.name)
-            output = await execute_queries_on_unit(
+            output = execute_queries_on_unit(
                 unit_address,
                 server_config_credentials["username"],
                 server_config_credentials["password"],
@@ -114,7 +114,7 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
         f"INSERT INTO test.data_replication_table VALUES ('{random_chars}')",
     ]
 
-    await execute_queries_on_unit(
+    execute_queries_on_unit(
         primary_unit_address,
         server_config_credentials["username"],
         server_config_credentials["password"],
@@ -134,7 +134,7 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
                 for unit in ops_test.model.applications[APP_NAME].units:
                     unit_address = await get_unit_address(ops_test, unit.name)
 
-                    output = await execute_queries_on_unit(
+                    output = execute_queries_on_unit(
                         unit_address,
                         server_config_credentials["username"],
                         server_config_credentials["password"],
@@ -344,7 +344,7 @@ async def test_log_rotation(ops_test: OpsTest) -> None:
     """Test the log rotation of text files."""
     unit = ops_test.model.applications[APP_NAME].units[0]
 
-    logger.info("Extending update-status-hook-inteval to 60m")
+    logger.info("Extending update-status-hook-interval to 60m")
     await ops_test.model.set_config({"update-status-hook-interval": "60m"})
 
     # Exclude slowquery log files as slowquery logs are not enabled by default

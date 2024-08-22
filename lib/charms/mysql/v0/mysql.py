@@ -1536,7 +1536,9 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+            output = self._run_mysqlsh_script(
+                "\n".join(check_cluster_metadata_commands), timeout=10
+            )
         except MySQLClientError:
             logger.warning(f"Failed to check if cluster metadata exists {from_instance=}")
             return False

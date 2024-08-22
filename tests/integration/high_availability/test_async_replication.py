@@ -431,7 +431,7 @@ async def get_max_written_value(first_model: Model, second_model: Model) -> list
     logger.info("Querying max value on all units")
     for unit in first_model_units + second_model_units:
         address = await get_unit_address(None, unit.name, unit.model)
-        values = await execute_queries_on_unit(
+        values = execute_queries_on_unit(
             address, credentials["username"], credentials["password"], select_max_written_value_sql
         )
         results.append(values[0])

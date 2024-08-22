@@ -239,14 +239,31 @@ class TestMySQL(unittest.TestCase):
                 "/usr/bin/mysqlsh",
                 "--no-wizard",
                 "--python",
-                "--verbose=1",
+                "--verbose=0",
                 "-f",
                 MYSQLSH_SCRIPT_FILE,
                 ";",
                 "rm",
                 MYSQLSH_SCRIPT_FILE,
             ],
-            timeout=None,
+        )
+
+        _container.reset_mock()
+        self.mysql._run_mysqlsh_script("script", timeout=10)
+        _container.exec.assert_called_once_with(
+            [
+                "timeout",
+                "10",
+                "/usr/bin/mysqlsh",
+                "--no-wizard",
+                "--python",
+                "--verbose=0",
+                "-f",
+                MYSQLSH_SCRIPT_FILE,
+                ";",
+                "rm",
+                MYSQLSH_SCRIPT_FILE,
+            ],
         )
 
     @patch("ops.model.Container")
