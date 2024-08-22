@@ -156,11 +156,11 @@ class TestCharm(unittest.TestCase):
         _wait_until_mysql_connection,
         _get_mysql_version,
         _initialize_juju_units_operations_table,
-        _is_data_dir_initialised,
         _create_cluster_set,
+        _is_data_dir_initialised,
         _write_content_to_file,
-        _active_status_message,
         _upgrade_idle,
+        _active_status_message,
         _rescan_cluster,
         _cluster_metadata_exists,
         _install_plugins,
@@ -186,6 +186,7 @@ class TestCharm(unittest.TestCase):
             self.layer_dict()["services"],
         )
 
+        _is_data_dir_initialised.return_value = True
         self.harness.add_relation("metrics-endpoint", "test-cos-app")
         plan = self.harness.get_container_pebble_plan("mysql")
         self.assertEqual(

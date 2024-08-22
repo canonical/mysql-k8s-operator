@@ -469,6 +469,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.debug("Skip reconcile mysqld exporter: empty pebble layer")
             return
 
+        if not self._mysql.is_data_dir_initialised():
+            logger.debug("Skip reconcile mysqld exporter: mysql not initialised")
+            return
         self.current_event = event
         self._reconcile_pebble_layer(container)
 
