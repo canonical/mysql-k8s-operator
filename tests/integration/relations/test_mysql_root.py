@@ -92,7 +92,6 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 "mongodb-k8s",
                 application_name="mongodb",
                 channel="5/edge",
-                revision=36,
                 base="ubuntu@22.04",
             ),
         )
