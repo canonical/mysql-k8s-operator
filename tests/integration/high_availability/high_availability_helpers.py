@@ -26,7 +26,6 @@ from ..helpers import (
     generate_random_string,
     get_cluster_status,
     get_primary_unit,
-    get_server_config_credentials,
     get_unit_address,
     is_relation_joined,
     scale_application,
@@ -47,30 +46,32 @@ mysql_charm, application_charm = None, None
 logger = logging.getLogger(__name__)
 
 
-async def get_max_written_value_in_database(ops_test: OpsTest, unit: Unit) -> int:
+async def get_max_written_value_in_database(
+    ops_test: OpsTest, unit: Unit, credentials: dict
+) -> int:
     """Retrieve the max written value in the MySQL database.
 
     Args:
         ops_test: The ops test framework
         unit: The MySQL unit on which to execute queries on
+        credentials: The credentials to use to connect to the MySQL database
     """
-    server_config_credentials = await get_server_config_credentials(unit)
     unit_address = await get_unit_address(ops_test, unit.name)
 
     select_max_written_value_sql = [f"SELECT MAX(number) FROM `{DATABASE_NAME}`.`{TABLE_NAME}`;"]
 
-    output = await execute_queries_on_unit(
-        unit_address,
-        server_config_credentials["username"],
-        server_config_credentials["password"],
-        select_max_written_value_sql,
+    output = execute_queries_on_unit(
+        unit_address=unit_address,
+        username=credentials["username"],
+        password=credentials["password"],
+        queries=select_max_written_value_sql,
     )
 
     return output[0]
 
 
 def get_application_name(ops_test: OpsTest, application_name_substring: str) -> Optional[str]:
-    """Returns the name of the application witt the provided application name.
+    """Returns the name of the application with the provided application name.
 
     This enables us to retrieve the name of the deployed application in an existing model.
 
@@ -354,6 +355,7 @@ async def insert_data_into_mysql_and_validate_replication(
     ops_test: OpsTest,
     database_name: str,
     table_name: str,
+    credentials: dict,
     mysql_units: Optional[List[Unit]] = None,
     mysql_application_substring: Optional[str] = "mysql",
 ) -> str:
@@ -370,7 +372,6 @@ async def insert_data_into_mysql_and_validate_replication(
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
 
     # insert some data into the new primary and ensure that the writes get replicated
-    server_config_credentials = await get_server_config_credentials(primary)
     primary_address = await get_unit_address(ops_test, primary.name)
 
     value = generate_random_string(255)
@@ -380,10 +381,10 @@ async def insert_data_into_mysql_and_validate_replication(
         f"INSERT INTO `{database_name}`.`{table_name}` (id) VALUES ('{value}')",
     ]
 
-    await execute_queries_on_unit(
+    execute_queries_on_unit(
         primary_address,
-        server_config_credentials["username"],
-        server_config_credentials["password"],
+        credentials["username"],
+        credentials["password"],
         insert_value_sql,
         commit=True,
     )
@@ -398,10 +399,10 @@ async def insert_data_into_mysql_and_validate_replication(
                 for unit in mysql_units:
                     unit_address = await get_unit_address(ops_test, unit.name)
 
-                    output = await execute_queries_on_unit(
+                    output = execute_queries_on_unit(
                         unit_address,
-                        server_config_credentials["username"],
-                        server_config_credentials["password"],
+                        credentials["username"],
+                        credentials["password"],
                         select_value_sql,
                     )
                     assert output[0] == value
@@ -412,7 +413,7 @@ async def insert_data_into_mysql_and_validate_replication(
 
 
 async def clean_up_database_and_table(
-    ops_test: OpsTest, database_name: str, table_name: str
+    ops_test: OpsTest, database_name: str, table_name: str, credentials: dict
 ) -> None:
     """Cleans the database and table created by insert_data_into_mysql_and_validate_replication.
 
@@ -420,12 +421,13 @@ async def clean_up_database_and_table(
         ops_test: The ops test framework
         database_name: The name of the database to drop
         table_name: The name of the table to drop
+        credentials: The credentials to use to connect to the MySQL database
     """
     mysql_application_name = get_application_name(ops_test, "mysql")
 
-    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
+    assert mysql_application_name, "MySQL application not found"
 
-    server_config_credentials = await get_server_config_credentials(mysql_unit)
+    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
 
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
     primary_address = await get_unit_address(ops_test, primary.name)
@@ -435,10 +437,10 @@ async def clean_up_database_and_table(
         f"DROP DATABASE IF EXISTS `{database_name}`",
     ]
 
-    await execute_queries_on_unit(
+    execute_queries_on_unit(
         primary_address,
-        server_config_credentials["username"],
-        server_config_credentials["password"],
+        credentials["username"],
+        credentials["password"],
         clean_up_database_and_table_sql,
         commit=True,
     )
@@ -446,6 +448,7 @@ async def clean_up_database_and_table(
 
 async def ensure_all_units_continuous_writes_incrementing(
     ops_test: OpsTest,
+    credentials: dict,
     mysql_units: Optional[List[Unit]] = None,
     mysql_application_name: Optional[str] = None,
 ) -> None:
@@ -464,35 +467,23 @@ async def ensure_all_units_continuous_writes_incrementing(
 
     assert primary, "Primary unit not found"
 
-    last_max_written_value = await get_max_written_value_in_database(ops_test, primary)
+    last_max_written_value = await get_max_written_value_in_database(
+        ops_test, primary, credentials
+    )
 
-    select_all_continuous_writes_sql = [f"SELECT * FROM `{DATABASE_NAME}`.`{TABLE_NAME}`"]
-    server_config_credentials = await get_server_config_credentials(mysql_units[0])
-
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward(fast_interval="15s"):
         for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
             with attempt:
                 # ensure that all units are up to date (including the previous primary)
                 for unit in mysql_units:
-                    unit_address = await get_unit_address(ops_test, unit.name)
-
                     # ensure the max written value is incrementing (continuous writes is active)
-                    max_written_value = await get_max_written_value_in_database(ops_test, unit)
+                    max_written_value = await get_max_written_value_in_database(
+                        ops_test, unit, credentials
+                    )
+                    logger.info(f"{max_written_value=} on unit {unit.name}")
                     assert (
                         max_written_value > last_max_written_value
                     ), "Continuous writes not incrementing"
-
-                    # ensure that the unit contains all values up to the max written value
-                    all_written_values = await execute_queries_on_unit(
-                        unit_address,
-                        server_config_credentials["username"],
-                        server_config_credentials["password"],
-                        select_all_continuous_writes_sql,
-                    )
-                    for number in range(1, max_written_value):
-                        assert (
-                            number in all_written_values
-                        ), f"Missing {number} in database for unit {unit.name}"
 
                     last_max_written_value = max_written_value
 

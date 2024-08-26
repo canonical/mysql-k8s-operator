@@ -180,7 +180,7 @@ async def test_osm_pol_operations(ops_test: OpsTest) -> None:
                     unit_address = await get_unit_address(ops_test, unit.name)
 
                     # test that the `keystone` and `pol` databases exist
-                    output = await execute_queries_on_unit(
+                    output = execute_queries_on_unit(
                         unit_address,
                         server_config_credentials["username"],
                         server_config_credentials["password"],
@@ -190,7 +190,7 @@ async def test_osm_pol_operations(ops_test: OpsTest) -> None:
                     assert "pol" in output
 
                     # test that osm-pol successfully creates tables
-                    output = await execute_queries_on_unit(
+                    output = execute_queries_on_unit(
                         unit_address,
                         server_config_credentials["username"],
                         server_config_credentials["password"],

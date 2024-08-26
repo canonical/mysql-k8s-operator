@@ -30,7 +30,7 @@ TIMEOUT = 30 * 60
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_pod_eviction_and_pvc_deletion(
-    ops_test: OpsTest, highly_available_cluster, continuous_writes
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
 ) -> None:
     """Test behavior when node drains - pod is evicted and pvs are rotated."""
     mysql_application_name = get_application_name(ops_test, "mysql")
@@ -42,7 +42,7 @@ async def test_pod_eviction_and_pvc_deletion(
     ), "The deployed mysql application is not fully online"
 
     logger.info("Ensuring all units have continuous writes incrementing")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
@@ -71,4 +71,4 @@ async def test_pod_eviction_and_pvc_deletion(
     ), "The deployed mysql application is not fully online after primary pod eviction"
 
     logger.info("Ensuring all units have continuous writes incrementing")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
