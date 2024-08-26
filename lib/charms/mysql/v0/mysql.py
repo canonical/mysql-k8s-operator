@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 69
+LIBPATCH = 70
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1536,7 +1536,9 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+            output = self._run_mysqlsh_script(
+                "\n".join(check_cluster_metadata_commands), timeout=10
+            )
         except MySQLClientError:
             logger.warning(f"Failed to check if cluster metadata exists {from_instance=}")
             return False

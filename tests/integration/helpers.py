@@ -159,7 +159,7 @@ async def get_primary_unit(
     return None
 
 
-async def execute_queries_on_unit(
+def execute_queries_on_unit(
     unit_address: str,
     username: str,
     password: str,
@@ -474,7 +474,7 @@ async def retrieve_database_variable_value(
     server_config_creds = await get_server_config_credentials(unit)
     queries = [f"SELECT @@{variable_name};"]
 
-    output = await execute_queries_on_unit(
+    output = execute_queries_on_unit(
         unit_ip, server_config_creds["username"], server_config_creds["password"], queries
     )
 

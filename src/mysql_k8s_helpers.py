@@ -581,7 +581,7 @@ class MySQL(MySQLBase):
             raise MySQLExecError from None
 
     def _run_mysqlsh_script(
-        self, script: str, verbose: int = 1, timeout: Optional[int] = None
+        self, script: str, timeout: Optional[int] = None, verbose: int = 0
     ) -> str:
         """Execute a MySQL shell script.
 
@@ -611,8 +611,14 @@ class MySQL(MySQLBase):
             MYSQLSH_SCRIPT_FILE,
         ]
 
+        # workaround for timeout not working on pebble exec
+        # https://github.com/canonical/operator/issues/1329
+        if timeout:
+            cmd.insert(0, str(timeout))
+            cmd.insert(0, "timeout")
+
         try:
-            process = self.container.exec(cmd, timeout=timeout)
+            process = self.container.exec(cmd)
             stdout, _ = process.wait_output()
             return stdout
         except ExecError:
