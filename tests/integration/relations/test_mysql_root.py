@@ -18,6 +18,7 @@ from ..helpers import (
     get_unit_address,
     is_relation_joined,
 )
+from ..juju_ import juju_major_version
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,19 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             "image": "opensourcemano/pol:testing-daily",
         }
 
+        osm_keystone_deploy_commands = [
+            "deploy",
+            "--channel=latest/beta",
+            "--resource",
+            "keystone-image=opensourcemano/keystone:testing-daily",
+            "osm-keystone",
+        ]
+
+        if juju_major_version >= 3:
+            osm_keystone_deploy_commands.extend(["--base", "ubuntu@22.04"])
+        else:
+            osm_keystone_deploy_commands.extend(["--series", "jammy"])
+
         await asyncio.gather(
             ops_test.model.deploy(
                 charm,
@@ -57,15 +71,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             # Deploy the osm-keystone charm
             # (using ops_test.juju instead of ops_test.deploy as the latter does
             # not correctly deploy with the correct resources)
-            ops_test.juju(
-                "deploy",
-                "--channel=latest/beta",
-                "--resource",
-                "keystone-image=opensourcemano/keystone:testing-daily",
-                "--base",
-                "ubuntu@22.04",
-                "osm-keystone",
-            ),
+            ops_test.juju(*osm_keystone_deploy_commands),
             ops_test.model.deploy(
                 "osm-pol",
                 application_name="osm-pol",
