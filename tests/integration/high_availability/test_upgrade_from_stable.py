@@ -43,12 +43,14 @@ async def test_deploy_stable(ops_test: OpsTest) -> None:
             channel="8.0/stable",
             trust=True,
             config={"profile": "testing"},
+            base="ubuntu@22.04",
         ),
         ops_test.model.deploy(
             f"mysql-{TEST_APP_NAME}",
             application_name=TEST_APP_NAME,
             num_units=1,
             channel="latest/edge",
+            base="ubuntu@22.04",
         ),
     )
     await relate_mysql_and_application(ops_test, MYSQL_APP_NAME, TEST_APP_NAME)

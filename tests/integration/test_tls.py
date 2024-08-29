@@ -69,7 +69,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         resources=resources,
         application_name=APP_NAME,
         num_units=3,
-        series="jammy",
+        base="ubuntu@22.04",
         trust=True,
         config=config,
     )
@@ -128,7 +128,9 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     # Deploy TLS Certificates operator.
     logger.info("Deploy TLS operator")
     async with ops_test.fast_forward("60s"):
-        await ops_test.model.deploy(tls_app_name, channel=tls_channel, config=tls_config)
+        await ops_test.model.deploy(
+            tls_app_name, channel=tls_channel, config=tls_config, base="ubuntu@22.04"
+        )
         await ops_test.model.wait_for_idle(apps=[tls_app_name], status="active", timeout=15 * 60)
 
     # Relate with TLS charm

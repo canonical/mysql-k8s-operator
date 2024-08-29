@@ -58,7 +58,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             application_name=APP_NAME,
             config=config,
             num_units=3,
-            series="jammy",
+            base="ubuntu@22.04",
             trust=True,
         )
 
