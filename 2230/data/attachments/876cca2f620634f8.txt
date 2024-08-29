@@ -1,0 +1,11 @@
+[32mINFO    [0m integration.conftest:conftest.py:20 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:125 Inserting value before backup
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:133 Setting s3 config
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:135 Syncing credentials
+[32mINFO    [0m juju.model:model.py:2971 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [executing] active: 
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:149 Listing existing backup ids
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:156 Creating backup
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:162 Listing backup ids post backup
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:171 Inserting value after backup
