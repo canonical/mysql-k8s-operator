@@ -356,6 +356,7 @@ async def get_process_pid(
         unit_name: The name of the unit
         container_name: The name of the container in the unit
         process: The process name to search for
+        full_match: Whether to fully match the process name
 
     Returns:
         A integer for the process id
@@ -622,7 +623,11 @@ async def read_contents_from_file_in_unit(
 
 
 async def ls_la_in_unit(
-    ops_test: OpsTest, unit_name: str, directory: str, container_name: str = CONTAINER_NAME, exclude_files: list[str] = []
+    ops_test: OpsTest,
+    unit_name: str,
+    directory: str,
+    container_name: str = CONTAINER_NAME,
+    exclude_files: list[str] = [],
 ) -> list[str]:
     """Returns the output of ls -la in unit.
 
@@ -631,6 +636,7 @@ async def ls_la_in_unit(
         unit_name: The name of unit in which to run ls -la
         directory: The directory from which to run ls -la
         container_name: The container where to run ls -la
+        exclude_files: Files to exclude from the output of ls -la
 
     Returns:
         a list of files returned by ls -la
@@ -645,7 +651,9 @@ async def ls_la_in_unit(
     return [
         line.strip("\r")
         for line in ls_output
-        if len(line.strip()) > 0 and line.split()[-1] not in exclude_files and line.split()[-1] not in [".", ".."]
+        if len(line.strip()) > 0
+        and line.split()[-1] not in exclude_files
+        and line.split()[-1] not in [".", ".."]
     ]
 
 
@@ -670,7 +678,13 @@ async def stop_running_log_rotate_dispatcher(ops_test: OpsTest, unit_name: str):
     try:
         for attempt in Retrying(stop=stop_after_attempt(45), wait=wait_fixed(2)):
             with attempt:
-                if await get_process_pid(ops_test, unit_name, "charm", "/usr/bin/python3 scripts/log_rotate_dispatcher.py", full_match=True):
+                if await get_process_pid(
+                    ops_test,
+                    unit_name,
+                    "charm",
+                    "/usr/bin/python3 scripts/log_rotate_dispatcher.py",
+                    full_match=True,
+                ):
                     raise Exception
     except RetryError:
         raise Exception("Failed to stop the log_rotate_dispatcher process")

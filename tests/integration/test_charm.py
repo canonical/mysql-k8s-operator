@@ -389,7 +389,9 @@ async def test_log_rotation(ops_test: OpsTest) -> None:
     logger.info("Ensuring only log files exist")
     # Exclude archive directories, as handling any event would restart the
     # log_rotate_dispatcher (by the log_rotate_manager)
-    ls_la_output = await ls_la_in_unit(ops_test, unit.name, "/var/log/mysql/", exclude_files=archive_directories)
+    ls_la_output = await ls_la_in_unit(
+        ops_test, unit.name, "/var/log/mysql/", exclude_files=archive_directories
+    )
 
     assert len(ls_la_output) == len(
         log_files

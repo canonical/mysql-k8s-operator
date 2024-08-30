@@ -5,10 +5,10 @@
 import logging
 import os
 import pathlib
-from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 import pytest
 from pytest_operator.plugin import OpsTest
+from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from .. import juju_
 from .high_availability_helpers import (
