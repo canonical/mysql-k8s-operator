@@ -1,0 +1,27 @@
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-test-app/0 [idle] active: 
+  mysql-test-app/1 [executing] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.5    unsupported  01:34:42Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.37-0ubuntu0.22.04.3  active       3  mysql-k8s                      0  10.152.183.169  no       
+mysql-test-app  0.0.2                    waiting      2  mysql-test-app  latest/edge   51  10.152.183.194  no       installing agent
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0*       active    idle   10.1.173.77         Primary
+mysql-k8s/1        active    idle   10.1.173.79         
+mysql-k8s/2        active    idle   10.1.173.78         
+mysql-test-app/0   waiting   idle   10.1.173.72         
+mysql-test-app/1*  waiting   idle   10.1.173.73         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
