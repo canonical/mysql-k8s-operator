@@ -347,7 +347,7 @@ def is_connection_possible(credentials: Dict, **extra_opts) -> bool:
 
 
 async def get_process_pid(
-    ops_test: OpsTest, unit_name: str, container_name: str, process: str
+    ops_test: OpsTest, unit_name: str, container_name: str, process: str, full_match: bool = False
 ) -> Optional[int]:
     """Return the pid of a process running in a given unit.
 
@@ -366,7 +366,7 @@ async def get_process_pid(
         container_name,
         unit_name,
         "pgrep",
-        "-x",
+        "-f" if full_match else "-x",
         process,
     ]
     return_code, pid, _ = await ops_test.juju(*get_pid_commands)
@@ -622,7 +622,7 @@ async def read_contents_from_file_in_unit(
 
 
 async def ls_la_in_unit(
-    ops_test: OpsTest, unit_name: str, directory: str, container_name: str = CONTAINER_NAME
+    ops_test: OpsTest, unit_name: str, directory: str, container_name: str = CONTAINER_NAME, exclude_files: list[str] = []
 ) -> list[str]:
     """Returns the output of ls -la in unit.
 
@@ -645,7 +645,7 @@ async def ls_la_in_unit(
     return [
         line.strip("\r")
         for line in ls_output
-        if len(line.strip()) > 0 and line.split()[-1] not in [".", ".."]
+        if len(line.strip()) > 0 and line.split()[-1] not in exclude_files and line.split()[-1] not in [".", ".."]
     ]
 
 
@@ -665,6 +665,15 @@ async def stop_running_log_rotate_dispatcher(ops_test: OpsTest, unit_name: str):
         "-f",
         "/usr/bin/python3 scripts/log_rotate_dispatcher.py",
     )
+
+    # hold execution until process is stopped
+    try:
+        for attempt in Retrying(stop=stop_after_attempt(45), wait=wait_fixed(2)):
+            with attempt:
+                if await get_process_pid(ops_test, unit_name, "charm", "/usr/bin/python3 scripts/log_rotate_dispatcher.py", full_match=True):
+                    raise Exception
+    except RetryError:
+        raise Exception("Failed to stop the log_rotate_dispatcher process")
 
 
 async def stop_running_flush_mysql_job(
