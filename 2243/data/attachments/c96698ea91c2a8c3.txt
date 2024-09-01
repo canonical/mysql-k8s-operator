@@ -1,0 +1,12 @@
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that max_connections is set to 100 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that max_connections is set to 100 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that max_connections is set to 100 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:336 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/2
