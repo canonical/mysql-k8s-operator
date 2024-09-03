@@ -8,7 +8,6 @@ import pathlib
 
 import pytest
 from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from .. import juju_
 from .high_availability_helpers import (
@@ -34,10 +33,8 @@ async def continuous_writes(ops_test: OpsTest) -> None:
 
     yield
 
-    for attempt in Retrying(stop=stop_after_attempt(10), wait=wait_fixed(30)):
-        with attempt:
-            logger.info("Clearing continuous writes")
-            await juju_.run_action(application_unit, "clear-continuous-writes")
+    logger.info("Clearing continuous writes")
+    await juju_.run_action(application_unit, "clear-continuous-writes")
 
 
 @pytest.fixture()

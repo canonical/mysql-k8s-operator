@@ -622,7 +622,7 @@ async def read_contents_from_file_in_unit(
     return contents
 
 
-async def ls_la_in_unit(
+async def ls_in_unit(
     ops_test: OpsTest,
     unit_name: str,
     directory: str,
@@ -642,18 +642,16 @@ async def ls_la_in_unit(
         a list of files returned by ls -la
     """
     return_code, output, _ = await ops_test.juju(
-        "ssh", "--container", container_name, unit_name, "ls", "-la", directory
+        "ssh", "--container", container_name, unit_name, "ls", "-1", directory
     )
     assert return_code == 0
 
-    ls_output = output.split("\n")[1:]
+    ls_output = output.split("\n")
 
     return [
         line.strip("\r")
         for line in ls_output
-        if len(line.strip()) > 0
-        and line.split()[-1] not in exclude_files
-        and line.split()[-1] not in [".", ".."]
+        if len(line.strip()) > 0 and line.strip() not in exclude_files
     ]
 
 
