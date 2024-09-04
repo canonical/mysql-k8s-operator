@@ -1,0 +1,82 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:68 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m juju.model:model.py:2098 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] waiting: Waiting for leader election.
+  mysql-k8s/1 [executing] maintenance: installing charm software
+  mysql-k8s/2 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] maintenance: joining the cluster
+  mysql-k8s/1 [executing] active: Primary
+  mysql-k8s/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [executing] active: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:71 Deploying mysql-test-app
+[32mINFO    [0m juju.model:model.py:2098 Deploying ch:amd64/jammy/mysql-test-app-51
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:74 Relating mysql-k8s with mysql-test-app
+[33mWARNING [0m juju.model:model.py:1564 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [idle] active: 
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:251 Deploying Chaos Mesh
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:261 Ensure chaos mesh is ready
+[32mINFO    [0m integration.conftest:conftest.py:20 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:312 Ensuring that there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:317 Ensuring that all instances have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:484 max_written_value=3372 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:484 max_written_value=3375 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:484 max_written_value=3377 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:325 Creating networkchaos policy to isolate instance mysql-k8s/1 from the cluster
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:332 Wait until MySQL GR actually detects isolated instance
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:349 Ensure all units have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:484 max_written_value=15162 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:484 max_written_value=15166 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:354 Remove networkchaos policy isolating instance from cluster
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:358 Wait until returning instance enters recovery
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:362 Wait until returning instance become active
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:367 Wait until all units are online
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:372 Ensure isolated instance is now secondary
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:381 Ensure there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:386 Ensure all units have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:484 max_written_value=20159 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:484 max_written_value=20162 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:484 max_written_value=20166 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:47 Destroying chaos mesh
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.5    unsupported  01:38:13Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address        Exposed  Message
+mysql-k8s       8.0.37-0ubuntu0.22.04.3  waiting      3  mysql-k8s                      0  10.152.183.34  no       installing agent
+mysql-test-app  0.0.2                    active       1  mysql-test-app  latest/edge   51  10.152.183.94  no       Last written value=16051
+
+Unit               Workload     Agent  Address      Ports  Message
+mysql-k8s/0*       active       idle   10.1.164.76         
+mysql-k8s/1        maintenance  idle   10.1.164.77         offline
+mysql-k8s/2        active       idle   10.1.164.75         Primary
+mysql-test-app/0*  active       idle   10.1.164.78         Last written value=16051
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:34:00 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:36:07 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [7a3ef3] "unit-mysql-k8s-1" cannot open api: try was stopped
+unit-mysql-k8s-1: 01:36:15 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [7a3ef3] "unit-mysql-k8s-1" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-1: 01:36:23 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [7a3ef3] "unit-mysql-k8s-1" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-1: 01:36:32 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [7a3ef3] "unit-mysql-k8s-1" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-1: 01:36:43 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [7a3ef3] "unit-mysql-k8s-1" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+unit-mysql-k8s-1: 01:36:55 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [7a3ef3] "unit-mysql-k8s-1" cannot open api: cannot resolve "controller-service.controller-microk8s-localhost.svc.cluster.local": lookup controller-service.controller-microk8s-localhost.svc.cluster.local: i/o timeout
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
