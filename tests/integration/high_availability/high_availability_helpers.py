@@ -160,7 +160,7 @@ async def deploy_and_scale_mysql(
             config=config,
             resources=resources,
             num_units=num_units,
-            series="jammy",
+            base="ubuntu@22.04",
             trust=True,
         )
 
@@ -198,6 +198,7 @@ async def deploy_and_scale_application(ops_test: OpsTest) -> str:
             application_name=APPLICATION_DEFAULT_APP_NAME,
             num_units=1,
             channel="latest/edge",
+            base="ubuntu@22.04",
         )
 
         await ops_test.model.wait_for_idle(
