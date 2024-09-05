@@ -762,6 +762,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
 
+            # Add state for this unit (self.peers.units does not include this unit)
+            all_states.add("offline")
+
             total_cluster_node_count = self.total_cluster_node_count
             if (
                 all_states == {"offline"} and self.unit.is_leader()
