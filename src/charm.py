@@ -762,13 +762,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
 
-            # Add state for this unit (self.peers.units does not include this unit)
-            all_states.add("offline")
-
             total_cluster_node_count = self.total_cluster_node_count
-            if (
-                all_states == {"offline"} and self.unit.is_leader()
-            ) or total_cluster_node_count == 1:
+
+            # Add state 'offline' for this unit (self.peers.unit does not
+            # include this unit)
+            if (all_states | {"offline"} == {"offline"} and self.unit.is_leader()) or (
+                total_cluster_node_count == 1 and all_states == {"waiting"}
+            ):
                 # All instance are off, reboot cluster from outage from the leader unit
 
                 logger.info("Attempting reboot from complete outage.")
@@ -778,7 +778,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 except MySQLRebootFromCompleteOutageError:
                     logger.error("Failed to reboot cluster from complete outage.")
 
-                    if total_cluster_node_count == 1:
+                    if total_cluster_node_count == 1 and all_states == {"waiting"}:
                         self._mysql.drop_group_replication_metadata_schema()
                         self.create_cluster()
                         self.unit.status = ActiveStatus(self.active_status_message)
