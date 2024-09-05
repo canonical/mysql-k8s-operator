@@ -95,6 +95,11 @@ class MySQLProvider(Object):
         """Handle the `database-requested` event."""
         if not self.charm.unit.is_leader():
             return
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            logger.debug("Container is not ready")
+            event.defer()
+            return
         # check if cluster is ready and if not, defer
         if not self.charm.cluster_initialized:
             logger.debug("Waiting cluster to be initialized")
