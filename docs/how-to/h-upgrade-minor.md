@@ -1,3 +1,9 @@
+[note]
+**Note**: All commands are written for `juju >= v.3.0`
+
+If you are using an earlier version, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#heading--juju-3-0-0---22-oct-2022).
+[/note]
+
 # Minor Upgrade
 
 > :information_source: **Example**: MySQL 8.0.33 -> MySQL 8.0.34<br/>
@@ -67,7 +73,7 @@ Wait for the new unit up and ready.
 After the application has settled, it’s necessary to run the `pre-upgrade-check` action against the leader unit:
 
 ```shell
-juju run-action mysql-k8s/leader pre-upgrade-check --wait
+juju run mysql-k8s/leader pre-upgrade-check
 ```
 
 The output of the action should look like:
@@ -94,8 +100,8 @@ juju refresh mysql-k8s --channel 8.0/edge
 # example with channel selection and juju 3.x
 juju refresh mysql-k8s --channel 8.0/edge --trust
 
-# example with specific revision selection
-juju refresh mysql-k8s --revision=89
+# example with specific revision selection (do NOT miss OCI resource!)
+juju refresh mysql-k8s --revision=89 --resource mysql-image=...
 ```
 
 > **:information_source: IMPORTANT:** The upgrade will execute only on the highest ordinal unit, for the running example `mysql-k8s/2`, the `juju status` will look like*:
@@ -123,7 +129,7 @@ mysql-k8s/3   maintenance  executing  10.1.148.145         upgrading unit
 After the unit is upgraded, the charm will set the unit upgrade state as completed. If deemed necessary the user can further assert the success of the upgrade. Being the unit healthy within the cluster, the next step is to resume the upgrade process, by running:
 
 ```shell
-juju run-action mysql-k8s/leader resume-upgrade --wait
+juju run mysql-k8s/leader resume-upgrade
 ```
 
 The `resume-upgrade` will rollout the upgrade for the following unit, always from highest from lowest, and for each successful upgraded unit, the process will rollout the next automatically.
