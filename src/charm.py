@@ -28,13 +28,14 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
     MySQLGetClusterPrimaryAddressError,
-    MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
+    MySQLNoMemberStateError,
     MySQLRebootFromCompleteOutageError,
     MySQLServiceNotRunningError,
     MySQLSetClusterPrimaryError,
+    MySQLUnableToGetMemberStateError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -718,7 +719,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         except (
             MySQLCreateClusterError,
-            MySQLGetMemberStateError,
+            MySQLUnableToGetMemberStateError,
+            MySQLNoMemberStateError,
             MySQLInitializeJujuOperationsTableError,
             MySQLCreateClusterError,
         ):
@@ -739,7 +741,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             state, role = self._mysql.get_member_state()
             self.unit_peer_data["member-state"] = state
             self.unit_peer_data["member-role"] = role
-        except MySQLGetMemberStateError:
+        except (MySQLUnableToGetMemberStateError, MySQLNoMemberStateError):
             logger.error("Error getting member state. Avoiding potential cluster crash recovery")
             self.unit.status = MaintenanceStatus("Unable to get member state")
             return True
@@ -762,23 +764,23 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
 
-            total_cluster_node_count = self.total_cluster_node_count
+            only_single_node_across_cluster = self.only_single_cluster_node_exists
 
             # Add state 'offline' for this unit (self.peers.unit does not
             # include this unit)
             if (all_states | {"offline"} == {"offline"} and self.unit.is_leader()) or (
-                total_cluster_node_count == 1 and all_states == {"waiting"}
+                only_single_node_across_cluster and all_states == {"waiting"}
             ):
                 # All instance are off, reboot cluster from outage from the leader unit
 
                 logger.info("Attempting reboot from complete outage.")
                 try:
-                    if self.unit.is_leader() or total_cluster_node_count == 1:
+                    if self.unit.is_leader() or only_single_node_across_cluster:
                         self._mysql.reboot_from_complete_outage()
                 except MySQLRebootFromCompleteOutageError:
                     logger.error("Failed to reboot cluster from complete outage.")
 
-                    if total_cluster_node_count == 1 and all_states == {"waiting"}:
+                    if only_single_node_across_cluster and all_states == {"waiting"}:
                         self._mysql.drop_group_replication_metadata_schema()
                         self.create_cluster()
                         self.unit.status = ActiveStatus(self.active_status_message)
@@ -795,16 +797,21 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Returns: a boolean indicating whether the update-status (caller) should
             no-op and return.
         """
+        no_member_state_exists = False
         try:
-            unit_member_state, _ = self._mysql.get_member_state()
-        except MySQLGetMemberStateError:
+            member_state, _ = self._mysql.get_member_state()
+        except MySQLUnableToGetMemberStateError:
             logger.error("Error getting member state while checking if cluster is blocked")
             self.unit.status = MaintenanceStatus("Unable to get member state")
             return True
+        except MySQLNoMemberStateError:
+            no_member_state_exists = True
 
-        if unit_member_state in ["waiting", "restarting"]:
+        if no_member_state_exists or member_state == "restarting":
             # avoid changing status while tls is being set up or charm is being initialized
-            logger.info(f"Unit state is {unit_member_state}")
+            logger.info(
+                f"Unit is waiting or restarting, {member_state=}, {no_member_state_exists=}"
+            )
             return True
 
         # avoid changing status while async replication is setting up

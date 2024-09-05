@@ -60,7 +60,8 @@ from charms.mysql.v0.mysql import (
     MySQLDeleteTempRestoreDirectoryError,
     MySQLEmptyDataDirectoryError,
     MySQLExecuteBackupCommandsError,
-    MySQLGetMemberStateError,
+    MySQLUnableToGetMemberStateError,
+    MySQLNoMemberStateError,
     MySQLInitializeJujuOperationsTableError,
     MySQLKillSessionError,
     MySQLOfflineModeAndHiddenInstanceExistsError,
@@ -339,7 +340,7 @@ class MySQLBackups(Object):
 
         try:
             state, role = self.charm._mysql.get_member_state()
-        except MySQLGetMemberStateError:
+        except (MySQLUnableToGetMemberStateError, MySQLNoMemberStateError):
             return False, "Error obtaining member state"
 
         if role == "primary" and self.charm.app.planned_units() > 1:
