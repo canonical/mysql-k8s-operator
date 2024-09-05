@@ -74,27 +74,28 @@ async def test_crash_during_cluster_setup(ops_test) -> None:
     delete_pod(ops_test, leader_unit)
 
     logger.info("Waiting until pod rescheduled and cluster is set up again")
-    await ops_test.model.block_until(
-        lambda: leader_unit.workload_status == "active"
-        and leader_unit.workload_status_message == "Primary",
-        timeout=TIMEOUT,
-    )
-
-    logger.info("Removing disabled flag from non-leader units")
-    for unit in non_leader_units:
-        unit_label = unit.name.replace("/", "-")
-        await delete_file_or_directory_in_unit(
-            ops_test,
-            unit.name,
-            f"/var/lib/juju/agents/unit-{unit_label}/charm/disable",
-            container_name="charm",
+    async with ops_test.fast_forward("60s"):
+        await ops_test.model.block_until(
+            lambda: leader_unit.workload_status == "active"
+            and leader_unit.workload_status_message == "Primary",
+            timeout=TIMEOUT,
         )
 
-    logger.info("Waiting until cluster is fully active")
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        raise_on_blocked=False,
-        timeout=TIMEOUT,
-        wait_for_exact_units=3,
-    )
+        logger.info("Removing disabled flag from non-leader units")
+        for unit in non_leader_units:
+            unit_label = unit.name.replace("/", "-")
+            await delete_file_or_directory_in_unit(
+                ops_test,
+                unit.name,
+                f"/var/lib/juju/agents/unit-{unit_label}/charm/disable",
+                container_name="charm",
+            )
+
+        logger.info("Waiting until cluster is fully active")
+        await ops_test.model.wait_for_idle(
+            apps=[APP_NAME],
+            status="active",
+            raise_on_blocked=False,
+            timeout=TIMEOUT,
+            wait_for_exact_units=3,
+        )

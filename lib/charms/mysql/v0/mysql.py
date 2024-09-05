@@ -624,7 +624,7 @@ class MySQLCharmBase(CharmBase, ABC):
         return False
 
     @property
-    def only_single_cluster_node_exists(self) -> Optional[bool]:
+    def only_single_cluster_node_exists_unitialized(self) -> Optional[bool]:
         """Check if only a single cluster node exists across all units."""
         if not self.app_peer_data.get("cluster-name"):
             return None
@@ -633,7 +633,11 @@ class MySQLCharmBase(CharmBase, ABC):
         for unit in self.app_units:
             total_cluster_nodes += self._mysql.get_cluster_node_count(from_instance=self.get_unit_address(unit))
 
-        return total_cluster_nodes == 1
+        total_online_cluster_nodes = 0
+        for unit in self.app_units:
+            total_online_cluster_nodes += self._mysql.get_cluster_node_count(from_instance=self.get_unit_address(unit), node_status=MySQLMemberState["ONLINE"])
+
+        return total_cluster_nodes == 1 and total_online_cluster_nodes == 0
 
     @property
     def cluster_fully_initialized(self) -> bool:
