@@ -107,7 +107,7 @@ async def test_log_rotation(
     logger.info("Ensuring log files were rotated")
     # Exclude checking slowquery log rotation as slowquery logs are disabled by default
     for log in set(log_types):
-        file_contents = await read_contents_from_file_in_unit(
+        file_contents = read_contents_from_file_in_unit(
             ops_test, unit, f"/var/log/mysql/{log}.log"
         )
         assert f"test {log} content" not in file_contents, f"❌ log file {log}.log not rotated"
@@ -117,7 +117,7 @@ async def test_log_rotation(
 
         rotated_file_content_exists = False
         for filename in ls_output:
-            file_contents = await read_contents_from_file_in_unit(
+            file_contents = read_contents_from_file_in_unit(
                 ops_test,
                 unit,
                 f"/var/log/mysql/archive_{log}/{filename}",

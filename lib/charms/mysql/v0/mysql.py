@@ -620,6 +620,18 @@ class MySQLCharmBase(CharmBase, ABC):
         return False
 
     @property
+    def total_cluster_node_count(self) -> int:
+        """Get the cluster node counts spanning the entire cluster."""
+        if not self.app_peer_data.get("cluster-name"):
+            return 0
+
+        total_cluster_nodes = 0
+        for unit in self.app_units:
+            total_cluster_nodes += self._mysql.get_cluster_node_count(from_instance=self.get_unit_address(unit))
+
+        return total_cluster_nodes
+
+    @property
     def cluster_fully_initialized(self) -> bool:
         """Returns True if the cluster is fully initialized.
 
@@ -1698,6 +1710,18 @@ class MySQLBase(ABC):
                 f"Failed to confirm instance configuration for {instance_address} with error {e.message}",
             )
             return False
+
+    def drop_group_replication_metadata_schema(self) -> None:
+        """Drop the group replication metadata schema from current unit."""
+        commands = (
+            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            "dba.drop_metadata_schema()",
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError:
+            logger.exception("Failed to drop group replication metadata schema")
 
     def are_locks_acquired(self, from_instance: Optional[str] = None) -> bool:
         """Report if any topology change is being executed."""

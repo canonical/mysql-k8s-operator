@@ -700,7 +700,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # First run setup
         self._configure_instance(container)
 
-        if not self.unit.is_leader() or self.cluster_initialized:
+        if not self.unit.is_leader() or (self.cluster_initialized and self._get_primary_from_online_peer()):
             # Non-leader units try to join cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
@@ -710,6 +710,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         try:
             # Create the cluster when is the leader unit
             logger.info(f"Creating cluster {self.app_peer_data['cluster-name']}")
+            self.unit.status = MaintenanceStatus("Creating cluster")
             self.create_cluster()
             self.unit.status = ops.ActiveStatus(self.active_status_message)
 
@@ -728,10 +729,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Returns:
             bool indicating whether the caller should return
         """
-        if not self.cluster_initialized or not self.unit_peer_data.get("member-role"):
-            # health checks are only after cluster and members are initialized
-            return True
-
         if not self._mysql.is_mysqld_running():
             return True
 
@@ -757,23 +754,29 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if state == "recovering":
             return True
 
-        if state in ["offline"]:
+        if state == "offline":
             # Group Replication is active but the member does not belong to any group
             all_states = {
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
-            # Add state for this unit (self.peers.units does not include this unit)
-            all_states.add("offline")
 
-            if all_states == {"offline"} and self.unit.is_leader():
+            total_cluster_node_count = self.total_cluster_node_count
+            if (all_states == {"offline"} and self.unit.is_leader()) or total_cluster_node_count == 1:
                 # All instance are off, reboot cluster from outage from the leader unit
 
                 logger.info("Attempting reboot from complete outage.")
                 try:
-                    self._mysql.reboot_from_complete_outage()
+                    if self.unit.is_leader() or total_cluster_node_count == 1:
+                        self._mysql.reboot_from_complete_outage()
                 except MySQLRebootFromCompleteOutageError:
                     logger.error("Failed to reboot cluster from complete outage.")
-                    self.unit.status = BlockedStatus("failed to recover cluster.")
+
+                    if total_cluster_node_count == 1:
+                        self._mysql.drop_group_replication_metadata_schema()
+                        self.create_cluster()
+                        self.unit.status = ActiveStatus(self.active_status_message)
+                    else:
+                        self.unit.status = BlockedStatus("failed to recover cluster.")
 
             return True
 
@@ -785,7 +788,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Returns: a boolean indicating whether the update-status (caller) should
             no-op and return.
         """
-        unit_member_state = self.unit_peer_data.get("member-state")
+        try:
+            unit_member_state, _ = self._mysql.get_member_state()
+        except MySQLGetMemberStateError:
+            logger.error("Error getting member state while checking if cluster is blocked")
+            self.unit.status = MaintenanceStatus("Unable to get member state")
+            return True
+
         if unit_member_state in ["waiting", "restarting"]:
             # avoid changing status while tls is being set up or charm is being initialized
             logger.info(f"Unit state is {unit_member_state}")
@@ -812,6 +821,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
+            logger.debug("Cannot connect to pebble in the mysql container")
             return
 
         if self._handle_potential_cluster_crash_scenario():
