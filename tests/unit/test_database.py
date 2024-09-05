@@ -78,6 +78,7 @@ class TestDatabase(unittest.TestCase):
     ):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
+        self.harness.container_pebble_ready("mysql")
         self.charm.on.config_changed.emit()
 
         # confirm that the relation databag is empty
