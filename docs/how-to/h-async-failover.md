@@ -1,7 +1,5 @@
 # Switchover / Failover of Async replication
 
-> **WARNING**: it is an '8.0/edge' article. Do NOT use it in production!<br/>Contact [Canonical Data Platform team](/t/11868) if you are interested in the topic.
-
 ## Pre-requisits
 
 Make sure both `Rome` and `Lisbon` Clusters are deployed using the [Async Deployment manual](/t/13458)!

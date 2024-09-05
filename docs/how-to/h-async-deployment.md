@@ -1,9 +1,4 @@
 # Deploy Async replication
-[note type="caution"]
-**Warning**: This feature is for charm revision `8.0/edge`. Do NOT use it in production!
-
-Contact the [Canonical Data Platform team](/t/11868) if you are interested in this topic.
-[/note]
 
 ## Deploy
 

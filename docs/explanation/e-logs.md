@@ -10,11 +10,19 @@ root@mysql-k8s-0:/# ls -lahR /var/log/mysql
 total 28K
 drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 .
 drwxr-xr-x 1 root root 4.0K Sep 27 20:55 ..
+drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_audit
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_error
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_general
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:45 archive_slowquery
 -rw-r----- 1 mysql mysql 1.2K Oct 23 20:46 error.log
 -rw-r----- 1 mysql mysql 1.7K Oct 23 20:46 general.log
+
+/var/snap/charmed-mysql/common/var/log/mysql/archive_audit:
+total 452K
+drwxrwx--- 2 snap_daemon snap_daemon 4.0K Sep  3 01:49 .
+drwxr-xr-x 6 snap_daemon root        4.0K Sep  3 01:49 ..
+-rw-r----- 1 snap_daemon root         43K Sep  3 01:24 audit.log-20240903_0124
+-rw-r----- 1 snap_daemon root        109K Sep  3 01:25 audit.log-20240903_0125
 
 /var/log/mysql/archive_error:
 total 20K
@@ -34,6 +42,21 @@ drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 ..
 total 8.0K
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:45 .
 drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 ..
+```
+
+The following is a sample of the audit logs, with format json with login/logout records:
+
+```json
+{"audit_record":{"name":"Connect","record":"17_2024-09-03T01:52:14","timestamp":"2024-09-03T01:53:14Z","connection_id":"988","status":1156,"user":"","priv_user":"","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
+{"audit_record":{"name":"Connect","record":"18_2024-09-03T01:52:14","timestamp":"2024-09-03T01:53:14Z","connection_id":"989","status":0,"user":"serverconfig","priv_user":"serverconfig","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
+{"audit_record":{"name":"Quit","record":"1_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:14Z","connection_id":"989","status":0,"user":"serverconfig","priv_user":"serverconfig","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
+{"audit_record":{"name":"Connect","record":"2_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"990","status":1156,"user":"","priv_user":"","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
+{"audit_record":{"name":"Connect","record":"3_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"991","status":0,"user":"serverconfig","priv_user":"serverconfig","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
+{"audit_record":{"name":"Quit","record":"4_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"991","status":0,"user":"serverconfig","priv_user":"serverconfig","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
+{"audit_record":{"name":"Connect","record":"5_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"992","status":0,"user":"clusteradmin","priv_user":"clusteradmin","os_login":"","proxy_user":"","host":"localhost","ip":"","db":""}}
+{"audit_record":{"name":"Quit","record":"6_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"992","status":0,"user":"clusteradmin","priv_user":"clusteradmin","os_login":"","proxy_user":"","host":"localhost","ip":"","db":""}}
+{"audit_record":{"name":"Connect","record":"7_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"993","status":1156,"user":"","priv_user":"","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
+{"audit_record":{"name":"Connect","record":"8_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"994","status":0,"user":"serverconfig","priv_user":"serverconfig","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
 ```
 
 The following is a sample of the error logs, with format `time thread [label] [err_code] [subsystem] msg`:
@@ -100,19 +123,19 @@ SET timestamp=1698099752;
 do sleep(15);
 ```
 
-The charm currenly has error and general logs enabled by default, while slow query logs are disabled by default. All of these files are rotated if present into a separate dedicated archive folder under the logs directory.
+The charm currently has error and general logs enabled by default, while slow query logs are disabled by default. All of these files are rotated if present into a separate dedicated archive folder under the logs directory.
 
 We do not yet support the rotation of binary logs (binlog, relay log, undo log, redo log, etc).
 
 ## Log Rotation Configurations
 
-For each log (error, general and slow query):
+For each log (audit, error, general and slow query):
 
 - The log file is rotated every minute (even if the log files are empty)
 - The rotated log file is formatted with a date suffix of `-%V-%H%M` (-weeknumber-hourminute)
 - The rotated log files are not compressed or mailed
 - The rotated log files are owned by the `snap_daemon` user and group
-- The rotated log files are retained for a maximux of 7 days before being deleted
+- The rotated log files are retained for a maximum of 7 days before being deleted
 - The most recent 10080 rotated log files are retained before older rotated log files are deleted
 
 The following are logrotate config values used for log rotation:
