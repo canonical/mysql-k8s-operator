@@ -700,7 +700,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # First run setup
         self._configure_instance(container)
 
-        if not self.unit.is_leader() or (self.cluster_initialized and self._get_primary_from_online_peer()):
+        if not self.unit.is_leader() or (
+            self.cluster_initialized and self._get_primary_from_online_peer()
+        ):
             # Non-leader units try to join cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
@@ -761,7 +763,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             }
 
             total_cluster_node_count = self.total_cluster_node_count
-            if (all_states == {"offline"} and self.unit.is_leader()) or total_cluster_node_count == 1:
+            if (
+                all_states == {"offline"} and self.unit.is_leader()
+            ) or total_cluster_node_count == 1:
                 # All instance are off, reboot cluster from outage from the leader unit
 
                 logger.info("Attempting reboot from complete outage.")
