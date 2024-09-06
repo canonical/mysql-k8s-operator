@@ -54,7 +54,11 @@ class KubernetesHelpers:
             roles: List of roles to append on the service name
         """
         for role in roles:
-            selector = {"cluster-name": self.cluster_name, "role": role}
+            selector = {
+                "cluster-name": self.cluster_name,
+                "application_name": self.app_name,
+                "role": role,
+            }
             service_name = f"{self.app_name}-{role}"
             pod0 = self.client.get(
                 res=Pod,
@@ -128,6 +132,7 @@ class KubernetesHelpers:
             logger.debug(f"Patching {pod_name=} with {role=}")
 
             pod.metadata.labels["cluster-name"] = self.cluster_name
+            pod.metadata.labels["application-name"] = self.app_name
             pod.metadata.labels["role"] = role
             self.client.patch(Pod, pod_name, pod)
         except ApiError as e:
