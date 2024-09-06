@@ -56,7 +56,7 @@ class KubernetesHelpers:
         for role in roles:
             selector = {
                 "cluster-name": self.cluster_name,
-                "application_name": self.app_name,
+                "application-name": self.app_name,
                 "role": role,
             }
             service_name = f"{self.app_name}-{role}"
