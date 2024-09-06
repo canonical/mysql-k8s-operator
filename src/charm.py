@@ -701,6 +701,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # First run setup
         self._configure_instance(container)
 
+        # We consider cluster initialized only if a primary already exists
+        # (as there can be metadata in the database but no primary if pod
+        # crashes while cluster is being created)
         if not self.unit.is_leader() or (
             self.cluster_initialized and self._get_primary_from_online_peer()
         ):
@@ -737,7 +740,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return True
 
         only_single_unitialized_node_across_cluster = (
-            self.only_single_cluster_node_exists_unitialized
+            self.only_one_cluster_node_thats_uninitialized
         )
 
         if (
@@ -750,7 +753,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             state, role = self._mysql.get_member_state()
             self.unit_peer_data["member-state"] = state
             self.unit_peer_data["member-role"] = role
-        except (MySQLUnableToGetMemberStateError, MySQLNoMemberStateError):
+        except (MySQLNoMemberStateError, MySQLUnableToGetMemberStateError):
             logger.error("Error getting member state. Avoiding potential cluster crash recovery")
             self.unit.status = MaintenanceStatus("Unable to get member state")
             return True
@@ -782,6 +785,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
                 logger.info("Attempting reboot from complete outage.")
                 try:
+                    # Need condition to avoid rebooting on all units of application
                     if self.unit.is_leader() or only_single_unitialized_node_across_cluster:
                         self._mysql.reboot_from_complete_outage()
                 except MySQLRebootFromCompleteOutageError:
@@ -804,7 +808,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Returns: a boolean indicating whether the update-status (caller) should
             no-op and return.
         """
-        no_member_state_exists = False
+        # We need to query member state from the server since member state would
+        # be 'offline' if pod rescheduled during cluster creation, however
+        # member-state in the unit peer databag will be 'waiting'
+        member_state_exists = True
         try:
             member_state, _ = self._mysql.get_member_state()
         except MySQLUnableToGetMemberStateError:
@@ -812,13 +819,12 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self.unit.status = MaintenanceStatus("Unable to get member state")
             return True
         except MySQLNoMemberStateError:
-            no_member_state_exists = True
+            member_state_exists = False
 
-        if no_member_state_exists or member_state == "restarting":
+        if not member_state_exists or member_state == "restarting":
             # avoid changing status while tls is being set up or charm is being initialized
-            logger.info(
-                f"Unit is waiting or restarting, {member_state=}, {no_member_state_exists=}"
-            )
+            logger.info("Unit is waiting or restarting")
+            logger.debug(f"{member_state_exists=}, {member_state=}")
             return True
 
         # avoid changing status while async replication is setting up

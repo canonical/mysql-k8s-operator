@@ -100,7 +100,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 11
+LIBPATCH = 12
 
 
 if typing.TYPE_CHECKING:
@@ -340,7 +340,7 @@ class MySQLBackups(Object):
 
         try:
             state, role = self.charm._mysql.get_member_state()
-        except (MySQLUnableToGetMemberStateError, MySQLNoMemberStateError):
+        except (MySQLNoMemberStateError, MySQLUnableToGetMemberStateError):
             return False, "Error obtaining member state"
 
         if role == "primary" and self.charm.app.planned_units() > 1:
