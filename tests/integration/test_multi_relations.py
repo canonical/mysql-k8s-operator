@@ -27,14 +27,14 @@ async def test_build_and_deploy(ops_test: OpsTest):
         db_charm,
         application_name="mysql",
         config=config,
-        num_units=3,
+        num_units=1,
         resources=resources,
         series="jammy",
         trust=True,
     )
 
     for i in range(SCALE_OUT):
-        config = {"database_name": f"database{i}"}
+        config = {"database_name": f"database{i}", "sleep_interval": "2000"}
         await ops_test.model.deploy(
             "mysql-test-app",
             application_name=f"app{i}",
@@ -73,8 +73,10 @@ async def test_scale_out(ops_test: OpsTest):
     await ops_test.model.applications["mysql"].scale(5)
     for i in range(SCALE_OUT):
         await ops_test.model.applications[f"router{i}"].scale(3)
+    expected_unit_sum = 5 + 4 * SCALE_OUT
     await ops_test.model.block_until(
-        lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values()),
+        lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values())
+        and len(ops_test.model.units) == expected_unit_sum,
         timeout=60 * 15,
         wait_period=5,
     )
@@ -87,8 +89,10 @@ async def test_scale_in(ops_test: OpsTest):
     await ops_test.model.applications["mysql"].scale(1)
     for i in range(SCALE_OUT):
         await ops_test.model.applications[f"router{i}"].scale(1)
+    expected_unit_sum = 1 + 2 * SCALE_OUT
     await ops_test.model.block_until(
-        lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values()),
+        lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values())
+        and len(ops_test.model.units) == expected_unit_sum,
         timeout=60 * 15,
         wait_period=5,
     )
