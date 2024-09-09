@@ -222,11 +222,13 @@ class MySQLProvider(Object):
 
         relation_data = self.database.fetch_relation_data()
         for relation in relations:
-            # only update endpoints if on_database_requested has executed
-            if relation.id not in relation_data:
-                continue
+            # only update endpoints if on_database_requested on any
+            # relation
+            if relation.id in relation_data:
+                break
+            return
 
-            self.charm._mysql.update_endpoints()
+        self.charm._mysql.update_endpoints()
 
     def _on_update_status(self, _) -> None:
         """Handle the update status event.
