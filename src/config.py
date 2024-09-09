@@ -132,7 +132,8 @@ class CharmConfig(BaseConfigModel):
         """Check experimental max connections."""
         if value < MAX_CONNECTIONS_FLOOR:
             raise ValueError(
-                f"experimental-max-connections must be greater than {MAX_CONNECTIONS_FLOOR}"
+                f"experimental-max-connections ({value=}) must be equal or greater "
+                + f" than {MAX_CONNECTIONS_FLOOR}"
             )
 
         return value
