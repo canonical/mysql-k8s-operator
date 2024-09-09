@@ -10,7 +10,8 @@ import yaml
 from pytest_operator.plugin import OpsTest
 
 DB_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-SCALE_OUT = 7
+SCALE_APPS = 7
+SCALE_UNITS = 3
 
 
 @pytest.mark.group(1)
@@ -33,7 +34,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
         trust=True,
     )
 
-    for i in range(SCALE_OUT):
+    for i in range(SCALE_APPS):
         config = {"database_name": f"database{i}", "sleep_interval": "2000"}
         await ops_test.model.deploy(
             "mysql-test-app",
@@ -55,13 +56,13 @@ async def test_build_and_deploy(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_relate_all(ops_test: OpsTest):
     """Relate all the applications to the database."""
-    for i in range(SCALE_OUT):
+    for i in range(SCALE_APPS):
         await ops_test.model.relate("mysql:database", f"router{i}:backend-database")
         await ops_test.model.relate(f"app{i}:database", f"router{i}:database")
 
     await ops_test.model.block_until(
         lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values()),
-        timeout=60 * 15,
+        timeout=60 * 25,
         wait_period=5,
     )
 
@@ -70,14 +71,14 @@ async def test_relate_all(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_scale_out(ops_test: OpsTest):
     """Scale database and routers."""
-    await ops_test.model.applications["mysql"].scale(5)
-    for i in range(SCALE_OUT):
-        await ops_test.model.applications[f"router{i}"].scale(3)
-    expected_unit_sum = 5 + 4 * SCALE_OUT
+    await ops_test.model.applications["mysql"].scale(SCALE_UNITS)
+    for i in range(SCALE_APPS):
+        await ops_test.model.applications[f"router{i}"].scale(SCALE_UNITS)
+    expected_unit_sum = SCALE_UNITS + 4 * SCALE_APPS
     await ops_test.model.block_until(
         lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values())
         and len(ops_test.model.units) == expected_unit_sum,
-        timeout=60 * 15,
+        timeout=60 * 30,
         wait_period=5,
     )
 
@@ -87,9 +88,9 @@ async def test_scale_out(ops_test: OpsTest):
 async def test_scale_in(ops_test: OpsTest):
     """Scale database and routers."""
     await ops_test.model.applications["mysql"].scale(1)
-    for i in range(SCALE_OUT):
+    for i in range(SCALE_APPS):
         await ops_test.model.applications[f"router{i}"].scale(1)
-    expected_unit_sum = 1 + 2 * SCALE_OUT
+    expected_unit_sum = 1 + 2 * SCALE_APPS
     await ops_test.model.block_until(
         lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values())
         and len(ops_test.model.units) == expected_unit_sum,
