@@ -1,0 +1,26 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:218 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.5    unsupported  01:34:42Z
+
+App                       Version                  Status  Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s                                  0  10.152.183.212  no       
+self-signed-certificates                           active      1  self-signed-certificates  latest/stable  155  10.152.183.143  no       
+
+Unit                         Workload  Agent  Address       Ports  Message
+mysql-k8s/0                  active    idle   10.1.178.140         
+mysql-k8s/1                  active    idle   10.1.178.139         
+mysql-k8s/2*                 active    idle   10.1.178.141         
+self-signed-certificates/0*  active    idle   10.1.178.142         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:33:36 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:33:41 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:33:43 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:33:46 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:33:47 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-self-signed-certificates-0: 01:34:16 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "aa051e8c-fecd-4f07-83ad-07a5be4e3013:r#3#mysql-k8s": settings aa051e8c-fecd-4f07-83ad-07a5be4e3013:r#3#mysql-k8s not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
