@@ -77,6 +77,8 @@ async def test_saturate_max_connections(ops_test: OpsTest) -> None:
     if "return-code" in credentials:
         # juju 2.9 dont have the return-code key
         del credentials["return-code"]
+    if "Code" in credentials:
+        del credentials["Code"]
     credentials["host"] = host_ip
 
     logger.info(f"Creating {CONNECTIONS} connections")
