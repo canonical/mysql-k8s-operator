@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 71
+LIBPATCH = 72
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -2247,8 +2247,9 @@ class MySQLBase(ABC):
 
     def verify_server_upgradable(self, instance: Optional[str] = None) -> None:
         """Wrapper for API check_for_server_upgrade."""
+        # use cluster admin user to enforce standard port usage
         check_command = [
-            f"shell.connect('{self.instance_def(self.server_config_user, host=instance)}')",
+            f"shell.connect('{self.instance_def(self.cluster_admin_user, host=instance)}')",
             "try:",
             "    util.check_for_server_upgrade(options={'outputFormat': 'JSON'})",
             "except ValueError:",  # ValueError is raised for same version check
