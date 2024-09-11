@@ -1,50 +1,60 @@
-# Log rotation
+# Logs
 
-## Overview
+This explanation goes over the types of logging in MySQL and the configuration parameters for log rotation.
 
-The charm stores its logs in `/var/log/mysql`. It is recommended to set up a [COS integration](/t/9981) so that these log files can be streamed to Loki. This leads to better persistence and security of the logs.
+The charm currently has audit, error and general logs enabled by default, while slow query logs are disabled by default. All of these files are rotated if present into a separate dedicated archive folder under the logs directory.
+
+We do not yet support the rotation of binary logs (binlog, relay log, undo log, redo log, etc).
+
+## Summary
+* [Log types](#log-types)
+  * [Audit logs](#audit-logs)
+  * [Error logs](#error-logs)
+  * [General logs](#general-logs)
+  * [Slowquery logs](#slowquery-logs)
+* [Log rotation configuration](#log-rotation-configuration)
+* [High Level Design](#high-level-design)
+
+---
+
+## Log types
+
+The charm stores its logs in `/var/snap/charmed-mysql/common/var/log/mysql`. 
 
 ```shell
-root@mysql-k8s-0:/# ls -lahR /var/log/mysql
+$ ls -lahR /var/snap/charmed-mysql/common/var/log/mysql
+
 /var/log/mysql:
-total 28K
-drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 .
-drwxr-xr-x 1 root root 4.0K Sep 27 20:55 ..
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_audit
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_error
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_general
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:45 archive_slowquery
--rw-r----- 1 mysql mysql 1.2K Oct 23 20:46 error.log
+-rw-r----- 1 mysql mysql 1.1K Oct 23 20:46 audit.log
+-rw-r----- 1 mysql mysql 1.1K Oct 23 20:46 error.log
 -rw-r----- 1 mysql mysql 1.7K Oct 23 20:46 general.log
 
 /var/snap/charmed-mysql/common/var/log/mysql/archive_audit:
-total 452K
-drwxrwx--- 2 snap_daemon snap_daemon 4.0K Sep  3 01:49 .
-drwxr-xr-x 6 snap_daemon root        4.0K Sep  3 01:49 ..
 -rw-r----- 1 snap_daemon root         43K Sep  3 01:24 audit.log-20240903_0124
 -rw-r----- 1 snap_daemon root        109K Sep  3 01:25 audit.log-20240903_0125
 
-/var/log/mysql/archive_error:
-total 20K
-drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 .
-drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 ..
+/var/snap/charmed-mysql/common/var/log/mysql/archive_error:
 -rw-r----- 1 mysql mysql 8.7K Oct 23 20:44 error.log-43_2045
--rw-r----- 1 mysql mysql 1.1K Oct 23 20:45 error.log-43_2046
+-rw-r----- 1 mysql mysql 2.3K Oct 23 20:45 error.log-43_2046
 
-/var/log/mysql/archive_general:
-total 8.0M
-drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 .
-drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 ..
+/var/snap/charmed-mysql/common/var/log/mysql/archive_general:
 -rw-r----- 1 mysql mysql 8.0M Oct 23 20:45 general.log-43_2045
 -rw-r----- 1 mysql mysql 4.6K Oct 23 20:46 general.log-43_2046
 
-/var/log/mysql/archive_slowquery:
-total 8.0K
-drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:45 .
-drwxr-xr-x 1 mysql mysql 4.0K Oct 23 20:46 ..
+/var/snap/charmed-mysql/common/var/log/mysql/archive_slowquery:
 ```
 
-The following is a sample of the audit logs, with format json with login/logout records:
+It is recommended to set up a [COS integration] so that these log files can be streamed to Loki. This leads to better persistence and security of the logs.
+
+### Audit logs
+The Audit Log plugin allows all login/logout records to be stored in a log file.
+
+<details>
+<summary>Example of audit logs in JSON format with login/logout records</summary>
 
 ```json
 {"audit_record":{"name":"Connect","record":"17_2024-09-03T01:52:14","timestamp":"2024-09-03T01:53:14Z","connection_id":"988","status":1156,"user":"","priv_user":"","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
@@ -58,44 +68,54 @@ The following is a sample of the audit logs, with format json with login/logout 
 {"audit_record":{"name":"Connect","record":"7_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"993","status":1156,"user":"","priv_user":"","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
 {"audit_record":{"name":"Connect","record":"8_2024-09-03T01:53:14","timestamp":"2024-09-03T01:53:33Z","connection_id":"994","status":0,"user":"serverconfig","priv_user":"serverconfig","os_login":"","proxy_user":"","host":"juju-da2225-8","ip":"10.207.85.214","db":""}}
 ```
+</details>
 
-The following is a sample of the error logs, with format `time thread [label] [err_code] [subsystem] msg`:
+For more details, see the [Audit Logs explanation].
 
+### Error logs
+
+<details>
+<summary>Example of error logs with format <code>time thread [label] [err_code] [subsystem] msg</code></summary>
 ```shell
-2023-10-23T11:57:44.924594Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.34-0ubuntu0.22.04.1) initializing of server in progress as process 16                                              
-2023-10-23T11:57:44.935004Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.         
-2023-10-23T11:57:50.420672Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.         
-2023-10-23T11:57:54.614751Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.                             
-2023-10-23T11:57:59.690483Z mysqld_safe Logging to '/var/log/mysql/error.log'.                      
-2023-10-23T11:57:59.710530Z mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql   
-2023-10-23T11:58:00.049606Z 0 [Warning] [MY-010101] [Server] Insecure configuration for --secure-file-priv: Location is accessible to all OS users. Consider choosing a different directory.                
-2023-10-23T11:58:00.049702Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.34-0ubuntu0.22.04.1) starting as process 285                                                                       
-2023-10-23T11:58:00.061489Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.        
-2023-10-23T11:58:04.897561Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.       
-2023-10-23T11:58:05.224159Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.  
-2023-10-23T11:58:05.224220Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.                                         
-2023-10-23T11:58:05.236134Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/lib/mysql' in the path is accessible to all OS users. Consider choosing a different direc
-tory.                                                                                               
-2023-10-23T11:58:05.269381Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '0.0.0.0' port: 33060, socket: /var/run/mysqld/mysqlx.sock                                        
-2023-10-23T11:57:44.924594Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.34-0ubuntu0.22.04.1) initializing of server in progress as process 16                                              
-2023-10-23T11:57:44.935004Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.         
-2023-10-23T11:57:50.420672Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.         
-2023-10-23T11:57:54.614751Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.                             
-2023-10-23T11:57:59.690483Z mysqld_safe Logging to '/var/log/mysql/error.log'.                      
-2023-10-23T11:57:59.710530Z mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql   
-2023-10-23T11:58:00.049606Z 0 [Warning] [MY-010101] [Server] Insecure configuration for --secure-file-priv: Location is accessible to all OS users. Consider choosing a different directory.                
-2023-10-23T11:58:00.049702Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.34-0ubuntu0.22.04.1) starting as process 285                                                                       
-2023-10-23T11:58:00.061489Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.        
-2023-10-23T11:58:04.897561Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.       
-2023-10-23T11:58:05.224159Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.  
-2023-10-23T11:58:05.224220Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.                                         
-2023-10-23T11:58:05.236134Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/lib/mysql' in the path is accessible to all OS users. Consider choosing a different direc
-tory.                                                                                               
-2023-10-23T11:58:05.269381Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '0.0.0.0' port: 33060, socket: /var/run/mysqld/mysqlx.sock                                        
+2023-10-24T23:28:07.048728Z mysqld_safe Number of processes running now: 0
+2023-10-24T23:28:07.063027Z mysqld_safe mysqld restarted
+2023-10-24T23:28:07.472084Z 0 [Warning] [MY-010101] [Server] Insecure configuration for --secure-file-priv: Location is accessible to all OS users. Consider choosing a different directory.
+2023-10-24T23:28:07.472149Z 0 [System] [MY-010116] [Server] /snap/charmed-mysql/69/usr/sbin/mysqld (mysqld 8.0.34-0ubuntu0.22.04.1) starting as process 4134
+2023-10-24T23:28:07.482044Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2023-10-24T23:28:11.219123Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2023-10-24T23:28:11.486308Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+2023-10-24T23:28:11.487473Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+2023-10-24T23:28:11.538807Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '0.0.0.0' port: 33060, socket: /var/snap/charmed-mysql/common/var/run/mysqld/mysqlx.sock
+2023-10-24T23:28:11.538957Z 0 [System] [MY-010931] [Server] /snap/charmed-mysql/69/usr/sbin/mysqld: ready for connections. Version: '8.0.34-0ubuntu0.22.04.1'  socket: '/var/snap/charmed-mysql/common/var/run/mysqld/mysqld.sock'  port: 3306  (Ubuntu).
+2023-10-24T23:28:17.983851Z 12 [Warning] [MY-010604] [Repl] Neither --relay-log nor --relay-log-index were used; so replication may break when this MySQL server acts as a replica and has his hostname changed!! Please use '--relay-log=juju-9860bb-0-relay-bin' to avoid this problem.
+2023-10-24T23:28:17.999093Z 12 [System] [MY-010597] [Repl] 'CHANGE REPLICATION SOURCE TO FOR CHANNEL 'mysqlsh.test' executed'. Previous state source_host='', source_port= 3306, source_log_file='', source_log_pos= 4, source_bind=''. New state source_host='juju-9860bb-0.lxd', source_port= 3306, source_log_file='', source_log_pos= 4, source_bind=''.
+2023-10-24T23:28:18.025941Z 15 [Warning] [MY-010897] [Repl] Storing MySQL user name or password information in the connection metadata repository is not secure and is therefore not recommended. Please consider using the USER and PASSWORD connection options for START REPLICA; see the 'START REPLICA Syntax' in the MySQL Manual for more information.
+2023-10-24T23:28:18.046893Z 15 [ERROR] [MY-013117] [Repl] Replica I/O for channel 'mysqlsh.test': Fatal error: The replica I/O thread stops because source and replica have equal MySQL server ids; these ids must be different for replication to work (or the --replicate-same-server-id option must be used on replica but this does not always make sense; please check the manual before using it). Error_code: MY-013117
+2023-10-24T23:28:18.415923Z 12 [ERROR] [MY-011685] [Repl] Plugin group_replication reported: 'The group_replication_group_name option is mandatory'
+2023-10-24T23:28:18.415960Z 12 [ERROR] [MY-011660] [Repl] Plugin group_replication reported: 'Unable to start Group Replication on boot'
+2023-10-24T23:28:18.442291Z 12 [System] [MY-010597] [Repl] 'CHANGE REPLICATION SOURCE TO FOR CHANNEL '__mysql_innodb_cluster_creating_cluster__' executed'. Previous state source_host='', source_port= 3306, source_log_file='', source_log_pos= 4, source_bind=''. New state source_host='', source_port= 3306, source_log_file='', source_log_pos= 4, source_bind=''.
+2023-10-24T23:28:18.508247Z 12 [System] [MY-010597] [Repl] 'CHANGE REPLICATION SOURCE TO FOR CHANNEL 'group_replication_recovery' executed'. Previous state source_host='', source_port= 3306, source_log_file='', source_log_pos= 4, source_bind=''. New state source_host='', source_port= 3306, source_log_file='', source_log_pos= 4, source_bind=''.
+2023-10-24T23:28:18.572495Z 12 [System] [MY-013587] [Repl] Plugin group_replication reported: 'Plugin 'group_replication' is starting.'
+2023-10-24T23:28:18.622821Z 20 [System] [MY-010597] [Repl] 'CHANGE REPLICATION SOURCE TO FOR CHANNEL 'group_replication_applier' executed'. Previous state source_host='', source_port= 3306, source_log_file='', source_log_pos= 4, source_bind=''. New state source_host='<NULL>', source_port= 0, source_log_file='', source_log_pos= 4, source_bind=''.
+2023-10-24T23:28:18.875230Z 0 [System] [MY-011565] [Repl] Plugin group_replication reported: 'Setting super_read_only=ON.'
+2023-10-24T23:28:18.875322Z 0 [System] [MY-013471] [Repl] Plugin group_replication reported: 'Distributed recovery will transfer data using: Incremental recovery from a group donor'
+2023-10-24T23:28:18.875561Z 0 [System] [MY-011565] [Repl] Plugin group_replication reported: 'Setting super_read_only=ON.'
+2023-10-24T23:28:18.875596Z 0 [System] [MY-011503] [Repl] Plugin group_replication reported: 'Group membership changed to juju-9860bb-0.lxd:3306 on view 16981900988747955:1.'
+2023-10-24T23:28:19.176137Z 0 [System] [MY-011490] [Repl] Plugin group_replication reported: 'This server was declared online within the replication group.'
+2023-10-24T23:28:19.176342Z 0 [System] [MY-011507] [Repl] Plugin group_replication reported: 'A new primary with address juju-9860bb-0.lxd:3306 was elected. The new primary will execute all previous group transactions before allowing writes.'
+2023-10-24T23:28:19.176967Z 31 [System] [MY-011565] [Repl] Plugin group_replication reported: 'Setting super_read_only=ON.'
+2023-10-24T23:28:19.179244Z 28 [System] [MY-013731] [Repl] Plugin group_replication reported: 'The member action "mysql_disable_super_read_only_if_primary" for event "AFTER_PRIMARY_ELECTION" with priority "1" will be run.'
+2023-10-24T23:28:19.179289Z 28 [System] [MY-011566] [Repl] Plugin group_replication reported: 'Setting super_read_only=OFF.'
+2023-10-24T23:28:19.179408Z 28 [System] [MY-013731] [Repl] Plugin group_replication reported: 'The member action "mysql_start_failover_channels_if_primary" for event "AFTER_PRIMARY_ELECTION" with priority "10" will be run.'
+2023-10-24T23:28:19.179600Z 31 [System] [MY-011510] [Repl] Plugin group_replication reported: 'This server is working as primary member.'
+2023-10-24T23:28:19.875216Z 12 [System] [MY-014010] [Repl] Plugin group_replication reported: 'Plugin 'group_replication' has been started.'                            
 ```
+</details>
 
-The following is a sample of the general logs, with format `time thread_id command_type query_body`:
+### General logs
 
+<details>
+<summary>Example of general logs, with format <code>time thread_id command_type query_body</code></summary>
 ```shell
 Time                 Id Command    Argument                                                          
 2023-10-23T20:50:02.023329Z        94 Quit                                                        
@@ -111,9 +131,12 @@ mode_and_not_super_user`, `ssl_type`, `ssl_cipher`, `x509_issuer`, `x509_subject
 2023-10-23T20:50:02.670389Z        95 Query     FLUSH SLOW LOGS                              
 2023-10-23T20:50:02.670924Z        95 Quit  
 ```
+</details>
 
-The following is a sample of the slowquery log:
+### Slowquery logs
 
+<details>
+<summary>Example of a slowquery log</summary>
 ```shell
 Time                 Id Command    Argument
 # Time: 2023-10-23T22:22:47.564327Z
@@ -122,12 +145,9 @@ Time                 Id Command    Argument
 SET timestamp=1698099752;
 do sleep(15);
 ```
+</details>
 
-The charm currently has error and general logs enabled by default, while slow query logs are disabled by default. All of these files are rotated if present into a separate dedicated archive folder under the logs directory.
-
-We do not yet support the rotation of binary logs (binlog, relay log, undo log, redo log, etc).
-
-## Log Rotation Configurations
+## Log rotation configuration
 
 For each log (audit, error, general and slow query):
 
@@ -142,23 +162,29 @@ The following are logrotate config values used for log rotation:
 
 | Option | Value |
 | --- | --- |
-| su | snap_daemon snap_daemon |
-| createoldddir | 770 snap_daemon snap_daemon |
-| hourly | true |
-| maxage | 7 |
-| rotate | 10080 |
-| dateext | true |
-| dateformat | -%V-%H%M |
-| ifempty | true |
-| missingok | true |
-| nocompress | true |
-| nomail | true |
-| nosharedscripts | true |
-| nocopytruncate | true |
-| olddir | archive_error / archive_general / archive_slowquery |
+| `su` | snap_daemon snap_daemon |
+| `createoldddir` | 770 snap_daemon snap_daemon |
+| `hourly` | true |
+| `maxage` | 7 |
+| `rotate` | 10080 |
+| `dateext` | true |
+| `dateformat` | -%V-%H%M |
+| `ifempty` | true |
+| `missingok` | true |
+| `nocompress` | true |
+| `nomail` | true |
+| `nosharedscripts` | true |
+| `nocopytruncate` | true |
+| `olddir` | archive_error / archive_general / archive_slowquery |
 
-## HLD (High Level Design)
+## High Level Design
 
 There is a cron job on the machine where the charm exists that is triggered every minute and runs `logrotate`. The logrotate utility does *not* use `copytruncate`. Instead, the existing log file is moved into the archive directory by logrotate, and then the logrotate's postrotate script invokes `juju-run` (or `juju-exec` depending on the juju version) to dispatch a custom event. This custom event's handler flushes the MySQL log with the [FLUSH](https://dev.mysql.com/doc/refman/8.0/en/flush.html) statement that will result in a new and empty log file being created under `/var/snap/charmed-mysql/common/var/log/mysql` and the rotated file's descriptor being closed.
 
 We use a custom event in juju to execute the FLUSH statement in order to avoid storing any credentials on the disk. The charm code has a mechanism that will retrieve credentials from the peer relation databag or juju secrets backend, if available, and keep these credentials in memory for the duration of the event handler.
+
+
+<!-- LINKS -->
+
+[COS integration]: /t/9981
+[Audit Logs explanation]: /t/15423
