@@ -49,6 +49,7 @@ class TestK8sHelpers(unittest.TestCase):
                 spec=ServiceSpec(
                     selector={
                         "cluster-name": self.harness.charm.app_peer_data.get("cluster-name"),
+                        "application-name": self.harness.charm.model.app.name,
                         "role": "role1",
                     },
                     ports=[ServicePort(port=3306, targetPort=3306)],
