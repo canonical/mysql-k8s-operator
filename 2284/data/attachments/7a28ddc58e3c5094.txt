@@ -1,0 +1,17 @@
+[32mINFO    [0m pytest_microceph._plugin:_plugin.py:24 Setting up microceph
+[32mINFO    [0m pytest_microceph._plugin:_plugin.py:47 Creating microceph bucket
+[32mINFO    [0m pytest_microceph._plugin:_plugin.py:64 Set up microceph
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m juju.model:model.py:2098 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:90 Rotating all mysql credentials
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:95 Deploying s3-integrator
+[32mINFO    [0m juju.model:model.py:2098 Deploying ch:amd64/jammy/s3-integrator-31
+[33mWARNING [0m juju.model:model.py:1564 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  s3-integrator/0 [allocating] waiting: installing agent
