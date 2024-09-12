@@ -203,6 +203,29 @@ async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
+async def test_scale_up_from_zero(ops_test: OpsTest) -> None:
+    """Ensure scaling down to zero and back up works."""
+    await scale_application(ops_test, APP_NAME, 0)
+
+    await ops_test.model.block_until(
+        lambda: len(ops_test.model.applications[APP_NAME].units) == 0,
+        timeout=TIMEOUT,
+    )
+
+    await scale_application(ops_test, APP_NAME, 3)
+
+    random_unit = ops_test.model.applications[APP_NAME].units[0]
+    cluster_status = await get_cluster_status(random_unit)
+    online_member_addresses = [
+        member["address"]
+        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+        if member["status"] == "online"
+    ]
+    assert len(online_member_addresses) == 3
+
+
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
 async def test_password_rotation(ops_test: OpsTest):
     """Rotate password and confirm changes."""
     random_unit = ops_test.model.applications[APP_NAME].units[-1]
