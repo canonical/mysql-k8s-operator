@@ -68,6 +68,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | h-monitoring | [Monitoring (COS)]() |
 | 3 | h-enable-monitoring | [Enable monitoring](/t/9981) |
 | 3 | h-enable-tracing | [Enable tracing](/t/14448) |
+| 3 | h-enable-alert-rules | [Enable Alert Rules](/t/15488) |
 | 2 | h-upgrade | [Upgrade]() |
 | 3 | h-upgrade-intro | [Overview](/t/11754) |
 | 3 | h-upgrade-juju | [Upgrade Juju](/t/14333) |
@@ -101,6 +102,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | r-requirements | [Requirements](/t/11421) |
 | 2 | r-testing | [Testing](/t/11772) |
 | 2 | r-profiles | [Profiles](/t/11892) |
+| 2 | r-plugins-extensions | [Plugins/extensions](/t/15482) |
 | 2 | r-contacts | [Contacts](/t/11868) |
 | 1 | explanation | [Explanation]() |
 | 2 | e-architecture | [Architecture](/t/11757) |
@@ -108,6 +110,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | e-statuses | [Statuses](/t/11866) |
 | 2 | e-users | [Users](/t/10791) |
 | 2 | e-logs | [Logs](/t/12080) |
+| 3 | e-audit-logs | [Audit Logs](/t/15423) |
 | 2 | e-juju | [Juju](/t/11984) |
 | 2 | e-flowcharts | [Flowcharts](/t/10031) |
 | 2 | e-legacy-charm | [Legacy charm](/t/11236) |
