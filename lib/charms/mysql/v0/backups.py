@@ -60,10 +60,9 @@ from charms.mysql.v0.mysql import (
     MySQLDeleteTempRestoreDirectoryError,
     MySQLEmptyDataDirectoryError,
     MySQLExecuteBackupCommandsError,
-    MySQLUnableToGetMemberStateError,
-    MySQLNoMemberStateError,
     MySQLInitializeJujuOperationsTableError,
     MySQLKillSessionError,
+    MySQLNoMemberStateError,
     MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLPrepareBackupForRestoreError,
     MySQLRescanClusterError,
@@ -74,6 +73,7 @@ from charms.mysql.v0.mysql import (
     MySQLSetInstanceOptionError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
+    MySQLUnableToGetMemberStateError,
 )
 from charms.mysql.v0.s3_helpers import (
     fetch_and_check_existence_of_s3_path,
