@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 72
+LIBPATCH = 73
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -632,11 +632,15 @@ class MySQLCharmBase(CharmBase, ABC):
 
         total_cluster_nodes = 0
         for unit in self.app_units:
-            total_cluster_nodes += self._mysql.get_cluster_node_count(from_instance=self.get_unit_address(unit))
+            total_cluster_nodes += self._mysql.get_cluster_node_count(
+                from_instance=self.get_unit_address(unit)
+            )
 
         total_online_cluster_nodes = 0
         for unit in self.app_units:
-            total_online_cluster_nodes += self._mysql.get_cluster_node_count(from_instance=self.get_unit_address(unit), node_status=MySQLMemberState["ONLINE"])
+            total_online_cluster_nodes += self._mysql.get_cluster_node_count(
+                from_instance=self.get_unit_address(unit), node_status=MySQLMemberState["ONLINE"]
+            )
 
         return total_cluster_nodes == 1 and total_online_cluster_nodes == 0
 
@@ -1751,7 +1755,7 @@ class MySQLBase(ABC):
     def drop_group_replication_metadata_schema(self) -> None:
         """Drop the group replication metadata schema from current unit."""
         commands = (
-            f"shell.connect('{self.server_config_user}:{self.server_config_password}@{self.instance_address}')",
+            f"shell.connect('{self.instance_def(self.server_config_user)}')",
             "dba.drop_metadata_schema()",
         )
 
