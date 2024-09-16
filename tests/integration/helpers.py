@@ -581,7 +581,7 @@ async def write_content_to_file_in_unit(
         )
 
 
-async def read_contents_from_file_in_unit(
+def read_contents_from_file_in_unit(
     ops_test: OpsTest, unit: Unit, path: str, container_name: str = CONTAINER_NAME
 ) -> str:
     """Read contents from file in the provided unit.

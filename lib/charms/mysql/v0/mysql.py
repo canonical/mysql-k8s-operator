@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 72
+LIBPATCH = 73
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -276,8 +276,12 @@ class MySQLGrantPrivilegesToUserError(Error):
     """Exception raised when there is an issue granting privileges to user."""
 
 
-class MySQLGetMemberStateError(Error):
-    """Exception raised when there is an issue getting member state."""
+class MySQLNoMemberStateError(Error):
+    """Exception raised when there is no member state."""
+
+
+class MySQLUnableToGetMemberStateError(Error):
+    """Exception raised when unable to get member state."""
 
 
 class MySQLGetClusterEndpointsError(Error):
@@ -619,6 +623,26 @@ class MySQLCharmBase(CharmBase, ABC):
                 return True
 
         return False
+
+    @property
+    def only_one_cluster_node_thats_uninitialized(self) -> Optional[bool]:
+        """Check if only a single cluster node exists across all units."""
+        if not self.app_peer_data.get("cluster-name"):
+            return None
+
+        total_cluster_nodes = 0
+        for unit in self.app_units:
+            total_cluster_nodes += self._mysql.get_cluster_node_count(
+                from_instance=self.get_unit_address(unit)
+            )
+
+        total_online_cluster_nodes = 0
+        for unit in self.app_units:
+            total_online_cluster_nodes += self._mysql.get_cluster_node_count(
+                from_instance=self.get_unit_address(unit), node_status=MySQLMemberState["ONLINE"]
+            )
+
+        return total_cluster_nodes == 1 and total_online_cluster_nodes == 0
 
     @property
     def cluster_fully_initialized(self) -> bool:
@@ -1728,6 +1752,18 @@ class MySQLBase(ABC):
             )
             return False
 
+    def drop_group_replication_metadata_schema(self) -> None:
+        """Drop the group replication metadata schema from current unit."""
+        commands = (
+            f"shell.connect('{self.instance_def(self.server_config_user)}')",
+            "dba.drop_metadata_schema()",
+        )
+
+        try:
+            self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError:
+            logger.exception("Failed to drop group replication metadata schema")
+
     def are_locks_acquired(self, from_instance: Optional[str] = None) -> bool:
         """Report if any topology change is being executed."""
         commands = (
@@ -2356,13 +2392,13 @@ class MySQLBase(ABC):
             logger.error(
                 "Failed to get member state: mysqld daemon is down",
             )
-            raise MySQLGetMemberStateError(e.message)
+            raise MySQLUnableToGetMemberStateError(e.message)
 
         # output is like:
         # 'MEMBER_STATE\tMEMBER_ROLE\tMEMBER_ID\t@@server_uuid\nONLINE\tPRIMARY\t<uuid>\t<uuid>\n'
         lines = output.strip().lower().split("\n")
         if len(lines) < 2:
-            raise MySQLGetMemberStateError("No member state retrieved")
+            raise MySQLNoMemberStateError("No member state retrieved")
 
         if len(lines) == 2:
             # Instance just know it own state
@@ -2378,7 +2414,7 @@ class MySQLBase(ABC):
                 # filter server uuid
                 return results[0], results[1] or "unknown"
 
-        raise MySQLGetMemberStateError("No member state retrieved")
+        raise MySQLNoMemberStateError("No member state retrieved")
 
     def is_cluster_replica(self, from_instance: Optional[str] = None) -> Optional[bool]:
         """Check if this cluster is a replica in a cluster set."""
@@ -2435,7 +2471,7 @@ class MySQLBase(ABC):
         while True:
             try:
                 member_state, _ = self.get_member_state()
-            except MySQLGetMemberStateError:
+            except (MySQLNoMemberStateError, MySQLUnableToGetMemberStateError):
                 break
             if member_state == MySQLMemberState.RECOVERING:
                 logger.debug("Unit is recovering")

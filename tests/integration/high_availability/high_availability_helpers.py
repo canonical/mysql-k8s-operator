@@ -653,3 +653,19 @@ def delete_pvcs(pvcs: list[PersistentVolumeClaim]) -> None:
             namespace=pvc.metadata.namespace,
             grace_period=0,
         )
+
+
+def delete_pod(ops_test: OpsTest, unit: Unit) -> None:
+    """Delete the provided pod."""
+    pod_name = unit.name.replace("/", "-")
+    subprocess.run(
+        [
+            "microk8s.kubectl",
+            "-n",
+            ops_test.model.info.name,
+            "delete",
+            "pod",
+            pod_name,
+        ],
+        check=True,
+    )
