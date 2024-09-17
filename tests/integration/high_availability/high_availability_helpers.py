@@ -17,7 +17,7 @@ from juju.unit import Unit
 from lightkube import Client
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
-from lightkube.resources.core_v1 import PersistentVolume, PersistentVolumeClaim, Pod
+from lightkube.resources.core_v1 import Endpoints, PersistentVolume, PersistentVolumeClaim, Pod
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, retry, stop_after_attempt, stop_after_delay, wait_fixed
 
@@ -122,6 +122,7 @@ async def deploy_and_scale_mysql(
     mysql_application_name: str = MYSQL_DEFAULT_APP_NAME,
     num_units: int = 3,
     model: Optional[Model] = None,
+    cluster_name: str = CLUSTER_NAME,
 ) -> str:
     """Deploys and scales the mysql application charm.
 
@@ -132,6 +133,7 @@ async def deploy_and_scale_mysql(
         mysql_application_name: The name of the mysql application if it is to be deployed
         num_units: The number of units to deploy
         model: The model to deploy the mysql application to
+        cluster_name: The name of the mysql cluster
     """
     application_name = get_application_name(ops_test, "mysql")
     if not model:
@@ -150,7 +152,7 @@ async def deploy_and_scale_mysql(
         # Cache the built charm to avoid rebuilding it between tests
         mysql_charm = charm
 
-    config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
+    config = {"cluster-name": cluster_name, "profile": "testing"}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     async with ops_test.fast_forward("60s"):
@@ -177,15 +179,21 @@ async def deploy_and_scale_mysql(
     return mysql_application_name
 
 
-async def deploy_and_scale_application(ops_test: OpsTest) -> str:
+async def deploy_and_scale_application(
+    ops_test: OpsTest,
+    check_for_existing_application: bool = True,
+    test_application_name: str = APPLICATION_DEFAULT_APP_NAME,
+) -> str:
     """Deploys and scales the test application charm.
 
     Args:
         ops_test: The ops test framework
+        check_for_existing_application: Whether to check for existing test applications
+        test_application_name: Name of test application to be deployed
     """
-    application_name = get_application_name(ops_test, APPLICATION_DEFAULT_APP_NAME)
+    application_name = get_application_name(ops_test, test_application_name)
 
-    if application_name:
+    if check_for_existing_application and application_name:
         if len(ops_test.model.applications[application_name].units) != 1:
             async with ops_test.fast_forward("60s"):
                 await scale_application(ops_test, application_name, 1)
@@ -195,22 +203,22 @@ async def deploy_and_scale_application(ops_test: OpsTest) -> str:
     async with ops_test.fast_forward("60s"):
         await ops_test.model.deploy(
             APPLICATION_DEFAULT_APP_NAME,
-            application_name=APPLICATION_DEFAULT_APP_NAME,
+            application_name=test_application_name,
             num_units=1,
             channel="latest/edge",
             base="ubuntu@22.04",
         )
 
         await ops_test.model.wait_for_idle(
-            apps=[APPLICATION_DEFAULT_APP_NAME],
+            apps=[test_application_name],
             status="waiting",
             raise_on_blocked=True,
             timeout=TIMEOUT,
         )
 
-        assert len(ops_test.model.applications[APPLICATION_DEFAULT_APP_NAME].units) == 1
+        assert len(ops_test.model.applications[test_application_name].units) == 1
 
-    return APPLICATION_DEFAULT_APP_NAME
+    return test_application_name
 
 
 async def relate_mysql_and_application(
@@ -223,13 +231,27 @@ async def relate_mysql_and_application(
         mysql_application_name: The mysql charm application name
         application_name: The continuous writes test charm application name
     """
-    if is_relation_joined(ops_test, "database", "database"):
+    if is_relation_joined(
+        ops_test,
+        "database",
+        "database",
+        application_one=mysql_application_name,
+        application_two=application_name,
+    ):
         return
 
     await ops_test.model.relate(
         f"{application_name}:database", f"{mysql_application_name}:database"
     )
-    await ops_test.model.block_until(lambda: is_relation_joined(ops_test, "database", "database"))
+    await ops_test.model.block_until(
+        lambda: is_relation_joined(
+            ops_test,
+            "database",
+            "database",
+            application_one=mysql_application_name,
+            application_two=application_name,
+        )
+    )
 
     await ops_test.model.wait_for_idle(
         apps=[mysql_application_name, application_name],
@@ -669,3 +691,15 @@ def delete_pod(ops_test: OpsTest, unit: Unit) -> None:
         ],
         check=True,
     )
+
+
+def get_endpoint_addresses(ops_test: OpsTest, endpoint_name: str) -> list[str]:
+    """Retrieve the addresses selected by a K8s endpoint."""
+    client = lightkube.Client()
+    endpoint = client.get(
+        Endpoints,
+        namespace=ops_test.model.info.name,
+        name=endpoint_name,
+    )
+
+    return [address.ip for subset in endpoint.subsets for address in subset.addresses]
