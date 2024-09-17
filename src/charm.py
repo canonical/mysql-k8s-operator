@@ -459,6 +459,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self, event: RelationCreatedEvent | RelationBrokenEvent
     ) -> None:
         """Handle a COS relation created or broken event."""
+        if not self._is_peer_data_set:
+            logger.debug("Unit not yet ready to reconcile mysqld exporter. Waiting...")
+            return
+
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
             # reconciliation is done on pebble ready
