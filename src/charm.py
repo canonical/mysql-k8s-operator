@@ -813,18 +813,17 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # member-state in the unit peer databag will be 'waiting'
         try:
             member_state, _ = self._mysql.get_member_state()
-            member_state_exists = True
         except MySQLUnableToGetMemberStateError:
             logger.error("Error getting member state while checking if cluster is blocked")
             self.unit.status = MaintenanceStatus("Unable to get member state")
             return True
         except MySQLNoMemberStateError:
-            member_state_exists, member_state = False, None
+            member_state = None
 
-        if not member_state_exists or member_state == "restarting":
+        if not member_state or member_state == "restarting":
             # avoid changing status while tls is being set up or charm is being initialized
             logger.info("Unit is waiting or restarting")
-            logger.debug(f"{member_state_exists=}, {member_state=}")
+            logger.debug(f"{member_state=}")
             return True
 
         # avoid changing status while async replication is setting up
