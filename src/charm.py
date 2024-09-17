@@ -811,15 +811,15 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # We need to query member state from the server since member state would
         # be 'offline' if pod rescheduled during cluster creation, however
         # member-state in the unit peer databag will be 'waiting'
-        member_state_exists = True
         try:
             member_state, _ = self._mysql.get_member_state()
+            member_state_exists = True
         except MySQLUnableToGetMemberStateError:
             logger.error("Error getting member state while checking if cluster is blocked")
             self.unit.status = MaintenanceStatus("Unable to get member state")
             return True
         except MySQLNoMemberStateError:
-            member_state_exists = False
+            member_state_exists, member_state = False, None
 
         if not member_state_exists or member_state == "restarting":
             # avoid changing status while tls is being set up or charm is being initialized
