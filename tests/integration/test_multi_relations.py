@@ -42,6 +42,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             num_units=1,
             channel="latest/edge",
             config=config,
+            base="ubuntu@22.04",
         )
         await ops_test.model.deploy(
             "mysql-router-k8s",
@@ -49,6 +50,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             num_units=1,
             channel="8.0/edge",
             trust=True,
+            base="ubuntu@22.04",
         )
 
 
