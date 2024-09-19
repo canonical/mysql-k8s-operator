@@ -272,18 +272,36 @@ async def scale_application(
             )
 
 
-def is_relation_joined(ops_test: OpsTest, endpoint_one: str, endpoint_two: str) -> bool:
+def is_relation_joined(
+    ops_test: OpsTest,
+    endpoint_one: str,
+    endpoint_two: str,
+    application_one: Optional[str] = None,
+    application_two: Optional[str] = None,
+) -> bool:
     """Check if a relation is joined.
 
     Args:
         ops_test: The ops test object passed into every test case
         endpoint_one: The first endpoint of the relation
         endpoint_two: The second endpoint of the relation
+        application_one: The name of the first application
+        application_two: The name of the second application
     """
     for rel in ops_test.model.relations:
-        endpoints = [endpoint.name for endpoint in rel.endpoints]
-        if endpoint_one in endpoints and endpoint_two in endpoints:
-            return True
+        if application_one and application_two:
+            endpoints = [
+                f"{endpoint.application_name}:{endpoint.name}" for endpoint in rel.endpoints
+            ]
+            if (
+                f"{application_one}:{endpoint_one}" in endpoints
+                and f"{application_two}:{endpoint_two}" in endpoints
+            ):
+                return True
+        else:
+            endpoints = [endpoint.name for endpoint in rel.endpoints]
+            if endpoint_one in endpoints and endpoint_two in endpoints:
+                return True
     return False
 
 
