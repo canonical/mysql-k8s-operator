@@ -13,6 +13,10 @@ parts:
   files:
     plugin: dump
     source: .
+    stage:
+      # Exclude requirements.txt file during staging
+      # Workaround for https://github.com/canonical/charmcraft/issues/1389 on charmcraft 2
+      - -requirements.txt
     prime:
       - scripts
   charm:
