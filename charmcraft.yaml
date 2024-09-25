@@ -35,3 +35,4 @@ parts:
 
       craftctl default
     charm-strict-dependencies: true
+    charm-requirements: [requirements.txt]
