@@ -1,0 +1,38 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.test_cos_integration_bundle:test_cos_integration_bundle.py:25 Building the mysql-k8s charm
+[32mINFO    [0m integration.test_cos_integration_bundle:test_cos_integration_bundle.py:41 Deploying grafana_agent_integration bundle
+[32mINFO    [0m juju.bundle:bundle.py:416 Applying change: upload charm grafana-agent-k8s from channel latest/stable
+[32mINFO    [0m juju.bundle:bundle.py:416 Applying change: upload charm local:jammy/mysql-k8s-0
+[32mINFO    [0m juju.bundle:bundle.py:416 Applying change: deploy application grafana-agent-k8s with 1 unit using $addCharm-0
+[32mINFO    [0m juju.model:model.py:2098 Deploying ch:amd64/jammy/grafana-agent-k8s-45
+[32mINFO    [0m juju.bundle:bundle.py:416 Applying change: deploy application mysql-k8s with 1 unit using $addCharm-3
+[32mINFO    [0m juju.model:model.py:2098 Deploying local:jammy/mysql-k8s-0
+[32mINFO    [0m juju.bundle:bundle.py:416 Applying change: add relation $deploy-4:metrics-endpoint - $deploy-1:metrics-endpoint
+[32mINFO    [0m juju.bundle:bundle.py:865 Relating mysql-k8s:metrics-endpoint <-> grafana-agent-k8s:metrics-endpoint
+[33mWARNING [0m juju.model:model.py:1564 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.bundle:bundle.py:416 Applying change: set annotations for $deploy-1
+[32mINFO    [0m juju.bundle:bundle.py:416 Applying change: set annotations for $deploy-4
+[32mINFO    [0m integration.test_cos_integration_bundle:test_cos_integration_bundle.py:44 Waiting until mysql-k8s becomes active
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.4.5    unsupported  01:32:16Z
+
+App                Version                  Status   Scale  Charm              Channel        Rev  Address         Exposed  Message
+grafana-agent-k8s  0.32.1                   waiting      1  grafana-agent-k8s  latest/stable   45  10.152.183.192  no       installing agent
+mysql-k8s          8.0.37-0ubuntu0.22.04.3  active       1  mysql-k8s          stable           0  10.152.183.22   no       
+
+Unit                  Workload  Agent  Address       Ports  Message
+grafana-agent-k8s/0*  blocked   idle   10.1.237.139         send-remote-write: off, grafana-cloud-config: off
+mysql-k8s/0*          active    idle   10.1.237.138         Primary
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
