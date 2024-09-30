@@ -270,7 +270,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             self._complete_upgrade()
 
     def _recover_multi_unit_cluster(self) -> None:
-        logger.debug("Recovering unit")
+        logger.info("Recovering unit")
         try:
             for attempt in Retrying(
                 stop=stop_after_attempt(RECOVER_ATTEMPTS), wait=wait_fixed(10)
@@ -332,7 +332,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             return
         instance = getfqdn(self.charm.get_unit_hostname(f"{self.charm.app.name}/0"))
         self.charm._mysql.verify_server_upgradable(instance=instance)
-        logger.debug("MySQL server is upgradeable")
+        logger.info("Check MySQL server upgradeability passed")
 
     def _check_server_unsupported_downgrade(self) -> bool:
         """Check error log for unsupported downgrade.
