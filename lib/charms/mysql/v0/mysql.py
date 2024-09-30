@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 74
+LIBPATCH = 75
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1937,7 +1937,7 @@ class MySQLBase(ABC):
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(size_commands))
+            output = self._run_mysqlsh_script("\n".join(size_commands), timeout=30)
         except MySQLClientError:
             logger.warning("Failed to get node count")
             return 0
