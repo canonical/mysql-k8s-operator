@@ -41,7 +41,7 @@ Canonical Data issues are now public on both [Jira](https://warthogs.atlassian.n
 * CLI mysql-shell updated to `8.0.36+dfsg-0ubuntu0.22.04.1~ppa4`
 * Backup tools xtrabackup/xbcloud is `8.0.35-30`
 * The Prometheus mysqld-exporter is `0.14.0-0ubuntu0.22.04.1~ppa2`
-* K8s charms [based on our ROCK OCI](https://github.com/canonical/charmed-mysql-rock) (Ubuntu LTS  `22.04.4`) revision `103`
+* K8s charms [based on our ROCK OCI](https://github.com/canonical/charmed-mysql-rock) (Ubuntu LTS  `22.04.4`) `mysql-image` resource-revision `111`
 * Principal charms support the latest Ubuntu 22.04 LTS only
 
 ## Technical notes
