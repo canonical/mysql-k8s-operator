@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 73
+LIBPATCH = 74
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1085,16 +1085,25 @@ class MySQLBase(ABC):
             )
             raise MySQLConfigureMySQLUsersError(e.message)
 
+    def _plugin_file_exists(self, plugin_file_name: str) -> bool:
+        """Check if the plugin file exists.
+
+        Args:
+            plugin_file_name: Plugin file name, with the extension.
+
+        """
+        path = self.get_variable_value("plugin_dir")
+        return self._file_exists(f"{path}/{plugin_file_name}")
+
     def install_plugins(self, plugins: list[str]) -> None:
         """Install extra plugins."""
         supported_plugins = {
-            "audit_log": "INSTALL PLUGIN audit_log SONAME 'audit_log.so';",
-            "audit_log_filter": "INSTALL PLUGIN audit_log_filter SONAME 'audit_log_filter.so';",
+            "audit_log": ("INSTALL PLUGIN audit_log SONAME", "audit_log.so"),
+            "audit_log_filter": ("INSTALL PLUGIN audit_log_filter SONAME", "audit_log_filter.so"),
         }
 
-        super_read_only = self.get_variable_value("super_read_only").lower() == "on"
-
         try:
+            super_read_only = self.get_variable_value("super_read_only").lower() == "on"
             installed_plugins = self._get_installed_plugins()
             # disable super_read_only to install plugins
             for plugin in plugins:
@@ -1106,7 +1115,16 @@ class MySQLBase(ABC):
                     logger.warning(f"{plugin=} is not supported")
                     continue
 
-                command = supported_plugins[plugin]
+                command_prefix, plugin_file = (
+                    supported_plugins[plugin][0],
+                    supported_plugins[plugin][1],
+                )
+
+                if not self._plugin_file_exists(plugin_file):
+                    logger.warning(f"{plugin=} file not found. Skip installation")
+                    continue
+
+                command = f"{command_prefix} '{plugin_file}';"
                 if super_read_only:
                     command = (
                         f"SET GLOBAL super_read_only=OFF; {command}"
@@ -1123,6 +1141,10 @@ class MySQLBase(ABC):
                 f"Failed to install {plugin=}",  # type: ignore
             )
             raise MySQLPluginInstallError
+        except MySQLGetVariableError:
+            # workaround for config changed triggered after failed upgrade
+            # the check fails for charms revisions not using admin address
+            logger.warning("Failed to get super_read_only variable. Skip plugin installation")
 
     def uninstall_plugins(self, plugins: list[str]) -> None:
         """Uninstall plugins."""
@@ -3145,5 +3167,14 @@ class MySQLBase(ABC):
             user: (optional) user to invoke the mysql cli script with (default is "root")
             password: (optional) password to invoke the mysql cli script with
             timeout: (optional) time before the query should timeout
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def _file_exists(self, path: str) -> bool:
+        """Check if a file exists.
+
+        Args:
+            path: Path to the file to check
         """
         raise NotImplementedError
