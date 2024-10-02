@@ -3,15 +3,15 @@
 
 """Kubernetes helpers."""
 
-from enum import Enum
 import logging
 import socket
 import typing
+from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
 from lightkube.core.client import Client
 from lightkube.core.exceptions import ApiError
-from lightkube.models.authorization_v1 import SelfSubjectAccessReviewSpec, ResourceAttributes
+from lightkube.models.authorization_v1 import ResourceAttributes, SelfSubjectAccessReviewSpec
 from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
@@ -32,6 +32,8 @@ if typing.TYPE_CHECKING:
 
 
 class Verb(str, Enum):
+    """Resources verbs."""
+
     GET = "get"
     LIST = "list"
     CREATE = "create"
@@ -41,6 +43,8 @@ class Verb(str, Enum):
 
 
 class K8sResource(str, Enum):
+    """Kubernetes resource types."""
+
     PODS = "pods"
     SERVICES = "services"
 
