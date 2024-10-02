@@ -3,6 +3,7 @@
 
 """Kubernetes helpers."""
 
+from enum import Enum
 import logging
 import socket
 import typing
@@ -10,9 +11,11 @@ from typing import Dict, List, Optional, Tuple
 
 from lightkube.core.client import Client
 from lightkube.core.exceptions import ApiError
+from lightkube.models.authorization_v1 import SelfSubjectAccessReviewSpec, ResourceAttributes
 from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.resources.authorization_v1 import SelfSubjectAccessReview
 from lightkube.resources.core_v1 import Node, Pod, Service
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -26,6 +29,20 @@ logging.getLogger("httpx").setLevel(logging.ERROR)
 
 if typing.TYPE_CHECKING:
     from charm import MySQLOperatorCharm
+
+
+class Verb(str, Enum):
+    GET = "get"
+    LIST = "list"
+    CREATE = "create"
+    DELETE = "delete"
+    PATCH = "patch"
+    UPDATE = "update"
+
+
+class K8sResource(str, Enum):
+    PODS = "pods"
+    SERVICES = "services"
 
 
 class KubernetesClientError(Exception):
@@ -222,3 +239,22 @@ class KubernetesHelpers:
             else:
                 logger.exception("Kubernetes statefulset patch failed")
             raise KubernetesClientError
+
+    def can_do(self, resource_type: K8sResource, verb: Verb) -> bool:
+        """Check if the client can execute a given verb on a resource type.
+
+        Args:
+            resource_type: type of the resource to check
+            verb: verb to check
+        """
+        resource_attributes = ResourceAttributes(
+            namespace=self.namespace,
+            verb=verb.value,
+            resource=resource_type.value,
+        )
+
+        access_review_spec = SelfSubjectAccessReviewSpec(resourceAttributes=resource_attributes)
+        access_review = SelfSubjectAccessReview(spec=access_review_spec)
+        response = self.client.create(access_review)
+
+        return response.status.allowed
