@@ -812,3 +812,11 @@ class MySQL(MySQLBase):
     def fetch_error_log(self) -> Optional[str]:
         """Fetch the MySQL error log."""
         return self.read_file_content("/var/log/mysql/error.log")
+
+    def _file_exists(self, path: str) -> bool:
+        """Check if a file exists.
+
+        Args:
+            path: Path to the file to check
+        """
+        return self.container.exists(path)
