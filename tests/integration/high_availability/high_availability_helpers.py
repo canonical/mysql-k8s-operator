@@ -495,10 +495,9 @@ async def ensure_all_units_continuous_writes_incrementing(
     )
 
     async with ops_test.fast_forward(fast_interval="15s"):
-        for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
-            with attempt:
-                # ensure that all units are up to date (including the previous primary)
-                for unit in mysql_units:
+        for unit in mysql_units:
+            for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
+                with attempt:
                     # ensure the max written value is incrementing (continuous writes is active)
                     max_written_value = await get_max_written_value_in_database(
                         ops_test, unit, credentials

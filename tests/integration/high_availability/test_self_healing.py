@@ -109,7 +109,6 @@ async def test_kill_db_process(
 
 @pytest.mark.group(2)
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
 async def test_freeze_db_process(
     ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
 ) -> None:

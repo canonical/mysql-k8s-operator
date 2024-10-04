@@ -55,7 +55,7 @@ async def test_pod_eviction_and_pvc_deletion(
     delete_pvcs(primary_pod_pvcs)
     delete_pvs(primary_pod_pvs)
 
-    async with ops_test.fast_forward():
+    async with ops_test.fast_forward("90s"):
         logger.info("Waiting for evicted primary pod to be rescheduled")
         await ops_test.model.wait_for_idle(
             apps=[mysql_application_name],
