@@ -1,0 +1,20 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.conftest:conftest.py:20 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:100 Ensure continuous_writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=553 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=555 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=558 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:106 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:109 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:112 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:123 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.230:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.230:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:135 Wait for upgrade to complete
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:141 Ensure continuous_writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=11310 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=11837 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=11839 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=11841 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
