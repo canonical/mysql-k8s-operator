@@ -41,24 +41,27 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | Level | Path | Navlink |
 |---------|---------|-------------|
 | 1 | tutorial | [Tutorial]() |
-| 2 | t-overview | [1. Introduction](/t/9677) |
-| 2 | t-set-up | [2. Set up the environment](/t/9679) |
-| 2 | t-deploy | [3. Deploy MySQL](/t/9667) |
-| 2 | t-scale | [4. Scale replicas](/t/9675) |
-| 2 | t-manage-passwords | [5. Manage passwords](/t/9673) |
-| 2 | t-integrate | [6. Integrate applications](/t/9671)  |
-| 2 | t-enable-tls | [7. Enable TLS encryption](/t/9669) |
-| 2 | t-clean-up | [8. Clean up the environment](/t/9665) |
+| 2 | t-overview | [Overview](/t/9677) |
+| 2 | t-set-up | [1. Set up the environment](/t/9679) |
+| 2 | t-deploy | [2. Deploy MySQL](/t/9667) |
+| 2 | t-scale | [3. Scale replicas](/t/9675) |
+| 2 | t-manage-passwords | [4. Manage passwords](/t/9673) |
+| 2 | t-integrate | [5. Integrate applications](/t/9671)  |
+| 2 | t-enable-tls | [6. Enable TLS encryption](/t/9669) |
+| 2 | t-clean-up | [7. Clean up the environment](/t/9665) |
 | 1 | how-to | [How To]() |
-| 2 | h-setup | [Set up]() |
+| 2 | h-setup | [Deploy]() |
 | 3 | h-deploy-microk8s | [Deploy on MicroK8s](/t/11869) |
-| 3 | h-deploy-gke | [Deploy on GKE](/t/10875) |
-| 3 | h-deploy-eks | [Deploy on EKS](/t/12105) |
-| 3 | h-deploy-aks | [Deploy on AKS](/t/14306) |
-| 3 | h-deploy-terraform | [Deploy via Terraform](/t/14926) |
+| 3 | h-deploy-gke | [GKE](/t/10875) |
+| 3 | h-deploy-eks | [EKS](/t/12105) |
+| 3 | h-deploy-aks | [AKS](/t/14306) |
+| 3 | h-deploy-multi-az | [Multi-AZ](/t/15727) |
+| 3 | h-deploy-terraform | [Terraform](/t/14926) |
+| 3 | h-deploy-airgapped | [Air-gapped](/t/15729) |
 | 3 |  h-scale | [Scale replicas](/t/9659) |
 | 3 | h-enable-tls | [Enable TLS encryption](/t/9655) |
 | 3 | h-manage-applications | [Manage client applications](/t/9657) |
+| 3 | h-external-k8s-connection | [External k8s connection](/t/15728) |
 | 2 | h-backups | [Back up and restore]() |
 | 3 | h-configure-s3-aws | [Configure S3 AWS](/t/9651) |
 | 3 | h-configure-s3-radosgw | [Configure S3 RadosGW](/t/10319) |
