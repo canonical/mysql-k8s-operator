@@ -6,11 +6,11 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
-ops = "^2.15.0"
-lightkube = "^0.14.0"
-tenacity = "^8.2.2"
-boto3 = "^1.28.22"
-jinja2 = "^3.1.2"
+ops = "^2.17.0"
+lightkube = "^0.15.4"
+tenacity = "^8.5.0"
+boto3 = "^1.35.37"
+jinja2 = "^3.1.4"
 
 [tool.poetry.group.charm-libs.dependencies]
 # data_platform_libs/v0/data_interfaces.py
@@ -32,41 +32,41 @@ opentelemetry-exporter-otlp-proto-http = "1.21.0"
 optional = true
 
 [tool.poetry.group.format.dependencies]
-ruff = "^0.4.5"
+ruff = "^0.6.9"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = "^0.4.5"
+ruff = "^0.6.9"
 codespell = "^2.3.0"
 shellcheck-py = "^0.9.0.5"
 
 [tool.poetry.group.unit.dependencies]
-pytest = "^7.4.0"
-pytest-mock = "^3.11.1"
-coverage = {extras = ["toml"], version = "^7.2.7"}
+pytest = "^7.4.4"
+pytest-mock = "^3.14.0"
+coverage = {extras = ["toml"], version = "^7.6.2"}
 parameterized = "^0.9.0"
 
 [tool.poetry.group.integration.dependencies]
-pytest = "^7.4.0"
+pytest = "^7.4.4"
 pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v22.0.0", subdirectory = "python/pytest_plugins/github_secrets"}
 pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v22.0.0", subdirectory = "python/pytest_plugins/microceph"}
-pytest-operator = "^0.28.0"
+pytest-operator = "^0.38.0"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v22.0.0", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
 pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v22.0.0", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
 juju = "^3.5.2.0"
-ops = "^2.15.0"
+ops = "^2.17.0"
 mysql-connector-python = "~8.0.33"
-tenacity = "^8.2.2"
-boto3 = "^1.28.22"
-pyyaml = "^6.0.1"
-urllib3 = "^1.26.16"
-lightkube = "^0.14.0"
+tenacity = "^8.5.0"
+boto3 = "^1.35.37"
+pyyaml = "^6.0.2"
+urllib3 = "^1.26.20"
+lightkube = "^0.15.4"
 kubernetes = "^27.2.0"
-allure-pytest = "^2.13.2"
+allure-pytest = "^2.13.5"
 allure-pytest-collection-report = {git = "https://github.com/canonical/data-platform-workflows", tag = "v22.0.0", subdirectory = "python/pytest_plugins/allure_pytest_collection_report"}
-pytest-asyncio = "^0.21.1"
+pytest-asyncio = "^0.24.0"
 
 [tool.coverage.run]
 branch = true
