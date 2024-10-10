@@ -5,7 +5,7 @@ Google Kubernetes Engine (GKE) - the most scalable and fully automated Kubernete
 # Install GKE and Juju tooling
 Install juju and gcloud tool using SNAP:
 ```shell
-> sudo snap install juju --classic
+> sudo snap install juju
 > sudo snap install kubectl --classic
 > sudo snap install google-cloud-cli --classic
 ```
@@ -43,9 +43,13 @@ kubectl create clusterrolebinding cluster-admin-binding-$USER --clusterrole=clus
 ```
 
 # Bootstrap Juju on GKE
+
 Bootstrap new juju controller on fresh cluster, copying commands one-by-one:
+
+> Note: [the known issue](https://bugs.launchpad.net/juju/+bug/2007575) forces unSNAPed Juju usage to add-k8s credentials on Juju.
+
 ```shell
-> juju add-k8s gke-jun-9 --storage=standard --client
+> /snap/juju/current/bin/juju add-k8s gke-jun-9 --storage=standard --client
 > juju bootstrap gke-jun-9
 > juju add-model welcome-model
 ```

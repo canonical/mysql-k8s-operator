@@ -29,7 +29,7 @@ kubectl version: v1.28.2
 aws-cli/2.13.25 Python/3.11.5 Linux/6.2.0-33-generic exe/x86_64.ubuntu.23 prompt/off
 ```
 
-Create IAM account (or legacy Access keys) and login to AWS:
+[Create IAM account](https://docs.aws.amazon.com/eks/latest/userguide/getting-started-console.html) (or legacy Access keys) and login to AWS:
 ```shell
 > aws configure
 AWS Access Key ID [None]: SECRET_ACCESS_KEY_ID
