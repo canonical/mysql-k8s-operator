@@ -102,5 +102,5 @@ groups:
             MySQL restarted less than one minute ago.
             If restarts are frequent, check `error.log` from Loki for diagnosis.
             INSTANCE = {{ $labels.instance }}.
-          VALUE = {{ $value }}
-          LABELS = {{ $labels }}
+            VALUE = {{ $value }}
+            LABELS = {{ $labels }}
