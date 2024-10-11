@@ -11,10 +11,10 @@ groups:
         annotations:
           summary: MySQL down (instance {{ $labels.instance }})
           description: |
-          MySQL instance is down
-          INSTANCE = {{ $labels.instance }}
-          VALUE = {{ $value }}
-          LABELS = {{ $labels }}
+            MySQL instance is down.
+            INSTANCE = {{ $labels.instance }}
+            VALUE = {{ $value }}
+            LABELS = {{ $labels }}
 
       # 2.1.2
       # customized: 80% -> 90%
@@ -26,10 +26,11 @@ groups:
         annotations:
           summary: MySQL too many connections (> 90%) (instance {{ $labels.instance }})
           description: |
-          More than 90% of- MySQL connections are in use
-          INSTANCE = {{ $labels.instance }}
-          VALUE = {{ $value }}
-          LABELS = {{ $labels }}
+            More than 90% of- MySQL connections are in use.
+            Consider double-checking how many connections the client application is opening.
+            INSTANCE = {{ $labels.instance }}
+            VALUE = {{ $value }}
+            LABELS = {{ $labels }}
 
       # 2.1.3
       - alert: MySQLHighPreparedStatementsUtilization(>80%)
@@ -40,11 +41,10 @@ groups:
         annotations:
           summary: MySQL high prepared statements utilization (> 80%) (instance {{ $labels.instance }})
           description: |
-          High utilization of prepared statements (>80%).
-          Too much prepared statements consumes system memory.
-          INSTANCE = {{ $labels.instance }}
-          VALUE = {{ $value }}
-          LABELS = {{ $labels }}
+            High utilization of prepared statements (>80%). Too many prepared statements consumes system memory.
+            INSTANCE = {{ $labels.instance }}
+            VALUE = {{ $value }}
+            LABELS = {{ $labels }}
 
       # 2.1.4
       # customized: 60% -> 80%
@@ -56,11 +56,10 @@ groups:
         annotations:
           summary: MySQL high threads running (instance {{ $labels.instance }})
           description: |
-          More than 80% of MySQL connections are in running state.
-          Too many concurrent threads can harm query performance and/or indicate unoptimized queries.
-          INSTANCE = {{ $labels.instance }}
-          VALUE = {{ $value }}
-          LABELS = {{ $labels }}
+            More than 80% of MySQL connections are in running state. Too many concurrent threads can harm query performance and/or indicate unoptimized queries.
+            INSTANCE = {{ $labels.instance }}
+            VALUE = {{ $value }}
+            LABELS = {{ $labels }}
 
       # 2.1.8
       # customized: warning -> info
@@ -72,9 +71,10 @@ groups:
         annotations:
           summary: MySQL slow queries (instance {{ $labels.instance }})
           description: |
-          MySQL server mysql has some new slow query. Check application for query optimizations, lack of indexes or queries without filtering (`WHERE` clause).
-          VALUE = {{ $value }}
-          LABELS = {{ $labels }}
+            MySQL server has a new slow query.
+            Check the application for query optimizations, lack of indexes or queries without filtering (`WHERE` clause).
+            VALUE = {{ $value }}
+            LABELS = {{ $labels }}
 
       # 2.1.9
       - alert: MySQLInnoDBLogWaits
@@ -85,9 +85,10 @@ groups:
         annotations:
           summary: MySQL InnoDB log waits (instance {{ $labels.instance }})
           description: |
-          MySQL innodb log writes stalling. Check storage for I/O performance.
-          VALUE = {{ $value }}
-          LABELS = {{ $labels }}
+            MySQL innodb log writes are stalling.
+            Check storage for I/O performance.
+            VALUE = {{ $value }}
+            LABELS = {{ $labels }}
 
       # 2.1.10
       - alert: MySQLRestarted
@@ -98,7 +99,8 @@ groups:
         annotations:
           summary: MySQL restarted (instance {{ $labels.instance }})
           description: |
-          MySQL restarted less than one minute ago. If restarts are frequent, check `error.log` from loki for diagnosis.
-          INSTANCE = {{ $labels.instance }}.
+            MySQL restarted less than one minute ago.
+            If restarts are frequent, check `error.log` from Loki for diagnosis.
+            INSTANCE = {{ $labels.instance }}.
           VALUE = {{ $value }}
           LABELS = {{ $labels }}
