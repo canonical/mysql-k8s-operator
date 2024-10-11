@@ -40,7 +40,8 @@ groups:
         annotations:
           summary: MySQL high prepared statements utilization (> 80%) (instance {{ $labels.instance }})
           description: |
-          High utilization of prepared statements (>80%)
+          High utilization of prepared statements (>80%).
+          Too much prepared statements consumes system memory.
           INSTANCE = {{ $labels.instance }}
           VALUE = {{ $value }}
           LABELS = {{ $labels }}
@@ -56,6 +57,7 @@ groups:
           summary: MySQL high threads running (instance {{ $labels.instance }})
           description: |
           More than 80% of MySQL connections are in running state.
+          Too many concurrent threads can harm query performance and/or indicate unoptimized queries.
           INSTANCE = {{ $labels.instance }}
           VALUE = {{ $value }}
           LABELS = {{ $labels }}
@@ -70,7 +72,7 @@ groups:
         annotations:
           summary: MySQL slow queries (instance {{ $labels.instance }})
           description: |
-          MySQL server mysql has some new slow query.
+          MySQL server mysql has some new slow query. Check application for query optimizations, lack of indexes or queries without filtering (`WHERE` clause).
           VALUE = {{ $value }}
           LABELS = {{ $labels }}
 
@@ -83,7 +85,7 @@ groups:
         annotations:
           summary: MySQL InnoDB log waits (instance {{ $labels.instance }})
           description: |
-          MySQL innodb log writes stalling
+          MySQL innodb log writes stalling. Check storage for I/O performance.
           VALUE = {{ $value }}
           LABELS = {{ $labels }}
 
@@ -96,7 +98,7 @@ groups:
         annotations:
           summary: MySQL restarted (instance {{ $labels.instance }})
           description: |
-          MySQL restarted less than one minute ago.
+          MySQL restarted less than one minute ago. If restarts are frequent, check `error.log` from loki for diagnosis.
           INSTANCE = {{ $labels.instance }}.
           VALUE = {{ $value }}
           LABELS = {{ $labels }}
