@@ -1,0 +1,148 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:29 Deploying 3 units of mysql-k8s
+[32mINFO    [0m juju.model:model.py:2098 Deploying local:mysql-k8s-0
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:40 Waiting until application enters maintenance status
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:54 Waiting until leader unit is creating cluster
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:62 Disabling non-leader units to avoid joining the cluster
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:73 Deleting pod
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:76 Waiting until pod rescheduled and cluster is set up again
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:84 Removing disabled flag from non-leader units
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:94 Waiting until cluster is fully active
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] blocked: Disabled
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [idle] blocked: Disabled
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [idle] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [executing] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:34:46Z
+
+App        Version                  Status  Scale  Charm      Channel  Rev  Address        Exposed  Message
+mysql-k8s  8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s             0  10.152.183.36  no       
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0   active    idle   10.1.81.139         
+mysql-k8s/1*  active    idle   10.1.81.142         Primary
+mysql-k8s/2   active    idle   10.1.81.141         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:31:40 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: terminated
+unit-mysql-k8s-1: 01:31:41 ERROR unit.mysql-k8s/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/./src/charm.py", line 926, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/./src/charm.py", line 699, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/./src/charm.py", line 411, in _reconcile_pebble_layer
+    container.replan()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/model.py", line 2259, in replan
+    self._pebble.replan_services()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 2129, in replan_services
+    return self._services_action('replan', [], timeout, delay)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 2226, in _services_action
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Start service "mysqld_safe" (cannot start service while terminating)
+----- Logs from task 0 -----
+2024-10-14T01:31:41Z ERROR cannot start service while terminating
+-----
+unit-mysql-k8s-1: 01:31:41 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-1: 01:31:41 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-1: 01:32:07 ERROR unit.mysql-k8s/1.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+unit-mysql-k8s-1: 01:33:17 ERROR unit.mysql-k8s/1.juju-log Failed to reboot cluster
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 622, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=0', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 2, in <module>\nmysqlsh.Error: Shell Error (51300): Dba.reboot_cluster_from_complete_outage: This function is not available through a session to a standalone instance\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2486, in reboot_from_complete_outage
+    self._run_mysqlsh_script("\n".join(reboot_from_outage_command))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 625, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+unit-mysql-k8s-1: 01:33:17 ERROR unit.mysql-k8s/1.juju-log Failed to reboot cluster from complete outage.
+unit-mysql-k8s-1: 01:33:17 ERROR unit.mysql-k8s/1.juju-log Failed to drop group replication metadata schema
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 622, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=0', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 2, in <module>\nmysqlsh.Error: Shell Error (51300): Dba.reboot_cluster_from_complete_outage: This function is not available through a session to a standalone instance\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2486, in reboot_from_complete_outage
+    self._run_mysqlsh_script("\n".join(reboot_from_outage_command))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 625, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/./src/charm.py", line 793, in _handle_potential_cluster_crash_scenario
+    self._mysql.reboot_from_complete_outage()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2489, in reboot_from_complete_outage
+    raise MySQLRebootFromCompleteOutageError(e.message)
+charms.mysql.v0.mysql.MySQLRebootFromCompleteOutageError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 622, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=0', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 2, in <module>\nmysqlsh.Error: Shell Error (51300): Dba.drop_metadata_schema: This function is not available through a session to a standalone instance\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1785, in drop_group_replication_metadata_schema
+    self._run_mysqlsh_script("\n".join(commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 625, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
