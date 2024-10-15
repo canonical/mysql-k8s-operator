@@ -1,26 +1,36 @@
-# Get a Charmed MySQL up and running
+> [Charmed MySQL K8s Tutorial](/t/9677) > 2. Deploy MySQL
 
-This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overview/9677). Please refer to this page for more information and the overview of the content.
+# Deploy Charmed MySQL
 
-## Deploy Charmed MySQL K8s
-> :information_source: **Info**: [the minimum Juju version supported is 2.9.44](/t/11421)
+In this section, you will deploy Charmed MySQL K8s, access a unit, and interact with the MySQL databases that exist inside the application.
 
-To deploy Charmed MySQL K8s, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/mysql-k8s?channel=8.0) and deploy it to your model:
+## Summary
+* [Deploy MySQL](#deploy-mysql)
+* [Access MySQL](#access-mysql)
+  * [Retrieve credentials](#retrieve-credentials)
+  * [ Access MySQL via the `mysql` client](#access-mysql-via-the-mysql-client)
 
+---
+
+## Deploy MySQL
+
+To deploy Charmed MySQL K8s, run the following command:
 ```shell
-juju deploy mysql-k8s --channel 8.0 --trust
+juju deploy mysql-k8s --trust
 ```
-Note: `--trust` is required to create some K8s resources.
+> The `--trust` flag is necessary to create some K8s resources
 
-Juju will now fetch Charmed MySQL K8s and begin deploying it to the Microk8s Kubernetes. This process can take several minutes depending on how provisioned (RAM, CPU, etc) your machine is. You can track the progress by running:
+Juju will now fetch Charmed MySQL K8s from [Charmhub](https://charmhub.io/mysql-k8s?channel=8.0) and deploy it to MicroK8s. This process can take several minutes depending on how provisioned (RAM, CPU, etc) your machine is. You can track the progress by running:
 ```shell
 juju status --watch 1s
 ```
 
-This command is useful for checking the status of Charmed MySQL K8s and gathering information about the machines hosting Charmed MySQL. Some of the helpful information it displays include IP addresses, ports, state, etc. The command updates the status of Charmed MySQL K8s every second and as the application starts you can watch the status and messages of Charmed MySQL K8s change. Wait until the application is ready - when it is ready, `juju status` will show:
+>This command is useful for checking the real-time information about the state of a charm and the machines hosting it. Check the [`juju status` documentation](https://juju.is/docs/juju/juju-status) for more information about its usage.
+
+When the application is ready, `juju status` will show the `mysql` app as `active` and the `mysql-k8s/0*` unit as `idle`, like the example below:
 ```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  overlord    microk8s/localhost  2.9.44   unsupported  22:33:45+01:00
+tutorial  overlord    microk8s/localhost  3.1.6   unsupported  22:33:45+01:00
 
 App        Version   Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
 mysql-k8s  8.0.31    active      1  mysql-k8s  8.0/stable  36   10.152.183.234  no       Unit is ready: Mode: RW
@@ -28,18 +38,29 @@ mysql-k8s  8.0.31    active      1  mysql-k8s  8.0/stable  36   10.152.183.234  
 Unit          Workload  Agent  Address     Ports  Message
 mysql-k8s/0*  active    idle   10.1.84.74         Unit is ready: Mode: RW
 ```
-To exit the screen with `juju status --watch 1s`, enter `Ctrl+c`.
-If you want to further inspect juju logs, can watch for logs with `juju debug-log`.
-More info on logging at [juju logs](https://juju.is/docs/olm/juju-logs).
+> To exit the screen with `juju status --watch 1s`, enter `Ctrl+C`.
+
+You can also watch juju logs with the [`juju debug-log`](https://juju.is/docs/juju/juju-debug-log) command. More info on logging in the [juju logs documentation](https://juju.is/docs/olm/juju-logs).
 
 ## Access MySQL
-> **!** *Disclaimer: this part of the tutorial accesses MySQL via the `root` user. **Do not** directly interface with the root user in a production environment. In a production environment always create a separate user using [Data Integrator](https://charmhub.io/data-integrator) and connect to MySQL with that user instead. Later in the section covering Relations we will cover how to access MySQL without the root user.*
+[note type="caution"]
+**Warning:** This part of the tutorial accesses MySQL via the `root` user. 
 
-The first action most users take after installing MySQL is accessing MySQL. The easiest way to do this is via the [MySQL Command-Line Client](https://dev.mysql.com/doc/refman/8.0/en/mysql.html) `mysql`. Connecting to the database requires that you know the values for `host`, `username` and `password`. To retrieve the necessary fields please run Charmed MySQL K8s action `get-password`:
+**Do not directly interface with the `root` user in a production environment.**
+
+In a [later section about integrations](/t/9671), we will cover how to safely access MySQL via a separate user.
+[/note]
+
+ The easiest way to access MySQL is via the [MySQL Command-Line Client](https://dev.mysql.com/doc/refman/8.0/en/mysql.html) (`mysql`). For this, we must first retrieve the credentials.
+
+### Retrieve credentials
+Connecting to the database requires that you know the values for `host` (IP address), `username` and `password`. 
+
+To retrieve `username` and `password`, run the [Juju action](https://juju.is/docs/juju/action) `get-password` on the leader unit as follows:
 ```shell
-juju run-action mysql-k8s/leader get-password --wait
+juju run mysql-k8s/leader get-password
 ```
-Running the command should output:
+Example output:
 ```yaml
 unit-mysql-k8s-0:
   UnitId: mysql-k8s/0
@@ -54,12 +75,12 @@ unit-mysql-k8s-0:
     started: 2023-02-15 21:35:55 +0000 UTC
 ```
 
-*Note: to request a password for a different user, use an option `username`:*
+To request a password for a different user, use the option `username`:
 ```shell
-juju run-action mysql-k8s/leader get-password username=myuser --wait
+juju run mysql-k8s/leader get-password username=<username>
 ```
 
-The host’s IP address can be found with `juju status` (the unit hosting the MySQL K8s application):
+To retrieve the host’s IP address, run `juju status`. This should be listed under the "Public address" of the unit hosting the MySQL application:
 ```shell
 ...
 Unit          Workload  Agent  Address     Ports  Message
@@ -67,32 +88,47 @@ mysql-k8s/0*  active    idle   10.1.84.74         Unit is ready: Mode: RW
 ...
 ```
 
-To access the units hosting Charmed MySQL K8s use:
-```shell
-mysql -h 10.1.84.74 -uroot -p<password>
+### Access MySQL via the `mysql` client
+
+To access the unit hosting Charmed MySQL, one could normally use the following command:
+
 ```
-*Note: if at any point you'd like to leave the unit hosting Charmed MySQL, enter `Ctrl+d` or type `exit`*.
-
-Inside MySQL list DBs available on the host `show databases`:
-```shell
-> mysql -h 10.1.84.74 -uroot -psQI3Ojih7uL5UC4J1D9Xuqgx
-
-Server version: 8.0.31-0ubuntu0.22.04.1 (Ubuntu)
-...
-
-mysql> show databases;
-+-------------------------------+
-| Database                      |
-+-------------------------------+
-| information_schema            |
-| mysql                         |
-| mysql_innodb_cluster_metadata |
-| performance_schema            |
-| sys                           |
-+-------------------------------+
-5 rows in set (0.01 sec)
+mysql -h <ip_address> -u<username> -p<password>
 ```
-*Note: if at any point you'd like to leave the MySQL client, enter `Ctrl+d` or type `exit`*.
+
+However, this is not possible with the `root` user. For security reasons, the `root` user is restricted to only allow connections from localhost. 
+
+The way to access MySQL server with the `root` user is to first ssh into the primary Juju unit:
+```shell
+juju ssh mysql-k8s/leader
+```
+> In this case, we know the primary unit is the [juju leader unit](https://juju.is/docs/juju/leader), since it is the only existing unit. 
+>
+> In a cluster with more units, **the primary is not necessarily equivalent to the leader**. To identify the primary unit in a cluster, run `juju run mysql/<any_unit> get-cluster-status`. This will display the entire cluster topology.
+
+Once inside the Juju virtual machine, the `root` user can access MySQL by calling
+```
+mysql -h 127.0.0.1 -uroot -psQI3Ojih7uL5UC4J1D9Xuqgx
+```
+> Remember, your password will be different to the example above. Make sure to insert it without a space as `-p<password>`
+
+You will then see the `mysql>` command prompt, similar to the output below:
+```none
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 56
+Server version: 8.0.32-0ubuntu0.22.04.2 (Ubuntu)
+
+Copyright (c) 2000, 2023, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql>
+```
+> If at any point you'd like to leave the mysql client, enter `Ctrl+D` or type `exit`.
 
 You can now interact with MySQL directly using any [MySQL Queries](https://dev.mysql.com/doc/refman/8.0/en/entering-queries.html). For example entering `SELECT VERSION(), CURRENT_DATE;` should output something like:
 ```shell
@@ -105,4 +141,6 @@ mysql> SELECT VERSION(), CURRENT_DATE;
 1 row in set (0.00 sec)
 ```
 
-Feel free to test out any other MySQL queries. When you’re ready to leave the MySQL shell you can just type `exit`. Now you will be in your original shell where you first started the tutorial; here you can interact with Juju and Microk8s.
+Feel free to test out any other MySQL queries. When you’re ready to leave the MySQL shell you can just type `exit`. Now you will be in your original shell where you first started the tutorial; here you can interact with Juju and MicroK8s.
+
+> Next step: [3. Scale your replicas](/t/9675)

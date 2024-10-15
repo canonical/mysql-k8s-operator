@@ -41,24 +41,27 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | Level | Path | Navlink |
 |---------|---------|-------------|
 | 1 | tutorial | [Tutorial]() |
-| 2 | t-overview | [1. Introduction](/t/9677) |
-| 2 | t-set-up | [2. Set up the environment](/t/9679) |
-| 2 | t-deploy | [3. Deploy MySQL](/t/9667) |
-| 2 | t-scale | [4. Scale replicas](/t/9675) |
-| 2 | t-manage-passwords | [5. Manage passwords](/t/9673) |
-| 2 | t-integrate | [6. Integrate applications](/t/9671)  |
-| 2 | t-enable-tls | [7. Enable TLS encryption](/t/9669) |
-| 2 | t-clean-up | [8. Clean up the environment](/t/9665) |
+| 2 | t-overview | [Overview](/t/9677) |
+| 2 | t-set-up | [1. Set up the environment](/t/9679) |
+| 2 | t-deploy | [2. Deploy MySQL](/t/9667) |
+| 2 | t-scale | [3. Scale replicas](/t/9675) |
+| 2 | t-manage-passwords | [4. Manage passwords](/t/9673) |
+| 2 | t-integrate | [5. Integrate applications](/t/9671)  |
+| 2 | t-enable-tls | [6. Enable TLS encryption](/t/9669) |
+| 2 | t-clean-up | [7. Clean up the environment](/t/9665) |
 | 1 | how-to | [How To]() |
-| 2 | h-setup | [Set up]() |
-| 3 | h-deploy-microk8s | [Deploy on MicroK8s](/t/11869) |
-| 3 | h-deploy-gke | [Deploy on GKE](/t/10875) |
-| 3 | h-deploy-eks | [Deploy on EKS](/t/12105) |
-| 3 | h-deploy-aks | [Deploy on AKS](/t/14306) |
-| 3 | h-deploy-terraform | [Deploy via Terraform](/t/14926) |
-| 3 |  h-scale | [Scale replicas](/t/9659) |
-| 3 | h-enable-tls | [Enable TLS encryption](/t/9655) |
-| 3 | h-manage-applications | [Manage client applications](/t/9657) |
+| 2 | h-setup | [Deploy]() |
+| 3 | h-deploy-microk8s | [MicroK8s](/t/11869) |
+| 3 | h-deploy-gke | [GKE](/t/10875) |
+| 3 | h-deploy-eks | [EKS](/t/12105) |
+| 3 | h-deploy-aks | [AKS](/t/14306) |
+| 3 | h-deploy-multi-az | [Multi-AZ](/t/15727) |
+| 3 | h-deploy-terraform | [Terraform](/t/14926) |
+| 3 | h-deploy-airgapped | [Air-gapped](/t/15729) |
+| 2 | h-integrate| [Integrate with another application](/t/9657) |
+| 2 | h-external-access | [External access](/t/15728) |
+| 2 | h-scale | [Scale replicas](/t/9659) |
+| 2 | h-enable-tls | [Enable TLS](/t/9655) |
 | 2 | h-backups | [Back up and restore]() |
 | 3 | h-configure-s3-aws | [Configure S3 AWS](/t/9651) |
 | 3 | h-configure-s3-radosgw | [Configure S3 RadosGW](/t/10319) |
@@ -67,8 +70,8 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 3 | h-migrate-cluster| [Migrate a cluster](/t/9661) |
 | 2 | h-monitoring | [Monitoring (COS)]() |
 | 3 | h-enable-monitoring | [Enable monitoring](/t/9981) |
+| 3 | h-enable-alert-rules | [Enable alert rules](/t/15488) |
 | 3 | h-enable-tracing | [Enable tracing](/t/14448) |
-| 3 | h-enable-alert-rules | [Enable Alert Rules](/t/15488) |
 | 2 | h-upgrade | [Upgrade]() |
 | 3 | h-upgrade-intro | [Overview](/t/11754) |
 | 3 | h-upgrade-juju | [Upgrade Juju](/t/14333) |
@@ -76,9 +79,8 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 3 | h-rollback-major | [Perform a major rollback](/t/11751) |
 | 3 | h-upgrade-minor | [Perform a minor upgrade](/t/11752) |
 | 3 | h-rollback-minor | [Perform a minor rollback](/t/11753) |
-| 2 | h-integrate-your-charm | [Integrate with your charm]() |
-| 3 | h-integrate-intro | [Intro](/t/11884) |
-| 3 | h-integrate-db-with-your-charm | [Integrate a database with your charm](/t/11885) |
+| 2 | h-development| [Development](/t/11884) |
+| 3 | h-development-integrate | [Integrate a database with your charm](/t/11885) |
 | 3 | h-migrate-mysqldump | [Migrate data via mysqldump](/t/11992) |
 | 3 | h-migrate-mydumper | [Migrate data via mydumper](/t/12006) |
 | 3 | h-migrate-backup-restore | [Migrate data via backup/restore](/t/12007) |
@@ -91,8 +93,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 3 | h-async-removal | [Removal](/t/13468) |
 | 2 | h-contribute | [Contribute](/t/14655) |
 | 1 | reference | [Reference]() |
-| 2 | r-releases | [Release Notes]() |
-| 3 | r-all-releases | [All releases](/t/11878) |
+| 2 | r-releases | [Release Notes](/t/11878) |
 | 3 | r-revision-180-181 | [Revision 180/181](/t/15276) |
 | 3 | r-revision-153 | [Revision 153](/t/14072) |
 | 3 | r-revision-127 | [Revision 127](/t/13522) |

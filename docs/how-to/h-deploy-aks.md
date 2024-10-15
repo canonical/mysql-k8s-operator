@@ -3,20 +3,21 @@
 [Azure Kubernetes Service](https://learn.microsoft.com/en-us/azure/aks/) (AKS) allows you to quickly deploy a production ready Kubernetes cluster in Azure. To access the AKS Web interface, go to [https://portal.azure.com/](https://portal.azure.com/).
 
 ## Summary
-* [Install AKS and Juju tooling](#heading--install-aks-juju)
-* [Create a new AKS cluster](#heading--create-aks-cluster)
-* [Bootstrap Juju on AKS](#heading--boostrap-juju)
-* [Deploy charms](#heading--deploy-charms)
-* [Display deployment information](#heading--display-information)
-* [Clean up](#heading--clean-up)
+* [Install AKS and Juju tooling](#install-aks-and-juju-tooling)
+  * [Authenticate](#authenticate)
+* [Create a new AKS cluster](#create-a-new-aks-cluster)
+* [Bootstrap Juju on AKS](#bootstrap-juju-on-aks)
+* [Deploy charms](#deploy-charms)
+* [Display deployment information](#display-deployment-information)
+* [Clean up](#clean-up)
 
 ---
 
-<a href="#heading--install-aks-juju"><h2 id="heading--install-aks-juju"> Install AKS and Juju tooling</h2></a>
+## Install AKS and Juju tooling
 
 Install Juju and Azure CLI tool:
 ```shell
-sudo snap install juju --classic
+sudo snap install juju
 sudo apt install --yes azure-cli
 ```
 Follow the installation guides for:
@@ -46,7 +47,7 @@ Login to your Azure account:
 az login
 ```
 
-<a href="#heading--create-aks-cluster"><h2 id="heading--create-aks-cluster"> Create a new AKS cluster</h2></a>
+## Create a new AKS cluster
 
 Export the deployment name for further use:
 ```shell
@@ -95,7 +96,7 @@ Sample output:
 Merged "aks" as current context in ~/.kube/config
 ```
 
-<a href="#heading--boostrap-juju"><h2 id="heading--boostrap-juju"> Bootstrap Juju on AKS</h2></a>
+## Bootstrap Juju on AKS
 
 Bootstrap Juju controller:
 ```shell
@@ -127,7 +128,7 @@ juju add-model welcome aks
 juju model-config logging-config='<root>=INFO;unit=DEBUG'
 ```
 
-<a href="#heading--deploy-charms"><h2 id="heading--deploy-charms">Deploy charms</h2></a>
+## Deploy charms
 
 The following command deploys MySQL K8s:
 
@@ -157,7 +158,7 @@ mysql-k8s/1   active    idle   10.244.0.15
 mysql-k8s/2   active    idle   10.244.0.16 
 ```
 
-<a href="#heading--display-information"><h2 id="heading--display-information"> Display deployment information</h2></a>
+## Display deployment information
 
 Display information about the current deployments with the following commands:
 ```shell
@@ -178,7 +179,7 @@ NAME                                STATUS   ROLES   AGE   VERSION
 aks-nodepool1-55146003-vmss000000   Ready    agent   11m   v1.28.9
 ```
 
-<a href="#heading--clean-up"><h2 id="heading--clean-up"> Clean up</h2></a>
+## Clean up
 
 [note type="caution"]
 Always clean AKS resources that are no longer necessary -  they could be costly!

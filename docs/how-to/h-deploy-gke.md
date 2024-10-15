@@ -1,80 +1,117 @@
-# Deploy Charmed MySQL K8s on GKE
+# How to deploy on GKE
 
-Google Kubernetes Engine (GKE) - the most scalable and fully automated Kubernetes service from Google. To access GKE WEB interface, open https://console.cloud.google.com/compute/
+[Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine?hl=en) (GKE) is a highly scalable and fully automated Kubernetes service. To access the GKE Web interface, go to [console.cloud.google.com/compute](https://console.cloud.google.com/compute).
 
-# Install GKE and Juju tooling
-Install juju and gcloud tool using SNAP:
+This guide will walk you through setting up a cluster and deploying MySQL K8s on GKE.
+
+## Summary
+* [Install GKE and Juju tooling](#install-gke-and-juju-tooling)
+  * [Authenticate](#authenticate)
+  * [Configure project ID](#configure-project-id)
+  * [Install additional gcloud CLI tool](#install-additional-gcloud-cli-tool)
+* [Create a new GKE cluster](#create-a-new-gke-cluster)
+* [Bootstrap Juju on GKE](#bootstrap-juju-on-gke)
+* [Deploy charms](#deploy-charms)
+* [List clusters and clouds](#list-clusters-and-clouds)
+* [Clean up](#clean-up)
+
+---
+
+## Install GKE and Juju tooling
+
+Install `juju`, `kubectl`, and Google Cloud command-line tools using snap:
+
 ```shell
-> sudo snap install juju --classic
-> sudo snap install kubectl --classic
-> sudo snap install google-cloud-cli --classic
+sudo snap install juju
+sudo snap install kubectl --classic
+sudo snap install google-cloud-cli --classic
 ```
-Login to Google Account
+
+### Authenticate
+Log in to a Google account with the command
 ```shell
-> gcloud auth login
-
-Go to the following link in your browser:
-
-    https://accounts.google.com/o/oauth2/...
-
-Enter authorization code: 4/0Absad3s...
-
-You are now logged in as [your_account@gmail.com].
+gcloud auth login
 ```
+This will open a page in your browser starting with  `https://accounts.google.com/o/oauth2/...` where you can complete the login.
 
-Now you need to associate this installation with GCloud project, using "Project ID" from [resource-management](https://console.cloud.google.com/cloud-resource-manager):
+If successful, the command prompt will show:
+>```shell
+>You are now logged in as [<account>@gmail.com].
+>```
+
+### Configure project ID
+Next, you must associate this installation with GCloud project using "Project ID" from [resource-management](https://console.cloud.google.com/cloud-resource-manager):
 ```shell
 > gcloud config set project <PROJECT_ID>
-
-Updated property [core/project].
 ```
+Sample output:
+>```shell
+>Updated property [core/project].
+>```
 
-As a last step, install the Debian package `google-cloud-sdk-gke-gcloud-auth-plugin` using [Google manual](https://cloud.google.com/sdk/docs/install#deb).
+### Install additional gcloud CLI tool
 
-# Create new GKE cluster
-The following command will start three [compute engines](https://cloud.google.com/compute/) on Google Cloud (imagine them as three physical servers in clouds) and deploy K8s cluster there.  To simplify the manual, the following command will use high-availability zone `europe-west1` and compute engine type `n1-standard-4` (which can be adopted for your needs if necessary):
+As a last step, install the Debian package `google-cloud-sdk-gke-gcloud-auth-plugin` using this Google guide: [Install the gcloud CLI](https://cloud.google.com/sdk/docs/install#deb).
+
+## Create a new GKE cluster
+
+This guide will use high-availability zone `europe-west1` and compute engine type `n1-standard-4` in command examples. Make sure to choose the zone and resources that best suit your use-case.
+
+The following command will start three [compute engines](https://cloud.google.com/compute/) on Google Cloud and deploy a K8s cluster (you can imagine the compute engines as three physical servers in clouds):
 ```shell
 gcloud container clusters create --zone europe-west1-c $USER-$RANDOM --cluster-version 1.25 --machine-type n1-standard-4 --num-nodes=3 --no-enable-autoupgrade
 ```
 
-Now, let's assign our account as an admin of newly created K8s:
+Next, assign your account as an admin of the newly created K8s cluster:
 ```shell
 kubectl create clusterrolebinding cluster-admin-binding-$USER --clusterrole=cluster-admin --user=$(gcloud config get-value core/account)
 ```
 
-# Bootstrap Juju on GKE
-Bootstrap new juju controller on fresh cluster, copying commands one-by-one:
-```shell
-> juju add-k8s gke-jun-9 --storage=standard --client
-> juju bootstrap gke-jun-9
-> juju add-model welcome-model
-```
-At this stage Juju is ready to use GKE, check the list of currently running K8s pods and juju status:
-```shell
-> kubectl get pods -n welcome-model
-> juju status
-```
+## Bootstrap Juju on GKE
 
-# Deploy Charms
+> Note: [This known issue](https://bugs.launchpad.net/juju/+bug/2007575) forces unSNAPed Juju usage to add-k8s credentials on Juju.
+
 ```shell
-> juju deploy mysql-k8s-bundle --channel 8.0/edge --trust
-> juju deploy mysql-test-app
-> juju relate mysql-test-app mysql-k8s:database
-> juju status --watch 1s
+/snap/juju/current/bin/juju add-k8s gke-jun-9 --storage=standard --client
+juju bootstrap gke-jun-9
+juju add-model welcome-model
+```
+At this stage, Juju is ready to use GKE. Check the list of currently running K8s pods with:
+```shell
+kubectl get pods -n welcome-model
 ```
 
-# List
-To list GKE clusters and juju clouds, use:
-```shell
-> gcloud container clusters list
+## Deploy charms
 
+The following commands deploy and integrate the [MySQL K8s Bundle](https://charmhub.io/mysql-k8s-bundle) and [MySQL Test App](https://charmhub.io/mysql-test-app):
+```shell
+juju deploy mysql-k8s-bundle --channel 8.0/edge --trust
+juju deploy mysql-test-app
+juju integrate mysql-test-app mysql-k8s:database
+```
+
+To track the status of the deployment, run
+```shell
+juju status --watch 1s
+```
+
+## List clusters and clouds
+To list GKE clusters and juju clouds, run:
+```shell
+gcloud container clusters list
+```
+Sample output:
+```shell
 NAME          LOCATION        MASTER_VERSION   MASTER_IP      MACHINE_TYPE   NODE_VERSION     NUM_NODES  STATUS
 mykola-18187  europe-west1-c  1.25.9-gke.2300  31.210.22.127  n1-standard-4  1.25.9-gke.2300  3          RUNNING
 taurus-7485   europe-west1-c  1.25.9-gke.2300  142.142.21.25  n1-standard-4  1.25.9-gke.2300  3          RUNNING
 ```
-Juju can handle multiply clouds simultaneously. The list of clouds with registered credentials on Juju:
+Juju can handle multiple clouds simultaneously. To see a list of clouds with registered credentials on Juju, run:
 ```shell
-> juju clouds
+juju clouds
+```
+Sample output:
+```shell
 Clouds available on the controller:
 Cloud      Regions  Default       Type
 gke-jun-9  1        europe-west1  k8s  
@@ -86,21 +123,24 @@ localhost       1        localhost     lxd   1            built-in  LXD Containe
 microk8s        0                      k8s   1            built-in  A local Kubernetes context
 ```
 
-# Cleanup
-**Note**: always clean no-longer necessary GKE resources as they all could be costly!!!
-
+## Clean up
+[note type="caution"]
+**Warning**: Always clean GKE resources that are no longer necessary -  they could be costly!
+[/note]
 To clean GKE clusters and juju clouds, use:
 ```shell
-> juju destroy-controller gke-jun-9-europe-west1 --yes --destroy-all-models --destroy-storage --force
-> juju remove-cloud gke-jun-9
+juju destroy-controller gke-jun-9-europe-west1 --yes --destroy-all-models --destroy-storage --force
+juju remove-cloud gke-jun-9
 
-> gcloud container clusters list
-> gcloud container clusters delete <cluster_name> --zone europe-west1-c
+gcloud container clusters list
+gcloud container clusters delete <cluster_name> --zone europe-west1-c
 ```
 Revoke the GCloud user credentials:
 ```shell
-> gcloud auth revoke your_account@gmail.com
-
-Revoked credentials:
- - your_account@gmail.com
+gcloud auth revoke your_account@gmail.com
 ```
+You should see a confirmation output:
+>```shell
+>Revoked credentials:
+ >- your_account@gmail.com
+>```
