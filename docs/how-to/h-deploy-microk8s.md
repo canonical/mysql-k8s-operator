@@ -1,30 +1,35 @@
-# Deploy Charmed MySQL K8s
+# Deploy on MicroK8s
 
-Please follow the [Tutorial](/t/9677) to deploy the charm on MicroK8s.
+This guide assumes you have a running Juju and MicroK8s environment. 
 
-Short story for your Ubuntu 22.04 LTS:
+For a detailed walkthrough of setting up an environment and deploying the charm on MicroK8s, refer to the [Tutorial](/t/9677).
+
+--- 
+
+[Bootstrap](https://juju.is/docs/juju/juju-bootstrap) a juju controller and create a [model](https://juju.is/docs/juju/juju-add-model) if you haven't already:
 ```shell
-sudo snap install multipass
-multipass launch --cpus 4 --memory 8G --disk 30G --name my-vm charm-dev # tune CPU/RAM/HDD accordingly to your needs
-multipass shell my-vm
-
-juju add-model mysql
-juju deploy mysql-k8s --channel 8.0/stable --trust # --config profile=testing
-juju status --watch 1s
+juju bootstrap microk8s <controller name>
+juju add-model <model name>
 ```
 
-The expected result:
+Deploy MySQL:
+```shell
+juju deploy mysql-k8s --channel 8.0/stable --trust
+```
+> :warning: The `--trust` flag is necessary to create some K8s resources.
+
+> See the [`juju deploy` documentation](https://juju.is/docs/juju/juju-deploy) for all available options at deploy time.
+> 
+> See the [Configurations tab](https://charmhub.io/mysql/configurations) for specific MySQL parameters.
+
+Sample output of `juju status --watch 1s`:
 ```shell
 Model   Controller  Cloud/Region        Version  SLA          Timestamp
 mysql   overlord    microk8s/localhost  2.9.38   unsupported  22:48:57+01:00
 
 App        Version    Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
-mysql-k8s  8.0.31     active      3  mysql-k8s  8.0/stable  75   10.152.183.234  no       
+mysql-k8s  8.0.31     active      1  mysql-k8s  8.0/stable  75   10.152.183.234  no       
 
 Unit          Workload  Agent  Address      Ports  Message
 mysql-k8s/0*  active    idle   10.1.84.74          Primary
-mysql-k8s/1   active    idle   10.1.84.127
-mysql-k8s/2   active    idle   10.1.84.73
 ```
-
-Check the [Testing](/t/11772) reference to test your deployment.

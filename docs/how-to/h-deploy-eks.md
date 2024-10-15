@@ -1,21 +1,39 @@
-# Deploy Charmed MySQL K8s on EKS
+[note]
+**Note**: All commands are written for `juju >= v.3.0`
 
-[Amazon Elastic Kubernetes Service](https://aws.amazon.com/eks/) (EKS) - one of the most popular and fully automated Kubernetes service from Amazon. To access EKS WEB interface, open the Console https://console.aws.amazon.com/eks/home
+If you are using an earlier version,  check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#heading--juju-3-0-0---22-oct-2022).
+[/note]
+
+# How to deploy on EKS
+
+[Amazon Elastic Kubernetes Service](https://aws.amazon.com/eks/) (EKS) is a popular, fully automated Kubernetes service. To access the EKS Web interface, go to [console.aws.amazon.com/eks/home](https://console.aws.amazon.com/eks/home).
+
+## Summary
+* [Install EKS and Juju tooling](#heading--install-eks-juju)
+* [Create a new EKS cluster](#heading--create-eks-cluster)
+* [Bootstrap Juju on EKS](#heading--boostrap-juju)
+* [Deploy charms](#heading--deploy-charms)
+* [Display deployment information](#heading--display-information)
+* [Clean up](#heading--clean-up)
+
+---
 
 # Install EKS and Juju tooling
 
-Install:
-
-* [Juju](https://juju.is/docs/juju/install-juju) (an open source orchestration engine from Canonical)
-* [kubectl](https://kubernetes.io/docs/tasks/tools/) (Kubernetes command line tool)
-* [eksctl](https://eksctl.io/installation/) (the official CLI for Amazon EKS)
-* [AWC CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) (Amazon Web Services Command Line Interface)
-
-Make sure all works:
-
+Install [Juju](https://juju.is/docs/juju/install-juju) and the [`kubectl` CLI tools](https://kubernetes.io/docs/tasks/tools/) via snap:
 ```shell
+sudo snap install juju
+sudo snap install kubectl --classic
+```
+Follow the installation guides for:
+* [eksctl](https://eksctl.io/installation/) - the Amazon EKS CLI
+* [AWs CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) - the Amazon Web Services CLI
+
+To check they are all correctly installed, you can run the commands demonstrated below with sample outputs:
+
+```console
 > juju version
-2.9.45-ubuntu-amd64
+3.1.7-ubuntu-amd64
 
 > kubectl version --client
 Client Version: v1.28.2
@@ -29,7 +47,9 @@ kubectl version: v1.28.2
 aws-cli/2.13.25 Python/3.11.5 Linux/6.2.0-33-generic exe/x86_64.ubuntu.23 prompt/off
 ```
 
-Create IAM account (or legacy Access keys) and login to AWS:
+### Authenticate
+
+Create an IAM account (or use legacy access keys) and login to AWS:
 ```shell
 > aws configure
 AWS Access Key ID [None]: SECRET_ACCESS_KEY_ID
@@ -45,17 +65,19 @@ Default output format [None]:
 }
 ```
 
-# Bootstrap Kubernetes cluster (EKS)
+## Create a new EKS cluster
 
-Export the deployment name to be used further:
+Export the deployment name for further use:
 ```shell
 export JUJU_NAME=eks-$USER-$RANDOM
 ```
 
-Feel free to fine-tune the location (`eu-west-3`) and/or K8s version (`1.27`):
+This following examples in this guide will use the location `eu-west-3` and K8s `v.1.27` - feel free to change this for your own deployment.
+
+Sample `cluster.yaml`:
 
 ```shell
-cat <<-EOF > cluster.yaml
+> cat <<-EOF > cluster.yaml
 ---
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
@@ -91,9 +113,12 @@ nodeGroups:
         spotInstancePools: 2
 EOF
 ```
-Bootstrap EKS cluster:
+Bootstrap EKS cluster with the following command:
 ```shell
-> eksctl create cluster -f cluster.yaml
+eksctl create cluster -f cluster.yaml
+```
+Sample output:
+```shell
 ...
 2023-10-12 11:13:58 [ℹ]  using region eu-west-3
 2023-10-12 11:13:59 [ℹ]  using Kubernetes version 1.27
@@ -101,34 +126,49 @@ Bootstrap EKS cluster:
 2023-10-12 11:40:00 [✔]  EKS cluster "eks-taurus-27506" in "eu-west-3" region is ready
 ```
 
-# Bootstrap Juju on EKS
-> **TIP**: Juju 3.x https://bugs.launchpad.net/juju/+bug/2007848
 
+## Bootstrap Juju on EKS
+[note type="caution"]
+There is a known bug for `juju v.3.1` users: 
+bugs.launchpad.net/juju/+bug/2007848
+[/note]
+
+Add Juju k8s clouds:
 ```shell
-# Add Juju K8s Clous
-> juju add-k8s $JUJU_NAME
-
-# Bootstrap Juju Controller
-> juju bootstrap $JUJU_NAME
-
-# Create a new Juju model (K8s namespace)
-> juju add-model welcome
-
-# (optional) Increase DEBUG level if you are troubleshooting charms 
-> juju model-config logging-config='<root>=INFO;unit=DEBUG'
+juju add-k8s $JUJU_NAME
+```
+Bootstrap Juju controller:
+```shell
+juju bootstrap $JUJU_NAME
+```
+Create a new Juju model (k8s namespace)
+```shell
+juju add-model welcome
+```
+[Optional] Increase DEBUG level if you are troubleshooting charms 
+```shell
+juju model-config logging-config='<root>=INFO;unit=DEBUG'
 ```
 
-# Deploy Charms
+## Deploy charms
+
+The following commands deploy and integrate the [MySQL K8s Bundle](https://charmhub.io/mysql-k8s-bundle) and [MySQL Test App](https://charmhub.io/mysql-test-app):
 ```shell
-> juju deploy mysql-k8s-bundle --channel 8.0/edge --trust
-> juju deploy mysql-test-app
-> juju relate mysql-test-app mysql-k8s:database
-> juju status --watch 1s
+juju deploy mysql-k8s-bundle --channel 8.0/edge --trust
+juju deploy mysql-test-app
+juju integrate mysql-test-app mysql-k8s:database
 ```
 
-# List
+To track the status of the deployment, run
 ```shell
+juju status --watch 1s
+```
 
+### Display deployment information
+
+Display information about the current deployments with the following commands:
+
+```shell
 > juju controllers
 Controller         Model    User   Access     Cloud/Region      Models  Nodes  HA  Version
 eks-taurus-27506*  welcome  admin  superuser  eks-taurus-27506       2      1   -  2.9.45  
@@ -148,21 +188,29 @@ ip-192-168-51-96.eu-west-3.compute.internal    Ready    <none>   19m   v1.27.5-e
 ip-192-168-78-167.eu-west-3.compute.internal   Ready    <none>   19m   v1.27.5-eks-43840fb
 ```
 
-# Cleanup
-**Note**: always clean no-longer necessary EKS resources as they all could be costly!!!
+## Clean up
+[note type="caution"]
+Always clean EKS resources that are no longer necessary -  they could be costly!
+[/note]
 
-To [clean](https://docs.aws.amazon.com/eks/latest/userguide/delete-cluster.html) EKS cluster, resources and juju cloud, use:
+To clean the EKS cluster, resources and juju cloud, run the following commands:
+
 ```shell
-> juju destroy-controller $JUJU_NAME --yes --destroy-all-models --destroy-storage --force
-> juju remove-cloud $JUJU_NAME
-
-> kubectl get svc --all-namespaces
-> kubectl delete svc <service-name> # Delete any services that have an associated EXTERNAL-IP value (load balancers, ...)
-
-> eksctl get cluster -A
-> eksctl delete cluster <cluster_name> --region eu-west-3 --force --disable-nodegroup-eviction
+juju destroy-controller $JUJU_NAME --yes --destroy-all-models --destroy-storage --force
+juju remove-cloud $JUJU_NAME
 ```
-Remove AWS CLI user credentials (to avoid forgetting and leaking):
+
+List all services and then delete those that have an associated EXTERNAL-IP value (e.g. load balancers):
 ```shell
-> rm -f ~/.aws/credentials
+kubectl get svc --all-namespaces
+kubectl delete svc <service-name> 
+```
+Next, delete the EKS cluster  (source: [Deleting an Amazon EKS cluster]((https://docs.aws.amazon.com/eks/latest/userguide/delete-cluster.html) )) 
+```shell
+eksctl get cluster -A
+eksctl delete cluster <cluster_name> --region eu-west-3 --force --disable-nodegroup-eviction
+```
+Finally, remove AWS CLI user credentials (to avoid forgetting and leaking):
+```shell
+rm -f ~/.aws/credentials
 ```
