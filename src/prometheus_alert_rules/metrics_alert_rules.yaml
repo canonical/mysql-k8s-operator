@@ -1,5 +1,5 @@
 groups:
-  - name: MySQLExporter
+  - name: MySQLExporterK8s
 
     rules:
       # 2.1.1
