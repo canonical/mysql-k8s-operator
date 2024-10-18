@@ -1,0 +1,53 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:45:09Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.159  no       
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.206  no       Last written value=264
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.102  no       Last written value=258
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.20   no       Last written value=210
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.113  no       Last written value=219
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.31   no       Last written value=194
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.211  no       Last written value=259
+mysql    8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                        0  10.152.183.170  no       
+router0  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.244  no       
+router1  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.250  no       
+router2  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.227  no       
+router3  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.50   no       
+router4  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.82   no       
+router5  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.109  no       
+router6  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.28   no       
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.78.10         
+app1/0*     active    idle   10.1.78.12         Last written value=264
+app2/0*     active    idle   10.1.78.13         Last written value=258
+app3/0*     active    idle   10.1.78.15         Last written value=210
+app4/0*     active    idle   10.1.78.17         Last written value=219
+app5/0*     active    idle   10.1.78.19         Last written value=194
+app6/0*     active    idle   10.1.78.20         Last written value=259
+mysql/0*    active    idle   10.1.78.9          Primary
+router0/0*  active    idle   10.1.78.11         
+router1/0*  active    idle   10.1.78.14         
+router2/0*  active    idle   10.1.78.16         
+router3/0*  active    idle   10.1.78.18         
+router4/0*  active    idle   10.1.78.21         
+router5/0*  active    idle   10.1.78.22         
+router6/0*  active    idle   10.1.78.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-2: 01:43:38 ERROR unit.mysql/2.juju-log database-peers:1: Failed to get cluster status for cluster-b0768a7f67c639358729674b4f2e30d4
+unit-mysql-2: 01:43:38 ERROR unit.mysql/2.juju-log database-peers:1: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/mysql/v0/mysql.py", line 1954, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
