@@ -71,6 +71,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | h-monitoring | [Monitoring (COS)]() |
 | 3 | h-enable-monitoring | [Enable monitoring](/t/9981) |
 | 3 | h-enable-alert-rules | [Enable alert rules](/t/15488) |
+| 4 | r-alert-rules | [Alert rules](/t/15838) |
 | 3 | h-enable-tracing | [Enable tracing](/t/14448) |
 | 2 | h-upgrade | [Upgrade]() |
 | 3 | h-upgrade-intro | [Overview](/t/11754) |
@@ -104,6 +105,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | r-testing | [Testing](/t/11772) |
 | 2 | r-profiles | [Profiles](/t/11892) |
 | 2 | r-plugins-extensions | [Plugins/extensions](/t/15482) |
+| 2 | r-alert-rules | [Alert rules](/t/15838) |
 | 2 | r-contacts | [Contacts](/t/11868) |
 | 1 | explanation | [Explanation]() |
 | 2 | e-architecture | [Architecture](/t/11757) |
