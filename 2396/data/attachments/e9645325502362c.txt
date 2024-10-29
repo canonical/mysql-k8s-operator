@@ -1,0 +1,70 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:49:16Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.27   no       Last written value=209
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.139  no       Last written value=81
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.194  no       
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.97   no       Last written value=232
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.70   no       Last written value=200
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.129  no       Last written value=105
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.181  no       Last written value=236
+mysql    8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                        0  10.152.183.52   no       
+router0  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.34   no       
+router1  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.36   no       
+router2  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.76   no       
+router3  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.202  no       
+router4  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.210  no       
+router5  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.116  no       
+router6  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.232  no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.169.74         Last written value=209
+app1/0*     active    idle   10.1.169.75         Last written value=81
+app2/0*     active    idle   10.1.169.76         
+app3/0*     active    idle   10.1.169.79         Last written value=232
+app4/0*     active    idle   10.1.169.80         Last written value=200
+app5/0*     active    idle   10.1.169.81         Last written value=105
+app6/0*     active    idle   10.1.169.82         Last written value=236
+mysql/0*    active    idle   10.1.169.73         Primary
+router0/0*  active    idle   10.1.169.86         
+router1/0*  active    idle   10.1.169.87         
+router2/0*  active    idle   10.1.169.77         
+router3/0*  active    idle   10.1.169.78         
+router4/0*  active    idle   10.1.169.83         
+router5/0*  active    idle   10.1.169.84         
+router6/0*  active    idle   10.1.169.85         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+controller-0: 01:33:34 ERROR juju.worker.caasapplicationprovisioner.runner exited "app0": more than 20 retries ensuring scale: setting scale to 1 for "app0": statefulset "app0" not found
+controller-0: 01:33:36 ERROR juju.worker.caasapplicationprovisioner.runner exited "router0": more than 20 retries ensuring trust: updating application "router0" to desired trust true: getting service account role "router0": k8s: roles.rbac.authorization.k8s.io "router0" not found
+controller-0: 01:33:38 ERROR juju.worker.caasapplicationprovisioner.runner exited "router1": more than 20 retries ensuring trust: updating application "router1" to desired trust true: getting service account role "router1": k8s: roles.rbac.authorization.k8s.io "router1" not found
+controller-0: 01:33:42 ERROR juju.worker.caasapplicationprovisioner.runner exited "app1": more than 20 retries ensuring scale: setting scale to 1 for "app1": statefulset "app1" not found
+controller-0: 01:33:43 ERROR juju.worker.caasapplicationprovisioner.runner exited "app2": more than 20 retries ensuring trust: updating application "app2" to desired trust false: getting service account role "app2": k8s: roles.rbac.authorization.k8s.io "app2" not found
+controller-0: 01:33:52 ERROR juju.worker.caasapplicationprovisioner.runner exited "router2": more than 20 retries ensuring scale: setting scale to 1 for "router2": statefulset "router2" not found
+controller-0: 01:33:53 ERROR juju.worker.caasapplicationprovisioner.runner exited "router3": more than 20 retries ensuring trust: updating application "router3" to desired trust true: getting service account role "router3": k8s: roles.rbac.authorization.k8s.io "router3" not found
+controller-0: 01:33:54 ERROR juju.worker.caasapplicationprovisioner.runner exited "app3": more than 20 retries ensuring trust: updating application "app3" to desired trust false: getting service account role "app3": k8s: roles.rbac.authorization.k8s.io "app3" not found
+controller-0: 01:34:01 ERROR juju.worker.caasapplicationprovisioner.runner exited "app4": more than 20 retries ensuring trust: updating application "app4" to desired trust false: getting service account role "app4": k8s: roles.rbac.authorization.k8s.io "app4" not found
+controller-0: 01:34:08 ERROR juju.worker.caasapplicationprovisioner.runner exited "router4": more than 20 retries ensuring scale: setting scale to 1 for "router4": statefulset "router4" not found
+controller-0: 01:34:10 ERROR juju.worker.caasapplicationprovisioner.runner exited "app6": more than 20 retries ensuring trust: updating application "app6" to desired trust false: getting service account role "app6": k8s: roles.rbac.authorization.k8s.io "app6" not found
+controller-0: 01:34:11 ERROR juju.worker.caasapplicationprovisioner.runner exited "app5": more than 20 retries ensuring trust: updating application "app5" to desired trust false: getting service account role "app5": k8s: roles.rbac.authorization.k8s.io "app5" not found
+controller-0: 01:34:12 ERROR juju.worker.caasapplicationprovisioner.runner exited "router5": more than 20 retries ensuring trust: updating application "router5" to desired trust true: getting service account role "router5": k8s: roles.rbac.authorization.k8s.io "router5" not found
+controller-0: 01:34:14 ERROR juju.worker.caasapplicationprovisioner.runner exited "router6": more than 20 retries ensuring trust: updating application "router6" to desired trust true: getting service account role "router6": k8s: roles.rbac.authorization.k8s.io "router6" not found
+controller-0: 01:34:59 ERROR juju.worker.caasapplicationprovisioner.runner exited "app0": more than 20 retries ensuring scale: setting scale to 1 for "app0": statefulset "app0" not found
+controller-0: 01:35:06 ERROR juju.worker.caasapplicationprovisioner.runner exited "router0": more than 20 retries ensuring scale: setting scale to 1 for "router0": statefulset "router0" not found
+controller-0: 01:35:07 ERROR juju.worker.caasapplicationprovisioner.runner exited "router1": more than 20 retries ensuring scale: setting scale to 1 for "router1": statefulset "router1" not found
+unit-mysql-2: 01:48:01 ERROR unit.mysql/2.juju-log database-peers:2: Failed to get cluster status for cluster-a424b8d1e4aec5534ecbbd39dabf8c8e
+unit-mysql-2: 01:48:01 ERROR unit.mysql/2.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/mysql/v0/mysql.py", line 1954, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
