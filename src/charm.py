@@ -224,7 +224,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 MYSQLD_SAFE_SERVICE: {
                     "override": "replace",
                     "summary": "mysqld safe",
-                    "command": MYSQLD_SAFE_SERVICE,
+                    "command": f"valgrind --tool=massif --massif-out=/charm-mem-profile.out {MYSQLD_SAFE_SERVICE}",
                     "startup": "enabled",
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
