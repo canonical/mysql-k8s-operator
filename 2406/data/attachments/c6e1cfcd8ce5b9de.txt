@@ -1,0 +1,54 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:79 Build mysql charm
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:85 Deploying mysql clusters
+[32mINFO    [0m juju.model:model.py:2098 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:2098 Deploying local:mysql-k8s-0
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:106 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db1/0 [allocating] waiting: installing agent
+  db1/1 [allocating] waiting: installing agent
+  db1/2 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/0 [allocating] waiting: installing agent
+  db2/1 [allocating] waiting: installing agent
+  db2/2 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db1/0 [executing] maintenance: Initialising mysqld
+  db1/1 [executing] maintenance: Initialising mysqld
+  db1/2 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/0 [executing] maintenance: installing charm software
+  db2/1 [executing] maintenance: installing charm software
+  db2/2 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db1/0 [idle] waiting: waiting to get cluster primary from peers
+  db1/1 [executing] active: Primary
+  db1/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/0 [executing] waiting: waiting to get cluster primary from peers
+  db2/1 [executing] maintenance: Initialising mysqld
+  db2/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db1/0 [idle] maintenance: joining the cluster
+  db1/1 [executing] active: Primary
+  db1/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/0 [idle] maintenance: joining the cluster
+  db2/1 [executing] active: Primary
+  db2/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: Primary
+  db1/2 [executing] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/0 [executing] active: 
+  db2/1 [executing] active: Primary
+  db2/2 [executing] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: Primary
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] active: Primary
+  db2/2 [idle] active:
