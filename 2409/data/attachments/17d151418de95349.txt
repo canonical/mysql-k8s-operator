@@ -1,0 +1,43 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:46:30Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.179  no       
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.88   no       Last written value=101
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.253  no       Last written value=113
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.170  no       Last written value=207
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.205  no       Last written value=74
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.102  no       Last written value=255
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.76   no       Last written value=105
+mysql    8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                        0  10.152.183.241  no       
+router0  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.180  no       
+router1  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.227  no       
+router2  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.226  no       
+router3  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.75   no       
+router4  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.55   no       
+router5  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.90   no       
+router6  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.181  no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.124.74         
+app1/0*     active    idle   10.1.124.76         Last written value=101
+app2/0*     active    idle   10.1.124.77         Last written value=113
+app3/0*     active    idle   10.1.124.79         Last written value=207
+app4/0*     active    idle   10.1.124.81         Last written value=74
+app5/0*     active    idle   10.1.124.83         Last written value=255
+app6/0*     active    idle   10.1.124.84         Last written value=105
+mysql/0*    active    idle   10.1.124.73         Primary
+router0/0*  active    idle   10.1.124.75         
+router1/0*  active    idle   10.1.124.78         
+router2/0*  active    idle   10.1.124.80         
+router3/0*  active    idle   10.1.124.82         
+router4/0*  active    idle   10.1.124.85         
+router5/0*  active    idle   10.1.124.86         
+router6/0*  active    idle   10.1.124.87         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
