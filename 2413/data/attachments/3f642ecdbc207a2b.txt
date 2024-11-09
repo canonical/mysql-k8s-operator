@@ -1,0 +1,4 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:129 Creating offers in first model
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:132 Consume offer in second model
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:135 Relating the two mysql clusters
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:138 Waiting for the applications to settle
