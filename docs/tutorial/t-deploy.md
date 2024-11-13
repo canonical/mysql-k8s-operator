@@ -30,7 +30,7 @@ juju status --watch 1s
 When the application is ready, `juju status` will show the `mysql` app as `active` and the `mysql-k8s/0*` unit as `idle`, like the example below:
 ```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  overlord    microk8s/localhost  3.1.6   unsupported  22:33:45+01:00
+tutorial  overlord    microk8s/localhost  3.5.2   unsupported  22:33:45+01:00
 
 App        Version   Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
 mysql-k8s  8.0.31    active      1  mysql-k8s  8.0/stable  36   10.152.183.234  no       Unit is ready: Mode: RW

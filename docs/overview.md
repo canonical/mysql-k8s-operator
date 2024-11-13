@@ -1,22 +1,21 @@
-# Charmed MySQL K8s Documentation
+> This is **Kubernetes** operator. To deploy in IAAS/VM, see [Charmed MySQL VM](https://charmhub.io/mysql).
 
-[note type="positive"]
-This is **[K8s](https://canonical.com/data/docs)** operator. To deploy in **[IAAS/VM](https://canonical.com/data/docs)**, use [Charmed MySQL](https://charmhub.io/mysql).
-[/note]
+# Charmed MySQL K8s documentation
 
-The Charmed MySQL K8s Operator delivers automated operations management from [day 0 to day 2](https://codilime.com/blog/day-0-day-1-day-2-the-software-lifecycle-in-the-cloud-age/) on the [MySQL Community Edition](https://www.mysql.com/products/community/) relational database. It is an open source, end-to-end, production-ready data platform [on top of Juju](https://juju.is/).
+Charmed MySQL K8s is an open-source software operator that deploys and operates [MySQL Community Edition](https://www.mysql.com/products/community/) relational databases on Kubernetes via [Juju](https://juju.is/). 
+
+This new operator built with the [charm SDK](https://juju.is/docs/sdk) replaces [**MariaDB**](https://charmhub.io/mariadb), [**OSM MariaDB**](https://charmhub.io/charmed-osm-mariadb-k8s), [**Percona cluster**](https://charmhub.io/percona-cluster) and [**MySQL InnoDB cluster**](https://charmhub.io/mysql-innodb-cluster) operators.
+
+Charmed MySQL K8s includes features such as cluster-to-cluster replication, TLS encryption, password rotation, backups, and easy integration with other applications both inside and outside of Juju. It meets the need of deploying MySQL in a structured and consistent manner while allowing the user flexibility in configuration, simplifying reliable management of MySQL in production environments.
 
 ![image|690x424](upload://vpevillwv3S9C44LDFBxkGCxpGq.png)
 
-MySQL is the world’s most popular open source database. A relational database stores data in separate tables rather than putting all the data in one big storeroom. The database structure is organized into physical files optimized for speed. The logical data model, with objects such as data tables, views, rows, and columns, offers a flexible programming environment.
+## In this documentation
 
-This MySQL operator charm comes in two flavours to deploy and operate MySQL on [physical/virtual machines](https://github.com/canonical/mysql-operator) and [Kubernetes](https://github.com/canonical/mysql-k8s-operator). Both offer features such as replication, TLS, password rotation, and easy to use integration with applications. The Charmed MySQL K8s Operator meets the need of deploying MySQL in a structured and consistent manner while allowing the user flexibility in configuration. It simplifies deployment, scaling, configuration and management of MySQL in production at scale in a reliable way.
-
-[note type="positive"]
-**"Charmed MySQL K8s", "MariaDB", "OSM MariaDB", "Percona Cluster" or "Mysql Innodb Cluster"?**
-
-This "Charmed MySQL K8s" operator is a new "[Charmed SDK](https://juju.is/docs/sdk)"-based charm to replace a "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)" operators.<br/>Read more about [legacy charms here](https://discourse.charmhub.io/t/11236).
-[/note]
+| | |
+|--|--|
+|  [Tutorials](/t/9677)</br>  Get started - a hands-on introduction to using Charmed MySQL operator for new users </br> |  [How-to guides](/t/9659) </br> Step-by-step guides covering key operations and common tasks |
+| [Reference](https://charmhub.io/mysql-k8s/actions) </br> Technical information - specifications, APIs, architecture | [Explanation](/t/10249) </br> Concepts - discussion and clarification of key topics  |
 
 ## Project and community
 
@@ -26,13 +25,6 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 - [Contribute](https://github.com/canonical/mysql-k8s-operator/blob/main/CONTRIBUTING.md) and report [issues](https://github.com/canonical/mysql-k8s-operator/issues/new/choose)
 - Explore [Canonical Data Fabric solutions](https://canonical.com/data)
 - [Contacts us](/t/11868) for all further questions
-
-## In this documentation
-
-| | |
-|--|--|
-|  [Tutorials](/t/9677)</br>  Get started - a hands-on introduction to using Charmed MySQL operator for new users </br> |  [How-to guides](/t/9659) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](https://charmhub.io/mysql-k8s/actions) </br> Technical information - specifications, APIs, architecture | [Explanation](/t/10249) </br> Concepts - discussion and clarification of key topics  |
 
 # Navigation
 
@@ -51,6 +43,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | t-clean-up | [7. Clean up the environment](/t/9665) |
 | 1 | how-to | [How To]() |
 | 2 | h-setup | [Deploy]() |
+| 3 | h-deploy-canonical-k8s | [Canonical K8s](/t/15939) |
 | 3 | h-deploy-microk8s | [MicroK8s](/t/11869) |
 | 3 | h-deploy-gke | [GKE](/t/10875) |
 | 3 | h-deploy-eks | [EKS](/t/12105) |
@@ -72,15 +65,12 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 3 | h-enable-monitoring | [Enable monitoring](/t/9981) |
 | 3 | h-enable-alert-rules | [Enable alert rules](/t/15488) |
 | 3 | h-enable-tracing | [Enable tracing](/t/14448) |
-| 2 | h-upgrade | [Upgrade]() |
-| 3 | h-upgrade-intro | [Overview](/t/11754) |
+| 2 | h-upgrade | [Upgrade](/t/11754) |
 | 3 | h-upgrade-juju | [Upgrade Juju](/t/14333) |
-| 3 | h-upgrade-major | [Perform a major upgrade](/t/11750) |
-| 3 | h-rollback-major | [Perform a major rollback](/t/11751) |
 | 3 | h-upgrade-minor | [Perform a minor upgrade](/t/11752) |
 | 3 | h-rollback-minor | [Perform a minor rollback](/t/11753) |
-| 2 | h-development| [Development](/t/11884) |
-| 3 | h-development-integrate | [Integrate a database with your charm](/t/11885) |
+| 2 | h-development| [Development]() |
+| 3 | h-development-integrate | [Integrate with your charm](/t/11885) |
 | 3 | h-migrate-mysqldump | [Migrate data via mysqldump](/t/11992) |
 | 3 | h-migrate-mydumper | [Migrate data via mydumper](/t/12006) |
 | 3 | h-migrate-backup-restore | [Migrate data via backup/restore](/t/12007) |
@@ -104,11 +94,12 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | r-testing | [Testing](/t/11772) |
 | 2 | r-profiles | [Profiles](/t/11892) |
 | 2 | r-plugins-extensions | [Plugins/extensions](/t/15482) |
+| 2 | r-alert-rules | [Alert rules](/t/15838) |
+| 2 | r-statuses | [Statuses](/t/11866) |
 | 2 | r-contacts | [Contacts](/t/11868) |
 | 1 | explanation | [Explanation]() |
 | 2 | e-architecture | [Architecture](/t/11757) |
 | 2 | e-interfaces-endpoints | [Interfaces/endpoints](/t/10249) |
-| 2 | e-statuses | [Statuses](/t/11866) |
 | 2 | e-users | [Users](/t/10791) |
 | 2 | e-logs | [Logs](/t/12080) |
 | 3 | e-audit-logs | [Audit Logs](/t/15423) |
@@ -118,3 +109,9 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 1 | search | [Search](https://canonical.com/data/docs/mysql/k8s) |
 
 [/details]
+
+<!--
+| 2 | h-development| [Development](/t/11884) |
+| 3 | h-upgrade-major | [Perform a major upgrade](/t/11750) |
+| 3 | h-rollback-major | [Perform a major rollback](/t/11751) |
+-->

@@ -2,7 +2,7 @@
 
 This guide will show how to set up [Pushover](https://pushover.net/) to receive alert notifications from the COS Alert Manager with [Awesome Alert Rules](https://samber.github.io/awesome-prometheus-alerts/).
 
-Charmed MySQL K8s ships a pre-configured and pre-enabled [list of Awesome Alert Rules].
+Charmed MySQL K8s ships a pre-configured and pre-enabled [list of Awesome Alert Rules]. 
 
 <details><summary>Screenshot of alert rules in the Grafana web interface</summary>
 
@@ -74,4 +74,4 @@ Do you have questions? [Contact us]!
 [Contact us]: /t/11868
 [Charmed MySQL K8s operator]: /t/11869
 [COS Monitoring]: /t/9981
-[list of Awesome Alert Rules]: https://github.com/canonical/mysql-k8s-operator/tree/main/src/prometheus_alert_rules
+[list of Awesome Alert Rules]: /t/15838

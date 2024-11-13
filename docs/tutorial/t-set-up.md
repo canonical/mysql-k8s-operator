@@ -55,7 +55,7 @@ You can now view the model you created above by entering the command `juju statu
 
 ```none
 Model    Controller  Cloud/Region         Version  SLA          Timestamp
-tutorial overlord    microk8s/localhost   3.1.6    unsupported  23:20:53+01:00
+tutorial overlord    microk8s/localhost   3.5.2    unsupported  23:20:53+01:00
 
 Model "admin/tutorial" is empty.
 ```

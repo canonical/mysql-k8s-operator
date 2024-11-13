@@ -35,7 +35,7 @@ You can now watch the scaling process in live using: `juju status --watch 1s`. I
 You’ll know that all three nodes are in sync when `juju status` reports `Workload=active` and `Agent=idle`:
 ```
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:48:57+01:00
+tutorial  overlord    microk8s/localhost  3.5.2   unsupported  22:48:57+01:00
 
 App        Version    Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
 mysql-k8s  8.0.31     active      3  mysql-k8s  8.0/stable  36   10.152.183.234  no       
@@ -63,7 +63,7 @@ juju scale-application mysql-k8s 2
 You’ll know that the replica was successfully removed when `juju status --watch 1s` reports:
 ```
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:48:57+01:00
+tutorial  overlord    microk8s/localhost  3.5.2   unsupported  22:48:57+01:00
 
 App        Version    Status  Scale  Charm      Channel     Rev  Address         Exposed  Message
 mysql-k8s  8.0.31     active      3  mysql-k8s  8.0/stable  36   10.152.183.234  no       

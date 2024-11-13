@@ -37,7 +37,7 @@ Deploying "data-integrator" from charm-hub charm "data-integrator", revision 3 i
 Running `juju status` will show you `data-integrator` in a `blocked` state. This state is expected due to not-yet established relation (integration) between applications.
 ```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:54:31+01:00
+tutorial  overlord    microk8s/localhost  3.5.2   unsupported  22:54:31+01:00
 
 App              Version    Status   Scale  Charm            Channel     Rev  Address         Exposed  Message
 data-integrator             waiting      1  data-integrator  edge        4    10.152.183.180  no       installing agent
@@ -62,7 +62,7 @@ juju relate data-integrator mysql-k8s
 Wait for `juju status --watch 1s` to show all applications/units as `active`:
 ```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
-tutorial  overlord    microk8s/localhost  2.9.38   unsupported  22:55:44+01:00
+tutorial  overlord    microk8s/localhost  3.5.2   unsupported  22:55:44+01:00
 
 App              Version    Status   Scale  Charm            Channel     Rev  Address         Exposed  Message
 data-integrator             waiting      1  data-integrator  edge        4    10.152.183.180  no       installing agent
@@ -157,7 +157,7 @@ juju integrate data-integrator mysql-k8s
 
 Re-integrating generates a new user and password. Obtain these credentials as before, with the `get-credentials` action:
 ```shell
-juju run-action data-integrator/leader get-credentials --wait
+juju run data-integrator/leader get-credentials
 ```
 
 You can connect to the database with this new credentials. From here you will see all of your data is still present in the database.

@@ -4,14 +4,14 @@
 If you are using an earlier version, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#heading--juju-3-0-0---22-oct-2022).
 [/note]
 
-# Minor Upgrade
+# Perform a minor upgrade
 
-> :information_source: **Example**: MySQL 8.0.33 -> MySQL 8.0.34<br/>
-(including simple charm revision bump: from revision 99 to revision 102)
+**Example**: MySQL 8.0.33 -> MySQL 8.0.34<br/>
+(including charm revision bump: e.g. Revision 193 -> Revision 196)
 
-This is part of the [Charmed MySQL K8s Upgrade](/t/11754). Please refer to this page for more information and the overview of the content.
+This is part of the [Upgrade section](/t/11754). Refer to the landing page for more information and an overview of the content.
 
-We strongly recommend to **NOT** perform any other extraordinary operations on Charmed MySQL K8s cluster, while upgrading. As an examples, these may be (but not limited to) the following:
+We strongly recommend to **NOT** perform any other extraordinary operations on a Charmed MySQL K8s cluster, while upgrading. These may be (but not limited to) the following:
 
 1. Adding or removing units
 2. Creating or destroying new relations
@@ -20,26 +20,33 @@ We strongly recommend to **NOT** perform any other extraordinary operations on C
 
 The concurrency with other operations is not supported, and it can lead the cluster into inconsistent states.
 
-> **:warning: NOTE:** Make sure to have a [backup](/t/9653) of your data when running any type of upgrades.
+[note type=caution]
+Make sure to have a backup of your data when running any type of upgrades!
+See: [How to create a backup](/t/9653)
+[/note]
 
-> **:information_source: TIP:** It’s recommended to deploy your application in conjunction with the [Charmed MySQL Router K8s](https://charmhub.io/mysql-router-k8s). This will ensure minimal service disruption, if any.
+It is recommended to deploy your application in conjunction with [Charmed MySQL Router K8s](https://charmhub.io/mysql-router-k8s). This will ensure minimal service disruption, if any.
 
-## Minor upgrade steps
+## Summary of the upgrade steps
 
-1. **Collect** all necessary pre-upgrade information. It will be necessary for the rollback (if requested). Do NOT skip this step, it is better safe the sorry!
-2. (optional) **Scale-up**. The new unit will be the first one to be updated, and it will simplify the rollback procedure a lot in case of the upgrade failure.
-3. **Prepare** "Charmed MySQL" Juju application for the in-place upgrade. See the step description below for all technical details executed by charm here.
-4. **Upgrade** (phase 1). Once started, only one unit in a cluster will be upgraded. In case of failure, the rollback is simple: remove newly added pod (in step 2).
-5. **Resume** upgrade (phase 2). If the new pod is OK after the refresh, the upgrade can be resumed for all other units in the cluster. All units in a cluster will be executed sequentially: from biggest ordinal to the lowest one.
-6. (optional) Consider to [**Rollback**](/t/11749) in case of disaster. Please inform and include us in your case scenario troubleshooting to trace the source of the issue and prevent it in the future. [Contact us](https://chat.charmhub.io/charmhub/channels/data-platform)!
-7. (optional) **Scale-back**. Remove no longer necessary K8s pod created in step 2 (if any).
-8. Post-upgrade **Check**. Make sure all units are in the proper state and the cluster is healthy.
+1. [**Collect**](#step-1-collect) all necessary pre-upgrade information. It will be necessary for the rollback (if requested). Do not skip this step!
+2. [**Scale-up** (optional)](#step-2-scale-up-optional). The new unit will be the first one to be updated, and it will simplify the rollback procedure a lot in case of the upgrade failure.
+3. [**Prepare**](#step-3-prepare) the Charmed MySQL K8s application for the in-place upgrade.
+4. [**Upgrade**](#step-4-upgrade). Once started, only one unit in a cluster will be upgraded. In case of failure, the rollback is simple: remove newly added pod (via [step 2](#step-2-scale-up-optional)).
+5. [**Resume** upgrade](#step-5-resume). If the new pod is OK after the refresh, the upgrade can be resumed for all other units in the cluster. All units in a cluster will be executed sequentially from the largest ordinal number to the lowest.
+6. Consider a [**rollback**](#step-4-rollback-optional) in case of disaster. Please inform and include us in your case scenario troubleshooting to trace the source of the issue and prevent it in the future. [Contact us](https://chat.charmhub.io/charmhub/channels/data-platform)!
+7. [**Scale-back** (optional)](#step-7-scale-back). Remove no longer necessary K8s pod created in step 2 (if any).
+8. [Post-upgrade **check**](#step-8-check). Make sure all units are in a healthy state.
 
 ## Step 1: Collect
 
-> **:information_source: NOTE:** The step is only valid when deploying from charmhub. If the [local charm](https://juju.is/docs/sdk/deploy-a-charm) deployed (revision is small, e.g. 0-10), make sure the proper/current local revision of the `.charm` file is available BEFORE going further. You might need it for rollback.
+[note]
+This step is only valid when deploying from [charmhub](https://charmhub.io/). 
 
-The first step is to record the revision of the running application, as a safety measure for a rollback action. To accomplish this, simply run the `juju status` command and look for the deployed Charmed MySQL revision in the command output, e.g.:
+If a [local charm](https://juju.is/docs/sdk/deploy-a-charm) is deployed (revision is small, e.g. 0-10), make sure the proper/current local revision of the `.charm` file is available BEFORE going further. You might need it for a rollback.
+[/note]
+
+The first step is to record the revision of the running application as a safety measure for a rollback action. To accomplish this, run the `juju status` command and look for the deployed Charmed MySQL K8s revision in the command output, e.g:
 
 ```shell
 Model      Controller  Cloud/Region        Version  SLA          Timestamp
@@ -54,19 +61,20 @@ mysql-k8s/1   active    idle   10.1.148.138
 mysql-k8s/2   active    idle   10.1.148.143
 ```
 
-For this example, the current revision is `88` . Store it safely to use in case of rollback!
+For this example, the current revision is `88`. Store it safely to use in case of rollback!
 
 ## Step 2: Scale-up (optional)
 
 Optionally, it is recommended to scale the application up by one unit before starting the upgrade process.
 
-The new unit will be the first one to be updated, and it will assert that the upgrade is possible. In case of failure, having the extra unit will ease the rollback procedure, without disrupting service. More on the [Minor rollback](/t/11753) tutorial.
+The new unit will be the first one to be updated, and it will assert that the upgrade is possible. In case of failure, having the extra unit will ease a future rollback procedure without disrupting service. 
 
 ```shell
-juju scale-application mysql-k8s <current_units_count+1>
+juju scale-application mysql-k8s <total number of units desired>
 ```
+> To scale up by 1 unit, `<total number of units desired>` would be the current number of units + 1 
 
-Wait for the new unit up and ready.
+Wait for the new unit to be ready.
 
 ## Step 3: Prepare
 
@@ -91,20 +99,20 @@ The action will configure the charm to minimize the amount of primary switchover
 
 ## Step 4: Upgrade
 
-Use the [`juju refresh`](https://juju.is/docs/juju/juju-refresh) command to trigger the charm upgrade process. If using juju version 3 or higher, it is necessary to add the `--trust` option.
+Use the [`juju refresh`](https://juju.is/docs/juju/juju-refresh) command to trigger the charm upgrade process.
 
+Example with channel selection
 ```shell
-# example with channel selection and juju 2.9.x
-juju refresh mysql-k8s --channel 8.0/edge
-
-# example with channel selection and juju 3.x
 juju refresh mysql-k8s --channel 8.0/edge --trust
 
-# example with specific revision selection (do NOT miss OCI resource!)
-juju refresh mysql-k8s --revision=89 --resource mysql-image=...
+Example with specific revision selection (do not forget the OCI resource)
+```shell
+juju refresh mysql-k8s --revision=89 --resource mysql-image=...  --trust
 ```
 
-> **:information_source: IMPORTANT:** The upgrade will execute only on the highest ordinal unit, for the running example `mysql-k8s/2`, the `juju status` will look like*:
+The upgrade will execute only on the highest ordinal unit.
+
+For the running example `mysql-k8s/2`, `juju status` would look similar to the output below:
 
 ```shell
 Model      Controller  Cloud/Region        Version  SLA          Timestamp
@@ -120,19 +128,25 @@ mysql-k8s/2   active       idle       10.1.148.143         other units upgrading
 mysql-k8s/3   maintenance  executing  10.1.148.145         upgrading unit
 ```
 
-> **:information_source: Note:** It is expected to have some status changes during the process: waiting, maintenance, active. Do NOT trigger `rollback` procedure during the running `upgrade` procedure. Make sure `upgrade` has failed/stopped and cannot be fixed/continued before triggering `rollback`!
+**Do NOT trigger `rollback` procedure during the running `upgrade` procedure.**
+It is expected to have some status changes during the process: `waiting`, `maintenance`, `active`. 
 
-> **:information_source: Note:** The unit should recover shortly after, but the time can vary depending on the amount of data written to the cluster while the unit was not part of the cluster. Please be patient on the huge installations.
+Make sure `upgrade` has failed/stopped and cannot be fixed/continued before triggering `rollback`!
+
+**Please be patient during huge installations.**
+Each unit should recover shortly after the upgrade, but time can vary depending on the amount of data written to the cluster while the unit was not part of it. 
 
 ## Step 5: Resume
 
-After the unit is upgraded, the charm will set the unit upgrade state as completed. If deemed necessary the user can further assert the success of the upgrade. Being the unit healthy within the cluster, the next step is to resume the upgrade process, by running:
+After the unit is upgraded, the charm will set the unit upgrade state as completed. 
+
+If the unit is healthy within the cluster, the next step is to resume the upgrade process by running:
 
 ```shell
 juju run mysql-k8s/leader resume-upgrade
 ```
 
-The `resume-upgrade` will rollout the upgrade for the following unit, always from highest from lowest, and for each successful upgraded unit, the process will rollout the next automatically.
+`resume-upgrade` will rollout the upgrade for the following unit, always from highest ordinal number to lowest, and for each successful upgraded unit, the process will rollout the next automatically.
 
 ```shell
 Model      Controller  Cloud/Region        Version  SLA          Timestamp
@@ -152,23 +166,28 @@ mysql-k8s/3   active       idle       10.1.148.145
 
 The step must be skipped if the upgrade went well! 
 
-Although the underlying MySQL Cluster continue to work, it’s important to rollback the charm to previous revision so an update can be later attempted after a further inspection of the failure. Please switch to the dedicated [minor rollback](/t/11753) tutorial if necessary.
+If there was an issue with the upgrade, even if the underlying MySQL cluster continues to work, it’s important to roll back the charm to the previous revision. That way, the update can be attempted again after a further inspection of the failure. 
+
+> See: [How to perform a minor rollback](/t/11753)
 
 ## Step 7: Scale-back
 
 Case the application scale was changed for the upgrade procedure, it is now safe to scale it back to the desired unit count:
 
 ```shell
-juju scale-application mysql-k8s <unit_count>
+juju scale-application mysql-k8s <total number of units desired>
 ```
+> To scale down by 1 unit, `<total number of units desired>` would be the current number of units - 1 
 
-An example on the following video:
+Example:
 
 [![asciicast](https://asciinema.org/a/7ZMAsPWU3wv7ynZI1JvgRFG31.png)](https://asciinema.org/a/7ZMAsPWU3wv7ynZI1JvgRFG31)
 
 ## Step 8: Check
 
-The future [improvement is planned](https://warthogs.atlassian.net/browse/DPE-2620) to check the state on pod/cluster on a low level. At the moment check `juju status` to make sure the cluster [state](/t/11866) is OK.
+Future improvements are [planned](https://warthogs.atlassian.net/browse/DPE-2620) to check the state of the pod/cluster on a low level. 
+
+For now, use `juju status` to make sure the cluster [state](/t/11866) is OK.
 
 <!---
 **More TODOs:**
