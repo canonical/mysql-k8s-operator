@@ -54,10 +54,13 @@ unit-mysql-k8s-0:
 The `status: completed` above means the password has been successfully updated. To be sure, call `get-password` once again to check that the root password is different from the previous password.
 
 ## Set the root password
-You can change the root password to a specific password by entering:
+You can change the root password to a specific password by running `set-password`:
 ```shell
-juju run-action mysql-k8s/leader set-password password=my-password --wait && \
-juju run-action mysql-k8s/leader get-password --wait
+juju run mysql-k8s/leader set-password password=my-password
+```
+Confirm with `get-password`:
+```shell
+juju run mysql-k8s/leader get-password
 ```
 Example output:
 ```yaml

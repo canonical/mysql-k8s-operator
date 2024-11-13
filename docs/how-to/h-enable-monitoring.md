@@ -1,26 +1,39 @@
-# Enable monitoring
-> **:information_source: Hint**: Use [Juju 3](/t/5064). Otherwise replace `juju run ...` with `juju run-action --wait ...` and `juju integrate` with `juju relate` for Juju 2.9.
+# How to enable monitoring (COS)
 
-Enable monitoring requires that you:
+[note]
+**Note**: All commands are written for `juju >= v.3.0`
+
+For more information, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#heading--juju-3-0-0---22-oct-2022).
+[/note]
+
+## Prerequisites
 * [Have a Charmed MySQL K8s deployed](/t/9677)
 * [Deploy `cos-lite` bundle in a Kubernetes environment](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
 
-Switch to COS K8s environment and offer COS interfaces to be cross-model related with Charmed MySQL K8s model:
-```shell
-# Switch to Kubernetes controller, for the cos model.
-juju switch <k8s_cos_controller>:<cos_model_name>
+## Offer interfaces via the COS controller
+Switch to COS K8s environment and offer COS interfaces to be cross-model related with Charmed MySQL K8s model.
 
+To switch to the Kubernetes controller, for the cos model, run
+```shell
+juju switch <k8s_cos_controller>:<cos_model_name>
+```
+To offer the COS interfaces, run
+```shell
 juju offer grafana:grafana-dashboard
 juju offer loki:logging
 juju offer prometheus:receive-remote-write
 ```
 
-Switch to Charmed MySQL K8s model, find offers and consume them:
-```shell
-# We are on the Kubernetes controller, for the cos model. Switch to mysql model
-juju switch <k8s_db_controller>:<mysql_model_name>
+## Consume offers via the MySQL model
+Next, we will switch to Charmed MySQL K8s model, find offers and consume them.
 
-juju find-offers <k8s_cos_controller>: # Do not miss ':' here!
+We are on the Kubernetes controller for the COS model. To switch to the MySQL model, run
+```shell
+juju switch <k8s_db_controller>:<mysql_model_name>
+```
+To find offers, run the following command (make sure not to miss the ":" at the end!):
+```shell
+juju find-offers <k8s_cos_controller>:
 ```
 
 A similar output should appear, if `k8s` is the k8s controller name and `cos` the model where `cos-lite` has been deployed:
@@ -39,14 +52,20 @@ juju consume k8s:admin/cos.loki
 juju consume k8s:admin/cos.prometheus
 ```
 
-Now, deploy '[grafana-agent-k8s](https://charmhub.io/grafana-agent-k8s)' and integrate (relate) it with Charmed MySQL K8s, later integrate (relate) `grafana-agent-k8s` with consumed COS offers:
+## Deploy and integrate Grafana
+First, deploy [grafana-agent-k8s](https://charmhub.io/grafana-agent-k8s):
 ```shell
 juju deploy grafana-agent-k8s --trust
-
+```
+Then, integrate (relate) it with Charmed MySQL K8s:
+```shell
 juju relate grafana-agent-k8s grafana
 juju relate grafana-agent-k8s loki
 juju relate grafana-agent-k8s prometheus
+```
 
+Finally, integrate (relate) `grafana-agent-k8s` with consumed COS offers:
+```shell
 juju relate grafana-agent-k8s mysql-k8s:grafana-dashboard
 juju relate grafana-agent-k8s mysql-k8s:logging
 juju relate grafana-agent-k8s mysql-k8s:metrics-endpoint
@@ -54,6 +73,7 @@ juju relate grafana-agent-k8s mysql-k8s:metrics-endpoint
 
 After this is complete, Grafana will show the new dashboards: `MySQL Exporter` and allows access for Charmed MySQL logs on Loki.
 
+### Sample outputs
 The example of `juju status` on Charmed MySQL K8s model:
 ```shell
 Model  Controller   Cloud/Region        Version  SLA          Timestamp
@@ -98,7 +118,8 @@ loki        loki         loki-k8s        60   1/1        logging               l
 prometheus  prometheus   prometheus-k8s  103  1/1        receive-remote-write  prometheus_scrape        requirer
 ```
 
-To connect Grafana WEB interface, follow the COS section "[Browse dashboards](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)":
+### Connect Grafana web interface
+To connect Grafana web interface, follow the COS section "[Browse dashboards](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)":
 ```shell
 juju run grafana/leader get-admin-password --model <k8s_controller>:<cos_model_name>
 ```

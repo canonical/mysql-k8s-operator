@@ -1,6 +1,14 @@
-# DB data migration using 'mysqldump'
+[note]
+**Note**: All commands are written for `juju >= v.3.0`
 
-> :information_source: **NOTE**: This document describes DB **data** migration only!<br/>Use [separate manual](/t/11885) to migrate charm on new juju interfaces, etc.
+For more information, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#heading--juju-3-0-0---22-oct-2022).
+[/note]
+
+# Migrate database data via `mysqldump`
+
+This document describes database **data** migration only!
+
+> For information about integrating charms via juju interfaces, see [How to integrate a database with my charm](/t/11885).
 
 The list of MariaDB/MySQL **legacy VM charms**:
 
@@ -21,7 +29,7 @@ The minor difference in commands necessary for each of the legacy charm, but the
 
 Before the data migration check all [limitations of the modern Charmed MySQL K8s](/t/11421#mysql-gr-limits) charm!<br/>Please check [your application compatibility](/t/11236) with Charmed MySQL K8s before migrating production data from legacy charm!
 
-> :warning: **Tip**: Always test migration in LAB before performing it in Production!
+> :warning: Always perform the migration in a test environment before performing it in production!
 
 ## Do you need to migrate?
 
@@ -32,15 +40,24 @@ A database migration is only required if the output of the following command is 
 DB_CHARM= < mydb | charmed-osm-mariadb-k8s >
 juju show-application ${DB_CHARM} | yq '.[] | .charm'
 ```
-> :warning: **Tip**: No migration necessary if the output above is `mysql-k8s`! Still, this manual can be used to copy data between different installations of the same (modern) charm `mysql`, however the [backup/restore](/t/9653) is recommended for migrations between modern charms.
+[note type=caution]
+No migration is necessary if the output above is `mysql-k8s`! 
+
+Still, this manual can be used to copy data between different installations of the same (modern) charm `mysql-k8s`. The [backup/restore method](/t/9653) is recommended for migrations between modern charms.
+[/note]
 
 ## Prerequisites
 
 - Client machine with access to deployed legacy charm
-- Juju version 2.9  (check the [Juju tech details](/t/11984) for the different Juju versions)
+- Juju version 2.9+  (check the [Juju tech details](/t/11984) for the different Juju versions)
 - Enough storage in the cluster to support backup/restore of the databases.
 - `mysql-client` on client machine (install by running `sudo apt install mysql-client`).
-> :warning: **WARNING**:  the most legacy DB charms support old Ubuntu series only, while Juju 3.x does [NOT support](https://discourse.charmhub.io/t/roadmap-releases/5064#heading--juju-3-0-0---22-oct-2022) Ubuntu `bionic`. The migration to the new charm recommended in Juju 2.9.x!
+
+[note type=caution]
+Most legacy database charms support old Ubuntu series only, while Juju 3.x does [NOT support](https://discourse.charmhub.io/t/roadmap-releases/5064#heading--juju-3-0-0---22-oct-2022) Ubuntu Bionic.
+
+It is recommended to use the latest stable revision of the charm on Ubuntu Jammy and Juju 3.x
+[/note]
 
 ## Obtain existing database credentials
 
@@ -112,14 +129,14 @@ mysql \
   < "${OLD_DB_DUMP}"
 ```
 
-## Relate to modern charm 
+## Integrate with modern charm
 
 ```shell
-# relate your application and new MySQL database charm (using modern `database` endpoint)
-juju relate <your_application> mysql-k8s:database
+# integrate your application and new MySQL database charm (using modern `database` endpoint)
+juju integrate <your_application> mysql-k8s:database
 
 # IF `database` endpoint (mysql_client interface) is not yes supported, use legacy `mysql` interface: 
-juju relate <your_application> mysql-k8s:mysql
+juju integrate <your_application> mysql-k8s:mysql
 ```
 
 ## Verify DB migration
@@ -192,5 +209,6 @@ juju remove-application --destroy-storage < mydb | charmed-osm-mariadb-k8s >
 
 ## Links
 
-DB data migration is also possible using [mydumper](/t/12006).
+Database data migration is also possible using [`mydumper`](/t/12006).
+
 > :tipping_hand_man: This manual based on [Kubeflow DB migration guide](https://github.com/canonical/bundle-kubeflow/blob/main/docs/db-migration-guide.md).

@@ -1,4 +1,10 @@
-> **:information_source: Hint**: Use [Juju 3](/t/5064). Otherwise replace `juju run ...` with `juju run-action --wait ...` and `juju integrate` with `juju relate` for Juju 2.9.
+[note]
+**Note**: All commands are written for `juju >= v.3.0`
+
+If you are using an earlier version, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#heading--juju-3-0-0---22-oct-2022).
+[/note]
+
+# Configure S3 for AWS
 
 Charmed MySQL K8s backup can be stored on any S3 compatible storage. The S3 access and configurations are managed with the [s3-integrator charm](https://charmhub.io/s3-integrator). Deploy and configure the s3-integrator charm for **[AWS S3](https://aws.amazon.com/s3/)** (click [here](/t/charmed-mysql-how-to-configure-s3-for-radosgw/10319) to backup on Ceph via RadosGW):
 ```shell
