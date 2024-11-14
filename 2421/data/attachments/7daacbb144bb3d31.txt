@@ -1,0 +1,76 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:44:16Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.100  no       
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.29   no       
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.150  no       
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.168  no       
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.247  no       
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.205  no       
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.41   no       
+mysql    8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                        0  10.152.183.196  no       
+router0  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.125  no       
+router1  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.101  no       
+router2  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.173  no       
+router3  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.37   no       
+router4  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.229  no       
+router5  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.40   no       
+router6  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.167  no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.205.10         
+app1/0*     active    idle   10.1.205.11         
+app2/0*     active    idle   10.1.205.13         
+app3/0*     active    idle   10.1.205.15         
+app4/0*     active    idle   10.1.205.17         
+app5/0*     active    idle   10.1.205.19         
+app6/0*     active    idle   10.1.205.21         
+mysql/0*    active    idle   10.1.205.9          Primary
+router0/0*  active    idle   10.1.205.12         
+router1/0*  active    idle   10.1.205.14         
+router2/0*  active    idle   10.1.205.16         
+router3/0*  active    idle   10.1.205.18         
+router4/0*  active    idle   10.1.205.20         
+router5/0*  active    idle   10.1.205.22         
+router6/0*  active    idle   10.1.205.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-app4-0: 01:34:51 ERROR unit.app4/0.juju-log application-peers:19: Unable to write to the database
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-app4-0/charm/venv/mysql/connector/connection_cext.py", line 291, in _open_connection
+    self._cmysql.connect(**cnx_kwargs)
+_mysql_connector.MySQLInterfaceError: Can't connect to MySQL server on 'router4.test.svc.cluster.local:6446' (110)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-app4-0/charm/./src/charm.py", line 274, in _write_random_value
+    with MySQLConnector(self._database_config) as cursor:
+  File "/var/lib/juju/agents/unit-app4-0/charm/src/connector.py", line 42, in __enter__
+    self.connection = connector.connect(**self.config)
+  File "/var/lib/juju/agents/unit-app4-0/charm/venv/mysql/connector/pooling.py", line 293, in connect
+    return CMySQLConnection(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-app4-0/charm/venv/mysql/connector/connection_cext.py", line 120, in __init__
+    self.connect(**kwargs)
+  File "/var/lib/juju/agents/unit-app4-0/charm/venv/mysql/connector/abstracts.py", line 1181, in connect
+    self._open_connection()
+  File "/var/lib/juju/agents/unit-app4-0/charm/venv/mysql/connector/connection_cext.py", line 296, in _open_connection
+    raise get_mysql_exception(
+mysql.connector.errors.DatabaseError: 2003 (HY000): Can't connect to MySQL server on 'router4.test.svc.cluster.local:6446' (110)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-app4-0/charm/./src/charm.py", line 272, in _write_random_value
+    for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(5)):
+  File "/var/lib/juju/agents/unit-app4-0/charm/venv/tenacity/__init__.py", line 384, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-app4-0/charm/venv/tenacity/__init__.py", line 363, in iter
+    raise retry_exc from fut.exception()
+tenacity.RetryError: RetryError[<Future at 0x7f0097d8eb30 state=finished raised DatabaseError>]
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
