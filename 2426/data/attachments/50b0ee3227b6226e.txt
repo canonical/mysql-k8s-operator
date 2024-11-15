@@ -1,0 +1,96 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:68 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m juju.model:model.py:2098 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: Initialising mysqld
+  mysql-k8s/1 [executing] maintenance: Initialising mysqld
+  mysql-k8s/2 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/2 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to join the cluster
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:71 Deploying mysql-test-app
+[32mINFO    [0m juju.model:model.py:2098 Deploying ch:amd64/jammy/mysql-test-app-63
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:74 Relating mysql-k8s with mysql-test-app
+[33mWARNING [0m juju.model:model.py:1564 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.conftest:conftest.py:20 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_node_drain:test_node_drain.py:38 Waiting until 3 mysql instances are online
+[32mINFO    [0m integration.high_availability.test_node_drain:test_node_drain.py:44 Ensuring all units have continuous writes incrementing
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=888 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=891 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=893 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_node_drain:test_node_drain.py:50 Evicting primary node mysql-k8s/2 and deleting its PVCs
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.129:16443/api/v1/namespaces/test/pods/mysql-k8s-2 "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.129:16443/api/v1/namespaces/test/persistentvolumeclaims/mysql-k8s-database-443ce54c-mysql-k8s-2 "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.129:16443/api/v1/persistentvolumes "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:642 Evicting pod mysql-k8s-2
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: POST https://10.1.0.129:16443/api/v1/namespaces/test/pods/mysql-k8s-2/eviction "HTTP/1.1 201 Created"
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:669 Deleting PVC mysql-k8s-database-443ce54c-mysql-k8s-2
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: DELETE https://10.1.0.129:16443/api/v1/namespaces/test/persistentvolumeclaims/mysql-k8s-database-443ce54c-mysql-k8s-2?gracePeriodSeconds=0 "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:653 Deleting PV mysql-k8s-database-443ce54c-mysql-k8s-2
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: DELETE https://10.1.0.129:16443/api/v1/persistentvolumes/pvc-355c3aa6-118d-450b-ba32-18cde4f78f27?gracePeriodSeconds=0 "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_node_drain:test_node_drain.py:59 Waiting for evicted primary pod to be rescheduled
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [executing] maintenance: 
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m integration.high_availability.test_node_drain:test_node_drain.py:68 Waiting until 3 mysql instances are online
+[32mINFO    [0m integration.high_availability.test_node_drain:test_node_drain.py:73 Ensuring all units have continuous writes incrementing
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=3477 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=3480 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=3483 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:33:56Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.37-0ubuntu0.22.04.3  active      3  mysql-k8s                      0  10.152.183.245  no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   63  10.152.183.39   no       Last written value=1990
+
+Unit               Workload  Agent  Address       Ports  Message
+mysql-k8s/0        active    idle   10.1.135.203         
+mysql-k8s/1        active    idle   10.1.135.205         
+mysql-k8s/2*       active    idle   10.1.135.208         
+mysql-test-app/0*  active    idle   10.1.135.206         Last written value=1990
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:32:47 ERROR unit.mysql-k8s/2.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
