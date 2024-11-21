@@ -1,0 +1,53 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:44:55Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.115  no       
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.240  no       
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.143  no       
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.101  no       
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.250  no       Last written value=209
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.96   no       Last written value=111
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.232  no       Last written value=104
+mysql    8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                        0  10.152.183.30   no       
+router0  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.58   no       
+router1  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.147  no       
+router2  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.200  no       
+router3  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.133  no       
+router4  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.47   no       
+router5  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.52   no       
+router6  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.221  no       
+
+Unit        Workload  Agent  Address    Ports  Message
+app0/0*     active    idle   10.1.7.10         
+app1/0*     active    idle   10.1.7.11         
+app2/0*     active    idle   10.1.7.13         
+app3/0*     active    idle   10.1.7.15         
+app4/0*     active    idle   10.1.7.17         Last written value=209
+app5/0*     active    idle   10.1.7.18         Last written value=111
+app6/0*     active    idle   10.1.7.20         Last written value=104
+mysql/0*    active    idle   10.1.7.9          Primary
+router0/0*  active    idle   10.1.7.12         
+router1/0*  active    idle   10.1.7.14         
+router2/0*  active    idle   10.1.7.16         
+router3/0*  active    idle   10.1.7.19         
+router4/0*  active    idle   10.1.7.21         
+router5/0*  active    idle   10.1.7.22         
+router6/0*  active    idle   10.1.7.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-2: 01:43:42 ERROR unit.mysql/2.juju-log database-peers:0: Failed to get cluster status for cluster-1885f81d04af423cfcbcf459000fe2b3
+unit-mysql-2: 01:43:42 ERROR unit.mysql/2.juju-log database-peers:0: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/mysql/v0/mysql.py", line 1954, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
