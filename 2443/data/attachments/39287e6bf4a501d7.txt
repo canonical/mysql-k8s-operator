@@ -1,0 +1,126 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:45:08Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.188  no       
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.198  no       
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.238  no       Last written value=106
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.83   no       Last written value=256
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.251  no       Last written value=231
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.67   no       Last written value=222
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.114  no       Last written value=191
+mysql    8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                        0  10.152.183.234  no       
+router0  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.104  no       
+router1  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.31   no       
+router2  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.36   no       
+router3  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.110  no       
+router4  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.69   no       
+router5  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.113  no       
+router6  8.0.37-0ubuntu0.22.04.3  active      1  mysql-router-k8s  8.0/edge     167  10.152.183.225  no       
+
+Unit        Workload  Agent  Address       Ports  Message
+app0/0*     active    idle   10.1.109.202         
+app1/0*     active    idle   10.1.109.203         
+app2/0*     active    idle   10.1.109.205         Last written value=106
+app3/0*     active    idle   10.1.109.207         Last written value=256
+app4/0*     active    idle   10.1.109.209         Last written value=231
+app5/0*     active    idle   10.1.109.210         Last written value=222
+app6/0*     active    idle   10.1.109.213         Last written value=191
+mysql/0*    active    idle   10.1.109.201         Primary
+router0/0*  active    idle   10.1.109.204         
+router1/0*  active    idle   10.1.109.206         
+router2/0*  active    idle   10.1.109.208         
+router3/0*  active    idle   10.1.109.211         
+router4/0*  active    idle   10.1.109.212         
+router5/0*  active    idle   10.1.109.214         
+router6/0*  active    idle   10.1.109.215         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router0-1: 01:36:42 ERROR unit.router0/1.juju-log backend-database:31: Unable to connect to MySQL Router
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router0-1/charm/./src/kubernetes_charm.py", line 96, in wait_until_mysql_router_ready
+    for attempt in tenacity.Retrying(
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/tenacity/__init__.py", line 443, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/tenacity/__init__.py", line 376, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/tenacity/__init__.py", line 418, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/tenacity/__init__.py", line 185, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-router0-1/charm/./src/kubernetes_charm.py", line 109, in wait_until_mysql_router_ready
+    assert s.connect_ex(("localhost", port)) == 0
+AssertionError
+unit-router0-1: 01:36:42 ERROR unit.router0/1.juju-log backend-database:31: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router0-1/charm/./src/kubernetes_charm.py", line 312, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router0-1/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 3127, in _on_relation_changed_event
+    getattr(self.on, "database_created").emit(
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router0-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-1/charm/src/abstract_charm.py", line 337, in reconcile
+    workload_.reconcile(
+  File "/var/lib/juju/agents/unit-router0-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-1/charm/src/workload.py", line 399, in reconcile
+    self._enable_router(event=event, tls=tls, unit_name=unit_name)
+  File "/var/lib/juju/agents/unit-router0-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-1/charm/src/workload.py", line 341, in _enable_router
+    self._charm.wait_until_mysql_router_ready(event=event)
+  File "/var/lib/juju/agents/unit-router0-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-1/charm/./src/kubernetes_charm.py", line 96, in wait_until_mysql_router_ready
+    for attempt in tenacity.Retrying(
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/tenacity/__init__.py", line 443, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/tenacity/__init__.py", line 376, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/tenacity/__init__.py", line 418, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-router0-1/charm/venv/tenacity/__init__.py", line 185, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-router0-1/charm/./src/kubernetes_charm.py", line 109, in wait_until_mysql_router_ready
+    assert s.connect_ex(("localhost", port)) == 0
+AssertionError
+unit-router0-1: 01:36:42 ERROR juju.worker.uniter.operation hook "backend-database-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-2: 01:43:30 ERROR unit.mysql/2.juju-log database-peers:0: Failed to get cluster status for cluster-2275b3352fd4188d965f658acc361efc
+unit-mysql-2: 01:43:30 ERROR unit.mysql/2.juju-log database-peers:0: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/mysql/v0/mysql.py", line 1954, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
