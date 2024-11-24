@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 75
+LIBPATCH = 76
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -417,6 +417,10 @@ class MySQLRejoinClusterError(Error):
 
 class MySQLPluginInstallError(Error):
     """Exception raised when there is an issue installing a MySQL plugin."""
+
+
+class MySQLGetGroupReplicationIDError(Error):
+    """Exception raised when there is an issue acquiring current current group replication id."""
 
 
 @dataclasses.dataclass
@@ -2474,9 +2478,22 @@ class MySQLBase(ABC):
             "    session.run_sql('STOP GROUP_REPLICATION')",
         )
         try:
+            logger.debug("Stopping Group Replication for unit")
             self._run_mysqlsh_script("\n".join(stop_gr_command))
         except MySQLClientError:
-            logger.debug("Failed to stop Group Replication for unit")
+            logger.warning("Failed to stop Group Replication for unit")
+
+    def start_group_replication(self) -> None:
+        """Start Group replication on the instance."""
+        start_gr_command = (
+            f"shell.connect('{self.instance_def(self.server_config_user)}')",
+            "session.run_sql('START GROUP_REPLICATION')",
+        )
+        try:
+            logger.debug("Starting Group Replication for unit")
+            self._run_mysqlsh_script("\n".join(start_gr_command))
+        except MySQLClientError:
+            logger.warning("Failed to start Group Replication for unit")
 
     def reboot_from_complete_outage(self) -> None:
         """Wrapper for reboot_cluster_from_complete_outage command."""
@@ -3097,6 +3114,29 @@ class MySQLBase(ABC):
         for password in self.passwords:
             stripped_input = stripped_input.replace(password, "xxxxxxxxxxxx")
         return stripped_input
+
+    def get_current_group_replication_id(self) -> str:
+        """Get the current group replication id."""
+        logger.debug("Getting current group replication id")
+
+        commands = (
+            f"shell.connect('{self.instance_def(self.server_config_user)}')",
+            'result = session.run_sql("SELECT @@GLOBAL.group_replication_group_name")',
+            'print(f"<ID>{result.fetch_one()[0]}</ID>")',
+        )
+
+        try:
+            output = self._run_mysqlsh_script("\n".join(commands))
+        except MySQLClientError as e:
+            logger.warning("Failed to get current group replication id", exc_info=e)
+            raise MySQLGetGroupReplicationIDError(e.message)
+
+        matches = re.search(r"<ID>(.+)</ID>", output)
+
+        if not matches:
+            raise MySQLGetGroupReplicationIDError("Failed to get current group replication id")
+
+        return matches.group(1)
 
     @abstractmethod
     def is_mysqld_running(self) -> bool:

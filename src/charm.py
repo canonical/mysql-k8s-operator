@@ -871,6 +871,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not primary_address:
             return
 
+        if "s3-block-message" in self.app_peer_data:
+            self.app.status = BlockedStatus(self.app_peer_data["s3-block-message"])
+            return
+
         # Set active status when primary is known
         self.app.status = ActiveStatus()
 

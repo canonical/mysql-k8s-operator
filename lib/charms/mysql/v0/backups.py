@@ -51,7 +51,11 @@ import pathlib
 import typing
 from typing import Dict, List, Optional, Tuple
 
-from charms.data_platform_libs.v0.s3 import S3Requirer
+from charms.data_platform_libs.v0.s3 import (
+    CredentialsChangedEvent,
+    CredentialsGoneEvent,
+    S3Requirer,
+)
 from charms.mysql.v0.mysql import (
     MySQLConfigureInstanceError,
     MySQLCreateClusterError,
@@ -76,6 +80,7 @@ from charms.mysql.v0.mysql import (
     MySQLUnableToGetMemberStateError,
 )
 from charms.mysql.v0.s3_helpers import (
+    ensure_s3_compatible_group_replication_id,
     fetch_and_check_existence_of_s3_path,
     list_backups_in_s3_path,
     upload_content_to_s3,
@@ -102,6 +107,10 @@ LIBAPI = 0
 # to 0 if you are raising the major API version
 LIBPATCH = 12
 
+ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE = "S3 repository claimed by another cluster"
+MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
+    "Move restored cluster to another S3 repository"
+)
 
 if typing.TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -119,6 +128,13 @@ class MySQLBackups(Object):
         self.framework.observe(self.charm.on.create_backup_action, self._on_create_backup)
         self.framework.observe(self.charm.on.list_backups_action, self._on_list_backups)
         self.framework.observe(self.charm.on.restore_action, self._on_restore)
+        self.framework.observe(
+            self.s3_integrator.on.credentials_changed, self._on_s3_credentials_changed
+        )
+        self.framework.observe(self.charm.on.leader_elected, self._on_s3_credentials_changed)
+        self.framework.observe(
+            self.s3_integrator.on.credentials_gone, self._on_s3_credentials_gone
+        )
 
     # ------------------ Helpers ------------------
     @property
@@ -235,18 +251,33 @@ class MySQLBackups(Object):
 
     # ------------------ Create Backup ------------------
 
-    def _on_create_backup(self, event: ActionEvent) -> None:
-        """Handle the create backup action."""
-        logger.info("A backup has been requested on unit")
+    def _pre_create_backup_checks(self, event: ActionEvent) -> bool:
+        """Run some checks before creating the backup.
 
+        Returns: a boolean indicating whether operation should be run.
+        """
         if not self._s3_integrator_relation_exists:
             logger.error("Backup failed: missing relation with S3 integrator charm")
             event.fail("Missing relation with S3 integrator charm")
-            return
+            return False
+
+        if "s3-block-message" in self.charm.app_peer_data:
+            logger.error("Backup failed: S3 relation is blocked for write")
+            event.fail("S3 relation is blocked for write")
+            return False
 
         if not self.charm._mysql.is_mysqld_running():
             logger.error(f"Backup failed: process mysqld is not running on {self.charm.unit.name}")
             event.fail("Process mysqld not running")
+            return False
+
+        return True
+
+    def _on_create_backup(self, event: ActionEvent) -> None:
+        """Handle the create backup action."""
+        logger.info("A backup has been requested on unit")
+
+        if not self._pre_create_backup_checks(event):
             return
 
         datetime_backup_requested = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -519,13 +550,18 @@ class MySQLBackups(Object):
         if not success:
             logger.error(f"Restore failed: {error_message}")
             event.fail(error_message)
-
             if recoverable:
                 self._clean_data_dir_and_start_mysqld()
             else:
+                self.charm.app_peer_data.update({
+                    "s3-block-message": MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR,
+                })
                 self.charm.unit.status = BlockedStatus(error_message)
-
             return
+
+        self.charm.app_peer_data.update({
+            "s3-block-message": MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR,
+        })
 
         # Run post-restore operations
         self.charm.unit.status = MaintenanceStatus("Running post-restore operations")
@@ -674,3 +710,41 @@ class MySQLBackups(Object):
             return False, "Failed to rescan the cluster"
 
         return True, ""
+
+    def _on_s3_credentials_changed(self, event: CredentialsChangedEvent) -> None:
+        if not self.charm.unit.is_leader():
+            logger.debug("Early exit on _on_s3_credentials_changed: unit is not a leader")
+            return
+
+        if not self._s3_integrator_relation_exists:
+            logger.debug(
+                "Early exit on _on_s3_credentials_changed: s3 integrator relation does not exist"
+            )
+            return
+
+        logger.info("Retrieving s3 parameters from the s3-integrator relation")
+        s3_parameters, missing_parameters = self._retrieve_s3_parameters()
+        if missing_parameters:
+            logger.error(f"Missing S3 parameters: {missing_parameters}")
+            return
+
+        logger.info("Ensuring compatibility with the provided S3 repository")
+        if ensure_s3_compatible_group_replication_id(
+            self.charm._mysql.get_current_group_replication_id(), s3_parameters
+        ):
+            self.charm.app_peer_data.update({
+                "s3-block-message": "",
+            })
+        else:
+            self.charm.app_peer_data.update({
+                "s3-block-message": ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE,
+            })
+
+    def _on_s3_credentials_gone(self, event: CredentialsGoneEvent) -> None:
+        if not self.charm.unit.is_leader():
+            logger.debug("Early exit on _on_s3_credentials_gone: unit is not a leader")
+            return
+
+        self.charm.app_peer_data.update({
+            "s3-block-message": "",
+        })
