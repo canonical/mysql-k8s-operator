@@ -1009,6 +1009,8 @@ class MySQLBase(ABC):
             "binlog_expire_logs_seconds": f"{binlog_retention_seconds}",
             "loose-audit_log_policy": "LOGINS",
             "loose-audit_log_file": f"{snap_common}/var/log/mysql/audit.log",
+            "gtid_mode": "ON",
+            "enforce_gtid_consistency": "ON",
         }
 
         if audit_log_enabled:
