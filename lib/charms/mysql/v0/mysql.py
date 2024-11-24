@@ -1100,6 +1100,7 @@ class MySQLBase(ABC):
         supported_plugins = {
             "audit_log": ("INSTALL PLUGIN audit_log SONAME", "audit_log.so"),
             "audit_log_filter": ("INSTALL PLUGIN audit_log_filter SONAME", "audit_log_filter.so"),
+            "binlog_utils_udf": ("INSTALL PLUGIN binlog_utils_udf SONAME", "binlog_utils_udf.so"),
         }
 
         try:

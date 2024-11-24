@@ -624,6 +624,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             if self.config.plugin_audit_enabled:
                 # Enable the audit plugin
                 self._mysql.install_plugins(["audit_log", "audit_log_filter"])
+            self._mysql.install_plugins(["binlog_utils_udf"])
 
             # Configure instance as a cluster node
             self._mysql.configure_instance()
