@@ -11,8 +11,8 @@ There are two types of users in MySQL:
 The operator uses the following internal DB users:
 
 * `root` - the [initial/default](https://charmhub.io/mysql/docs/t-manage-passwords) MySQL user. Used for very initial bootstrap only.
-* `clusteradmin` - the user to manage entire MySQL InnoDB ClusterSet.
-* `serverconfig` - the user to manage local MySQL instance.
+* `clusteradmin` - the user to manage replication in the MySQL InnoDB ClusterSet.
+* `serverconfig` - the user that operates MySQL instances.
 * `monitoring` - the user for [COS integration](https://charmhub.io/mysql/docs/h-enable-monitoring).
 * `backups` - the user to [perform/list/restore backups](https://charmhub.io/mysql/docs/h-create-and-list-backups).
 * `mysql_innodb_cluster_#######` - the [internal recovery users](https://dev.mysql.com/doc/mysql-shell/8.0/en/innodb-cluster-user-accounts.html#mysql-innodb-cluster-users-created) which enable connections between the servers in the cluster. Dedicated user created for each Juju unit/InnoDB Cluster member.
@@ -87,16 +87,20 @@ To set a predefined password for the specific user, run:
 <a name="relation-users"></a>
 ## Relation/integration users explanations:
 
-The operator created a dedicated user for every application related/integrated with database. Those users are removed on the juju relation/integration removal request. However, DB data stays in place and can be reused on re-created relations (using new user credentials):
+The operator created a dedicated user for every application related/integrated with database.
+The username is composed by the relation ID and truncated uuid for the model, to ensure there is no
+username clash in cross model relations. Usernames are limited to 32 chars as per [MySQL limit](https://dev.mysql.com/doc/refman/8.0/en/user-names.html).
+Those users are removed on the juju relation/integration removal request. 
+However, DB data stays in place and can be reused on re-created relations (using new user credentials):
 
 ```shell
 mysql> select Host,User,account_locked from mysql.user where User like 'relation%';
-+------+------------+----------------+
-| Host | User       | account_locked |
-+------+------------+----------------+
-| %    | relation-8 | N              |
-| %    | relation-9 | N              |
-+------+------------+----------------+
++------+----------------------------+----------------+
+| Host | User                       | account_locked |
++------+----------------------------+----------------+
+| %    | relation-8_99200344b67b4e9 | N              |
+| %    | relation-9_99200344b67b4e9 | N              |
++------+----------------------------+----------------+
 2 row in set (0.00 sec)
 ```
 
@@ -124,3 +128,10 @@ mysql> select Host,User,account_locked from mysql.user where User like 'mysql_ro
 When an application charm requests a new user through the relation/integration it can specify that the user should have the `admin` role in the `extra-user-roles` field. The `admin` role enables the new user to read and write to all databases (for the `mysql` system database it can only read data) and also to create and delete non-system databases.
 
 **Note**: `extra-user-roles` is supported by modern interface `mysql_client` only and missing for legacy `mysql` interface. Read more about the supported charm interfaces [here](/t/10249).
+
+
+<a name="admin-port"></a>
+### Admin Port User Access
+
+The charm mainly uses the `serverconfig` user for internal operations. For connections with this user, a special admin port is used (port `33062`), which enables the charm to operate MySQL even when users connections are saturated.
+For further information on the administrative connection, refer to [MySQL docs](https://dev.mysql.com/doc/refman/8.0/en/administrative-connection-interface.html) on the topic.

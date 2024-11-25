@@ -35,7 +35,7 @@ TIMEOUT = 15 * 60
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_check_consistency(
-    ops_test: OpsTest, highly_available_cluster, continuous_writes
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
 ) -> None:
     """Test to write to primary, and read the same data back from replicas."""
     mysql_application_name = get_application_name(ops_test, "mysql")
@@ -44,16 +44,18 @@ async def test_check_consistency(
     assert len(ops_test.model.applications[mysql_application_name].units) == 3
 
     database_name, table_name = "test-check-consistency", "data"
-    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
-    await clean_up_database_and_table(ops_test, database_name, table_name)
+    await insert_data_into_mysql_and_validate_replication(
+        ops_test, database_name, table_name, credentials
+    )
+    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)
 
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
 
 @pytest.mark.group(2)
 @pytest.mark.abort_on_fail
 async def test_no_replication_across_clusters(
-    ops_test: OpsTest, highly_available_cluster, continuous_writes
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
 ) -> None:
     """Test to ensure that writes to one cluster do not replicate to another cluster."""
     mysql_application_name = get_application_name(ops_test, "mysql")
@@ -72,13 +74,16 @@ async def test_no_replication_across_clusters(
 
     # insert some data into the first/original mysql cluster
     database_name, table_name = "test-no-replication-across-clusters", "data"
-    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
+    await insert_data_into_mysql_and_validate_replication(
+        ops_test, database_name, table_name, credentials
+    )
 
     # ensure that the inserted data DOES NOT get replicated into the another mysql cluster
     another_mysql_unit = ops_test.model.applications[another_mysql_application_name].units[0]
     another_mysql_primary = await get_primary_unit(
         ops_test, another_mysql_unit, another_mysql_application_name
     )
+    assert another_mysql_primary
     another_server_config_credentials = await get_server_config_credentials(another_mysql_primary)
 
     select_databases_sql = [
@@ -88,7 +93,7 @@ async def test_no_replication_across_clusters(
     for unit in ops_test.model.applications[another_mysql_application_name].units:
         unit_address = await get_unit_address(ops_test, unit.name)
 
-        output = await execute_queries_on_unit(
+        output = execute_queries_on_unit(
             unit_address,
             another_server_config_credentials["username"],
             another_server_config_credentials["password"],
@@ -107,32 +112,35 @@ async def test_no_replication_across_clusters(
     )
 
     # clean up inserted data, and created tables + databases
-    await clean_up_database_and_table(ops_test, database_name, table_name)
+    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)
 
 
 @pytest.mark.group(3)
 @pytest.mark.abort_on_fail
-async def test_scaling_without_data_loss(ops_test: OpsTest, highly_available_cluster) -> None:
+async def test_scaling_without_data_loss(
+    ops_test: OpsTest, highly_available_cluster, credentials
+) -> None:
     """Test to ensure that data is preserved when a unit is scaled up and then down.
 
     Ensures that there are no running continuous writes as the extra data in the
     database makes scaling up slower.
     """
     mysql_application_name = get_application_name(ops_test, "mysql")
+    assert mysql_application_name, "mysql application not found"
 
     # assert that there are 3 units in the mysql cluster
     assert len(ops_test.model.applications[mysql_application_name].units) == 3
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
+    assert primary, "Primary unit not found"
 
     # insert a value before scale up, and ensure that the value exists in all units
     database_name, table_name = "test-preserves-data-on-delete", "data"
     value_before_scale_up = await insert_data_into_mysql_and_validate_replication(
-        ops_test, database_name, table_name
+        ops_test, database_name, table_name, credentials
     )
 
-    server_config_credentials = await get_server_config_credentials(primary)
     select_value_before_scale_up_sql = [
         f"SELECT id FROM `{database_name}`.`{table_name}` WHERE id = '{value_before_scale_up}'",
     ]
@@ -149,17 +157,17 @@ async def test_scaling_without_data_loss(ops_test: OpsTest, highly_available_clu
             for unit in ops_test.model.applications[mysql_application_name].units:
                 unit_address = await get_unit_address(ops_test, unit.name)
 
-                output = await execute_queries_on_unit(
+                output = execute_queries_on_unit(
                     unit_address,
-                    server_config_credentials["username"],
-                    server_config_credentials["password"],
+                    credentials["username"],
+                    credentials["password"],
                     select_value_before_scale_up_sql,
                 )
                 assert output[0] == value_before_scale_up
 
     # insert data after scale up
     value_after_scale_up = await insert_data_into_mysql_and_validate_replication(
-        ops_test, database_name, table_name
+        ops_test, database_name, table_name, credentials
     )
 
     # verify inserted data is present on all units
@@ -177,27 +185,28 @@ async def test_scaling_without_data_loss(ops_test: OpsTest, highly_available_clu
     for unit in ops_test.model.applications[mysql_application_name].units:
         unit_address = await get_unit_address(ops_test, unit.name)
 
-        output = await execute_queries_on_unit(
+        output = execute_queries_on_unit(
             unit_address,
-            server_config_credentials["username"],
-            server_config_credentials["password"],
+            credentials["username"],
+            credentials["password"],
             select_value_after_scale_up_sql,
         )
         assert output[0] == value_after_scale_up
 
     # clean up inserted data, and created tables + databases
-    await clean_up_database_and_table(ops_test, database_name, table_name)
+    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)
 
 
 @pytest.mark.group(4)
 @pytest.mark.abort_on_fail
 async def test_kill_primary_check_reelection(
-    ops_test: OpsTest, highly_available_cluster, continuous_writes
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
 ) -> None:
     """Test to kill the primary under load and ensure re-election of primary."""
     mysql_application_name = get_application_name(ops_test, "mysql")
+    assert mysql_application_name, "mysql application not found"
 
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
@@ -231,8 +240,10 @@ async def test_kill_primary_check_reelection(
             ops_test, 3
         ), "Old primary has not come back online after being killed"
 
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     database_name, table_name = "test-kill-primary-check-reelection", "data"
-    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
-    await clean_up_database_and_table(ops_test, database_name, table_name)
+    await insert_data_into_mysql_and_validate_replication(
+        ops_test, database_name, table_name, credentials
+    )
+    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)

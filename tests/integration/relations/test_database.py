@@ -44,7 +44,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             config=config,
             num_units=3,
             resources=resources,
-            series="jammy",
+            base="ubuntu@22.04",
             trust=True,
         ),
         ops_test.model.deploy(
@@ -52,6 +52,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             application_name=APPLICATION_APP_NAME,
             num_units=2,
             channel="latest/edge",
+            base="ubuntu@22.04",
         ),
     )
 

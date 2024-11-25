@@ -34,7 +34,7 @@ from tenacity.wait import wait_fixed
 from typing_extensions import override
 
 import k8s_helpers
-from constants import MYSQLD_SAFE_SERVICE
+from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE
 
 if TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -203,6 +203,8 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         Run update status for every unit when the upgrade is completed.
         """
+        if not self.charm.unit.get_container(CONTAINER_NAME).can_connect():
+            return
         if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
             self.charm._on_update_status(None)
 
@@ -268,7 +270,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             self._complete_upgrade()
 
     def _recover_multi_unit_cluster(self) -> None:
-        logger.debug("Recovering unit")
+        logger.info("Recovering unit")
         try:
             for attempt in Retrying(
                 stop=stop_after_attempt(RECOVER_ATTEMPTS), wait=wait_fixed(10)
@@ -330,7 +332,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             return
         instance = getfqdn(self.charm.get_unit_hostname(f"{self.charm.app.name}/0"))
         self.charm._mysql.verify_server_upgradable(instance=instance)
-        logger.debug("MySQL server is upgradeable")
+        logger.info("Check MySQL server upgradeability passed")
 
     def _check_server_unsupported_downgrade(self) -> bool:
         """Check error log for unsupported downgrade.

@@ -98,7 +98,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
     logger.info("Deploying s3-integrator")
 
-    await ops_test.model.deploy(S3_INTEGRATOR, channel="stable")
+    await ops_test.model.deploy(S3_INTEGRATOR, channel="stable", base="ubuntu@22.04")
     await ops_test.model.relate(mysql_application_name, S3_INTEGRATOR)
 
     await ops_test.model.wait_for_idle(
@@ -111,7 +111,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_backup(ops_test: OpsTest, cloud_credentials, cloud_configs) -> None:
+async def test_backup(ops_test: OpsTest, cloud_credentials, cloud_configs, credentials) -> None:
     """Test to create a backup and list backups."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
     mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
@@ -127,6 +127,7 @@ async def test_backup(ops_test: OpsTest, cloud_credentials, cloud_configs) -> No
         ops_test,
         DATABASE_NAME,
         TABLE_NAME,
+        credentials,
     )
 
     logger.info("Setting s3 config")
@@ -172,13 +173,14 @@ async def test_backup(ops_test: OpsTest, cloud_credentials, cloud_configs) -> No
         ops_test,
         DATABASE_NAME,
         TABLE_NAME,
+        credentials,
     )
 
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_restore_on_same_cluster(
-    ops_test: OpsTest, cloud_credentials, cloud_configs
+    ops_test: OpsTest, cloud_credentials, cloud_configs, credentials
 ) -> None:
     """Test to restore a backup to the same mysql cluster."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
@@ -187,7 +189,6 @@ async def test_restore_on_same_cluster(
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     assert mysql_unit
     mysql_unit_address = await get_unit_address(ops_test, mysql_unit.name)
-    server_config_credentials = await get_server_config_credentials(mysql_unit)
 
     # set the s3 config and credentials
     logger.info("Syncing credentials")
@@ -216,10 +217,10 @@ async def test_restore_on_same_cluster(
     )
     select_values_sql = [f"SELECT id FROM `{DATABASE_NAME}`.`{TABLE_NAME}`"]
 
-    values = await execute_queries_on_unit(
+    values = execute_queries_on_unit(
         mysql_unit_address,
-        server_config_credentials["username"],
-        server_config_credentials["password"],
+        credentials["username"],
+        credentials["password"],
         select_values_sql,
     )
     assert values == [value_before_backup]
@@ -230,14 +231,15 @@ async def test_restore_on_same_cluster(
         ops_test,
         DATABASE_NAME,
         TABLE_NAME,
+        credentials,
     )
 
     logger.info("Ensuring that pre-backup and post-restore values exist in the database")
 
-    values = await execute_queries_on_unit(
+    values = execute_queries_on_unit(
         mysql_unit_address,
-        server_config_credentials["username"],
-        server_config_credentials["password"],
+        credentials["username"],
+        credentials["password"],
         select_values_sql,
     )
     assert value_before_backup
@@ -250,10 +252,10 @@ async def test_restore_on_same_cluster(
     for unit in ops_test.model.applications[mysql_application_name].units:
         unit_address = await get_unit_address(ops_test, unit.name)
 
-        values = await execute_queries_on_unit(
+        values = execute_queries_on_unit(
             unit_address,
-            server_config_credentials["username"],
-            server_config_credentials["password"],
+            credentials["username"],
+            credentials["password"],
             select_values_sql,
         )
 
@@ -326,7 +328,7 @@ async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials, clou
     )
     select_values_sql = [f"SELECT id FROM `{DATABASE_NAME}`.`{TABLE_NAME}`"]
 
-    values = await execute_queries_on_unit(
+    values = execute_queries_on_unit(
         primary_unit_address,
         server_config_credentials["username"],
         server_config_credentials["password"],
@@ -340,12 +342,13 @@ async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials, clou
         ops_test,
         DATABASE_NAME,
         TABLE_NAME,
+        server_config_credentials,
         mysql_application_substring="another-mysql",
     )
 
     logger.info("Ensuring that pre-backup and post-restore values exist in the database")
 
-    values = await execute_queries_on_unit(
+    values = execute_queries_on_unit(
         primary_unit_address,
         server_config_credentials["username"],
         server_config_credentials["password"],
@@ -361,7 +364,7 @@ async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials, clou
     for unit in ops_test.model.applications[new_mysql_application_name].units:
         unit_address = await get_unit_address(ops_test, unit.name)
 
-        values = await execute_queries_on_unit(
+        values = execute_queries_on_unit(
             unit_address,
             server_config_credentials["username"],
             server_config_credentials["password"],

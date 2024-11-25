@@ -60,9 +60,9 @@ from charms.mysql.v0.mysql import (
     MySQLDeleteTempRestoreDirectoryError,
     MySQLEmptyDataDirectoryError,
     MySQLExecuteBackupCommandsError,
-    MySQLGetMemberStateError,
     MySQLInitializeJujuOperationsTableError,
     MySQLKillSessionError,
+    MySQLNoMemberStateError,
     MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLPrepareBackupForRestoreError,
     MySQLRescanClusterError,
@@ -73,6 +73,7 @@ from charms.mysql.v0.mysql import (
     MySQLSetInstanceOptionError,
     MySQLStartMySQLDError,
     MySQLStopMySQLDError,
+    MySQLUnableToGetMemberStateError,
 )
 from charms.mysql.v0.s3_helpers import (
     fetch_and_check_existence_of_s3_path,
@@ -99,7 +100,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 11
+LIBPATCH = 12
 
 
 if typing.TYPE_CHECKING:
@@ -339,7 +340,7 @@ class MySQLBackups(Object):
 
         try:
             state, role = self.charm._mysql.get_member_state()
-        except MySQLGetMemberStateError:
+        except (MySQLNoMemberStateError, MySQLUnableToGetMemberStateError):
             return False, "Error obtaining member state"
 
         if role == "primary" and self.charm.app.planned_units() > 1:

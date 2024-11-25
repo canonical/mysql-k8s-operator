@@ -90,6 +90,7 @@ async def test_build_and_deploy(
         config=config,
         resources=resources,
         trust=True,
+        base="ubuntu@22.04",
     )
     config["cluster-name"] = "cuzco"
     await second_model.deploy(
@@ -99,6 +100,7 @@ async def test_build_and_deploy(
         config=config,
         resources=resources,
         trust=True,
+        base="ubuntu@22.04",
     )
 
     logger.info("Waiting for the applications to settle")
@@ -193,7 +195,7 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
     await first_model.deploy(
         MYSQL_ROUTER_APP_NAME,
         application_name=MYSQL_ROUTER_APP_NAME,
-        series="jammy",
+        base="ubuntu@22.04",
         channel="8.0/edge",
         num_units=1,
         trust=True,
@@ -201,7 +203,7 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
     await first_model.deploy(
         APPLICATION_APP_NAME,
         application_name=APPLICATION_APP_NAME,
-        series="jammy",
+        base="ubuntu@22.04",
         channel="latest/edge",
         num_units=1,
     )
@@ -431,7 +433,7 @@ async def get_max_written_value(first_model: Model, second_model: Model) -> list
     logger.info("Querying max value on all units")
     for unit in first_model_units + second_model_units:
         address = await get_unit_address(None, unit.name, unit.model)
-        values = await execute_queries_on_unit(
+        values = execute_queries_on_unit(
             address, credentials["username"], credentials["password"], select_max_written_value_sql
         )
         results.append(values[0])

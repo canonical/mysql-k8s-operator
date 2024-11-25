@@ -58,8 +58,8 @@ def built_charm(ops_test: OpsTest) -> pathlib.Path:
     return packed_charm[0].resolve(strict=True)
 
 
-@pytest.fixture()
-async def highly_available_cluster(ops_test: OpsTest) -> None:
+@pytest.fixture(scope="module")
+async def highly_available_cluster(ops_test: OpsTest):
     """Run the set up for high availability tests.
 
     Args:

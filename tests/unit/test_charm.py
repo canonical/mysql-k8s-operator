@@ -156,11 +156,11 @@ class TestCharm(unittest.TestCase):
         _wait_until_mysql_connection,
         _get_mysql_version,
         _initialize_juju_units_operations_table,
-        _is_data_dir_initialised,
         _create_cluster_set,
+        _is_data_dir_initialised,
         _write_content_to_file,
-        _active_status_message,
         _upgrade_idle,
+        _active_status_message,
         _rescan_cluster,
         _cluster_metadata_exists,
         _install_plugins,
@@ -186,6 +186,7 @@ class TestCharm(unittest.TestCase):
             self.layer_dict()["services"],
         )
 
+        _is_data_dir_initialised.return_value = True
         self.harness.add_relation("metrics-endpoint", "test-cos-app")
         plan = self.harness.get_container_pebble_plan("mysql")
         self.assertEqual(
@@ -207,8 +208,8 @@ class TestCharm(unittest.TestCase):
         mock_write_conf,
         mock_conf,
         mock_join,
-        _cluster_intialized,
-        _unit_intialized,
+        _cluster_initialized,
+        _unit_initialized,
     ):
         mock_mysql.is_data_dir_initialised.return_value = False
         mock_mysql.get_member_state.return_value = ("online", "primary")
@@ -216,8 +217,8 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader()
 
         mock_mysql.cluster_metadata_exists.return_value = False
-        _cluster_intialized.return_value = False
-        _unit_intialized.return_value = False
+        _cluster_initialized.return_value = False
+        _unit_initialized.return_value = False
 
         # test on leader
         self.harness.set_leader(is_leader=True)
@@ -225,7 +226,7 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(self.charm.unit_peer_data["member-state"], "online")
         self.assertEqual(self.charm.unit_peer_data["member-role"], "primary")
 
-        _cluster_intialized.return_value = True
+        _cluster_initialized.return_value = True
 
         # test on non leader
         self.harness.set_leader(is_leader=False)

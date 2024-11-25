@@ -1,16 +1,24 @@
-# Manage Passwords
+> [Charmed MySQL K8s Tutorial](/t/9677) > 4. Manage passwords
 
-This is part of the [Charmed MySQL Tutorial](/t/charmed-mysql-k8s-tutorial-overview/9677). Please refer to this page for more information and the overview of the content.
+# Manage passwords
 
-## Passwords
-When we accessed MySQL earlier in this tutorial, we needed to use a password manually. Passwords help to secure our database and are essential for security. Over time it is a good practice to change the password frequently. Here we will go through setting and changing the password for the admin user.
+When we accessed MySQL earlier in this tutorial, we needed to use a password manually. Passwords help to secure our database and are essential for security. Over time, it is a good practice to change the password frequently. 
 
-### Retrieve the root password
-As previously mentioned, the root password can be retrieved by running the `get-password` action on the Charmed MySQL K8s application:
+This section will go through setting and changing the password for the admin user.
+
+## Summary
+* [Retrieve the root password](#retrieve-the-root-password)
+* [Rotate the root password](#rotate-the-root-password)
+* [Set the root password](#set-the-root-password)
+
+---
+
+## Retrieve the root password
+The root user's password can be retrieved by running the `get-password` action on the Charmed MySQL K8s application:
 ```shell
-juju run-action mysql-k8s/leader get-password --wait
+juju run mysql-k8s/leader get-password
 ```
-Running the command should output:
+Example output:
 ```yaml
 unit-mysql-k8s-0:
   UnitId: mysql-k8s/0
@@ -25,12 +33,12 @@ unit-mysql-k8s-0:
     started: 2023-02-15 21:51:04 +0000 UTC
 ```
 
-### Rotate the root password
-You can change the root password to a new random password by entering:
+## Rotate the root password
+You can change the root user's password to a new random password by running:
 ```shell
-juju run-action mysql-k8s/leader set-password --wait
+juju run mysql-k8s/leader set-password
 ```
-Running the command should output:
+Example output:
 ```yaml
 unit-mysql-k8s-0:
   UnitId: mysql-k8s/0
@@ -42,34 +50,19 @@ unit-mysql-k8s-0:
     enqueued: 2023-02-15 21:51:34 +0000 UTC
     started: 2023-02-15 21:51:37 +0000 UTC
 ```
-Please notice the `status: completed` above which means the password has been successfully updated. To be sure, please call `get-password` once again:
-```shell
-juju run-action mysql-k8s/leader get-password --wait
-```
-Running the command should output:
-```yaml
-unit-mysql-k8s-0:
-  UnitId: mysql-k8s/0
-  id: "12"
-  results:
-    password: sN6bcP1j7xRfhw4ZDblcIYK1
-    username: root
-  status: completed
-  timing:
-    completed: 2023-02-15 21:52:13 +0000 UTC
-    enqueued: 2023-02-15 21:52:11 +0000 UTC
-    started: 2023-02-15 21:52:12 +0000 UTC
 
-```
-The root password should be different from the previous password.
+The `status: completed` above means the password has been successfully updated. To be sure, call `get-password` once again to check that the root password is different from the previous password.
 
-### Set the root password
-You can change the root password to a specific password by entering:
+## Set the root password
+You can change the root password to a specific password by running `set-password`:
 ```shell
-juju run-action mysql-k8s/leader set-password password=my-password --wait && \
-juju run-action mysql-k8s/leader get-password --wait
+juju run mysql-k8s/leader set-password password=my-password
 ```
-Running the command should output:
+Confirm with `get-password`:
+```shell
+juju run mysql-k8s/leader get-password
+```
+Example output:
 ```yaml
 unit-mysql-k8s-0:
   UnitId: mysql-k8s/0
@@ -93,3 +86,5 @@ unit-mysql-k8s-0:
     started: 2023-02-15 21:52:47 +0000 UTC
 ```
 The root `password` should match whatever you passed in when you entered the command.
+
+> Next step: [5. Integrate with another application](/t/9671)

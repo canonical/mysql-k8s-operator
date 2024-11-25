@@ -28,19 +28,20 @@ from charms.mysql.v0.mysql import (
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
     MySQLGetClusterPrimaryAddressError,
-    MySQLGetMemberStateError,
     MySQLGetMySQLVersionError,
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
+    MySQLNoMemberStateError,
     MySQLRebootFromCompleteOutageError,
     MySQLServiceNotRunningError,
     MySQLSetClusterPrimaryError,
+    MySQLUnableToGetMemberStateError,
 )
 from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
-from charms.tempo_k8s.v1.charm_tracing import trace_charm
-from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
+from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
+from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.main import main
@@ -328,7 +329,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 cluster_primary = self._get_primary_from_online_peer()
                 if not cluster_primary:
                     self.unit.status = WaitingStatus("waiting to get cluster primary from peers")
-                    logger.debug("waiting: unable to retrieve the cluster primary from peers")
+                    logger.info("waiting: unable to retrieve the cluster primary from peers")
                     return
 
                 if (
@@ -357,7 +358,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
                 if self._mysql.are_locks_acquired(from_instance=lock_instance or cluster_primary):
                     self.unit.status = WaitingStatus("waiting to join the cluster")
-                    logger.debug("waiting: cluster lock is held")
+                    logger.info("waiting: cluster lock is held")
                     return
 
                 self.unit.status = MaintenanceStatus("joining the cluster")
@@ -386,18 +387,17 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     from_instance=cluster_primary,
                     lock_instance=lock_instance,
                 )
-                logger.debug(f"Added instance {instance_address} to cluster")
             except MySQLAddInstanceToClusterError:
-                logger.debug(f"Unable to add instance {instance_address} to cluster.")
+                logger.info(f"Unable to add instance {instance_address} to cluster.")
                 return
             except MySQLLockAcquisitionError:
                 self.unit.status = WaitingStatus("waiting to join the cluster")
-                logger.debug("waiting: failed to acquire lock when adding instance to cluster")
+                logger.info("waiting: failed to acquire lock when adding instance to cluster")
                 return
 
         self.unit_peer_data["member-state"] = "online"
         self.unit.status = ActiveStatus(self.active_status_message)
-        logger.debug(f"Instance {instance_label} is cluster member")
+        logger.info(f"Instance {instance_label} added to cluster")
 
     def _reconcile_pebble_layer(self, container: Container) -> None:
         """Reconcile pebble layer."""
@@ -458,6 +458,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self, event: RelationCreatedEvent | RelationBrokenEvent
     ) -> None:
         """Handle a COS relation created or broken event."""
+        if not self._is_peer_data_set:
+            logger.debug("Unit not yet ready to reconcile mysqld exporter. Waiting...")
+            return
+
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
             # reconciliation is done on pebble ready
@@ -469,6 +473,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.debug("Skip reconcile mysqld exporter: empty pebble layer")
             return
 
+        if not self._mysql.is_data_dir_initialised():
+            logger.debug("Skip reconcile mysqld exporter: mysql not initialised")
+            return
         self.current_event = event
         self._reconcile_pebble_layer(container)
 
@@ -553,9 +560,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             BACKUPS_PASSWORD_KEY,
         ]
 
+        logger.info("Generating internal user credentials")
         for required_password in required_passwords:
             if not self.get_secret("app", required_password):
-                logger.debug(f"Setting {required_password}")
                 self.set_secret(
                     "app", required_password, generate_random_password(PASSWORD_LENGTH)
                 )
@@ -597,20 +604,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """Configure the instance for use in Group Replication."""
         # Run mysqld for the first time to
         # bootstrap the data directory and users
-        logger.debug("Initializing instance")
+        logger.info("Initializing mysqld")
         try:
             self._mysql.fix_data_dir(container)
             self._mysql.initialise_mysqld()
 
             # Add the pebble layer
-            logger.debug("Adding pebble layer")
+            logger.info("Adding pebble layer")
             container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
             container.restart(MYSQLD_SAFE_SERVICE)
 
-            logger.debug("Waiting for instance to be ready")
+            logger.info("Waiting for instance to be ready")
             self._mysql.wait_until_mysql_connection(check_port=False)
 
-            logger.info("Configuring instance")
+            logger.info("Configuring initialized mysqld")
             # Configure all base users and revoke privileges from the root users
             self._mysql.configure_mysql_users(password_needed=False)
 
@@ -688,7 +695,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration
             self.unit.status = MaintenanceStatus("Starting mysqld")
-            logger.debug("Data directory is already initialised, skipping configuration")
+            logger.info("Data directory is already initialised, skipping configuration")
             self._reconcile_pebble_layer(container)
             return
 
@@ -697,7 +704,12 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # First run setup
         self._configure_instance(container)
 
-        if not self.unit.is_leader() or self.cluster_initialized:
+        # We consider cluster initialized only if a primary already exists
+        # (as there can be metadata in the database but no primary if pod
+        # crashes while cluster is being created)
+        if not self.unit.is_leader() or (
+            self.cluster_initialized and self._get_primary_from_online_peer()
+        ):
             # Non-leader units try to join cluster
             self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
             self.unit_peer_data.update({"member-role": "secondary", "member-state": "waiting"})
@@ -707,12 +719,14 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         try:
             # Create the cluster when is the leader unit
             logger.info(f"Creating cluster {self.app_peer_data['cluster-name']}")
+            self.unit.status = MaintenanceStatus("Creating cluster")
             self.create_cluster()
             self.unit.status = ops.ActiveStatus(self.active_status_message)
 
         except (
             MySQLCreateClusterError,
-            MySQLGetMemberStateError,
+            MySQLUnableToGetMemberStateError,
+            MySQLNoMemberStateError,
             MySQLInitializeJujuOperationsTableError,
             MySQLCreateClusterError,
         ):
@@ -725,11 +739,16 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Returns:
             bool indicating whether the caller should return
         """
-        if not self.cluster_initialized or not self.unit_peer_data.get("member-role"):
-            # health checks are only after cluster and members are initialized
+        if not self._mysql.is_mysqld_running():
             return True
 
-        if not self._mysql.is_mysqld_running():
+        only_single_uninitialized_node_across_cluster = (
+            self.only_one_cluster_node_thats_uninitialized
+        )
+
+        if (
+            not self.cluster_initialized and not only_single_uninitialized_node_across_cluster
+        ) or not self.unit_peer_data.get("member-role"):
             return True
 
         # retrieve and persist state for every unit
@@ -737,7 +756,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             state, role = self._mysql.get_member_state()
             self.unit_peer_data["member-state"] = state
             self.unit_peer_data["member-role"] = role
-        except MySQLGetMemberStateError:
+        except (MySQLNoMemberStateError, MySQLUnableToGetMemberStateError):
             logger.error("Error getting member state. Avoiding potential cluster crash recovery")
             self.unit.status = MaintenanceStatus("Unable to get member state")
             return True
@@ -754,23 +773,33 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if state == "recovering":
             return True
 
-        if state in ["offline"]:
+        if state == "offline":
             # Group Replication is active but the member does not belong to any group
             all_states = {
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
-            # Add state for this unit (self.peers.units does not include this unit)
-            all_states.add("offline")
 
-            if all_states == {"offline"} and self.unit.is_leader():
+            # Add state 'offline' for this unit (self.peers.unit does not
+            # include this unit)
+            if (all_states | {"offline"} == {"offline"} and self.unit.is_leader()) or (
+                only_single_uninitialized_node_across_cluster and all_states == {"waiting"}
+            ):
                 # All instance are off, reboot cluster from outage from the leader unit
 
                 logger.info("Attempting reboot from complete outage.")
                 try:
-                    self._mysql.reboot_from_complete_outage()
+                    # Need condition to avoid rebooting on all units of application
+                    if self.unit.is_leader() or only_single_uninitialized_node_across_cluster:
+                        self._mysql.reboot_from_complete_outage()
                 except MySQLRebootFromCompleteOutageError:
                     logger.error("Failed to reboot cluster from complete outage.")
-                    self.unit.status = BlockedStatus("failed to recover cluster.")
+
+                    if only_single_uninitialized_node_across_cluster and all_states == {"waiting"}:
+                        self._mysql.drop_group_replication_metadata_schema()
+                        self.create_cluster()
+                        self.unit.status = ActiveStatus(self.active_status_message)
+                    else:
+                        self.unit.status = BlockedStatus("failed to recover cluster.")
 
             return True
 
@@ -782,10 +811,21 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Returns: a boolean indicating whether the update-status (caller) should
             no-op and return.
         """
-        unit_member_state = self.unit_peer_data.get("member-state")
-        if unit_member_state in ["waiting", "restarting"]:
+        # We need to query member state from the server since member state would
+        # be 'offline' if pod rescheduled during cluster creation, however
+        # member-state in the unit peer databag will be 'waiting'
+        try:
+            member_state, _ = self._mysql.get_member_state()
+        except MySQLUnableToGetMemberStateError:
+            logger.error("Error getting member state while checking if cluster is blocked")
+            self.unit.status = MaintenanceStatus("Unable to get member state")
+            return True
+        except MySQLNoMemberStateError:
+            member_state = None
+
+        if not member_state or member_state == "restarting":
             # avoid changing status while tls is being set up or charm is being initialized
-            logger.info(f"Unit state is {unit_member_state}")
+            logger.info(f"Unit {member_state=}")
             return True
 
         # avoid changing status while async replication is setting up
@@ -795,7 +835,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """Handle the update status event."""
         if not self.upgrade.idle:
             # avoid changing status while upgrade is in progress
-            logger.debug("Application is upgrading. Skipping.")
+            logger.info("Application is upgrading. Skipping.")
             return
         if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
             # join cluster test takes precedence over blocked test
@@ -809,6 +849,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
+            logger.info("Cannot connect to pebble in the mysql container")
             return
 
         if self._handle_potential_cluster_crash_scenario():

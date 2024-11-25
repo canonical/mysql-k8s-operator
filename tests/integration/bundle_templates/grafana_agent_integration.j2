@@ -1,0 +1,16 @@
+bundle: kubernetes
+name: testing
+applications:
+  mysql-k8s:
+    charm: {{ mysql_charm_path }}
+    trust: true
+    scale: 1
+    constraints: mem=2G
+    resources:
+      mysql-image: {{ mysql_image_source }}
+  grafana-agent-k8s:
+    charm: grafana-agent-k8s
+    channel: latest/stable
+    scale: 1
+relations:
+  - [mysql-k8s:metrics-endpoint, grafana-agent-k8s:metrics-endpoint]

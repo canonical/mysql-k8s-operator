@@ -95,6 +95,11 @@ class MySQLProvider(Object):
         """Handle the `database-requested` event."""
         if not self.charm.unit.is_leader():
             return
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            logger.debug("Container is not ready")
+            event.defer()
+            return
         # check if cluster is ready and if not, defer
         if not self.charm.cluster_initialized:
             logger.debug("Waiting cluster to be initialized")
@@ -217,11 +222,13 @@ class MySQLProvider(Object):
 
         relation_data = self.database.fetch_relation_data()
         for relation in relations:
-            # only update endpoints if on_database_requested has executed
-            if relation.id not in relation_data:
-                continue
+            # only update endpoints if on_database_requested on any
+            # relation
+            if relation.id in relation_data:
+                break
+            return
 
-            self.charm._mysql.update_endpoints()
+        self.charm._mysql.update_endpoints()
 
     def _on_update_status(self, _) -> None:
         """Handle the update status event.
