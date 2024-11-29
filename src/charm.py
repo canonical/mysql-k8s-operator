@@ -10,6 +10,18 @@ from socket import getfqdn
 from time import sleep
 from typing import Optional
 
+try:
+    # Library depends on 'cryptography', a platform-specific dependency.
+    # Importing it will fail on wrong architecture.
+    from charms.mysql.v0.tls import MySQLTLS
+except ImportError:
+    from charms.mysql.v0.architecture import WrongArchitectureWarningCharm, is_wrong_architecture
+    from ops.main import main
+
+    if is_wrong_architecture() and __name__ == "__main__":
+        main(WrongArchitectureWarningCharm)
+    raise
+
 import ops
 from charms.data_platform_libs.v0.data_models import TypedCharmBase
 from charms.data_platform_libs.v0.s3 import S3Requirer
@@ -37,7 +49,6 @@ from charms.mysql.v0.mysql import (
     MySQLSetClusterPrimaryError,
     MySQLUnableToGetMemberStateError,
 )
-from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
