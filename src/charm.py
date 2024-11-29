@@ -4,6 +4,12 @@
 
 """Charm for MySQL."""
 
+from charms.mysql.v0.architecture import WrongArchitectureWarningCharm, is_wrong_architecture
+from ops.main import main
+
+if is_wrong_architecture() and __name__ == "__main__":
+    main(WrongArchitectureWarningCharm)
+
 import logging
 import random
 from socket import getfqdn
@@ -44,7 +50,6 @@ from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
-from ops.main import main
 from ops.model import (
     ActiveStatus,
     BlockedStatus,
