@@ -6,6 +6,7 @@
 
 import logging
 import random
+import sys
 from socket import getfqdn
 from time import sleep
 from typing import Optional
@@ -15,6 +16,7 @@ from charms.data_platform_libs.v0.data_models import TypedCharmBase
 from charms.data_platform_libs.v0.s3 import S3Requirer
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
+from charms.mysql.v0.architecture import WrongArchitectureWarningCharm, is_wrong_architecture
 from charms.mysql.v0.async_replication import (
     MySQLAsyncReplicationConsumer,
     MySQLAsyncReplicationOffer,
@@ -923,4 +925,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
 
 if __name__ == "__main__":
+    if is_wrong_architecture():
+        main(WrongArchitectureWarningCharm)
+        sys.exit(1)
+
     main(MySQLOperatorCharm)
