@@ -1,0 +1,19 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:28:42Z
+
+App        Version  Status   Scale  Charm           Channel      Rev  Address        Exposed  Message
+mysql-k8s           error        3  mysql-k8s       8.0/stable   180  10.152.183.74  no       hook failed: "upgrade-relation-changed"
+test-app   0.0.2    waiting      1  mysql-test-app  latest/edge   63  10.152.183.56  no       installing agent
+
+Unit          Workload  Agent      Address       Ports  Message
+mysql-k8s/0*  unknown   executing  10.1.177.204         
+mysql-k8s/1   error     idle       10.1.177.206         hook failed: "upgrade-relation-changed"
+mysql-k8s/2   error     idle       10.1.177.205         hook failed: "upgrade-relation-changed"
+test-app/0*   waiting   idle       10.1.177.200         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
