@@ -33,6 +33,7 @@ MYSQL_DATA_DIR = "/var/lib/mysql"
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
 MYSQLD_CONFIG_FILE = "/etc/mysql/mysql.conf.d/z-custom.cnf"
+MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE = "/etc/mysql-pitr-helper-collector.yaml"
 MYSQL_LOG_FILES = [
     "/var/log/mysql/error.log",
     "/var/log/mysql/audit.log",
@@ -43,10 +44,12 @@ MYSQL_SYSTEM_GROUP = "mysql"
 CHARMED_MYSQL_XTRABACKUP_LOCATION = "xtrabackup"
 CHARMED_MYSQL_XBCLOUD_LOCATION = "xbcloud"
 CHARMED_MYSQL_XBSTREAM_LOCATION = "xbstream"
+CHARMED_MYSQL_PITR_HELPER_LOCATION = "mysql-pitr-helper"
 XTRABACKUP_PLUGIN_DIR = "/usr/lib64/xtrabackup/plugin"
 MYSQLD_DEFAULTS_CONFIG_FILE = "/etc/mysql/my.cnf"
 MYSQLD_EXPORTER_PORT = "9104"
 MYSQLD_EXPORTER_SERVICE = "mysqld_exporter"
+MYSQL_BINLOGS_COLLECTOR_SERVICE = "mysql-pitr-helper-collector"
 GR_MAX_MEMBERS = 9
 # TODO: should be changed when adopting cos-agent
 COS_AGENT_RELATION_NAME = "metrics-endpoint"
