@@ -83,7 +83,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Iterable,
     List,
     Literal,
     Optional,
@@ -107,6 +106,7 @@ from tenacity import (
 from constants import (
     BACKUPS_PASSWORD_KEY,
     BACKUPS_USERNAME,
+    CHARMED_MYSQL_PITR_HELPER,
     CLUSTER_ADMIN_PASSWORD_KEY,
     CLUSTER_ADMIN_USERNAME,
     COS_AGENT_RELATION_NAME,
@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 76
+LIBPATCH = 78
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -337,6 +337,10 @@ class MySQLEmptyDataDirectoryError(Error):
 
 class MySQLRestoreBackupError(Error):
     """Exception raised when there is an error restoring a backup."""
+
+
+class MySQLRestorePitrError(Error):
+    """Exception raised when there is an error during point-in-time-recovery restore."""
 
 
 class MySQLDeleteTempRestoreDirectoryError(Error):
@@ -1009,7 +1013,7 @@ class MySQLBase(ABC):
             "log_error": f"{snap_common}/var/log/mysql/error.log",
             "general_log": "ON",
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
-            "slow_query_log_file": f"{snap_common}/var/log/mysql/slowquery.log",
+            "slow_query_log_file": f"{snap_common}/var/log/mysql/slow.log",
             "binlog_expire_logs_seconds": f"{binlog_retention_seconds}",
             "loose-audit_log_policy": "LOGINS",
             "loose-audit_log_file": f"{snap_common}/var/log/mysql/audit.log",
@@ -1555,8 +1559,12 @@ class MySQLBase(ABC):
             ),
         )
 
-        try:
+        if force:
+            logger.warning(f"Promoting {cluster_name=} to primary with {force=}")
+        else:
             logger.debug(f"Promoting {cluster_name=} to primary with {force=}")
+
+        try:
             self._run_mysqlsh_script("\n".join(commands))
         except MySQLClientError:
             logger.exception("Failed to promote cluster to primary")
@@ -2288,28 +2296,6 @@ class MySQLBase(ABC):
             logger.exception("Failed to set cluster primary")
             raise MySQLSetClusterPrimaryError(e.message)
 
-    def get_cluster_members_addresses(self) -> Optional[Iterable[str]]:
-        """Get the addresses of the cluster's members."""
-        get_cluster_members_commands = (
-            f"shell.connect('{self.instance_def(self.server_config_user)}')",
-            f"cluster = dba.get_cluster('{self.cluster_name}')",
-            "members = ','.join((member['address'] for member in cluster.describe()['defaultReplicaSet']['topology']))",
-            "print(f'<MEMBERS>{members}</MEMBERS>')",
-        )
-
-        try:
-            output = self._run_mysqlsh_script("\n".join(get_cluster_members_commands))
-        except MySQLClientError as e:
-            logger.warning("Failed to get cluster members addresses", exc_info=e)
-            raise MySQLGetClusterMembersAddressesError(e.message)
-
-        matches = re.search(r"<MEMBERS>(.+)</MEMBERS>", output)
-
-        if not matches:
-            return None
-
-        return set(matches.group(1).split(","))
-
     def verify_server_upgradable(self, instance: Optional[str] = None) -> None:
         """Wrapper for API check_for_server_upgrade."""
         # use cluster admin user to enforce standard port usage
@@ -2318,7 +2304,7 @@ class MySQLBase(ABC):
             "try:",
             "    util.check_for_server_upgrade(options={'outputFormat': 'JSON'})",
             "except ValueError:",  # ValueError is raised for same version check
-            "    if session.run_sql('select @@version').fetch_all()[0][0].split('-')[0] == shell.version.split()[1]:",
+            "    if session.run_sql('select @@version').fetch_all()[0][0].split('-')[0] in shell.version:",
             "        print('SAME_VERSION')",
             "    else:",
             "        raise",
@@ -2452,14 +2438,6 @@ class MySQLBase(ABC):
             return
 
         return cs_status["clusters"][self.cluster_name.lower()]["clusterrole"] == "replica"
-
-    def cluster_set_cluster_count(self, from_instance: Optional[str] = None) -> int:
-        """Get the number of clusters in the cluster set."""
-        cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
-        if not cs_status:
-            return 0
-
-        return len(cs_status["clusters"])
 
     def get_cluster_set_name(self, from_instance: Optional[str] = None) -> Optional[str]:
         """Get cluster set name."""
@@ -2930,6 +2908,62 @@ class MySQLBase(ABC):
             logger.exception("Failed to restore backup")
             raise MySQLRestoreBackupError
 
+    def restore_pitr(
+        self,
+        host: str,
+        mysql_user: str,
+        password: str,
+        s3_parameters: Dict[str, str],
+        restore_to_time: str,
+        user: str | None = None,
+        group: str | None = None,
+    ) -> Tuple[str, str]:
+        """Run point-in-time-recovery using binary logs from the S3 repository.
+
+        Args:
+            host: the MySQL host to connect to.
+            mysql_user: the MySQL user to connect to.
+            password: the password of the provided MySQL user.
+            s3_parameters: S3 relation parameters.
+            restore_to_time: the MySQL timestamp to restore to or keyword `latest`.
+            user: the user with which to execute the commands.
+            group: the group with which to execute the commands.
+        """
+        bucket_url = (
+            f"{s3_parameters['bucket']}/{s3_parameters['path']}binlogs"
+            if s3_parameters["path"][-1] == "/"
+            else f"{s3_parameters['bucket']}/{s3_parameters['path']}/binlogs"
+        )
+
+        try:
+            return self._execute_commands(
+                [
+                    CHARMED_MYSQL_PITR_HELPER,
+                    "recover",
+                ],
+                user=user,
+                group=group,
+                env_extra={
+                    "BINLOG_S3_ENDPOINT": s3_parameters["endpoint"],
+                    "HOST": host,
+                    "USER": mysql_user,
+                    "PASS": password,
+                    "PITR_DATE": restore_to_time if restore_to_time != "latest" else "",
+                    "PITR_RECOVERY_TYPE": "latest" if restore_to_time == "latest" else "date",
+                    "STORAGE_TYPE": "s3",
+                    "BINLOG_ACCESS_KEY_ID": s3_parameters["access-key"],
+                    "BINLOG_SECRET_ACCESS_KEY": s3_parameters["secret-key"],
+                    "BINLOG_S3_REGION": s3_parameters["region"],
+                    "BINLOG_S3_BUCKET_URL": bucket_url,
+                },
+            )
+        except MySQLExecError as e:
+            logger.exception("Failed to restore pitr")
+            raise MySQLRestorePitrError(e.message)
+        except Exception:
+            logger.exception("Failed to restore pitr")
+            raise MySQLRestorePitrError
+
     def delete_temp_restore_directory(
         self,
         temp_restore_directory: str,
@@ -3219,5 +3253,26 @@ class MySQLBase(ABC):
 
         Args:
             path: Path to the file to check
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def start_stop_binlogs_collecting(self, force_restart: bool = False) -> bool:
+        """Start or stop binlogs collecting service.
+
+        Based on the `binlogs-collecting` app peer data value and unit leadership.
+
+        Args:
+            force_restart: whether to restart service even if it's already running.
+
+        Returns: whether the operation was successful.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_cluster_members(self) -> list[str]:
+        """Get cluster members in MySQL MEMBER_HOST format.
+
+        Returns: list of the cluster members in the MySQL MEMBER_HOST format.
         """
         raise NotImplementedError

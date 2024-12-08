@@ -66,6 +66,7 @@ from constants import (
     GR_MAX_MEMBERS,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
+    MYSQL_BINLOGS_COLLECTOR_SERVICE,
     MYSQL_LOG_FILES,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
@@ -241,6 +242,14 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                         "EXPORTER_USER": MONITORING_USERNAME,
                         "EXPORTER_PASS": self.get_secret("app", MONITORING_PASSWORD_KEY),
                     },
+                },
+                MYSQL_BINLOGS_COLLECTOR_SERVICE: {
+                    "override": "replace",
+                    "summary": "mysql-pitr-helper binlogs collector",
+                    "command": "/start-mysql-pitr-helper-collector.sh",
+                    "startup": "disabled",
+                    "user": MYSQL_SYSTEM_USER,
+                    "group": MYSQL_SYSTEM_GROUP,
                 },
             },
         }
@@ -889,6 +898,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         if self._is_unit_waiting_to_join_cluster():
             self.join_unit_to_cluster()
+
+        if not self._mysql.start_stop_binlogs_collecting():
+            logger.error("Failed to start or stop binlogs collecting during peer relation event")
 
     def _on_database_storage_detaching(self, _) -> None:
         """Handle the database storage detaching event."""

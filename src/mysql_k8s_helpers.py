@@ -35,6 +35,7 @@ from constants import (
     CHARMED_MYSQL_XTRABACKUP_LOCATION,
     CONTAINER_NAME,
     LOG_ROTATE_CONFIG_FILE,
+    MYSQL_BINLOGS_COLLECTOR_SERVICE,
     MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
     MYSQL_SYSTEM_GROUP,
@@ -820,3 +821,50 @@ class MySQL(MySQLBase):
             path: Path to the file to check
         """
         return self.container.exists(path)
+
+    def start_stop_binlogs_collecting(self, force_restart: bool = False) -> bool:
+        """Start or stop binlogs collecting service.
+
+        Based on the "binlogs-collecting" app peer data value and unit leadership.
+
+        Args:
+            force_restart: whether to restart service even if it's already running.
+
+        Returns: whether the operation was successful.
+        """
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            logger.error(
+                "Cannot connect to the pebble in the mysql container to check binlogs collector"
+            )
+            return False
+
+        is_running = container.get_services(MYSQL_BINLOGS_COLLECTOR_SERVICE)[
+            MYSQL_BINLOGS_COLLECTOR_SERVICE
+        ].is_running()
+
+        if is_running and (
+            not self.charm.unit.is_leader() or "binlogs-collecting" not in self.charm.app_peer_data
+        ):
+            logger.debug("Stopping binlogs collector")
+            container.stop(MYSQL_BINLOGS_COLLECTOR_SERVICE)
+
+        if not self.charm.unit.is_leader():
+            return True
+
+        if "binlogs-collecting" in self.charm.app_peer_data and (force_restart or not is_running):
+            logger.debug("Restarting binlogs collector")
+            if not self.charm.backups.update_binlogs_collector_config():
+                return False
+            container.restart(MYSQL_BINLOGS_COLLECTOR_SERVICE)
+
+        return True
+
+    def get_cluster_members(self) -> list[str]:
+        """Get cluster members in MySQL MEMBER_HOST format.
+
+        Returns: list of cluster members in MySQL MEMBER_HOST format.
+        """
+        return [self.charm.get_unit_address(self.charm.unit)] + [
+            self.charm.get_unit_address(unit) for unit in self.charm.peers.units
+        ]
