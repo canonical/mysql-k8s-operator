@@ -1,0 +1,11 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.conftest:conftest.py:20 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:100 Ensure continuous_writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=491 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=494 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=497 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:106 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:109 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:112 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes

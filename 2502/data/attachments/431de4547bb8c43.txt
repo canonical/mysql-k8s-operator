@@ -1,0 +1,32 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:52:11Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.39-0ubuntu0.22.04.1  waiting      3  mysql-k8s                      0  10.152.183.27   no       installing agent
+mysql-test-app  0.0.2                    active       1  mysql-test-app  latest/edge   63  10.152.183.232  no       Last written value=72176
+
+Unit               Workload     Agent  Address      Ports  Message
+mysql-k8s/0        waiting      idle   10.1.201.11         other units upgrading first...
+mysql-k8s/1*       waiting      idle   10.1.201.12         other units upgrading first...
+mysql-k8s/2        maintenance  idle   10.1.201.15         Unable to get member state
+mysql-test-app/0*  active       idle   10.1.201.14         Last written value=72176
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:37:44 ERROR unit.mysql-k8s/2.juju-log Unit failed to rejoin the cluster after upgrade
+unit-mysql-k8s-2: 01:37:44 CRITICAL unit.mysql-k8s/2.juju-log Upgrade failed, follow the instructions below to rollback:
+  1 - Run `juju run mysql-k8s/leader pre-upgrade-check` to configure rollback
+  2 - Run `juju refresh --revision <previous-revision> mysql-k8s` to initiate the rollback
+  3 - Run `juju run mysql-k8s/leader resume-upgrade` to resume the rollback
+unit-mysql-k8s-2: 01:43:31 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:43:41 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:43:51 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:43:51 ERROR unit.mysql-k8s/2.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-2: 01:49:18 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:49:28 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:49:38 ERROR unit.mysql-k8s/2.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:49:38 ERROR unit.mysql-k8s/2.juju-log Error getting member state while checking if cluster is blocked
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

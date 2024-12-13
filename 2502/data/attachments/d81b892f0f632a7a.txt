@@ -1,0 +1,100 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:337 Stopping continuous writes after 5s
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:345 Remove async relation
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:351 waiting for units to be blocked
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:357 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [executing] maintenance: Removing replica cluster
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/0 [idle] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [idle] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  db2/1 [idle] maintenance: Starting mysqld
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:67 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:54:52Z
+
+App               Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+db1               8.0.39-0ubuntu0.22.04.1  active      3  mysql-k8s                        0  10.152.183.36   no       
+mysql-router-k8s  8.0.39-0ubuntu0.22.04.1  active      1  mysql-router-k8s  8.0/edge     531  10.152.183.197  no       
+mysql-test-app    0.0.2                    active      1  mysql-test-app    latest/edge   63  10.152.183.171  no       
+
+Unit                 Workload  Agent  Address       Ports  Message
+db1/0                active    idle   10.1.193.140         
+db1/1                active    idle   10.1.193.141         
+db1/2*               active    idle   10.1.193.142         Primary
+mysql-router-k8s/0*  active    idle   10.1.193.149         
+mysql-test-app/0*    active    idle   10.1.193.150         
+
+Offer  Application  Charm      Rev  Connected  Endpoint           Interface    Role
+db1    db1          mysql-k8s  0    0/0        replication-offer  mysql_async  provider
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-db1-0: 01:40:34 ERROR unit.db1/0.juju-log Failed to get cluster status for lima
+unit-db1-0: 01:40:34 ERROR unit.db1/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-0/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-db1-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-0/charm/lib/charms/mysql/v0/mysql.py", line 1954, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-db1-1: 01:40:35 ERROR unit.db1/1.juju-log Failed to get cluster status for lima
+unit-db1-1: 01:40:35 ERROR unit.db1/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1954, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
