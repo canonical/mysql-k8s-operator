@@ -1,0 +1,66 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:68 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m juju.model:model.py:2098 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+  mysql-k8s/2 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: installing charm software
+  mysql-k8s/1 [executing] maintenance: installing charm software
+  mysql-k8s/2 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/1 [idle] maintenance: joining the cluster
+  mysql-k8s/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [executing] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:71 Deploying mysql-test-app
+[32mINFO    [0m juju.model:model.py:2098 Deploying ch:amd64/jammy/mysql-test-app-63
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:74 Relating mysql-k8s with mysql-test-app
+[33mWARNING [0m juju.model:model.py:1564 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:2972 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:40 Extending update-status-hook-interval to 60m
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:53 Overwriting the log rotate dispatcher script
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:63 Stopping the log rotate dispatcher
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:66 Stopping any running logrotate jobs
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:69 Removing existing archive directories
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:77 Writing some data to the text log files
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:82 Ensuring only log files exist
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:95 Dispatching custom event to rotate logs
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:98 Ensuring log files and archive directories exist
+[32mINFO    [0m integration.high_availability.test_log_rotation:test_log_rotation.py:107 Ensuring log files were rotated
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:33:13Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.39-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.114  no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   63  10.152.183.170  no       
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0*       active    idle   10.1.209.11         Primary
+mysql-k8s/1        active    idle   10.1.209.13         
+mysql-k8s/2        active    idle   10.1.209.12         
+mysql-test-app/0*  active    idle   10.1.209.14         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
