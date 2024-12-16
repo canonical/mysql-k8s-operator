@@ -11,7 +11,6 @@ import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-import mysql.connector
 import yaml
 from juju.model import Model
 from juju.unit import Unit
@@ -166,6 +165,7 @@ def execute_queries_on_unit(
     password: str,
     queries: List[str],
     commit: bool = False,
+    raw: bool = False,
 ) -> List:
     """Execute given MySQL queries on a unit.
 
@@ -175,27 +175,23 @@ def execute_queries_on_unit(
         password: The MySQL password
         queries: A list of queries to execute
         commit: A keyword arg indicating whether there are any writes queries
+        raw: Whether MySQL results are returned as is, rather than converted to Python types.
 
     Returns:
         A list of rows that were potentially queried
     """
-    connection = mysql.connector.connect(
-        host=unit_address,
-        user=username,
-        password=password,
-    )
-    cursor = connection.cursor()
+    config = {
+        "user": username,
+        "password": password,
+        "host": unit_address,
+        "raise_on_warnings": False,
+        "raw": raw,
+    }
 
-    for query in queries:
-        cursor.execute(query)
-
-    if commit:
-        connection.commit()
-
-    output = list(itertools.chain(*cursor.fetchall()))
-
-    cursor.close()
-    connection.close()
+    with MySQLConnector(config, commit) as cursor:
+        for query in queries:
+            cursor.execute(query)
+        output = list(itertools.chain(*cursor.fetchall()))
 
     return output
 
