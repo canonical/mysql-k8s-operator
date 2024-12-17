@@ -1,0 +1,26 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:218 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.5.4    unsupported  01:33:40Z
+
+App                       Version                  Status  Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.39-0ubuntu0.22.04.1  active      3  mysql-k8s                                  0  10.152.183.114  no       
+self-signed-certificates                           active      1  self-signed-certificates  latest/stable  155  10.152.183.159  no       
+
+Unit                         Workload  Agent  Address      Ports  Message
+mysql-k8s/0*                 active    idle   10.1.209.11         
+mysql-k8s/1                  active    idle   10.1.209.13         
+mysql-k8s/2                  active    idle   10.1.209.12         
+self-signed-certificates/0*  active    idle   10.1.209.14         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:32:35 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:32:38 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:32:41 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:32:43 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:32:46 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:33:15 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "d78cc162-11f9-483e-81f2-ed02be6233b2:r#3#self-signed-certificates": settings d78cc162-11f9-483e-81f2-ed02be6233b2:r#3#self-signed-certificates not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
