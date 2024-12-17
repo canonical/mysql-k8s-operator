@@ -68,17 +68,11 @@ jobs:
           - agent: 2.9.51  # renovate: juju-agent-pin-minor
             libjuju: ^2
             allure_on_amd64: false
-          - agent: 3.5.4  # renovate: juju-agent-pin-minor
-            allure_on_amd64: true
           - snap_channel: 3.6/stable
             allure_on_amd64: false
         architecture:
           - amd64
         include:
-          - juju:
-              agent: 3.5.4  # renovate: juju-agent-pin-minor
-              allure_on_amd64: true
-            architecture: arm64
           - juju:
               snap_channel: 3.6/stable
               allure_on_amd64: false
