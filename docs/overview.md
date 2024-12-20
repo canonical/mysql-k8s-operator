@@ -84,6 +84,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | h-contribute | [Contribute](/t/14655) |
 | 1 | reference | [Reference]() |
 | 2 | r-releases | [Release Notes](/t/11878) |
+| 3 | r-revision-210-211 | [Revision 210/211](/t/16133) |
 | 3 | r-revision-180-181 | [Revision 180/181](/t/15276) |
 | 3 | r-revision-153 | [Revision 153](/t/14072) |
 | 3 | r-revision-127 | [Revision 127](/t/13522) |
