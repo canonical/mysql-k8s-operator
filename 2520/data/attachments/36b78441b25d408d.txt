@@ -1,0 +1,119 @@
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:265 Deploying a new mysql cluster
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-1
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [executing] active: 
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:284 Rotating all mysql credentials
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:301 Syncing credentials
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:317 Restoring backup_id='2024-12-22T01:32:30Z'
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:322 Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:336 Inserting value after restore
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:345 Ensuring that pre-backup and post-restore values exist in the database
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:356 Scaling mysql application to 3 units
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s (waiting for exactly 3 units, current : 1)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [executing] active: Primary
+  another-mysql-k8s/2 [executing] maintenance: Initialising mysqld
+  another-mysql-k8s/1 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  another-mysql-k8s/2 [executing] waiting: waiting to get cluster primary from peers
+  another-mysql-k8s/1 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [executing] active: Primary
+  another-mysql-k8s/2 [executing] active: 
+  another-mysql-k8s/1 [executing] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  another-mysql-k8s/2 [idle] active: 
+  another-mysql-k8s/1 [idle] active: 
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:359 Ensuring inserted values before backup and after restore exist on all units
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.1    unsupported  01:40:41Z
+
+App                Version                  Status  Scale  Charm          Channel        Rev  Address         Exposed  Message
+another-mysql-k8s  8.0.39-0ubuntu0.22.04.1  active      3  mysql-k8s                       1  10.152.183.90   no       
+mysql-k8s          8.0.39-0ubuntu0.22.04.1  active      3  mysql-k8s                       0  10.152.183.135  no       
+s3-integrator                               active      1  s3-integrator  latest/stable   77  10.152.183.75   no       
+
+Unit                  Workload  Agent  Address     Ports  Message
+another-mysql-k8s/0*  active    idle   10.1.63.16         Primary
+another-mysql-k8s/1   active    idle   10.1.63.20         
+another-mysql-k8s/2   active    idle   10.1.63.19         
+mysql-k8s/0*          active    idle   10.1.63.9          Primary
+mysql-k8s/1           active    idle   10.1.63.14         
+mysql-k8s/2           active    idle   10.1.63.13         
+s3-integrator/0*      active    idle   10.1.63.10         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-another-mysql-k8s-1: 01:39:08 ERROR unit.another-mysql-k8s/1.juju-log Failed to connect to MySQL with mysqlsh
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 621, in _run_mysqlsh_script
+    process = self.container.exec(cmd)
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/venv/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysqlsh" (exec 13: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2024-12-22T01:39:08Z ERROR exec 13: timeout waiting for websocket connections: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 3042, in check_mysqlsh_connection
+    self._run_mysqlsh_script("\n".join(connect_commands))
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-another-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 627, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:66 Cleaning backups from buckets

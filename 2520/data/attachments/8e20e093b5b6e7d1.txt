@@ -1,0 +1,22 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:29 Deploying 3 units of mysql-k8s
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:40 Waiting until application enters maintenance status
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:54 Waiting until leader unit is creating cluster
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.1    unsupported  01:44:15Z
+
+App        Version                  Status  Scale  Charm      Channel  Rev  Address        Exposed  Message
+mysql-k8s  8.0.39-0ubuntu0.22.04.1  active      3  mysql-k8s             0  10.152.183.43  no       
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0*  active    idle   10.1.89.139         Primary
+mysql-k8s/1   active    idle   10.1.89.140         
+mysql-k8s/2   active    idle   10.1.89.141         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
