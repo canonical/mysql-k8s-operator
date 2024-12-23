@@ -1,0 +1,109 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model microk8s-localhost:test on unspecified cloud
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:68 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+  mysql-k8s/2 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: installing charm software
+  mysql-k8s/1 [executing] maintenance: installing charm software
+  mysql-k8s/2 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/2 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: 
+  mysql-k8s/1 [idle] maintenance: joining the cluster
+  mysql-k8s/2 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:71 Deploying mysql-test-app
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/mysql-test-app-63
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:74 Relating mysql-k8s with mysql-test-app
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.conftest:conftest.py:20 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:124 Ensuring that all units continuous writes incrementing
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=786 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=789 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=792 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:135 Sending SIGSTOP to unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:158 Waiting for new primary to be elected
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:172 Ensuring all remaining units continuous writes incrementing
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=1023 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=2226 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=2229 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:181 Sending SIGCONT to mysql-k8s/2
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:224 Ensuring that there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing:test_self_healing.py:229 Ensure all units continuous writes incrementing
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=4580 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=4583 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=4586 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.1    unsupported  01:36:29Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.39-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.80   no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   63  10.152.183.219  no       Last written value=2261
+
+Unit               Workload  Agent  Address       Ports  Message
+mysql-k8s/0        active    idle   10.1.109.203         Primary
+mysql-k8s/1        active    idle   10.1.109.204         
+mysql-k8s/2*       active    idle   10.1.109.205         Primary
+mysql-test-app/0*  active    idle   10.1.109.206         Last written value=2261
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:32:47 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:36:00 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:36:01 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:36:01 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1954, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:36:05 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:36:05 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1954, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
