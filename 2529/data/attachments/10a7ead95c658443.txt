@@ -1,0 +1,66 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.1    unsupported  01:29:05Z
+
+App        Version  Status   Scale  Charm           Channel      Rev  Address        Exposed  Message
+mysql-k8s           error        3  mysql-k8s       8.0/stable   180  10.152.183.20  no       hook failed: "database-relation-changed"
+test-app   0.0.2    waiting      1  mysql-test-app  latest/edge   63  10.152.183.94  no       
+
+Unit          Workload  Agent      Address       Ports  Message
+mysql-k8s/0   unknown   executing  10.1.243.203         
+mysql-k8s/1*  error     idle       10.1.243.205         hook failed: "database-relation-changed"
+mysql-k8s/2   unknown   executing  10.1.243.204         
+test-app/0*   waiting   idle       10.1.243.206         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:29:04 ERROR unit.mysql-k8s/1.juju-log database:4: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/./src/charm.py", line 888, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 2886, in _on_relation_changed_event
+    getattr(self.on, "database_requested").emit(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 724, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/relations/mysql_provider.py", line 99, in _on_database_requested
+    if not self.charm.cluster_initialized:
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 617, in cluster_initialized
+    if self._mysql.cluster_metadata_exists(self.get_unit_address(unit)):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 724, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1539, in cluster_metadata_exists
+    output = self._run_mysqlsh_script("\n".join(check_cluster_metadata_commands))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_k8s/v1/charm_tracing.py", line 724, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 599, in _run_mysqlsh_script
+    self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/model.py", line 2438, in push
+    self._pebble.push(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 2494, in push
+    response = self._request_raw('POST', '/v1/files', None, headers, data)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/ops/pebble.py", line 2048, in _request_raw
+    raise ConnectionError(
+ops.pebble.ConnectionError: Could not connect to Pebble: socket not found at '/charm/containers/mysql/pebble.socket' (container restarted?)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
