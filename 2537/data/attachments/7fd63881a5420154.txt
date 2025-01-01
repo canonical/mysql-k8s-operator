@@ -1,0 +1,26 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.1    unsupported  01:32:31Z
+
+App           Version                  Status  Scale  Charm          Channel        Rev  Address         Exposed  Message
+kafka                                  active      1  kafka-k8s      latest/stable    5  10.152.183.123  no       
+mongodb                                active      1  mongodb-k8s    5/edge          36  10.152.183.185  no       Primary
+mysql-k8s     8.0.39-0ubuntu0.22.04.1  active      1  mysql-k8s                       0  10.152.183.169  no       
+osm-keystone                           active      1  osm-keystone   latest/beta     10  10.152.183.74   no       
+osm-pol                                active      1  osm-pol        latest/beta    337  10.152.183.235  no       
+zookeeper                              active      1  zookeeper-k8s  latest/stable   10  10.152.183.45   no       
+
+Unit             Workload  Agent  Address       Ports  Message
+kafka/0*         active    idle   10.1.226.144         
+mongodb/0*       active    idle   10.1.226.140         Primary
+mysql-k8s/0*     active    idle   10.1.226.145         Primary
+osm-keystone/0*  active    idle   10.1.226.136         
+osm-pol/0*       active    idle   10.1.226.138         
+zookeeper/0*     active    idle   10.1.226.143         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mongodb-0: 01:31:05 ERROR unit.mongodb/0.juju-log Failed to get pbm status.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
