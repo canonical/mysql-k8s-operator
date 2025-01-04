@@ -839,24 +839,32 @@ class MySQL(MySQLBase):
             )
             return False
 
-        is_running = container.get_services(MYSQL_BINLOGS_COLLECTOR_SERVICE)[
+        service = container.get_services(MYSQL_BINLOGS_COLLECTOR_SERVICE).get(
             MYSQL_BINLOGS_COLLECTOR_SERVICE
-        ].is_running()
+        )
+        if not service:
+            logger.error("Binlogs collector service does not exist")
+            return False
 
-        if is_running and (
-            not self.charm.unit.is_leader() or "binlogs-collecting" not in self.charm.app_peer_data
-        ):
-            logger.debug("Stopping binlogs collector")
-            container.stop(MYSQL_BINLOGS_COLLECTOR_SERVICE)
+        is_enabled = service.startup == "enabled"
+        is_active = service.is_running()
+        supposed_to_run = (
+            self.charm.unit.is_leader() and "binlogs-collecting" in self.charm.app_peer_data
+        )
 
-        if not self.charm.unit.is_leader():
-            return True
-
-        if "binlogs-collecting" in self.charm.app_peer_data and (force_restart or not is_running):
-            logger.debug("Restarting binlogs collector")
+        if supposed_to_run and (force_restart or not is_enabled):
             if not self.charm.backups.update_binlogs_collector_config():
                 return False
-            container.restart(MYSQL_BINLOGS_COLLECTOR_SERVICE)
+
+        if supposed_to_run and is_enabled and not is_active:
+            logger.error("Binlogs collector is enabled but not running. It will be restarted")
+
+        if is_active and (not supposed_to_run or force_restart):
+            container.stop(MYSQL_BINLOGS_COLLECTOR_SERVICE)
+
+        self.charm._reconcile_pebble_layer(container)
+        # Replan anyway as we may need to restart already enabled binlogs collector service (therefore without pebble layers change)
+        container.replan()
 
         return True
 

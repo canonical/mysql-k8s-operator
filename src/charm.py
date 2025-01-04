@@ -252,7 +252,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     "override": "replace",
                     "summary": "mysql-pitr-helper binlogs collector",
                     "command": "/start-mysql-pitr-helper-collector.sh",
-                    "startup": "disabled",
+                    "startup": "enabled"
+                    if ("binlogs-collecting" in self.app_peer_data and self.unit.is_leader())
+                    else "disabled",
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
                 },
@@ -422,7 +424,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.info("Reconciling the pebble layer")
 
             container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
-            container.replan()
+            # Do not wait for all services to successfully start as binlogs collector may restart several times
+            # (pebble failure restart) until MySQL is ready
+            container._pebble.replan_services(timeout=0)
             self._mysql.wait_until_mysql_connection()
 
             if (
@@ -711,6 +715,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             # Data directory is already initialised, skip configuration
             self.unit.status = MaintenanceStatus("Starting mysqld")
             logger.info("Data directory is already initialised, skipping configuration")
+            if self.unit.is_leader() and "binlogs-collecting" in self.app_peer_data:
+                self.backups.update_binlogs_collector_config()
             self._reconcile_pebble_layer(container)
             return
 
@@ -747,6 +753,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         ):
             logger.exception("Failed to initialize primary")
             raise
+
+        self._mysql.start_stop_binlogs_collecting(force_restart=True)
 
     def _handle_potential_cluster_crash_scenario(self) -> bool:
         """Handle potential full cluster crash scenarios.
