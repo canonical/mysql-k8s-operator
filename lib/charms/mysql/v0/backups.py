@@ -582,13 +582,6 @@ class MySQLBackups(Object):
         if not self.charm._mysql.start_stop_binlogs_collecting():
             logger.error("Failed to stop binlogs collecting prior to restore")
 
-        success, error_message = self._clean_data_dir_and_start_mysqld()
-        if not success:
-            logger.error(f"Restore failed: {error_message}")
-            self.charm.unit.status = BlockedStatus(error_message)
-            event.fail(error_message)
-            return
-
         if restore_to_time is not None:
             self.charm.unit.status = MaintenanceStatus("Running point-in-time-recovery operations")
             success, error_message = self._pitr_restore(restore_to_time, s3_parameters)
@@ -681,6 +674,10 @@ class MySQLBackups(Object):
             logger.debug(f"Stderr of xtrabackup move-back command: {stderr}")
         except MySQLRestoreBackupError:
             return False, False, f"Failed to restore backup {backup_id}"
+
+        success, error_message = self._clean_data_dir_and_start_mysqld()
+        if not success:
+            return False, False, error_message
 
         return True, True, ""
 
