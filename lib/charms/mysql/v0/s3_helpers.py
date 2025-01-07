@@ -19,6 +19,7 @@ import logging
 import pathlib
 import tempfile
 import time
+from contextlib import nullcontext
 from io import BytesIO
 from typing import Dict, List, Tuple
 
@@ -57,7 +58,6 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
 
     Returns: a boolean indicating success.
     """
-    ca_file = None
     try:
         logger.info(f"Uploading content to bucket={s3_parameters['bucket']}, path={content_path}")
         session = boto3.session.Session(
@@ -65,36 +65,33 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
             aws_secret_access_key=s3_parameters["secret-key"],
             region_name=s3_parameters["region"] or None,
         )
-        verif = True
-        if ca_chain := s3_parameters.get("tls-ca-chain"):
-            ca_file = tempfile.NamedTemporaryFile()
-            ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
-            ca_file.write(ca.encode())
-            ca_file.flush()
-            verif = ca_file.name
 
-        s3 = session.resource(
-            "s3",
-            endpoint_url=s3_parameters["endpoint"],
-            verify=verif,
-        )
+        ca_chain = s3_parameters.get("tls-ca-chain")
 
-        bucket = s3.Bucket(s3_parameters["bucket"])
+        with tempfile.NamedTemporaryFile() if ca_chain else nullcontext() as ca_file:
+            if ca_file:
+                ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
+                ca_file.write(ca.encode())
+                ca_file.flush()
 
-        with tempfile.NamedTemporaryFile() as temp_file:
-            temp_file.write(content.encode("utf-8"))
-            temp_file.flush()
+            s3 = session.resource(
+                "s3",
+                endpoint_url=s3_parameters["endpoint"],
+                verify=ca_file.name if ca_file else True,
+            )
 
-            bucket.upload_file(temp_file.name, content_path)
+            bucket = s3.Bucket(s3_parameters["bucket"])
+
+            with tempfile.NamedTemporaryFile() as temp_file:
+                temp_file.write(content.encode("utf-8"))
+                temp_file.flush()
+                bucket.upload_file(temp_file.name, content_path)
     except Exception as e:
         logger.exception(
             f"Failed to upload content to S3 bucket={s3_parameters['bucket']}, path={content_path}",
             exc_info=e,
         )
         return False
-    finally:
-        if ca_file:
-            ca_file.close()
 
     return True
 
@@ -112,7 +109,6 @@ def _read_content_from_s3(content_path: str, s3_parameters: dict) -> str | None:
         a string with the content if object is successfully downloaded and None if file is not existing or error
         occurred during download.
     """
-    ca_file = None
     try:
         logger.info(f"Reading content from bucket={s3_parameters['bucket']}, path={content_path}")
         session = boto3.session.Session(
@@ -120,25 +116,26 @@ def _read_content_from_s3(content_path: str, s3_parameters: dict) -> str | None:
             aws_secret_access_key=s3_parameters["secret-key"],
             region_name=s3_parameters["region"],
         )
-        verif = True
-        if ca_chain := s3_parameters.get("tls-ca-chain"):
-            ca_file = tempfile.NamedTemporaryFile()
-            ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
-            ca_file.write(ca.encode())
-            ca_file.flush()
-            verif = ca_file.name
 
-        s3 = session.resource(
-            "s3",
-            endpoint_url=s3_parameters["endpoint"],
-            verify=verif,
-        )
+        ca_chain = s3_parameters.get("tls-ca-chain")
 
-        bucket = s3.Bucket(s3_parameters["bucket"])
+        with tempfile.NamedTemporaryFile() if ca_chain else nullcontext() as ca_file:
+            if ca_file:
+                ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
+                ca_file.write(ca.encode())
+                ca_file.flush()
 
-        with BytesIO() as buf:
-            bucket.download_fileobj(content_path, buf)
-            return buf.getvalue().decode("utf-8")
+            s3 = session.resource(
+                "s3",
+                endpoint_url=s3_parameters["endpoint"],
+                verify=ca_file.name if ca_file else True,
+            )
+
+            bucket = s3.Bucket(s3_parameters["bucket"])
+
+            with BytesIO() as buf:
+                bucket.download_fileobj(content_path, buf)
+                return buf.getvalue().decode("utf-8")
     except botocore.exceptions.ClientError as e:
         if e.response["Error"]["Code"] == "404":
             logger.info(
@@ -154,9 +151,6 @@ def _read_content_from_s3(content_path: str, s3_parameters: dict) -> str | None:
             f"Failed to read content from S3 bucket={s3_parameters['bucket']}, path={content_path}",
             exc_info=e,
         )
-    finally:
-        if ca_file:
-            ca_file.close()
 
     return None
 
