@@ -570,7 +570,7 @@ class MySQLBackups(Object):
                     "s3-block-message": MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR,
                     "binlogs-collecting": "",
                 })
-                if not self.charm._mysql.start_stop_binlogs_collecting():
+                if not self.charm._mysql.reconcile_binlogs_collection():
                     logger.error("Failed to stop binlogs collecting after failed restore")
                 self.charm.unit.status = BlockedStatus(error_message)
             return
@@ -579,7 +579,7 @@ class MySQLBackups(Object):
             "s3-block-message": MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR,
             "binlogs-collecting": "",
         })
-        if not self.charm._mysql.start_stop_binlogs_collecting():
+        if not self.charm._mysql.reconcile_binlogs_collection():
             logger.error("Failed to stop binlogs collecting prior to restore")
 
         if restore_to_time is not None:
@@ -799,7 +799,7 @@ class MySQLBackups(Object):
                 "binlogs-collecting": "",
             })
 
-        if not self.charm._mysql.start_stop_binlogs_collecting(True):
+        if not self.charm._mysql.reconcile_binlogs_collection(True):
             logger.error("Failed to restart binlogs collecting after S3 relation update")
 
     def _on_s3_credentials_gone(self, event: CredentialsGoneEvent) -> None:
@@ -810,7 +810,7 @@ class MySQLBackups(Object):
             "s3-block-message": "",
             "binlogs-collecting": "",
         })
-        if not self.charm._mysql.start_stop_binlogs_collecting():
+        if not self.charm._mysql.reconcile_binlogs_collection():
             logger.error("Failed to stop binlogs collecting after S3 relation depart")
 
     def update_binlogs_collector_config(self) -> bool:

@@ -754,7 +754,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.exception("Failed to initialize primary")
             raise
 
-        self._mysql.start_stop_binlogs_collecting(force_restart=True)
+        self._mysql.reconcile_binlogs_collection(force_restart=True)
 
     def _handle_potential_cluster_crash_scenario(self) -> bool:
         """Handle potential full cluster crash scenarios.
@@ -912,8 +912,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if self._is_unit_waiting_to_join_cluster():
             self.join_unit_to_cluster()
 
-        if not self._mysql.start_stop_binlogs_collecting():
-            logger.error("Failed to start or stop binlogs collecting during peer relation event")
+        if not self._mysql.reconcile_binlogs_collection():
+            logger.error("Failed to reconcile binlogs collection during peer relation event")
 
     def _on_database_storage_detaching(self, _) -> None:
         """Handle the database storage detaching event."""
