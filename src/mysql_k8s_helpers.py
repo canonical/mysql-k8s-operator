@@ -35,6 +35,7 @@ from constants import (
     CHARMED_MYSQL_XTRABACKUP_LOCATION,
     CONTAINER_NAME,
     LOG_ROTATE_CONFIG_FILE,
+    MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE,
     MYSQL_BINLOGS_COLLECTOR_SERVICE,
     MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
@@ -867,6 +868,12 @@ class MySQL(MySQLBase):
         container.replan()
 
         return True
+
+    def delete_binlogs_collector_config(self) -> None:
+        """Delete binlogs collector config file."""
+        logger.info("Deleting binlogs collector config")
+        if self.container.exists(MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE):
+            self.container.remove_path(MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE)
 
     def get_cluster_members(self) -> list[str]:
         """Get cluster members in MySQL MEMBER_HOST format.

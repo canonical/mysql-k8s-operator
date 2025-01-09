@@ -3270,6 +3270,11 @@ class MySQLBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete_binlogs_collector_config(self) -> None:
+        """Delete binlogs collector config file."""
+        raise NotImplementedError
+
+    @abstractmethod
     def get_cluster_members(self) -> list[str]:
         """Get cluster members in MySQL MEMBER_HOST format.
 

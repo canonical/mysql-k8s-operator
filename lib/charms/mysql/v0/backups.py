@@ -803,6 +803,7 @@ class MySQLBackups(Object):
             logger.error("Failed to restart binlogs collecting after S3 relation update")
 
     def _on_s3_credentials_gone(self, event: CredentialsGoneEvent) -> None:
+        self.charm._mysql.delete_binlogs_collector_config()
         if not self.charm.unit.is_leader():
             logger.debug("Early exit on _on_s3_credentials_gone: unit is not a leader")
             return
