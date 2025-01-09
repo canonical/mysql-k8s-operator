@@ -46,7 +46,6 @@ class MySQL(MySQLBase):
 """
 
 import datetime
-import io
 import logging
 import pathlib
 import typing
@@ -839,26 +838,22 @@ class MySQLBackups(Object):
             else f"{s3_parameters['bucket']}/{s3_parameters['path']}/binlogs"
         )
 
-        with io.StringIO() as string_io:
-            yaml.dump(
-                {
-                    "endpoint": s3_parameters["endpoint"],
-                    "hosts": self.charm._mysql.get_cluster_members(),
-                    "user": SERVER_CONFIG_USERNAME,
-                    "pass": self.charm.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
-                    "storage_type": "s3",
-                    "s3": {
-                        "access_key_id": s3_parameters["access-key"],
-                        "secret_access_key": s3_parameters["secret-key"],
-                        "bucket_url": bucket_url,
-                        "default_region": s3_parameters["region"],
-                    },
-                },
-                string_io,
-            )
-            self.charm._mysql.write_content_to_file(
-                path=MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE,
-                content=string_io.getvalue(),
-            )
+        content = yaml.dump({
+            "endpoint": s3_parameters["endpoint"],
+            "hosts": self.charm._mysql.get_cluster_members(),
+            "user": SERVER_CONFIG_USERNAME,
+            "pass": self.charm.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
+            "storage_type": "s3",
+            "s3": {
+                "access_key_id": s3_parameters["access-key"],
+                "secret_access_key": s3_parameters["secret-key"],
+                "bucket_url": bucket_url,
+                "default_region": s3_parameters["region"],
+            },
+        })
+        self.charm._mysql.write_content_to_file(
+            path=MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE,
+            content=content,
+        )
 
         return True
