@@ -19,7 +19,7 @@ APP_NAME = METADATA["name"]
 @markers.amd64_only
 async def test_arm_charm_on_amd_host(ops_test: OpsTest) -> None:
     """Tries deploying an arm64 charm on amd64 host."""
-    charm = await get_charm(".", "arm64", 1)
+    charm = await get_charm(".", "arm64")
 
     await ops_test.model.deploy(
         charm,
@@ -41,7 +41,7 @@ async def test_arm_charm_on_amd_host(ops_test: OpsTest) -> None:
 @markers.arm64_only
 async def test_amd_charm_on_arm_host(ops_test: OpsTest) -> None:
     """Tries deploying an amd64 charm on arm64 host."""
-    charm = await get_charm(".", "amd64", 0)
+    charm = await get_charm(".", "amd64")
 
     await ops_test.model.deploy(
         charm,
