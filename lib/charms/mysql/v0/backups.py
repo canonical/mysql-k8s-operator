@@ -48,6 +48,7 @@ class MySQL(MySQLBase):
 import datetime
 import logging
 import pathlib
+import re
 import typing
 from typing import Dict, List, Optional, Tuple
 
@@ -493,6 +494,18 @@ class MySQLBackups(Object):
             event.fail(error_message)
             return False
 
+        # Quick check for timestamp format
+        restore_to_time = event.params.get("restore-to-time")
+        if (
+            restore_to_time
+            and restore_to_time != "latest"
+            and not self._is_mysql_timestamp(restore_to_time)
+        ):
+            error_message = "Bad restore-to-time format"
+            logger.error(f"Restore failed: {error_message}")
+            event.fail(error_message)
+            return False
+
         if not self.charm._mysql.is_server_connectable():
             error_message = "Server running mysqld is not connectable"
             logger.error(f"Restore failed: {error_message}")
@@ -857,3 +870,19 @@ class MySQLBackups(Object):
         )
 
         return True
+
+    def _is_mysql_timestamp(self, timestamp: str) -> bool:
+        # Format is the same as in the mysql-pitr-helper project.
+        if not re.match(
+            r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$",
+            timestamp,
+        ):
+            return False
+        try:
+            self._parse_mysql_timestamp(timestamp)
+            return True
+        except ValueError:
+            return False
+
+    def _parse_mysql_timestamp(self, timestamp: str) -> datetime.datetime:
+        return datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")

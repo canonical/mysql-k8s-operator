@@ -57,7 +57,7 @@ restore:
       description: A backup-id to identify the backup to restore (format = %Y-%m-%dT%H:%M:%SZ)
     restore-to-time:
       type: string
-      description: Point-in-time-recovery target in MySQL timestamp format.
+      description: Point-in-time-recovery target (format = %Y-%m-%d %H:%M:%S).
 
 pre-upgrade-check:
   description: Run necessary pre-upgrade checks and preparations before executing a charm refresh.
