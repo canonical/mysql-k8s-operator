@@ -774,15 +774,8 @@ async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str)
     assert return_code == 0
 
 
-async def get_charm(charm_path: Union[str, Path], architecture: str, bases_index: int) -> Path:
+async def get_charm(charm_path: Union[str, Path], architecture: str) -> Path:
     """Fetches packed charm from CI runner without checking for architecture."""
     charm_path = Path(charm_path)
-    charmcraft_yaml = yaml.safe_load((charm_path / "charmcraft.yaml").read_text())
-    assert charmcraft_yaml["type"] == "charm"
-
-    base = charmcraft_yaml["bases"][bases_index]
-    build_on = base.get("build-on", [base])[0]
-    version = build_on["channel"]
-    packed_charms = list(charm_path.glob(f"*{version}-{architecture}.charm"))
-
+    packed_charms = list(charm_path.glob(f"*-{architecture}.charm"))
     return packed_charms[0].resolve(strict=True)
