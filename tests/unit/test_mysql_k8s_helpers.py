@@ -11,7 +11,6 @@ from ops.pebble import ExecError
 
 from mysql_k8s_helpers import (
     MYSQLD_SOCK_FILE,
-    MYSQLSH_SCRIPT_FILE,
     MySQL,
     MySQLCreateDatabaseError,
     MySQLCreateUserError,
@@ -106,13 +105,18 @@ class TestMySQL(unittest.TestCase):
     def test_create_database(self, _run_mysqlsh_script):
         """Test successful execution of create_database."""
         _expected_create_database_commands = (
-            "shell.connect_to_primary('serverconfig:serverconfigpassword@127.0.0.1')",
+            "shell.connect_to_primary()",
             'session.run_sql("CREATE DATABASE IF NOT EXISTS `test_database`;")',
         )
 
         self.mysql.create_database("test_database")
 
-        _run_mysqlsh_script.assert_called_once_with("\n".join(_expected_create_database_commands))
+        _run_mysqlsh_script.assert_called_once_with(
+            "\n".join(_expected_create_database_commands),
+            user="serverconfig",
+            host="127.0.0.1",
+            password="serverconfigpassword",
+        )
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_create_database_exception(self, _run_mysqlsh_script):
@@ -127,13 +131,18 @@ class TestMySQL(unittest.TestCase):
         """Test successful execution of create_user."""
         _escaped_attributes = json.dumps({"label": "test_label"}).replace('"', r"\"")
         _expected_create_user_commands = (
-            "shell.connect_to_primary('serverconfig:serverconfigpassword@127.0.0.1')",
+            "shell.connect_to_primary()",
             f"session.run_sql(\"CREATE USER `test_user`@`%` IDENTIFIED BY 'test_password' ATTRIBUTE '{_escaped_attributes}';\")",
         )
 
         self.mysql.create_user("test_user", "test_password", "test_label")
 
-        _run_mysqlsh_script.assert_called_once_with("\n".join(_expected_create_user_commands))
+        _run_mysqlsh_script.assert_called_once_with(
+            "\n".join(_expected_create_user_commands),
+            user="serverconfig",
+            host="127.0.0.1",
+            password="serverconfigpassword",
+        )
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_create_user_exception(self, _run_mysqlsh_script):
@@ -160,16 +169,19 @@ class TestMySQL(unittest.TestCase):
         )
 
         _expected_escalate_user_privileges_commands = (
-            "shell.connect_to_primary('serverconfig:serverconfigpassword@127.0.0.1')",
+            "shell.connect_to_primary()",
             'session.run_sql("GRANT ALL ON *.* TO `test_user`@`%` WITH GRANT OPTION;")',
-            f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM `test_user`@`%`;\")",
+            f'session.run_sql("REVOKE {", ".join(super_privileges_to_revoke)} ON *.* FROM `test_user`@`%`;")',
             'session.run_sql("FLUSH PRIVILEGES;")',
         )
 
         self.mysql.escalate_user_privileges("test_user")
 
         _run_mysqlsh_script.assert_called_once_with(
-            "\n".join(_expected_escalate_user_privileges_commands)
+            "\n".join(_expected_escalate_user_privileges_commands),
+            user="serverconfig",
+            host="127.0.0.1",
+            password="serverconfigpassword",
         )
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
@@ -191,21 +203,33 @@ class TestMySQL(unittest.TestCase):
             'WHERE attributes.attribute LIKE \'%"test_label_name": "test_label_value"%\'',
         )
 
-        _run_mysqlcli_script.return_value = "users\ntest_user@%\ntest_user_2@localhost"
+        _run_mysqlcli_script.return_value = [
+            [
+                "test_user@%",
+            ],
+            [
+                "test_user_2@localhost",
+            ],
+        ]
 
         _expected_drop_users_commands = (
-            "shell.connect_to_primary('serverconfig:serverconfigpassword@127.0.0.1')",
+            "shell.connect_to_primary()",
             "session.run_sql(\"DROP USER IF EXISTS 'test_user'@'%', 'test_user_2'@'localhost';\")",
         )
 
         self.mysql.delete_users_with_label("test_label_name", "test_label_value")
 
         _run_mysqlcli_script.assert_called_once_with(
-            "; ".join(_expected_get_label_users_commands),
+            _expected_get_label_users_commands,
             user="serverconfig",
             password="serverconfigpassword",
         )
-        _run_mysqlsh_script.assert_called_once_with("\n".join(_expected_drop_users_commands))
+        _run_mysqlsh_script.assert_called_once_with(
+            "\n".join(_expected_drop_users_commands),
+            user="serverconfig",
+            host="127.0.0.1",
+            password="serverconfigpassword",
+        )
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
@@ -227,43 +251,52 @@ class TestMySQL(unittest.TestCase):
         """Test a successful execution of run_mysqlsh_script."""
         _container.exec.return_value = MagicMock()
         _container.exec.return_value.wait_output.return_value = (
-            b"stdout",
-            b"stderr",
+            "###stdout",
+            "stderr",
         )
         self.mysql.container = _container
 
-        self.mysql._run_mysqlsh_script("script")
+        self.mysql._run_mysqlsh_script(
+            "script", user="serverconfig", password="serverconfigpassword", host="127.0.0.1:3306"
+        )
 
+        call_script = "shell.options.set('useWizards', False)\nprint('###')\nscript"
         _container.exec.assert_called_once_with(
             [
                 "/usr/bin/mysqlsh",
-                "--no-wizard",
+                "--passwords-from-stdin",
+                "--uri=serverconfig@127.0.0.1:3306",
                 "--python",
                 "--verbose=0",
-                "-f",
-                MYSQLSH_SCRIPT_FILE,
-                ";",
-                "rm",
-                MYSQLSH_SCRIPT_FILE,
+                "-c",
+                call_script,
             ],
+            stdin="serverconfigpassword",
         )
 
         _container.reset_mock()
-        self.mysql._run_mysqlsh_script("script", timeout=10)
+        output = self.mysql._run_mysqlsh_script(
+            "script",
+            user="serverconfig",
+            password="serverconfigpassword",
+            host="127.0.0.1:3306",
+            timeout=10,
+        )
+        assert output == "stdout"
+
         _container.exec.assert_called_once_with(
             [
                 "timeout",
                 "10",
                 "/usr/bin/mysqlsh",
-                "--no-wizard",
+                "--passwords-from-stdin",
+                "--uri=serverconfig@127.0.0.1:3306",
                 "--python",
                 "--verbose=0",
-                "-f",
-                MYSQLSH_SCRIPT_FILE,
-                ";",
-                "rm",
-                MYSQLSH_SCRIPT_FILE,
+                "-c",
+                call_script,
             ],
+            stdin="serverconfigpassword",
         )
 
     @patch("ops.model.Container")
@@ -271,24 +304,41 @@ class TestMySQL(unittest.TestCase):
         """Test a execution of run_mysqlcli_script."""
         _container.exec.return_value = MagicMock()
         _container.exec.return_value.wait_output.return_value = (
-            b"stdout",
-            b"stderr",
+            "",
+            None,
         )
         self.mysql.container = _container
 
-        self.mysql._run_mysqlcli_script("script")
+        self.mysql._run_mysqlcli_script(("script",))
 
         _container.exec.assert_called_once_with(
             [
                 "/usr/bin/mysql",
                 "-u",
                 "root",
-                "--protocol=SOCKET",
+                "-N",
                 f"--socket={MYSQLD_SOCK_FILE}",
                 "-e",
                 "script",
             ],
             timeout=None,
+        )
+
+        _container.reset_mock()
+        self.mysql._run_mysqlcli_script(("script",), password="rootpassword")
+        _container.exec.assert_called_once_with(
+            [
+                "/usr/bin/mysql",
+                "-u",
+                "root",
+                "-p",
+                "-N",
+                f"--socket={MYSQLD_SOCK_FILE}",
+                "-e",
+                "script",
+            ],
+            timeout=None,
+            stdin="rootpassword",
         )
 
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
