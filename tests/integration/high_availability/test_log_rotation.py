@@ -40,13 +40,11 @@ async def test_log_rotation(
     logger.info("Extending update-status-hook-interval to 60m")
     await ops_test.model.set_config({"update-status-hook-interval": "60m"})
 
-    # Exclude slowquery log files as slowquery logs are not enabled by default
-    log_types = ["error", "general", "audit"]
-    log_files = ["error.log", "general.log", "audit.log"]
+    # Exclude slowquery/general log files as they are not enabled by default
+    log_types = ["error", "audit"]
+    log_files = ["error.log", "audit.log"]
     archive_directories = [
         "archive_error",
-        "archive_general",
-        "archive_slowquery",
         "archive_audit",
     ]
 
