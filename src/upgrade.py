@@ -5,6 +5,7 @@
 
 import json
 import logging
+from socket import getfqdn
 from typing import TYPE_CHECKING
 
 from charms.data_platform_libs.v0.upgrade import (
@@ -15,6 +16,7 @@ from charms.data_platform_libs.v0.upgrade import (
 )
 from charms.mysql.v0.mysql import (
     MySQLGetMySQLVersionError,
+    MySQLPluginInstallError,
     MySQLRebootFromCompleteOutageError,
     MySQLRescanClusterError,
     MySQLServerNotUpgradableError,
@@ -32,7 +34,7 @@ from tenacity.wait import wait_fixed
 from typing_extensions import override
 
 import k8s_helpers
-from constants import MYSQLD_SAFE_SERVICE
+from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE
 
 if TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -155,14 +157,12 @@ class MySQLK8sUpgrade(DataUpgrade):
             run_action = "run-action"
             wait = " --wait"
         logger.critical(
-            "\n".join(
-                (
-                    "Upgrade failed, follow the instructions below to rollback:",
-                    f"  1 - Run `juju {run_action} {self.charm.app.name}/leader pre-upgrade-check{wait}` to configure rollback",
-                    f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback",
-                    f"  3 - Run `juju {run_action} {self.charm.app.name}/leader resume-upgrade{wait}` to resume the rollback",
-                )
-            )
+            "\n".join((
+                "Upgrade failed, follow the instructions below to rollback:",
+                f"  1 - Run `juju {run_action} {self.charm.app.name}/leader pre-upgrade-check{wait}` to configure rollback",
+                f"  2 - Run `juju refresh --revision <previous-revision> {self.charm.app.name}` to initiate the rollback",
+                f"  3 - Run `juju {run_action} {self.charm.app.name}/leader resume-upgrade{wait}` to resume the rollback",
+            ))
         )
 
     def _pre_upgrade_prepare(self) -> None:
@@ -174,12 +174,12 @@ class MySQLK8sUpgrade(DataUpgrade):
         """
         if self.charm._mysql.get_primary_label() != f"{self.charm.app.name}-0":
             # set the primary to the first unit for switchover mitigation
-            new_primary = self.charm._get_unit_fqdn(f"{self.charm.app.name}/0")
+            new_primary = getfqdn(self.charm.get_unit_hostname(f"{self.charm.app.name}/0"))
             self.charm._mysql.set_cluster_primary(new_primary)
 
         # set slow shutdown on all instances
         for unit in self.app_units:
-            unit_address = self.charm._get_unit_fqdn(unit.name)
+            unit_address = self.charm.get_unit_address(unit)
             self.charm._mysql.set_dynamic_variable(
                 variable="innodb_fast_shutdown", value="0", instance_address=unit_address
             )
@@ -203,6 +203,8 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         Run update status for every unit when the upgrade is completed.
         """
+        if not self.charm.unit.get_container(CONTAINER_NAME).can_connect():
+            return
         if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
             self.charm._on_update_status(None)
 
@@ -233,9 +235,17 @@ class MySQLK8sUpgrade(DataUpgrade):
                 self._recover_multi_unit_cluster()
             else:
                 self._recover_single_unit_cluster()
+            if self.charm.config.plugin_audit_enabled:
+                self.charm._mysql.install_plugins(["audit_log", "audit_log_filter"])
             self._complete_upgrade()
         except MySQLRebootFromCompleteOutageError:
             logger.error("Failed to reboot single unit from outage after upgrade")
+            self.set_unit_failed()
+            self.charm.unit.status = BlockedStatus(
+                "upgrade failed. Check logs for rollback instruction"
+            )
+        except MySQLPluginInstallError:
+            logger.error("Failed to install audit plugin")
             self.set_unit_failed()
             self.charm.unit.status = BlockedStatus(
                 "upgrade failed. Check logs for rollback instruction"
@@ -260,7 +270,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             self._complete_upgrade()
 
     def _recover_multi_unit_cluster(self) -> None:
-        logger.debug("Recovering unit")
+        logger.info("Recovering unit")
         try:
             for attempt in Retrying(
                 stop=stop_after_attempt(RECOVER_ATTEMPTS), wait=wait_fixed(10)
@@ -293,9 +303,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         if self.charm.unit_label == f"{self.charm.app.name}/1":
             # penultimate unit, reset the primary for faster switchover
             try:
-                self.charm._mysql.set_cluster_primary(
-                    self.charm._get_unit_fqdn(self.charm.unit.name)
-                )
+                self.charm._mysql.set_cluster_primary(self.charm.get_unit_address(self.charm.unit))
             except MySQLSetClusterPrimaryError:
                 logger.debug("Failed to set primary")
 
@@ -322,9 +330,9 @@ class MySQLK8sUpgrade(DataUpgrade):
         if len(self.upgrade_stack or []) < self.charm.app.planned_units():
             # check is done for 1st upgrading unit
             return
-        instance = self.charm._get_unit_fqdn(f"{self.charm.app.name}/0")
+        instance = getfqdn(self.charm.get_unit_hostname(f"{self.charm.app.name}/0"))
         self.charm._mysql.verify_server_upgradable(instance=instance)
-        logger.debug("MySQL server is upgradeable")
+        logger.info("Check MySQL server upgradeability passed")
 
     def _check_server_unsupported_downgrade(self) -> bool:
         """Check error log for unsupported downgrade.

@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 # The unique Charmhub library identifier, never change it
 LIBID = "4de21f1a022c4e2c87ac8e672ec16f6a"
 LIBAPI = 0
-LIBPATCH = 4
+LIBPATCH = 6
 
 RELATION_OFFER = "replication-offer"
 RELATION_CONSUMER = "replication"
@@ -237,7 +237,6 @@ class MySQLAsyncReplication(Object):
             self._charm.unit.status = BlockedStatus("Standalone read-only unit.")
             # reset flag to allow instances rejoining the cluster
             self._charm.unit_peer_data["member-state"] = "waiting"
-            del self._charm.unit_peer_data["unit-initialized"]
             if not self._charm.unit.is_leader():
                 # delay non leader to avoid `update_status` running before
                 # leader updates app peer data
@@ -249,8 +248,6 @@ class MySQLAsyncReplication(Object):
                 "\tThe cluster can be recreated with the `recreate-cluster` action.\n"
                 "\tAlternatively the cluster can be rejoined to the cluster set."
             )
-            # reset the cluster node count flag
-            del self._charm.app_peer_data["units-added-to-cluster"]
             # set flag to persist removed from cluster-set state
             self._charm.app_peer_data["removed-from-cluster-set"] = "true"
 
@@ -781,9 +778,10 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
                 logger.debug("Recreating cluster prior to sync credentials")
                 self._charm.create_cluster()
                 # (re)set flags
-                self._charm.app_peer_data.update(
-                    {"removed-from-cluster-set": "", "rejoin-secondaries": "true"}
-                )
+                self._charm.app_peer_data.update({
+                    "removed-from-cluster-set": "",
+                    "rejoin-secondaries": "true",
+                })
                 event.defer()
                 return
             if not self._charm.cluster_fully_initialized:
@@ -835,8 +833,6 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
             self._charm.unit.status = MaintenanceStatus("Dissolving replica cluster")
             logger.info("Dissolving replica cluster")
             self._charm._mysql.dissolve_cluster()
-            # reset the cluster node count flag
-            del self._charm.app_peer_data["units-added-to-cluster"]
             # reset force rejoin-secondaries flag
             del self._charm.app_peer_data["rejoin-secondaries"]
 
@@ -870,11 +866,6 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
             if cluster_set_domain_name := self._charm._mysql.get_cluster_set_name():
                 self._charm.app_peer_data["cluster-set-domain-name"] = cluster_set_domain_name
 
-            # set the number of units added to the cluster for a single unit replica cluster
-            # needed here since it will skip the `RECOVERING` state
-            if self._charm.app.planned_units() == 1:
-                self._charm.app_peer_data["units-added-to-cluster"] = "1"
-
             self._charm._on_update_status(None)
         elif state == States.RECOVERING:
             # recovering cluster (copying data and/or joining units)
@@ -883,10 +874,6 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
                 "Waiting for recovery to complete on other units"
             )
             logger.debug("Awaiting other units to join the cluster")
-            # reset the number of units added to the cluster
-            # this will trigger secondaries to join the cluster
-            node_count = self._charm._mysql.get_cluster_node_count()
-            self._charm.app_peer_data["units-added-to-cluster"] = str(node_count)
             # set state flags to allow secondaries to join the cluster
             self._charm.unit_peer_data["member-state"] = "online"
             self._charm.unit_peer_data["member-role"] = "primary"
@@ -914,7 +901,6 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
             logger.debug("Reset secondary unit to allow cluster rejoin")
             # reset unit flag to allow cluster rejoin after primary recovery
             # the unit will rejoin on the next peer relation changed or update status
-            del self._charm.unit_peer_data["unit-initialized"]
             self._charm.unit_peer_data["member-state"] = "waiting"
             self._charm.unit.status = WaitingStatus("waiting to join the cluster")
 

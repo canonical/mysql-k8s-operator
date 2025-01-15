@@ -1,13 +1,91 @@
 groups:
-  - name: MysqlExporter
+  - name: MySQLExporterK8s
 
     rules:
+      # 2.1.1
       - alert: MySQLDown
         expr: "mysql_up == 0"
         for: 0m
         labels:
           severity: critical
         annotations:
-          summary: MySQL Down (instance {{ $labels.instance }})
-          description: "MySQL instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+          summary: MySQL instance {{ $labels.instance }} is down. 
+          description: |
+            LABELS = {{ $labels }}.
 
+      # 2.1.2
+      # customized: 80% -> 90%
+      - alert: MySQLTooManyConnections(>90%)
+        expr: max_over_time(mysql_global_status_threads_connected[1m]) / mysql_global_variables_max_connections * 100 > 90
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: MySQL instance {{ $labels.instance }} is using > 90% of `max_connections`.
+          description: |
+            Consider checking the client application responsible for generating those additional connections.
+            LABELS = {{ $labels }}. 
+
+      # 2.1.4
+      # customized: 60% -> 80%
+      - alert: MySQLHighThreadsRunning
+        expr: max_over_time(mysql_global_status_threads_running[1m]) / mysql_global_variables_max_connections * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: MySQL instance {{ $labels.instance }} is actively using > 80% of `max_connections`.
+          description: |
+            Consider reviewing the value of the `max-connections` config parameter or allocate more resources to your database server. 
+            LABELS = {{ $labels }}. 
+            
+      # 2.1.3
+      - alert: MySQLHighPreparedStatementsUtilization(>80%)
+        expr: max_over_time(mysql_global_status_prepared_stmt_count[1m]) / mysql_global_variables_max_prepared_stmt_count * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary:  MySQL instance {{ $labels.instance }} is using > 80% of `max_prepared_stmt_count`.
+          description: |
+            Too many prepared statements might consume a lot of memory. 
+            LABELS = {{ $labels }}. 
+
+      # 2.1.8
+      # customized: warning -> info
+      - alert: MySQLSlowQueries
+        expr: increase(mysql_global_status_slow_queries[1m]) > 0
+        for: 2m
+        labels:
+          severity: info
+        annotations:
+          summary: MySQL instance {{ $labels.instance }} has a slow query.
+          description: |
+            Consider optimizing the query by reviewing its execution plan, then rewrite the query and add any relevant indexes. 
+            LABELS = {{ $labels }}.
+
+      # 2.1.9
+      - alert: MySQLInnoDBLogWaits
+        expr: rate(mysql_global_status_innodb_log_waits[15m]) > 10
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: MySQL instance {{ $labels.instance }} has long InnoDB log waits. 
+          description: |
+            MySQL InnoDB log writes might be stalling. 
+            Check I/O activity on your nodes to find the responsible process or query. Consider using iotop and the performance_schema. 
+            LABELS = {{ $labels }}.
+
+      # 2.1.10
+      - alert: MySQLRestarted
+        expr: mysql_global_status_uptime < 60
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: MySQL instance {{ $labels.instance }} restarted.
+          description: |
+            MySQL restarted less than one minute ago. 
+            If the restart was unplanned or frequent, check Loki logs (e.g. `error.log`). 
+            LABELS = {{ $labels }}.

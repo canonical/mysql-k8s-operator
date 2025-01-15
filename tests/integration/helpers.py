@@ -8,7 +8,8 @@ import secrets
 import string
 import subprocess
 import tempfile
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 import mysql.connector
 import yaml
@@ -159,7 +160,7 @@ async def get_primary_unit(
     return None
 
 
-async def execute_queries_on_unit(
+def execute_queries_on_unit(
     unit_address: str,
     username: str,
     password: str,
@@ -216,6 +217,7 @@ async def fetch_credentials(unit: Unit, username: str = None) -> Dict:
 
     Args:
         unit: The juju unit on which to run the get-password action for credentials
+        username: The username for which to fetch credentials
 
     Returns:
         A dictionary with the server config username and password
@@ -231,6 +233,8 @@ async def rotate_credentials(unit: Unit, username: str = None, password: str = N
 
     Args:
         unit: The juju unit on which to run the set-password action for credentials
+        username: The username for which to rotate credentials
+        password: The password with which to rotate credentials
 
     Returns:
         A dictionary with the action result
@@ -265,21 +269,40 @@ async def scale_application(
                 timeout=(15 * 60),
                 wait_for_exact_units=desired_count,
                 raise_on_blocked=True,
+                raise_on_error=False,
             )
 
 
-def is_relation_joined(ops_test: OpsTest, endpoint_one: str, endpoint_two: str) -> bool:
+def is_relation_joined(
+    ops_test: OpsTest,
+    endpoint_one: str,
+    endpoint_two: str,
+    application_one: Optional[str] = None,
+    application_two: Optional[str] = None,
+) -> bool:
     """Check if a relation is joined.
 
     Args:
         ops_test: The ops test object passed into every test case
         endpoint_one: The first endpoint of the relation
         endpoint_two: The second endpoint of the relation
+        application_one: The name of the first application
+        application_two: The name of the second application
     """
     for rel in ops_test.model.relations:
-        endpoints = [endpoint.name for endpoint in rel.endpoints]
-        if endpoint_one in endpoints and endpoint_two in endpoints:
-            return True
+        if application_one and application_two:
+            endpoints = [
+                f"{endpoint.application_name}:{endpoint.name}" for endpoint in rel.endpoints
+            ]
+            if (
+                f"{application_one}:{endpoint_one}" in endpoints
+                and f"{application_two}:{endpoint_two}" in endpoints
+            ):
+                return True
+        else:
+            endpoints = [endpoint.name for endpoint in rel.endpoints]
+            if endpoint_one in endpoints and endpoint_two in endpoints:
+                return True
     return False
 
 
@@ -343,7 +366,7 @@ def is_connection_possible(credentials: Dict, **extra_opts) -> bool:
 
 
 async def get_process_pid(
-    ops_test: OpsTest, unit_name: str, container_name: str, process: str
+    ops_test: OpsTest, unit_name: str, container_name: str, process: str, full_match: bool = False
 ) -> Optional[int]:
     """Return the pid of a process running in a given unit.
 
@@ -352,6 +375,7 @@ async def get_process_pid(
         unit_name: The name of the unit
         container_name: The name of the container in the unit
         process: The process name to search for
+        full_match: Whether to fully match the process name
 
     Returns:
         A integer for the process id
@@ -362,7 +386,7 @@ async def get_process_pid(
         container_name,
         unit_name,
         "pgrep",
-        "-x",
+        "-f" if full_match else "-x",
         process,
     ]
     return_code, pid, _ = await ops_test.juju(*get_pid_commands)
@@ -470,7 +494,7 @@ async def retrieve_database_variable_value(
     server_config_creds = await get_server_config_credentials(unit)
     queries = [f"SELECT @@{variable_name};"]
 
-    output = await execute_queries_on_unit(
+    output = execute_queries_on_unit(
         unit_ip, server_config_creds["username"], server_config_creds["password"], queries
     )
 
@@ -576,7 +600,7 @@ async def write_content_to_file_in_unit(
         )
 
 
-async def read_contents_from_file_in_unit(
+def read_contents_from_file_in_unit(
     ops_test: OpsTest, unit: Unit, path: str, container_name: str = CONTAINER_NAME
 ) -> str:
     """Read contents from file in the provided unit.
@@ -617,31 +641,36 @@ async def read_contents_from_file_in_unit(
     return contents
 
 
-async def ls_la_in_unit(
-    ops_test: OpsTest, unit_name: str, directory: str, container_name: str = CONTAINER_NAME
+async def ls_in_unit(
+    ops_test: OpsTest,
+    unit_name: str,
+    directory: str,
+    container_name: str = CONTAINER_NAME,
+    exclude_files: list[str] = [],
 ) -> list[str]:
     """Returns the output of ls -la in unit.
 
     Args:
         ops_test: The ops test framework
         unit_name: The name of unit in which to run ls -la
-        path: The path from which to run ls -la
+        directory: The directory from which to run ls -la
         container_name: The container where to run ls -la
+        exclude_files: Files to exclude from the output of ls -la
 
     Returns:
         a list of files returned by ls -la
     """
     return_code, output, _ = await ops_test.juju(
-        "ssh", "--container", container_name, unit_name, "ls", "-la", directory
+        "ssh", "--container", container_name, unit_name, "ls", "-1", directory
     )
     assert return_code == 0
 
-    ls_output = output.split("\n")[1:]
+    ls_output = output.split("\n")
 
     return [
         line.strip("\r")
         for line in ls_output
-        if len(line.strip()) > 0 and line.split()[-1] not in [".", ".."]
+        if len(line.strip()) > 0 and line.strip() not in exclude_files
     ]
 
 
@@ -661,6 +690,21 @@ async def stop_running_log_rotate_dispatcher(ops_test: OpsTest, unit_name: str):
         "-f",
         "/usr/bin/python3 scripts/log_rotate_dispatcher.py",
     )
+
+    # hold execution until process is stopped
+    try:
+        for attempt in Retrying(stop=stop_after_attempt(45), wait=wait_fixed(2)):
+            with attempt:
+                if await get_process_pid(
+                    ops_test,
+                    unit_name,
+                    "charm",
+                    "/usr/bin/python3 scripts/log_rotate_dispatcher.py",
+                    full_match=True,
+                ):
+                    raise Exception
+    except RetryError:
+        raise Exception("Failed to stop the log_rotate_dispatcher process")
 
 
 async def stop_running_flush_mysql_job(
@@ -719,7 +763,7 @@ async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str)
     dispatch_command = juju_exec.strip() or juju_run.strip()
     unit_label = unit_name.replace("/", "-")
 
-    return_code, stdout, stderr = await ops_test.juju(
+    return_code, _, _ = await ops_test.juju(
         "ssh",
         unit_name,
         dispatch_command,
@@ -728,3 +772,10 @@ async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str)
     )
 
     assert return_code == 0
+
+
+async def get_charm(charm_path: Union[str, Path], architecture: str) -> Path:
+    """Fetches packed charm from CI runner without checking for architecture."""
+    charm_path = Path(charm_path)
+    packed_charms = list(charm_path.glob(f"*-{architecture}.charm"))
+    return packed_charms[0].resolve(strict=True)

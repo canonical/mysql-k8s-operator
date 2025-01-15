@@ -14,7 +14,7 @@ has_secrets = ops.JujuVersion(_libjuju_version).has_secrets
 juju_major_version = int(_libjuju_version.split(".")[0])
 
 
-async def run_action(unit: juju.unit.Unit, action_name, **params):
+async def run_action(unit: juju.unit.Unit, action_name: str, **params):
     action = await unit.run_action(action_name=action_name, **params)
     result = await action.wait()
     # Syntax changed across libjuju major versions

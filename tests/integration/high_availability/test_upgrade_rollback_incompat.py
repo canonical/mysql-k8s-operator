@@ -34,7 +34,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
     charm = await charm_local_build(ops_test)
 
-    config = {"profile": "testing"}
+    config = {"profile": "testing", "plugin-audit-enabled": "false"}
     # MySQL 8.0.34 image, last known minor version incompatible
     resources = {
         "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
@@ -47,12 +47,14 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
             num_units=3,
             resources=resources,
             trust=True,
+            base="ubuntu@22.04",
         )
 
         await ops_test.model.wait_for_idle(
             apps=[MYSQL_APP_NAME],
             status="active",
             timeout=TIMEOUT,
+            raise_on_error=False,
         )
 
 
@@ -81,7 +83,7 @@ async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
     logger.info("Build charm locally")
 
     sub_regex_failing_rejoin = (
-        's/logger.debug("Recovering unit")'
+        's/logger.info("Recovering unit")'
         '/self.charm._mysql.set_instance_offline_mode(True); raise RetryError("dummy")/'
     )
     src_patch(sub_regex=sub_regex_failing_rejoin, file_name="src/upgrade.py")

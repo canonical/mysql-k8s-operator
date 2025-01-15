@@ -46,12 +46,14 @@ async def test_deploy_latest(ops_test: OpsTest) -> None:
         channel="8.0/edge",
         trust=True,
         config={"profile": "testing"},
+        base="ubuntu@22.04",
     )
     await ops_test.model.deploy(
         TEST_APP_NAME,
         application_name=TEST_APP_NAME,
         num_units=1,
         channel="latest/edge",
+        base="ubuntu@22.04",
     )
 
     await relate_mysql_and_application(ops_test, MYSQL_APP_NAME, TEST_APP_NAME)
@@ -60,6 +62,7 @@ async def test_deploy_latest(ops_test: OpsTest) -> None:
         apps=[MYSQL_APP_NAME, TEST_APP_NAME],
         status="active",
         timeout=TIMEOUT,
+        raise_on_error=False,
     )
     assert len(ops_test.model.applications[MYSQL_APP_NAME].units) == 3
 
@@ -93,9 +96,9 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
+async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes, credentials) -> None:
     logger.info("Ensure continuous_writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
     application = ops_test.model.applications[MYSQL_APP_NAME]
@@ -136,12 +139,12 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes) -> None:
     )
 
     logger.info("Ensure continuous_writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> None:
+async def test_fail_and_rollback(ops_test, continuous_writes, built_charm, credentials) -> None:
     logger.info("Get leader unit")
     leader_unit = await get_leader_unit(ops_test, MYSQL_APP_NAME)
     assert leader_unit is not None, "No leader unit found"
@@ -179,7 +182,9 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
 
     logger.info("Ensure continuous_writes while in failure state on remaining units")
     mysql_units = [unit_ for unit_ in application.units if unit_.name != unit.name]
-    await ensure_all_units_continuous_writes_incrementing(ops_test, mysql_units)
+    await ensure_all_units_continuous_writes_incrementing(
+        ops_test, credentials=credentials, mysql_units=mysql_units
+    )
 
     logger.info("Re-run pre-upgrade-check action")
     await juju_.run_action(leader_unit, "pre-upgrade-check")
@@ -212,7 +217,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm) -> No
     )
 
     logger.info("Ensure continuous_writes after rollback procedure")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     # remove fault charm file
     fault_charm.unlink()

@@ -12,15 +12,15 @@ in real time from the Grafana dashboard the execution flow of your charm.
 # Quickstart
 Fetch the following charm libs (and ensure the minimum version/revision numbers are satisfied):
 
-    charmcraft fetch-lib charms.tempo_k8s.v2.tracing  # >= 1.10
-    charmcraft fetch-lib charms.tempo_k8s.v1.charm_tracing  # >= 2.7
+    charmcraft fetch-lib charms.tempo_coordinator_k8s.v0.tracing  # >= 1.10
+    charmcraft fetch-lib charms.tempo_coordinator_k8s.v0.charm_tracing  # >= 2.7
 
 Then edit your charm code to include:
 
 ```python
 # import the necessary charm libs
-from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer, charm_tracing_config
-from charms.tempo_k8s.v1.charm_tracing import charm_tracing
+from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer, charm_tracing_config
+from charms.tempo_coordinator_k8s.v0.charm_tracing import charm_tracing
 
 # decorate your charm class with charm_tracing:
 @charm_tracing(
@@ -51,7 +51,7 @@ To use this library, you need to do two things:
 
 2) add to your charm a "my_tracing_endpoint" (you can name this attribute whatever you like)
 **property**, **method** or **instance attribute** that returns an otlp http/https endpoint url.
-If you are using the ``charms.tempo_k8s.v2.tracing.TracingEndpointRequirer`` as
+If you are using the ``charms.tempo_coordinator_k8s.v0.tracing.TracingEndpointRequirer`` as
 ``self.tracing = TracingEndpointRequirer(self)``, the implementation could be:
 
 ```
@@ -80,7 +80,7 @@ CA that Tempo is using.
 
 For example:
 ```
-from charms.tempo_k8s.v1.charm_tracing import trace_charm
+from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 @trace_charm(
     tracing_endpoint="my_tracing_endpoint",
     server_cert="_server_cert"
@@ -129,7 +129,7 @@ to return from ``TracingEndpointRequirer.get_endpoint("otlp_http")`` instead of 
 For example:
 
 ```
-    from charms.tempo_k8s.v0.charm_tracing import trace_charm
+    from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 
     @trace_charm(
         tracing_endpoint="my_tracing_endpoint",
@@ -150,7 +150,7 @@ For example:
 needs to be replaced with:
 
 ```
-    from charms.tempo_k8s.v1.charm_tracing import trace_charm
+    from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 
     @trace_charm(
         tracing_endpoint="my_tracing_endpoint",
@@ -171,6 +171,58 @@ needs to be replaced with:
 3) If you were passing a certificate (str) using `server_cert`, you need to change it to
 provide an *absolute* path to the certificate file instead.
 """
+
+
+def _remove_stale_otel_sdk_packages():
+    """Hack to remove stale opentelemetry sdk packages from the charm's python venv.
+
+    See https://github.com/canonical/grafana-agent-operator/issues/146 and
+    https://bugs.launchpad.net/juju/+bug/2058335 for more context. This patch can be removed after
+    this juju issue is resolved and sufficient time has passed to expect most users of this library
+    have migrated to the patched version of juju.  When this patch is removed, un-ignore rule E402 for this file in the pyproject.toml (see setting
+    [tool.ruff.lint.per-file-ignores] in pyproject.toml).
+
+    This only has an effect if executed on an upgrade-charm event.
+    """
+    # all imports are local to keep this function standalone, side-effect-free, and easy to revert later
+    import os
+
+    if os.getenv("JUJU_DISPATCH_PATH") != "hooks/upgrade-charm":
+        return
+
+    import logging
+    import shutil
+    from collections import defaultdict
+
+    from importlib_metadata import distributions
+
+    otel_logger = logging.getLogger("charm_tracing_otel_patcher")
+    otel_logger.debug("Applying _remove_stale_otel_sdk_packages patch on charm upgrade")
+    # group by name all distributions starting with "opentelemetry_"
+    otel_distributions = defaultdict(list)
+    for distribution in distributions():
+        name = distribution._normalized_name  # type: ignore
+        if name.startswith("opentelemetry_"):
+            otel_distributions[name].append(distribution)
+
+    otel_logger.debug(f"Found {len(otel_distributions)} opentelemetry distributions")
+
+    # If we have multiple distributions with the same name, remove any that have 0 associated files
+    for name, distributions_ in otel_distributions.items():
+        if len(distributions_) <= 1:
+            continue
+
+        otel_logger.debug(f"Package {name} has multiple ({len(distributions_)}) distributions.")
+        for distribution in distributions_:
+            if not distribution.files:  # Not None or empty list
+                path = distribution._path  # type: ignore
+                otel_logger.info(f"Removing empty distribution of {name} at {path}.")
+                shutil.rmtree(path)
+
+    otel_logger.debug("Successfully applied _remove_stale_otel_sdk_packages patch. ")
+
+
+_remove_stale_otel_sdk_packages()
 
 import functools
 import inspect
@@ -209,15 +261,15 @@ from ops.charm import CharmBase
 from ops.framework import Framework
 
 # The unique Charmhub library identifier, never change it
-LIBID = "cb1705dcd1a14ca09b2e60187d1215c7"
+LIBID = "01780f1e588c42c3976d26780fdf9b89"
 
 # Increment this major API version when introducing breaking changes
-LIBAPI = 1
+LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
 
-LIBPATCH = 11
+LIBPATCH = 1
 
 PYDEPS = ["opentelemetry-exporter-otlp-proto-http==1.21.0"]
 
@@ -226,7 +278,6 @@ dev_logger = logging.getLogger("tracing-dev")
 
 # set this to 0 if you are debugging/developing this library source
 dev_logger.setLevel(logging.CRITICAL)
-
 
 _CharmType = Type[CharmBase]  # the type CharmBase and any subclass thereof
 _C = TypeVar("_C", bound=_CharmType)
@@ -279,9 +330,22 @@ def _get_tracer() -> Optional[Tracer]:
     try:
         return tracer.get()
     except LookupError:
+        # fallback: this course-corrects for a user error where charm_tracing symbols are imported
+        # from different paths (typically charms.tempo_coordinator_k8s... and lib.charms.tempo_coordinator_k8s...)
         try:
             ctx: Context = copy_context()
             if context_tracer := _get_tracer_from_context(ctx):
+                logger.warning(
+                    "Tracer not found in `tracer` context var. "
+                    "Verify that you're importing all `charm_tracing` symbols from the same module path. \n"
+                    "For example, DO"
+                    ": `from charms.lib...charm_tracing import foo, bar`. \n"
+                    "DONT: \n"
+                    " \t - `from charms.lib...charm_tracing import foo` \n"
+                    " \t - `from lib...charm_tracing import bar` \n"
+                    "For more info: https://python-notes.curiousefficiency.org/en/latest/python"
+                    "_concepts/import_traps.html#the-double-import-trap"
+                )
                 return context_tracer.get()
             else:
                 return None
@@ -391,6 +455,9 @@ def _setup_root_span_initializer(
         _service_name = service_name or f"{self.app.name}-charm"
 
         unit_name = self.unit.name
+        # apply hacky patch to remove stale opentelemetry sdk packages on upgrade-charm.
+        # it could be trouble if someone ever decides to implement their own tracer parallel to
+        # ours and before the charm has inited. We assume they won't.
         resource = Resource.create(
             attributes={
                 "service.name": _service_name,
@@ -494,8 +561,8 @@ def trace_charm(
     method calls on instances of this class.
 
     Usage:
-    >>> from charms.tempo_k8s.v1.charm_tracing import trace_charm
-    >>> from charms.tempo_k8s.v1.tracing import TracingEndpointRequirer
+    >>> from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
+    >>> from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer
     >>> from ops import CharmBase
     >>>
     >>> @trace_charm(
@@ -558,7 +625,7 @@ def _autoinstrument(
 
     Usage:
 
-    >>> from charms.tempo_k8s.v1.charm_tracing import _autoinstrument
+    >>> from charms.tempo_coordinator_k8s.v0.charm_tracing import _autoinstrument
     >>> from ops.main import main
     >>> _autoinstrument(
     >>>         MyCharm,
@@ -612,38 +679,58 @@ def trace_type(cls: _T) -> _T:
             dev_logger.info(f"skipping {method} (dunder)")
             continue
 
-        new_method = trace_method(method)
-        if isinstance(inspect.getattr_static(cls, method.__name__), staticmethod):
+        # the span title in the general case should be:
+        #   method call: MyCharmWrappedMethods.b
+        # if the method has a name (functools.wrapped or regular method), let
+        # _trace_callable use its default algorithm to determine what name to give the span.
+        trace_method_name = None
+        try:
+            qualname_c0 = method.__qualname__.split(".")[0]
+            if not hasattr(cls, method.__name__):
+                # if the callable doesn't have a __name__ (probably a decorated method),
+                # it probably has a bad qualname too (such as my_decorator.<locals>.wrapper) which is not
+                # great for finding out what the trace is about. So we use the method name instead and
+                # add a reference to the decorator name. Result:
+                #   method call: @my_decorator(MyCharmWrappedMethods.b)
+                trace_method_name = f"@{qualname_c0}({cls.__name__}.{name})"
+        except Exception:  # noqa: failsafe
+            pass
+
+        new_method = trace_method(method, name=trace_method_name)
+
+        if isinstance(inspect.getattr_static(cls, name), staticmethod):
             new_method = staticmethod(new_method)
         setattr(cls, name, new_method)
 
     return cls
 
 
-def trace_method(method: _F) -> _F:
+def trace_method(method: _F, name: Optional[str] = None) -> _F:
     """Trace this method.
 
     A span will be opened when this method is called and closed when it returns.
     """
-    return _trace_callable(method, "method")
+    return _trace_callable(method, "method", name=name)
 
 
-def trace_function(function: _F) -> _F:
+def trace_function(function: _F, name: Optional[str] = None) -> _F:
     """Trace this function.
 
     A span will be opened when this function is called and closed when it returns.
     """
-    return _trace_callable(function, "function")
+    return _trace_callable(function, "function", name=name)
 
 
-def _trace_callable(callable: _F, qualifier: str) -> _F:
+def _trace_callable(callable: _F, qualifier: str, name: Optional[str] = None) -> _F:
     dev_logger.info(f"instrumenting {callable}")
 
     # sig = inspect.signature(callable)
     @functools.wraps(callable)
     def wrapped_function(*args, **kwargs):  # type: ignore
-        name = getattr(callable, "__qualname__", getattr(callable, "__name__", str(callable)))
-        with _span(f"{qualifier} call: {name}"):  # type: ignore
+        name_ = name or getattr(
+            callable, "__qualname__", getattr(callable, "__name__", str(callable))
+        )
+        with _span(f"{qualifier} call: {name_}"):  # type: ignore
             return callable(*args, **kwargs)  # type: ignore
 
     # wrapped_function.__signature__ = sig

@@ -2,15 +2,12 @@
 # See LICENSE file for licensing details.
 
 [tool.poetry]
-# Charm is not packed as a standard Python package; this information is not used
-name = "charm"
-version = "0.1.0"
-description = ""
-authors = []
+package-mode = false
+requires-poetry = ">=2.0.0"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-ops = "^2.7.0"
+ops = "^2.15.0"
 lightkube = "^0.14.0"
 tenacity = "^8.2.2"
 boto3 = "^1.28.22"
@@ -29,29 +26,21 @@ cryptography = ">=42.0.5"
 jsonschema = "*"
 # loki_k8s/v0/loki_push_api.py and prometheus_k8s/v0/prometheus_scrape.py
 cosl = "*"
-# tempo_k8s/v1/charm_tracing.py
+# tempo_coordinator_k8s/v0/charm_tracing.py
 opentelemetry-exporter-otlp-proto-http = "1.21.0"
 
 [tool.poetry.group.format]
 optional = true
 
 [tool.poetry.group.format.dependencies]
-black = "^24.0.0"
-isort = "^5.12.0"
+ruff = "^0.4.5"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-black = "^24.0.0"
-isort = "^5.12.0"
-flake8 = "^7.0.0"
-flake8-docstrings = "^1.7.0"
-flake8-copyright = "^0.2.4"
-flake8-builtins = "^2.1.0"
-pyproject-flake8 = "^7.0.0"
-pep8-naming = "^0.13.3"
-codespell = "^2.2.5"
+ruff = "^0.4.5"
+codespell = "^2.3.0"
 shellcheck-py = "^0.9.0.5"
 
 [tool.poetry.group.unit.dependencies]
@@ -62,13 +51,13 @@ parameterized = "^0.9.0"
 
 [tool.poetry.group.integration.dependencies]
 pytest = "^7.4.0"
-pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/github_secrets"}
-pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/microceph"}
+pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v26.0.0", subdirectory = "python/pytest_plugins/github_secrets"}
+pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v26.0.0", subdirectory = "python/pytest_plugins/microceph"}
 pytest-operator = "^0.28.0"
-pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
-pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
-juju = "^3.2.2"
-ops = "^2.5.0"
+pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v26.0.0", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
+pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v26.0.0", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
+juju = "^3.6.0.0"
+ops = "^2.15.0"
 mysql-connector-python = "~8.0.33"
 tenacity = "^8.2.2"
 boto3 = "^1.28.22"
@@ -77,7 +66,7 @@ urllib3 = "^1.26.16"
 lightkube = "^0.14.0"
 kubernetes = "^27.2.0"
 allure-pytest = "^2.13.2"
-allure-pytest-collection-report = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/allure_pytest_collection_report"}
+allure-pytest-collection-report = {git = "https://github.com/canonical/data-platform-workflows", tag = "v26.0.0", subdirectory = "python/pytest_plugins/allure_pytest_collection_report"}
 pytest-asyncio = "^0.21.1"
 
 [tool.coverage.run]
@@ -92,30 +81,32 @@ log_cli_level = "INFO"
 markers = ["unstable", "juju3", "only_with_juju_secrets", "only_without_juju_secrets"]
 asyncio_mode = "auto"
 
-# Formatting tools configuration
-[tool.black]
-line-length = 99
-target-version = ["py38"]
-
-[tool.isort]
-profile = "black"
-known_third_party = "mysql.connector"
-line_length = 99
-
 # Linting tools configuration
-[tool.flake8]
-max-line-length = 99
-max-doc-length = 99
-max-complexity = 10
-exclude = [".git", "__pycache__", ".tox", "build", "dist", "*.egg_info", "venv"]
-select = ["E", "W", "F", "C", "N", "R", "D", "H"]
-# Ignore W503, E501 because using black creates errors with this
-# Ignore D107 Missing docstring in __init__
-ignore = ["W503", "E501", "D107"]
-# D100, D101, D102, D103: Ignore missing docstrings in tests
-per-file-ignores = ["tests/*:D100,D101,D102,D103,D104"]
-docstring-convention = "google"
+[tool.ruff]
+# preview and explicit preview are enabled for CPY001
+preview = true
+target-version = "py38"
+src = ["src", "."]
+line-length = 99
+
+[tool.ruff.lint]
+explicit-preview-rules = true
+select = ["A", "E", "W", "F", "C", "N", "D", "I", "CPY001"]
+ignore = [
+    "D107", # Ignore D107 Missing docstring in __init__
+    "E501", # Ignore E501 Line too long
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D1"]
+
+[tool.ruff.lint.flake8-copyright]
 # Check for properly formatted copyright header in each file
-copyright-check = "True"
-copyright-author = "Canonical Ltd."
-copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
+author = "Canonical Ltd."
+notice-rgx = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

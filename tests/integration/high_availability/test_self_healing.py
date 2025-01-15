@@ -24,8 +24,8 @@ from .high_availability_helpers import (
     ensure_all_units_continuous_writes_incrementing,
     ensure_n_online_mysql_members,
     ensure_process_not_running,
+    get_application_name,
     get_process_stat,
-    high_availability_test_setup,
     insert_data_into_mysql_and_validate_replication,
     isolate_instance_from_cluster,
     remove_instance_isolation,
@@ -41,16 +41,12 @@ TIMEOUT = 40 * 60
 
 
 @pytest.mark.group(1)
-async def test_build_and_deploy(ops_test: OpsTest) -> None:
-    """Simple test to ensure that the mysql and application charms get deployed."""
-    await high_availability_test_setup(ops_test)
-
-
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
+async def test_kill_db_process(
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
+) -> None:
     """Test to send a SIGKILL to the primary db process and ensure that the cluster self heals."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
 
     logger.info("Waiting until 3 mysql instances are online")
     # ensure all units in the cluster are online
@@ -59,7 +55,7 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
     ), "The deployed mysql application is not fully online"
 
     logger.info("Ensuring all units have continuous writes incrementing")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
@@ -77,7 +73,7 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
         "SIGKILL",
     )
 
-    # Wait for the SIGKILL above to take effect before continuining with test checks
+    # Wait for the SIGKILL above to take effect before continuing with test checks
     time.sleep(10)
 
     logger.info("Waiting until 3 mysql instances are online")
@@ -101,20 +97,24 @@ async def test_kill_db_process(ops_test: OpsTest, continuous_writes) -> None:
     logger.info("Ensuring all units have continuous writes incrementing")
     # ensure continuous writes still incrementing for all units
     async with ops_test.fast_forward():
-        await ensure_all_units_continuous_writes_incrementing(ops_test)
+        await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     # ensure that we are able to insert data into the primary and have it replicated to all units
     database_name, table_name = "test-kill-db-process", "data"
-    await insert_data_into_mysql_and_validate_replication(ops_test, database_name, table_name)
-    await clean_up_database_and_table(ops_test, database_name, table_name)
+    await insert_data_into_mysql_and_validate_replication(
+        ops_test, database_name, table_name, credentials
+    )
+    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)
 
 
-@pytest.mark.group(1)
+@pytest.mark.group(2)
 @pytest.mark.abort_on_fail
-@pytest.mark.unstable
-async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
+async def test_freeze_db_process(
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
+) -> None:
     """Test to send a SIGSTOP to the primary db process and ensure that the cluster self heals."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
+    assert mysql_application_name, "mysql application name is not set"
 
     # ensure all units in the cluster are online
     assert await ensure_n_online_mysql_members(
@@ -122,7 +122,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     ), "The deployed mysql application is not fully online"
 
     logger.info("Ensuring that all units continuous writes incrementing")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
@@ -130,7 +130,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     mysql_pid = await get_process_pid(
         ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
     )
-    assert mysql_pid > 0, "mysql process id is not positive"
+    assert (mysql_pid or -1) > 0, "mysql process id is not positive"
 
     logger.info(f"Sending SIGSTOP to unit {primary.name}")
     await send_signal_to_pod_container_process(
@@ -175,7 +175,7 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
         for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
             with attempt:
                 await ensure_all_units_continuous_writes_incrementing(
-                    ops_test, remaining_online_units
+                    ops_test, credentials=credentials, mysql_units=remaining_online_units
                 )
 
     logger.info(f"Sending SIGCONT to {primary.name}")
@@ -227,14 +227,18 @@ async def test_freeze_db_process(ops_test: OpsTest, continuous_writes) -> None:
     ), "The deployed mysql application does not have three online nodes"
 
     logger.info("Ensure all units continuous writes incrementing")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
 
-@pytest.mark.group(1)
+@pytest.mark.group(3)
 @pytest.mark.abort_on_fail
-async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -> None:
+async def test_graceful_crash_of_primary(
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
+) -> None:
     """Test to send SIGTERM to primary instance and then verify recovery."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
+
+    assert mysql_application_name, "mysql application name is not set"
 
     logger.info("Ensuring that there are 3 online mysql members")
     assert await ensure_n_online_mysql_members(
@@ -242,7 +246,7 @@ async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -
     ), "The deployed mysql application does not have three online nodes"
 
     logger.info("Ensuring that all units have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
@@ -290,16 +294,19 @@ async def test_graceful_crash_of_primary(ops_test: OpsTest, continuous_writes) -
     async with ops_test.fast_forward():
         for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(10)):
             with attempt:
-                await ensure_all_units_continuous_writes_incrementing(ops_test)
+                await ensure_all_units_continuous_writes_incrementing(
+                    ops_test, credentials=credentials
+                )
 
 
-@pytest.mark.group(1)
+@pytest.mark.group(4)
 @pytest.mark.abort_on_fail
 async def test_network_cut_affecting_an_instance(
-    ops_test: OpsTest, continuous_writes, chaos_mesh
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, chaos_mesh, credentials
 ) -> None:
     """Test for a network cut affecting an instance."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
+    assert mysql_application_name, "mysql application name is not set"
 
     logger.info("Ensuring that there are 3 online mysql members")
     assert await ensure_n_online_mysql_members(
@@ -307,7 +314,7 @@ async def test_network_cut_affecting_an_instance(
     ), "The deployed mysql application does not have three online nodes"
 
     logger.info("Ensuring that all instances have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     mysql_units = ops_test.model.applications[mysql_application_name].units
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
@@ -339,7 +346,9 @@ async def test_network_cut_affecting_an_instance(
     assert primary.name != new_primary.name
 
     logger.info("Ensure all units have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test, remaining_units)
+    await ensure_all_units_continuous_writes_incrementing(
+        ops_test, credentials=credentials, mysql_units=remaining_units
+    )
 
     logger.info("Remove networkchaos policy isolating instance from cluster")
     remove_instance_isolation(ops_test)
@@ -374,15 +383,18 @@ async def test_network_cut_affecting_an_instance(
     ), "The deployed mysql application does not have three online nodes"
 
     logger.info("Ensure all units have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
 
-@pytest.mark.group(1)
+@pytest.mark.group(5)
 @pytest.mark.abort_on_fail
 @pytest.mark.unstable
-async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_writes) -> None:
+async def test_graceful_full_cluster_crash_test(
+    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
+) -> None:
     """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
-    mysql_application_name, application_name = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
+    assert mysql_application_name, "mysql application name is not set"
 
     logger.info("Ensure there are 3 online mysql members")
     assert await ensure_n_online_mysql_members(
@@ -390,7 +402,7 @@ async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_wr
     ), "The deployed mysql application does not have three online nodes"
 
     logger.info("Ensure that all units have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test)
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     mysql_units = ops_test.model.applications[mysql_application_name].units
 
@@ -398,7 +410,7 @@ async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_wr
     logger.info("Get mysqld pids on all instances")
     for unit in mysql_units:
         pid = await get_process_pid(ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME)
-        assert pid > 1
+        assert (pid or -1) > 1, "mysql process id is not known/positive"
 
         unit_mysqld_pids[unit.name] = pid
 
@@ -443,16 +455,18 @@ async def test_graceful_full_cluster_crash_test(ops_test: OpsTest, continuous_wr
     for member in cluster_status["defaultreplicaset"]["topology"].values():
         assert member["status"] == "online"
 
-    async with ops_test.fast_forward():
-        logger.info("Ensure all units have incrementing continuous writes")
-        await ensure_all_units_continuous_writes_incrementing(ops_test)
+    logger.info("Ensure all units have incrementing continuous writes")
+    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
 
-@pytest.mark.group(1)
+@pytest.mark.group(6)
 @pytest.mark.abort_on_fail
-async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
+async def test_single_unit_pod_delete(
+    ops_test: OpsTest, highly_available_cluster, credentials
+) -> None:
     """Delete the pod in a single unit deployment and write data to new pod."""
-    mysql_application_name, _ = await high_availability_test_setup(ops_test)
+    mysql_application_name = get_application_name(ops_test, "mysql")
+    assert mysql_application_name, "mysql application name is not set"
 
     logger.info("Scale mysql application to 1 unit that is active")
     async with ops_test.fast_forward("60s"):
@@ -477,6 +491,10 @@ async def test_single_unit_pod_delete(ops_test: OpsTest) -> None:
     logger.info("Write data to unit and verify that data was written")
     database_name, table_name = "test-single-pod-delete", "data"
     await insert_data_into_mysql_and_validate_replication(
-        ops_test, database_name, table_name, mysql_application_substring="mysql-k8s"
+        ops_test,
+        database_name=database_name,
+        table_name=table_name,
+        credentials=credentials,
+        mysql_application_substring="mysql-k8s",
     )
-    await clean_up_database_and_table(ops_test, database_name, table_name)
+    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)

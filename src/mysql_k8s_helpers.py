@@ -112,10 +112,6 @@ class MySQLDeleteTempBackupDirectoryError(Error):
     """Exception raised when there is an error deleting the temp backup directory."""
 
 
-class MySQLDeleteTempRestoreDirectory(Error):
-    """Exception raised when there is an error deleting the temp restore directory."""
-
-
 class MySQL(MySQLBase):
     """Class to encapsulate all operations related to the MySQL instance and cluster.
 
@@ -162,6 +158,7 @@ class MySQL(MySQLBase):
         """
         super().__init__(
             instance_address=instance_address,
+            socket_path=MYSQLD_SOCK_FILE,
             cluster_name=cluster_name,
             cluster_set_name=cluster_set_name,
             root_password=root_password,
@@ -190,9 +187,12 @@ class MySQL(MySQLBase):
         if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
             logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
             try:
-                container.exec(
-                    ["chown", "-R", f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}", MYSQL_DATA_DIR]
-                )
+                container.exec([
+                    "chown",
+                    "-R",
+                    f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}",
+                    MYSQL_DATA_DIR,
+                ])
             except ExecError as e:
                 logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
                 raise MySQLInitialiseMySQLDError(e.stderr or "")
@@ -563,6 +563,7 @@ class MySQL(MySQLBase):
                 environment=env_extra,
                 timeout=timeout,
             )
+
             if stream_output:
                 if stream_output == "stderr" and process.stderr:
                     for line in process.stderr:
@@ -570,14 +571,17 @@ class MySQL(MySQLBase):
                 if stream_output == "stdout" and process.stdout:
                     for line in process.stdout:
                         logger.debug(line.strip())
+
             stdout, stderr = process.wait_output()
             return (stdout.strip(), stderr.strip() if stderr else "")
         except ExecError:
-            logger.exception(f"Failed command: {commands=}, {user=}, {group=}")
-            raise MySQLExecError
+            logger.error(
+                f"Failed command: commands={self.strip_off_passwords(' '.join(commands))}, {user=}, {group=}"
+            )
+            raise MySQLExecError from None
 
     def _run_mysqlsh_script(
-        self, script: str, verbose: int = 1, timeout: Optional[int] = None
+        self, script: str, timeout: Optional[int] = None, verbose: int = 0
     ) -> str:
         """Execute a MySQL shell script.
 
@@ -586,6 +590,7 @@ class MySQL(MySQLBase):
         Args:
             script: mysql-shell python script string
             verbose: mysqlsh verbosity level
+            timeout: timeout to wait for the script
 
         Returns:
             stdout of the script
@@ -606,14 +611,20 @@ class MySQL(MySQLBase):
             MYSQLSH_SCRIPT_FILE,
         ]
 
+        # workaround for timeout not working on pebble exec
+        # https://github.com/canonical/operator/issues/1329
+        if timeout:
+            cmd.insert(0, str(timeout))
+            cmd.insert(0, "timeout")
+
         try:
-            process = self.container.exec(cmd, timeout=timeout)
+            process = self.container.exec(cmd)
             stdout, _ = process.wait_output()
             return stdout
-        except ExecError as e:
-            raise MySQLClientError(e.stderr)
-        except ChangeError as e:
-            raise MySQLClientError(e)
+        except ExecError:
+            raise MySQLClientError
+        except ChangeError:
+            raise MySQLClientError
 
     def _run_mysqlcli_script(
         self,
@@ -651,9 +662,9 @@ class MySQL(MySQLBase):
             stdout, _ = process.wait_output()
             return stdout
         except ExecError as e:
-            raise MySQLClientError(e.stderr)
+            raise MySQLClientError(self.strip_off_passwords(e.stderr))
         except ChangeError as e:
-            raise MySQLClientError(e)
+            raise MySQLClientError(self.strip_off_passwords(e.err))
 
     def write_content_to_file(
         self,
@@ -801,3 +812,11 @@ class MySQL(MySQLBase):
     def fetch_error_log(self) -> Optional[str]:
         """Fetch the MySQL error log."""
         return self.read_file_content("/var/log/mysql/error.log")
+
+    def _file_exists(self, path: str) -> bool:
+        """Check if a file exists.
+
+        Args:
+            path: Path to the file to check
+        """
+        return self.container.exists(path)

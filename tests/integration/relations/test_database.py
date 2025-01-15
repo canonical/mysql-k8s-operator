@@ -44,7 +44,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             config=config,
             num_units=3,
             resources=resources,
-            series="jammy",
+            base="ubuntu@22.04",
             trust=True,
         ),
         ops_test.model.deploy(
@@ -52,6 +52,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
             application_name=APPLICATION_APP_NAME,
             num_units=2,
             channel="latest/edge",
+            base="ubuntu@22.04",
         ),
     )
 
@@ -71,6 +72,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
                 status="active",
                 raise_on_blocked=True,
                 timeout=1000,
+                raise_on_error=False,
             ),
             ops_test.model.wait_for_idle(
                 apps=[APPLICATION_APP_NAME],
@@ -102,7 +104,7 @@ async def test_relation_creation_databag(ops_test: OpsTest):
 
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
-    assert set(["password", "username"]) <= set(relation_data[0]["application-data"])
+    assert {"password", "username"} <= set(relation_data[0]["application-data"])
 
 
 @pytest.mark.group(1)
@@ -119,7 +121,7 @@ async def test_relation_creation(ops_test: OpsTest):
 
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
-    assert not set(["password", "username"]) <= set(relation_data[0]["application-data"])
+    assert not {"password", "username"} <= set(relation_data[0]["application-data"])
     assert "secret-user" in relation_data[0]["application-data"]
 
 

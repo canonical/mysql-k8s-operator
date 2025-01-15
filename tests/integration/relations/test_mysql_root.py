@@ -18,6 +18,7 @@ from ..helpers import (
     get_unit_address,
     is_relation_joined,
 )
+from ..juju_ import juju_major_version
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,19 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
             "image": "opensourcemano/pol:testing-daily",
         }
 
+        osm_keystone_deploy_commands = [
+            "deploy",
+            "--channel=latest/beta",
+            "--resource",
+            "keystone-image=opensourcemano/keystone:testing-daily",
+            "osm-keystone",
+        ]
+
+        if juju_major_version >= 3:
+            osm_keystone_deploy_commands.extend(["--base", "ubuntu@22.04"])
+        else:
+            osm_keystone_deploy_commands.extend(["--series", "jammy"])
+
         await asyncio.gather(
             ops_test.model.deploy(
                 charm,
@@ -51,31 +65,33 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest) -> None:
                 resources=resources,
                 config=config,
                 num_units=1,
-                series="jammy",
+                base="ubuntu@22.04",
                 trust=True,
             ),
             # Deploy the osm-keystone charm
             # (using ops_test.juju instead of ops_test.deploy as the latter does
             # not correctly deploy with the correct resources)
-            ops_test.juju(
-                "deploy",
-                "--channel=latest/beta",
-                "--resource",
-                "keystone-image=opensourcemano/keystone:testing-daily",
-                "osm-keystone",
-            ),
+            ops_test.juju(*osm_keystone_deploy_commands),
             ops_test.model.deploy(
                 "osm-pol",
                 application_name="osm-pol",
                 channel="latest/beta",
                 resources=osm_pol_resources,
                 trust=True,
+                base="ubuntu@22.04",
             ),
             ops_test.model.deploy(
-                "kafka-k8s", application_name="kafka", trust=True, channel="latest/stable"
+                "kafka-k8s",
+                application_name="kafka",
+                trust=True,
+                channel="latest/stable",
+                base="ubuntu@20.04",
             ),
             ops_test.model.deploy(
-                "zookeeper-k8s", application_name="zookeeper", channel="latest/stable"
+                "zookeeper-k8s",
+                application_name="zookeeper",
+                channel="latest/stable",
+                base="ubuntu@20.04",
             ),
             # sticking to revision that support both juju 2.9.x and 3.x
             ops_test.model.deploy(
@@ -180,7 +196,7 @@ async def test_osm_pol_operations(ops_test: OpsTest) -> None:
                     unit_address = await get_unit_address(ops_test, unit.name)
 
                     # test that the `keystone` and `pol` databases exist
-                    output = await execute_queries_on_unit(
+                    output = execute_queries_on_unit(
                         unit_address,
                         server_config_credentials["username"],
                         server_config_credentials["password"],
@@ -190,7 +206,7 @@ async def test_osm_pol_operations(ops_test: OpsTest) -> None:
                     assert "pol" in output
 
                     # test that osm-pol successfully creates tables
-                    output = await execute_queries_on_unit(
+                    output = execute_queries_on_unit(
                         unit_address,
                         server_config_credentials["username"],
                         server_config_credentials["password"],

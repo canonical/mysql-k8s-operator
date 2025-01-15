@@ -12,7 +12,7 @@ from ops.charm import RelationBrokenEvent, RelationCreatedEvent
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus
 
-from constants import LEGACY_MYSQL_ROOT, PASSWORD_LENGTH, ROOT_PASSWORD_KEY
+from constants import CONTAINER_NAME, LEGACY_MYSQL_ROOT, PASSWORD_LENGTH, ROOT_PASSWORD_KEY
 from mysql_k8s_helpers import (
     MySQLCreateDatabaseError,
     MySQLCreateUserError,
@@ -152,11 +152,14 @@ class MySQLRootRelation(Object):
         if not self.charm.unit.is_leader():
             return
 
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            event.defer()
+            return
+
         # Wait until on-config-changed event is executed
         # (wait for root password to have been set) or wait until the unit is initialized
-        if not self.charm._is_peer_data_set or not self.charm.unit_peer_data.get(
-            "unit-initialized"
-        ):
+        if not (self.charm._is_peer_data_set and self.charm.unit_initialized):
             event.defer()
             return
 

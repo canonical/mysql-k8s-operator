@@ -95,6 +95,11 @@ class MySQLProvider(Object):
         """Handle the `database-requested` event."""
         if not self.charm.unit.is_leader():
             return
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            logger.debug("Container is not ready")
+            event.defer()
+            return
         # check if cluster is ready and if not, defer
         if not self.charm.cluster_initialized:
             logger.debug("Waiting cluster to be initialized")
@@ -197,21 +202,33 @@ class MySQLProvider(Object):
         container_restarts = int(self.charm.unit_peer_data.get(CONTAINER_RESTARTS, "0"))
         self.charm.unit_peer_data[CONTAINER_RESTARTS] = str(container_restarts + 1)
 
-        self._configure_endpoints(None)
+        try:
+            self._configure_endpoints(None)
+        except Exception:
+            # catch all exception to avoid uncommitted databag keys
+            # from other pebble-ready handlers succeed
+            # see: https://github.com/canonical/mysql-k8s-operator/issues/457
+            logger.exception("Failed to update endpoints on database provider pebble ready event")
 
     def _configure_endpoints(self, _) -> None:
         """Update the endpoints + read_only_endpoints."""
+        container = self.charm.unit.get_container(CONTAINER_NAME)
+        if not container.can_connect():
+            return
+
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
         if not relations or not self.charm.unit_initialized:
             return
 
         relation_data = self.database.fetch_relation_data()
         for relation in relations:
-            # only update endpoints if on_database_requested has executed
-            if relation.id not in relation_data:
-                continue
+            # only update endpoints if on_database_requested on any
+            # relation
+            if relation.id in relation_data:
+                break
+            return
 
-            self.charm._mysql.update_endpoints()
+        self.charm._mysql.update_endpoints()
 
     def _on_update_status(self, _) -> None:
         """Handle the update status event.

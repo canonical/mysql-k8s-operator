@@ -19,7 +19,6 @@ It requires the TLS certificates library and the MySQL library.
 
 """
 
-
 import base64
 import logging
 import re
@@ -52,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 LIBID = "eb73947deedd4380a3a90d527e0878eb"
 LIBAPI = 0
-LIBPATCH = 5
+LIBPATCH = 8
 
 SCOPE = "unit"
 
@@ -92,7 +91,7 @@ class MySQLTLS(Object):
 
     def _on_tls_relation_joined(self, event) -> None:
         """Request certificate when TLS relation joined."""
-        if self.charm.unit_peer_data.get("unit-initialized") != "True":
+        if not self.charm.unit_initialized:
             event.defer()
             return
         self._request_certificate(None)
@@ -167,6 +166,9 @@ class MySQLTLS(Object):
 
     def _on_tls_relation_broken(self, _) -> None:
         """Disable TLS when TLS relation broken."""
+        if self.charm.removing_unit:
+            logger.debug("Unit is being removed, skipping TLS cleanup.")
+            return
         try:
             if not ops.jujuversion.JujuVersion.from_environ().has_secrets:
                 self.charm.set_secret(SCOPE, "certificate-authority", None)
