@@ -124,13 +124,16 @@ async def test_build_and_deploy(
 @markers.juju3
 @markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
-async def test_async_relate(first_model: Model, second_model: Model) -> None:
+async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
     """Relate the two mysql clusters."""
     logger.info("Creating offers in first model")
     await first_model.create_offer(f"{MYSQL_APP1}:replication-offer")
 
     logger.info("Consume offer in second model")
-    await second_model.consume(endpoint=f"admin/{first_model.info.name}.{MYSQL_APP1}")
+    consume_command = (
+        f"consume -m {second_model.info.name} admin/{first_model.info.name}.{MYSQL_APP1}"
+    )
+    await ops_test.juju(*consume_command.split())
 
     logger.info("Relating the two mysql clusters")
     await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:replication")
@@ -261,9 +264,9 @@ async def test_standby_promotion(
     assert results[0] > 1, "No data was written to the database"
 
     cluster_set_status = await get_cluster_status(leader_unit, cluster_set=True)
-    assert (
-        cluster_set_status["clusters"]["cuzco"]["clusterrole"] == "primary"
-    ), "standby not promoted to primary"
+    assert cluster_set_status["clusters"]["cuzco"]["clusterrole"] == "primary", (
+        "standby not promoted to primary"
+    )
 
 
 @pytest.mark.group(1)
@@ -291,12 +294,12 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
     )
 
     cluster_set_status = await get_cluster_status(leader_unit, cluster_set=True)
-    assert (
-        cluster_set_status["clusters"]["lima"]["clusterrole"] == "primary"
-    ), "standby not promoted to primary"
-    assert (
-        cluster_set_status["clusters"]["cuzco"]["globalstatus"] == "invalidated"
-    ), "old primary not invalidated"
+    assert cluster_set_status["clusters"]["lima"]["clusterrole"] == "primary", (
+        "standby not promoted to primary"
+    )
+    assert cluster_set_status["clusters"]["cuzco"]["globalstatus"] == "invalidated", (
+        "old primary not invalidated"
+    )
 
     # restore mysqld process
     for unit in second_model_units:
