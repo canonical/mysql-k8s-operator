@@ -271,7 +271,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             "egress-subnets",
             "ingress-address",
             "private-address",
-            "unit-status",
         }
         return self.unit_peer_data.keys() == _default_unit_data_keys
 
@@ -717,16 +716,17 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             if self.is_new_unit:
                 # when unit is new and has data, it means the app is scaling out
                 # from zero units
-                logger.debug("Scaling out from zero units")
+                logger.info("Scaling out from zero units")
                 if self.unit.is_leader():
                     # create the cluster due it being dissolved on scale-down
                     self.create_cluster()
                 else:
                     # Non-leader units try to join cluster
                     self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
-                    self.unit_peer_data.update(
-                        {"member-role": "secondary", "member-state": "waiting"}
-                    )
+                    self.unit_peer_data.update({
+                        "member-role": "secondary",
+                        "member-state": "waiting",
+                    })
             self._on_update_status(None)
             return
 
@@ -871,12 +871,12 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not self.unit.is_leader() and self._is_unit_waiting_to_join_cluster():
             # join cluster test takes precedence over blocked test
             # due to matching criteria
-            logger.debug("Attempting to join cluster")
+            logger.info("Attempting to join cluster")
             self.join_unit_to_cluster()
             return
 
         if self._is_cluster_blocked():
-            logger.debug("Cluster is blocked. Skipping.")
+            logger.info("Cluster is blocked. Skipping.")
             return
         del self.restart_peers.data[self.unit]["state"]
 
