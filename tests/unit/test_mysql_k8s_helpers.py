@@ -251,7 +251,7 @@ class TestMySQL(unittest.TestCase):
         """Test a successful execution of run_mysqlsh_script."""
         _container.exec.return_value = MagicMock()
         _container.exec.return_value.wait_output.return_value = (
-            "###stdout",
+            "garbage_that_mysqlsh_output###stdout",
             "stderr",
         )
         self.mysql.container = _container
@@ -282,7 +282,7 @@ class TestMySQL(unittest.TestCase):
             host="127.0.0.1:3306",
             timeout=10,
         )
-        assert output == "stdout"
+        self.assertEqual(output, "stdout")
 
         _container.exec.assert_called_once_with(
             [
