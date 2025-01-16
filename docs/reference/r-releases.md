@@ -8,6 +8,7 @@ To see all releases and commits, check the [Charmed MySQL K8s Releases page on G
 
 | Release | MySQL version | Juju version | [TLS encryption](/t/9655)* | [COS monitoring](/t/9981) | [Minor version upgrades](/t/11752) | [Cross-regional async replication](/t/13458) |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| [210], [211] | 8.0.39 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] |
 | [180], [181] | 8.0.37 | `3.4.3+` | ![check] | ![check] | ![check] | ![check] |
 | [153] | 8.0.36 | `3.4.3+` | ![check] | ![check] | ![check] | ![check] |
 | [127] | 8.0.35 | `3.1.6+` |  | ![check] | ![check] |  |
@@ -23,46 +24,50 @@ For more details about each feature/interface, refer to the documentation linked
 ## Architecture and base
 Several [revisions](https://juju.is/docs/sdk/revision) are released simultaneously for different [bases/series](https://juju.is/docs/juju/base) using the same charm code. In other words, one release contains multiple revisions.
 
-> If you do not specify a revision on deploy time, Juju will automatically choose the revision that matches your base and architecture.
+> If you do not specify a revision on deploy time, Juju will automatically choose the revision that matches your base and architecture. 
+> 
+> See: [`juju set-constraints`](https://juju.is/docs/juju/juju-set-constraints), [`juju info`](https://juju.is/docs/juju/juju-info) 
 
-> If you deploy a specific revision, **you must make sure it matches your base and architecture** via the tables below or with [`juju info`](https://juju.is/docs/juju/juju-info)
+### Release 210-211
 
-### Release 180-181 (`8.0/stable`)
+| Revision | amd64 | arm64 | Ubuntu 22.04 LTS
+|:--------:|:-----:|:-----:|:-----:|
+|[210]  |![check] | | ![check]  |
+|[211] |  | ![check]| ![check] |
+
+[details=Older releases]
+### Release 180-181
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
 |[180]  |![check] | | ![check]  |
 |[181] |  | ![check]| ![check] |
 
-[details=Release 153]
+### Release 153
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
 |[153] |![check]| | ![check]   |
-[/details]
 
-[details=Release 127]
+### Release 127
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
 |[127] |![check]| | ![check]   |
-[/details]
 
-[details=Release 113]
+### Release 113
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
 |[113] |![check]| | ![check]   |
-[/details]
 
-[details=Release 99]
+### Release 99
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
 |[99] |![check]| | ![check]   |
-[/details]
 
-[details=Release 75]
+### Release 75
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
@@ -70,6 +75,8 @@ Several [revisions](https://juju.is/docs/sdk/revision) are released simultaneous
 [/details]
 
 <!-- LINKS -->
+[210]: /t/16133
+[211]: /t/16133
 [180]: /t/15276
 [181]: /t/15276
 [153]: /t/14072
