@@ -124,13 +124,17 @@ async def test_build_and_deploy(
 @markers.juju3
 @markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
-async def test_async_relate(first_model: Model, second_model: Model) -> None:
+async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
     """Relate the two mysql clusters."""
     logger.info("Creating offers in first model")
-    await first_model.create_offer(f"{MYSQL_APP1}:replication-offer")
+    offer_command = f"offer {MYSQL_APP1}:replication-offer"
+    await ops_test.juju(*offer_command.split())
 
     logger.info("Consume offer in second model")
-    await second_model.consume(endpoint=f"admin/{first_model.info.name}.{MYSQL_APP1}")
+    consume_command = (
+        f"consume -m {second_model.info.name} admin/{first_model.info.name}.{MYSQL_APP1}"
+    )
+    await ops_test.juju(*consume_command.split())
 
     logger.info("Relating the two mysql clusters")
     await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:replication")
