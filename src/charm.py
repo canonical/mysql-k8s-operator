@@ -720,6 +720,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 if self.unit.is_leader():
                     # create the cluster due it being dissolved on scale-down
                     self.create_cluster()
+                    self._on_update_status(None)
                 else:
                     # Non-leader units try to join cluster
                     self.unit.status = WaitingStatus("Waiting for instance to join the cluster")
@@ -727,7 +728,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                         "member-role": "secondary",
                         "member-state": "waiting",
                     })
-            self._on_update_status(None)
             return
 
         self.unit.status = MaintenanceStatus("Initialising mysqld")
