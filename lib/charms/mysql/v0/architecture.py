@@ -41,8 +41,6 @@ LIBID = "827e04542dba4c2a93bdc70ae40afdb1"
 LIBAPI = 0
 LIBPATCH = 1
 
-PYDEPS = ["ops>=2.0.0", "pyyaml>=5.0"]
-
 
 logger = logging.getLogger(__name__)
 
