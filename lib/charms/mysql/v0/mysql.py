@@ -1295,9 +1295,8 @@ class MySQLBase(ABC):
                 host=self.instance_def(self.server_config_user),
             )
         except MySQLClientError as e:
-            logger.exception(
-                f"Failed to create application database {database_name} and scoped user {username}@{hostname}",
-                exc_info=e,
+            logger.error(
+                f"Failed to create application database {database_name} and scoped user {username}@{hostname}"
             )
             raise MySQLCreateApplicationDatabaseAndScopedUserError(e.message)
 
@@ -3295,12 +3294,35 @@ class MySQLBase(ABC):
             "sys",
         }
 
-    def strip_off_passwords(self, input_string: str) -> str:
+    def strip_off_passwords(self, input_string: Optional[str]) -> str:
         """Strips off passwords from the input string."""
+        if not input_string:
+            return ""
         stripped_input = input_string
+        hidden_pass = "*****"
         for password in self.passwords:
-            stripped_input = stripped_input.replace(password, "xxxxxxxxxxxx")
+            stripped_input = stripped_input.replace(password, hidden_pass)
+        if "IDENTIFIED" in input_string:
+            # when failure occurs for password setting (user creation, password rotation)
+            pattern = r"(?<=IDENTIFIED BY\ \')[^\']+(?=\')"
+            stripped_input = re.sub(pattern, hidden_pass, stripped_input)
         return stripped_input
+
+    def strip_off_passwords_from_exception(self, e: Exception) -> None:
+        """Remove password from execution exceptions.
+
+        Checks from known exceptions for password. Known exceptions are:
+        * ops.pebble: ExecError
+        * subprocess: CalledProcessError, TimeoutExpired
+        """
+        if hasattr(e, "stderr"):
+            e.stderr = self.strip_off_passwords(e.stderr)  # type: ignore
+        if hasattr(e, "cmd"):
+            for i, v in enumerate(e.cmd):  # type: ignore
+                e.cmd[i] = self.strip_off_passwords(v)  # type: ignore
+        if hasattr(e, "command"):
+            for i, v in enumerate(e.command):  # type: ignore
+                e.command[i] = self.strip_off_passwords(v)  # type: ignore
 
     @abstractmethod
     def is_mysqld_running(self) -> bool:

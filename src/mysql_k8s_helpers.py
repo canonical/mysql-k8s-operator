@@ -641,10 +641,10 @@ class MySQL(MySQLBase):
             process = self.container.exec(cmd, stdin=password)
             stdout, _ = process.wait_output()
             return stdout.split("###")[1].strip()
-        except ExecError as e:
-            raise MySQLClientError(e.stderr or "")
-        except ChangeError as e:
-            raise MySQLClientError(e.err)
+        except (ExecError, ChangeError) as e:
+            self.strip_off_passwords_from_exception(e)
+            logger.exception("Failed to execute mysql-shell command")
+            raise MySQLClientError
 
     def _run_mysqlcli_script(
         self,
@@ -684,10 +684,10 @@ class MySQL(MySQLBase):
 
             stdout, _ = process.wait_output()
             return [line.split("\t") for line in stdout.strip().split("\n")] if stdout else []
-        except ExecError as e:
-            raise MySQLClientError(e.stderr or "")
-        except ChangeError as e:
-            raise MySQLClientError(e.err)
+        except (ExecError, ChangeError) as e:
+            self.strip_off_passwords_from_exception(e)
+            logger.exception("Failed to execute MySQL cli command")
+            raise MySQLClientError
 
     def write_content_to_file(
         self,
