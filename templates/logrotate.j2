@@ -6,8 +6,16 @@ createolddir 770 {{ system_user }} {{ system_group }}
 
 # Frequency of logs rotation
 hourly
-maxage 7
-rotate 10800
+maxage {{ logs_retention_period }}
+rotate {{ logs_retention_period * 1440 }}
+
+# Compression settings
+{% if logs_compression_enabled %}
+compress
+{% else %}
+nocompress
+{% endif %}
+
 
 # Naming of rotated files should be in the format:
 dateext
@@ -16,23 +24,13 @@ dateformat -%Y%m%d_%H%M
 # Settings to prevent misconfigurations and unwanted behaviours
 ifempty
 missingok
-nocompress
 nomail
 nosharedscripts
 nocopytruncate
 
-/var/log/mysql/error.log {
-    olddir archive_error
+{% for log in enabled_log_files %}
+{{ log_dir }}/{{ log }}.log {
+    olddir archive_{{ log }}
 }
 
-/var/log/mysql/general.log {
-    olddir archive_general
-}
-
-/var/log/mysql/slowquery.log {
-    olddir archive_slowquery
-}
-
-/var/log/mysql/audit.log {
-    olddir archive_audit
-}
+# vim: set ft=conf

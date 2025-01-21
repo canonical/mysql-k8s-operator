@@ -6,7 +6,7 @@
 
 import json
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple
 
 import jinja2
 from charms.mysql.v0.mysql import (
@@ -235,7 +235,12 @@ class MySQL(MySQLBase):
 
         logger.debug("MySQL connection possible")
 
-    def setup_logrotate_config(self) -> None:
+    def setup_logrotate_config(
+        self,
+        logs_retention_period: str,
+        logs_compression_enabled: bool,
+        enabled_log_files: Iterable,
+    ) -> None:
         """Set up logrotate config in the workload container."""
         logger.debug("Creating the logrotate config file")
 
@@ -245,6 +250,9 @@ class MySQL(MySQLBase):
         rendered = template.render(
             system_user=MYSQL_SYSTEM_USER,
             system_group=MYSQL_SYSTEM_GROUP,
+            logs_retention_period=logs_retention_period,
+            logs_compression_enabled=logs_compression_enabled,
+            enabled_log_files=enabled_log_files,
         )
 
         logger.debug("Writing the logrotate config file to the workload container")

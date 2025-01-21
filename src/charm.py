@@ -274,6 +274,17 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         }
         return self.unit_peer_data.keys() == _default_unit_data_keys
 
+    @property
+    def text_logs(self) -> list:
+        """Enabled text logs."""
+        # slow logs isn't enabled by default
+        text_logs = ["error"]
+
+        if self.config.plugin_audit_enabled:
+            text_logs.append("audit")
+
+        return text_logs
+
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
 
@@ -524,6 +535,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         previous_config_dict = self.mysql_config.custom_config(config_content)
 
+        # always setup log rotation
+        self._setup_log_rotation()
+
         # render the new config
         memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
         new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
@@ -688,6 +702,17 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         return False
 
+    def _setup_log_rotation(self) -> None:
+        logger.info("Setting up the logrotate configurations")
+        if self.config.logs_retention_period == "auto":
+            # TODO: parse relations for COS
+            period = "3"
+        else:
+            period = self.config.logs_retention_period
+        self._mysql.setup_logrotate_config(
+            period, self.config.logs_compression_enabled, self.text_logs
+        )
+
     def _on_mysql_pebble_ready(self, event) -> None:
         """Pebble ready handler.
 
@@ -705,8 +730,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         container = event.workload
         self._write_mysqld_configuration()
 
-        logger.info("Setting up the logrotate configurations")
-        self._mysql.setup_logrotate_config()
+        self._setup_log_rotation()
 
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration

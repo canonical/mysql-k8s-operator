@@ -12,7 +12,7 @@ options:
     type: string
   profile:
     description: |
-      profile representing the scope of deployment, and used to be able to enable high-level
+      Profile representing the scope of deployment, and used to be able to enable high-level
       high-level customisation of sysconfigs, resource checks/allocation, warning levels, etc.
       Allowed values are: “production” and “testing”.
     type: string
@@ -37,7 +37,8 @@ options:
     description: The database name for the legacy 'mysql' interface (root level access)
     type: string
   plugin-audit-enabled:
-    description: Enable the audit plugin
+    description: |
+      Audit log plugin state. When the plugin is enabled (default, audit logs will be enabled.
     type: boolean
     default: true
   plugin-audit-strategy:
@@ -50,6 +51,22 @@ options:
     description: Number of days for binary logs retention
     type: int
     default: 7
+  logs_audit_policy:
+    description: |
+      Audit log policy. Allowed values are: "all", "logins" (default), "queries".
+      Reg. at https://docs.percona.com/percona-server/8.0/audit-log-plugin.html#audit_log_policy
+    type: string
+    default: logins
+  logs_compression_enabled:
+    description: Flag for setting rotate logs compression
+    type: boolean
+    default: false
+  logs_retention_period:
+    description: |
+      Period for rotated logs retention, in days. When set to "auto" (default) it will default to
+      to 3 days, or 1 day if related to COS.
+    type: string
+    default: auto
   # Experimental features
   experimental-max-connections:
     type: int
