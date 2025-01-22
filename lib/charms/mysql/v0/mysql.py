@@ -937,6 +937,7 @@ class MySQLBase(ABC):
         profile: str,
         audit_log_enabled: bool,
         audit_log_strategy: str,
+        audit_log_policy: str,
         memory_limit: Optional[int] = None,
         experimental_max_connections: Optional[int] = None,
         binlog_retention_days: int,
@@ -1007,7 +1008,7 @@ class MySQLBase(ABC):
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
             "slow_query_log_file": f"{snap_common}/var/log/mysql/slowquery.log",
             "binlog_expire_logs_seconds": f"{binlog_retention_seconds}",
-            "loose-audit_log_policy": "LOGINS",
+            "loose-audit_log_policy": f"{audit_log_policy.upper()}",
             "loose-audit_log_file": f"{snap_common}/var/log/mysql/audit.log",
         }
 
@@ -1019,6 +1020,7 @@ class MySQLBase(ABC):
             config["mysqld"]["loose-audit_log_strategy"] = "ASYNCHRONOUS"
         else:
             config["mysqld"]["loose-audit_log_strategy"] = "SEMISYNCHRONOUS"
+
 
         if innodb_buffer_pool_chunk_size:
             config["mysqld"]["innodb_buffer_pool_chunk_size"] = str(innodb_buffer_pool_chunk_size)

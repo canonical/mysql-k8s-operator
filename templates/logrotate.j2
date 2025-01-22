@@ -7,7 +7,7 @@ createolddir 770 {{ system_user }} {{ system_group }}
 # Frequency of logs rotation
 hourly
 maxage {{ logs_retention_period }}
-rotate {{ logs_retention_period * 1440 }}
+rotate {{ logs_rotations }}
 
 # Compression settings
 {% if logs_compression_enabled %}
@@ -15,7 +15,6 @@ compress
 {% else %}
 nocompress
 {% endif %}
-
 
 # Naming of rotated files should be in the format:
 dateext
@@ -32,5 +31,6 @@ nocopytruncate
 {{ log_dir }}/{{ log }}.log {
     olddir archive_{{ log }}
 }
+{% endfor %}
 
 # vim: set ft=conf

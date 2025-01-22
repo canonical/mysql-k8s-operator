@@ -37,6 +37,7 @@ from constants import (
     LOG_ROTATE_CONFIG_FILE,
     MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
+    MYSQL_LOG_DIR,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
     MYSQLD_DEFAULTS_CONFIG_FILE,
@@ -247,12 +248,15 @@ class MySQL(MySQLBase):
         with open("templates/logrotate.j2", "r") as file:
             template = jinja2.Template(file.read())
 
+        logs_rotations = int(logs_retention_period) * 1440
         rendered = template.render(
             system_user=MYSQL_SYSTEM_USER,
             system_group=MYSQL_SYSTEM_GROUP,
             logs_retention_period=logs_retention_period,
+            logs_rotations=logs_rotations,
             logs_compression_enabled=logs_compression_enabled,
             enabled_log_files=enabled_log_files,
+            log_dir=MYSQL_LOG_DIR,
         )
 
         logger.debug("Writing the logrotate config file to the workload container")

@@ -538,25 +538,12 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # always setup log rotation
         self._setup_log_rotation()
 
-        # render the new config
-        memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
-        new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
-            profile=self.config.profile,
-            audit_log_enabled=self.config.plugin_audit_enabled,
-            audit_log_strategy=self.config.plugin_audit_strategy,
-            memory_limit=memory_limit_bytes,
-            experimental_max_connections=self.config.experimental_max_connections,
-            binlog_retention_days=self.config.binlog_retention_days,
-        )
-
+        logger.info("Persisting configuration changes to file")
+        new_config_dict = self._write_mysqld_configuration()
         changed_config = compare_dictionaries(previous_config_dict, new_config_dict)
 
         if self.mysql_config.keys_requires_restart(changed_config):
             # there are static configurations in changed keys
-            logger.info("Persisting configuration changes to file")
-
-            # persist config to file
-            self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
 
             if self._mysql.is_mysqld_running():
                 logger.info("Configuration change requires restart")
@@ -574,7 +561,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             # if only dynamic config changed, apply it
             logger.info("Configuration does not requires restart")
             for config in dynamic_config:
-                self._mysql.set_dynamic_variable(config, new_config_dict[config])
+                self._mysql.set_dynamic_variable(
+                    config.removeprefix("loose-"), new_config_dict[config]
+                )
 
     def _on_leader_elected(self, _) -> None:
         """Handle the leader elected event.
@@ -617,18 +606,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             except ops.ModelError:
                 logger.exception("failed to open port")
 
-    def _write_mysqld_configuration(self):
+    def _write_mysqld_configuration(self) -> dict:
         """Write the mysqld configuration to the file."""
         memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
-        new_config_content, _ = self._mysql.render_mysqld_configuration(
+        new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
             profile=self.config.profile,
             audit_log_enabled=self.config.plugin_audit_enabled,
             audit_log_strategy=self.config.plugin_audit_strategy,
+            audit_log_policy=self.config.logs_audit_policy,
             memory_limit=memory_limit_bytes,
             experimental_max_connections=self.config.experimental_max_connections,
             binlog_retention_days=self.config.binlog_retention_days,
         )
         self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
+        return new_config_dict
 
     def _configure_instance(self, container) -> None:
         """Configure the instance for use in Group Replication."""
