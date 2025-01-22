@@ -328,7 +328,7 @@ class TestMySQL(unittest.TestCase):
             " misconfigurations and unwanted behaviours\nifempty\nmissingok\nnocompress\nnomail\n"
             "nosharedscripts\nnocopytruncate\n\n/var/log/mysql/error.log {\n    olddir"
             " archive_error\n}\n\n/var/log/mysql/general.log {\n    olddir archive_general\n}\n\n"
-            "/var/log/mysql/slowquery.log {\n    olddir archive_slowquery\n}\n\n"
+            "/var/log/mysql/slow.log {\n    olddir archive_slow\n}\n\n"
             "/var/log/mysql/audit.log {\n    olddir archive_audit\n}"
         )
 

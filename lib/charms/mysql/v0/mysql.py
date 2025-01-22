@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 77
+LIBPATCH = 78
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1005,7 +1005,7 @@ class MySQLBase(ABC):
             "log_error": f"{snap_common}/var/log/mysql/error.log",
             "general_log": "ON",
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
-            "slow_query_log_file": f"{snap_common}/var/log/mysql/slowquery.log",
+            "slow_query_log_file": f"{snap_common}/var/log/mysql/slow.log",
             "binlog_expire_logs_seconds": f"{binlog_retention_seconds}",
             "loose-audit_log_policy": "LOGINS",
             "loose-audit_log_file": f"{snap_common}/var/log/mysql/audit.log",
@@ -2281,28 +2281,6 @@ class MySQLBase(ABC):
             logger.exception("Failed to set cluster primary")
             raise MySQLSetClusterPrimaryError(e.message)
 
-    def get_cluster_members_addresses(self) -> Optional[Iterable[str]]:
-        """Get the addresses of the cluster's members."""
-        get_cluster_members_commands = (
-            f"shell.connect('{self.instance_def(self.server_config_user)}')",
-            f"cluster = dba.get_cluster('{self.cluster_name}')",
-            "members = ','.join((member['address'] for member in cluster.describe()['defaultReplicaSet']['topology']))",
-            "print(f'<MEMBERS>{members}</MEMBERS>')",
-        )
-
-        try:
-            output = self._run_mysqlsh_script("\n".join(get_cluster_members_commands))
-        except MySQLClientError as e:
-            logger.warning("Failed to get cluster members addresses", exc_info=e)
-            raise MySQLGetClusterMembersAddressesError(e.message)
-
-        matches = re.search(r"<MEMBERS>(.+)</MEMBERS>", output)
-
-        if not matches:
-            return None
-
-        return set(matches.group(1).split(","))
-
     def verify_server_upgradable(self, instance: Optional[str] = None) -> None:
         """Wrapper for API check_for_server_upgrade."""
         # use cluster admin user to enforce standard port usage
@@ -2445,14 +2423,6 @@ class MySQLBase(ABC):
             return
 
         return cs_status["clusters"][self.cluster_name.lower()]["clusterrole"] == "replica"
-
-    def cluster_set_cluster_count(self, from_instance: Optional[str] = None) -> int:
-        """Get the number of clusters in the cluster set."""
-        cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
-        if not cs_status:
-            return 0
-
-        return len(cs_status["clusters"])
 
     def get_cluster_set_name(self, from_instance: Optional[str] = None) -> Optional[str]:
         """Get cluster set name."""
