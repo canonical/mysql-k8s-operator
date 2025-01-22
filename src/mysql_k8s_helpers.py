@@ -599,6 +599,7 @@ class MySQL(MySQLBase):
         host: str,
         password: str,
         timeout: Optional[int] = None,
+        exception_as_warning: bool = False,
         verbose: int = 0,
     ) -> str:
         """Execute a MySQL shell script.
@@ -612,6 +613,7 @@ class MySQL(MySQLBase):
             password: Password to invoke the mysqlsh script
             verbose: mysqlsh verbosity level
             timeout: timeout to wait for the script
+            exception_as_warning: (optional) whether the exception should be treated as warning
 
         Returns:
             stdout of the script
@@ -642,8 +644,11 @@ class MySQL(MySQLBase):
             stdout, _ = process.wait_output()
             return stdout.split("###")[1].strip()
         except (ExecError, ChangeError) as e:
-            self.strip_off_passwords_from_exception(e)
-            logger.exception("Failed to execute mysql-shell command")
+            if exception_as_warning:
+                logger.warning("Failed to execute mysql-shell command")
+            else:
+                self.strip_off_passwords_from_exception(e)
+                logger.exception("Failed to execute mysql-shell command")
             raise MySQLClientError
 
     def _run_mysqlcli_script(
@@ -652,6 +657,7 @@ class MySQL(MySQLBase):
         user: str = "root",
         password: Optional[str] = None,
         timeout: Optional[int] = None,
+        exception_as_warning: bool = False,
     ) -> list:
         """Execute a MySQL CLI script.
 
@@ -660,9 +666,10 @@ class MySQL(MySQLBase):
 
         Args:
             script: raw SQL script string
-            password: root password to use for the script when needed
             user: user to run the script
+            password: root password to use for the script when needed
             timeout: a timeout to execute the mysqlcli script
+            exception_as_warning: (optional) whether the exception should be treated as warning
         """
         command = [
             MYSQL_CLI_LOCATION,
@@ -685,8 +692,11 @@ class MySQL(MySQLBase):
             stdout, _ = process.wait_output()
             return [line.split("\t") for line in stdout.strip().split("\n")] if stdout else []
         except (ExecError, ChangeError) as e:
-            self.strip_off_passwords_from_exception(e)
-            logger.exception("Failed to execute MySQL cli command")
+            if exception_as_warning:
+                logger.warning("Failed to execute MySQL cli command")
+            else:
+                self.strip_off_passwords_from_exception(e)
+                logger.exception("Failed to execute MySQL cli command")
             raise MySQLClientError
 
     def write_content_to_file(
