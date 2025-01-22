@@ -764,7 +764,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.exception("Failed to initialize primary")
             raise
 
-    def _handle_potential_cluster_crash_scenario(self) -> bool:
+    def _handle_potential_cluster_crash_scenario(self) -> bool:  # noqa: C901
         """Handle potential full cluster crash scenarios.
 
         Returns:
@@ -831,10 +831,42 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                         self.unit.status = ActiveStatus(self.active_status_message)
                     else:
                         self.unit.status = BlockedStatus("failed to recover cluster.")
+                finally:
+                    return True
+
+            if self._mysql.is_cluster_auto_rejoin_ongoing():
+                logger.info("Cluster auto-rejoin attempts are still ongoing.")
+            else:
+                logger.info("Cluster auto-rejoin attempts are exhausted. Attempting manual rejoin")
+                self._execute_manual_rejoin()
 
             return True
 
         return False
+
+    def _execute_manual_rejoin(self) -> None:
+        """Executes an instance manual rejoin.
+
+        It is supposed to be called when the MySQL 8.0.21+ auto-rejoin attempts have been exhausted,
+        on an OFFLINE replica that still belongs to the cluster
+        """
+        if not self._mysql.is_instance_in_cluster(self.unit_label):
+            logger.warning("Instance does not belong to the cluster. Cannot perform manual rejoin")
+            return
+
+        cluster_primary = self._get_primary_from_online_peer()
+        if not cluster_primary:
+            logger.warning("Instance does not have ONLINE peers. Cannot perform manual rejoin")
+            return
+
+        self._mysql.remove_instance(
+            unit_label=self.unit_label,
+        )
+        self._mysql.add_instance_to_cluster(
+            instance_address=self.unit_address,
+            instance_unit_label=self.unit_label,
+            from_instance=cluster_primary,
+        )
 
     def _is_cluster_blocked(self) -> bool:
         """Performs cluster state checks for the update-status handler.
