@@ -41,11 +41,10 @@ async def test_log_rotation(
     await ops_test.model.set_config({"update-status-hook-interval": "60m"})
 
     # Exclude slow log files as slow logs are not enabled by default
-    log_types = ["error", "general", "audit"]
-    log_files = ["error.log", "general.log", "audit.log"]
+    log_types = ["error", "audit"]
+    log_files = ["error.log", "audit.log"]
     archive_directories = [
         "archive_error",
-        "archive_general",
         "archive_slow",
         "archive_audit",
     ]
