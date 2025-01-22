@@ -40,13 +40,12 @@ async def test_log_rotation(
     logger.info("Extending update-status-hook-interval to 60m")
     await ops_test.model.set_config({"update-status-hook-interval": "60m"})
 
-    # Exclude slowquery log files as slowquery logs are not enabled by default
-    log_types = ["error", "general", "audit"]
-    log_files = ["error.log", "general.log", "audit.log"]
+    # Exclude slow log files as slow logs are not enabled by default
+    log_types = ["error", "audit"]
+    log_files = ["error.log", "audit.log"]
     archive_directories = [
         "archive_error",
-        "archive_general",
-        "archive_slowquery",
+        "archive_slow",
         "archive_audit",
     ]
 
@@ -105,7 +104,7 @@ async def test_log_rotation(
         ), f"❌ unexpected files/directories in log directory: {ls_output}"
 
     logger.info("Ensuring log files were rotated")
-    # Exclude checking slowquery log rotation as slowquery logs are disabled by default
+    # Exclude checking slow log rotation as slow logs are disabled by default
     for log in set(log_types):
         file_contents = read_contents_from_file_in_unit(
             ops_test, unit, f"/var/log/mysql/{log}.log"

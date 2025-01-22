@@ -13,7 +13,7 @@ options:
   profile:
     description: |
       profile representing the scope of deployment, and used to be able to enable high-level
-      high-level customisation of sysconfigs, resource checks/allocation, warning levels, etc.
+      customisation of sysconfigs, resource checks/allocation, warning levels, etc.
       Allowed values are: “production” and “testing”.
     type: string
     default: production

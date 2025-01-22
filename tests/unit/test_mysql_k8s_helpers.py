@@ -326,9 +326,10 @@ class TestMySQL(unittest.TestCase):
             " rotation\nhourly\nmaxage 7\nrotate 10800\n\n# Naming of rotated files should be in"
             " the format:\ndateext\ndateformat -%Y%m%d_%H%M\n\n# Settings to prevent"
             " misconfigurations and unwanted behaviours\nifempty\nmissingok\nnocompress\nnomail\n"
-            "nosharedscripts\nnocopytruncate\n\n/var/log/mysql/error.log {\n    olddir"
-            " archive_error\n}\n\n/var/log/mysql/general.log {\n    olddir archive_general\n}\n\n"
-            "/var/log/mysql/slowquery.log {\n    olddir archive_slowquery\n}\n\n"
+            "nosharedscripts\nnocopytruncate\n\n"
+            "/var/log/mysql/error.log {\n    olddir archive_error\n}\n\n"
+            "/var/log/mysql/general.log {\n    olddir archive_general\n}\n\n"
+            "/var/log/mysql/slow.log {\n    olddir archive_slow\n}\n\n"
             "/var/log/mysql/audit.log {\n    olddir archive_audit\n}"
         )
 
