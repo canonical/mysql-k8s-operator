@@ -578,21 +578,8 @@ class MySQLBackups(Object):
             if recoverable:
                 self._clean_data_dir_and_start_mysqld()
             else:
-                self.charm.app_peer_data.update({
-                    "s3-block-message": MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR,
-                    "binlogs-collecting": "",
-                })
-                if not self.charm._mysql.reconcile_binlogs_collection():
-                    logger.error("Failed to stop binlogs collecting after failed restore")
                 self.charm.unit.status = BlockedStatus(error_message)
             return
-
-        self.charm.app_peer_data.update({
-            "s3-block-message": MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR,
-            "binlogs-collecting": "",
-        })
-        if not self.charm._mysql.reconcile_binlogs_collection():
-            logger.error("Failed to stop binlogs collecting prior to restore")
 
         if restore_to_time is not None:
             self.charm.unit.status = MaintenanceStatus("Running point-in-time-recovery operations")
@@ -602,6 +589,13 @@ class MySQLBackups(Object):
                 event.fail(error_message)
                 self.charm.unit.status = BlockedStatus(error_message)
                 return
+
+        self.charm.app_peer_data.update({
+            "s3-block-message": MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR,
+            "binlogs-collecting": "",
+        })
+        if not self.charm._mysql.reconcile_binlogs_collection():
+            logger.error("Failed to stop binlogs collecting prior to restore")
 
         # Run post-restore operations
         self.charm.unit.status = MaintenanceStatus("Running post-restore operations")
@@ -791,6 +785,15 @@ class MySQLBackups(Object):
             event.defer()
             return
 
+        try:
+            self.charm._mysql.wait_until_mysql_connection()
+        except MySQLServiceNotRunningError:
+            logger.debug(
+                "Deferring _on_s3_credentials_changed: mysql cluster is not connectable yet"
+            )
+            event.defer()
+            return
+
         logger.info("Retrieving s3 parameters from the s3-integrator relation")
         s3_parameters, missing_parameters = self._retrieve_s3_parameters()
         if missing_parameters:
@@ -815,16 +818,14 @@ class MySQLBackups(Object):
             logger.error("Failed to restart binlogs collecting after S3 relation update")
 
     def _on_s3_credentials_gone(self, event: CredentialsGoneEvent) -> None:
+        if self.charm.unit.is_leader():
+            self.charm.app_peer_data.update({
+                "s3-block-message": "",
+                "binlogs-collecting": "",
+            })
+            if not self.charm._mysql.reconcile_binlogs_collection():
+                logger.error("Failed to stop binlogs collecting after S3 relation depart")
         self.charm._mysql.delete_binlogs_collector_config()
-        if not self.charm.unit.is_leader():
-            logger.debug("Early exit on _on_s3_credentials_gone: unit is not a leader")
-            return
-        self.charm.app_peer_data.update({
-            "s3-block-message": "",
-            "binlogs-collecting": "",
-        })
-        if not self.charm._mysql.reconcile_binlogs_collection():
-            logger.error("Failed to stop binlogs collecting after S3 relation depart")
 
     def update_binlogs_collector_config(self) -> bool:
         """Update binlogs collector service config file.
