@@ -865,7 +865,7 @@ class MySQL(MySQLBase):
 
         self.charm._reconcile_pebble_layer(container)
         # Replan anyway as we may need to restart already enabled binlogs collector service (therefore without pebble layers change)
-        container.replan()
+        container._pebble.replan_services(timeout=0)
 
         return True
 

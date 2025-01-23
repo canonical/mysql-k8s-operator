@@ -49,7 +49,7 @@ from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
-from ops.charm import RelationChangedEvent, UpdateStatusEvent
+from ops.charm import RelationChangedEvent, RelationDepartedEvent, UpdateStatusEvent
 from ops.model import (
     ActiveStatus,
     BlockedStatus,
@@ -146,6 +146,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
+        self.framework.observe(self.on[PEER].relation_departed, self._on_peer_relation_departed)
 
         self.framework.observe(
             self.on[COS_AGENT_RELATION_NAME].relation_created, self._reconcile_mysqld_exporter
@@ -940,8 +941,12 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if self._is_unit_waiting_to_join_cluster():
             self.join_unit_to_cluster()
 
-        if not self._mysql.reconcile_binlogs_collection():
+        if not self._mysql.reconcile_binlogs_collection(True):
             logger.error("Failed to reconcile binlogs collection during peer relation event")
+
+    def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
+        if not self._mysql.reconcile_binlogs_collection(True):
+            logger.error("Failed to reconcile binlogs collection during peer departed event")
 
     def _on_database_storage_detaching(self, _) -> None:
         """Handle the database storage detaching event."""
