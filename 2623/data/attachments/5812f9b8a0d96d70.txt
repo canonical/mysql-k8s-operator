@@ -1,0 +1,7 @@
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:83 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:182 Applying patch to source
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:179 Reverting patch on source
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:93 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:98 Wait for upgrade to start
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:103 Get first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:108 Wait for upgrade to fail on upgrading unit

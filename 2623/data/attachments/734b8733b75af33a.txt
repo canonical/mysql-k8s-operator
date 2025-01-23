@@ -1,0 +1,226 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.conftest:conftest.py:20 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:148 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:152 Run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:165 Inject dependency fault
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:170 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:173 Get first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:177 Wait for upgrade to fail on first upgrading unit
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.2    unsupported  01:50:31Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.39-0ubuntu0.22.04.1  waiting      3  mysql-k8s                      1  10.152.183.248  no       waiting for units to settle down
+mysql-test-app  0.0.2                    active       1  mysql-test-app  latest/edge   63  10.152.183.78   no       
+
+Unit               Workload     Agent  Address     Ports  Message
+mysql-k8s/0        maintenance  idle   10.1.52.84         offline
+mysql-k8s/1*       maintenance  idle   10.1.52.83         offline
+mysql-k8s/2        maintenance  idle   10.1.52.82         error
+mysql-test-app/0*  active       idle   10.1.52.78         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:34:16 ERROR unit.mysql-k8s/1.juju-log Failed to set variable='innodb_fast_shutdown' to value='0'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 622, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--no-wizard', '--python', '--verbose=0', '-f', '/tmp/script.py', ';', 'rm', '/tmp/script.py'], stdout='', stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 1, in <module>\nmysqlsh.DBError: MySQL Error (2005): Shell.connect: No such host is known \'10-1-52-79.mysql-k8s-primary.test.svc.cluster.local\'\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1413, in set_dynamic_variable
+    self._run_mysqlsh_script("\n".join(set_var_command))
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 625, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+unit-mysql-k8s-1: 01:34:16 ERROR unit.mysql-k8s/1.juju-log charms.data_platform_libs.v0.upgrade.ClusterNotReadyError - {'message': 'Pre-upgrade check failed. Cannot upgrade.', 'cause': 'Failed to set slow shutdown', 'resolution': 'Check the cluster status'}
+unit-mysql-k8s-2: 01:34:53 ERROR unit.mysql-k8s/2.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+unit-mysql-k8s-1: 01:35:12 ERROR unit.mysql-k8s/1.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+unit-mysql-k8s-0: 01:35:39 ERROR unit.mysql-k8s/0.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+unit-mysql-k8s-1: 01:39:37 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-1: 01:39:37 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:39:38 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-0: 01:39:38 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:39:38 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-2: 01:39:38 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:39:45 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-0: 01:39:45 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:39:47 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-1: 01:39:47 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-2: 01:39:47 ERROR unit.mysql-k8s/2.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:39:47 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:40:46 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-2: 01:40:46 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:40:47 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-0: 01:40:47 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:40:47 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-1: 01:40:47 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:44:05 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-1: 01:44:05 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:44:35 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-0: 01:44:35 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:46:13 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-2: 01:46:13 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:48:41 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-1: 01:48:41 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-0: 01:50:03 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for cluster-40e88ee27844ed3f0f04a1ee5b0aa39b
+unit-mysql-k8s-0: 01:50:03 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 792, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 734, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1955, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-test-app-0: 01:50:29 ERROR unit.mysql-test-app/0.juju-log Unable to query the database
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 291, in _open_connection
+    self._cmysql.connect(**cnx_kwargs)
+_mysql_connector.MySQLInterfaceError: Can't connect to MySQL server on 'mysql-k8s-primary.test.svc.cluster.local:3306' (111)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 229, in _stop_continuous_writes
+    last_written_value = self._max_written_value()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 240, in _max_written_value
+    with MySQLConnector(self._database_config) as cursor:
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/connector.py", line 42, in __enter__
+    self.connection = connector.connect(**self.config)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/pooling.py", line 293, in connect
+    return CMySQLConnection(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 120, in __init__
+    self.connect(**kwargs)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/abstracts.py", line 1181, in connect
+    self._open_connection()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/mysql/connector/connection_cext.py", line 296, in _open_connection
+    raise get_mysql_exception(
+mysql.connector.errors.DatabaseError: 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-primary.test.svc.cluster.local:3306' (111)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/./src/charm.py", line 227, in _stop_continuous_writes
+    for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(5)):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/tenacity/__init__.py", line 384, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/tenacity/__init__.py", line 363, in iter
+    raise retry_exc from fut.exception()
+tenacity.RetryError: RetryError[<Future at 0x7f4a48b06d10 state=finished raised DatabaseError>]
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

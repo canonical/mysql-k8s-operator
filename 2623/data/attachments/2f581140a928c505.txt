@@ -1,0 +1,29 @@
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that max_connections is set to 100 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that max_connections is set to 100 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that max_connections is set to 100 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:352 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/2
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.2    unsupported  01:38:50Z
+
+App        Version  Status  Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s           active      3  mysql-k8s             0  10.152.183.175  no       
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0   active    idle   10.1.200.84         
+mysql-k8s/1   active    idle   10.1.200.85         
+mysql-k8s/2*  active    idle   10.1.200.86         Primary
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
