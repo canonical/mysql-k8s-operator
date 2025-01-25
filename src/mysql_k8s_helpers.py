@@ -269,35 +269,53 @@ class MySQL(MySQLBase):
 
     def execute_backup_commands(
         self,
-        s3_directory: str,
+        s3_path: str,
         s3_parameters: Dict[str, str],
+        xtrabackup_location: str = CHARMED_MYSQL_XTRABACKUP_LOCATION,
+        xbcloud_location: str = CHARMED_MYSQL_XBCLOUD_LOCATION,
+        xtrabackup_plugin_dir: str = XTRABACKUP_PLUGIN_DIR,
+        mysqld_socket_file: str = MYSQLD_SOCK_FILE,
+        tmp_base_directory: str = MYSQL_DATA_DIR,
+        defaults_config_file: str = MYSQLD_DEFAULTS_CONFIG_FILE,
+        user: Optional[str] = MYSQL_SYSTEM_USER,
+        group: Optional[str] = MYSQL_SYSTEM_GROUP,
     ) -> Tuple[str, str]:
         """Executes commands to create a backup."""
         return super().execute_backup_commands(
-            s3_directory,
+            s3_path,
             s3_parameters,
-            CHARMED_MYSQL_XTRABACKUP_LOCATION,
-            CHARMED_MYSQL_XBCLOUD_LOCATION,
-            XTRABACKUP_PLUGIN_DIR,
-            MYSQLD_SOCK_FILE,
-            MYSQL_DATA_DIR,
-            MYSQLD_DEFAULTS_CONFIG_FILE,
-            user=MYSQL_SYSTEM_USER,
-            group=MYSQL_SYSTEM_GROUP,
+            xtrabackup_location,
+            xbcloud_location,
+            xtrabackup_plugin_dir,
+            mysqld_socket_file,
+            tmp_base_directory,
+            defaults_config_file,
+            user,
+            group,
         )
 
-    def delete_temp_backup_directory(self, from_directory: str = MYSQL_DATA_DIR) -> None:
+    def delete_temp_backup_directory(
+        self,
+        tmp_base_directory: str = MYSQL_DATA_DIR,
+        user=MYSQL_SYSTEM_USER,
+        group=MYSQL_SYSTEM_GROUP,
+    ) -> None:
         """Delete the temp backup directory in the data directory."""
         super().delete_temp_backup_directory(
-            from_directory,
-            user=MYSQL_SYSTEM_USER,
-            group=MYSQL_SYSTEM_GROUP,
+            tmp_base_directory,
+            user,
+            group,
         )
 
     def retrieve_backup_with_xbcloud(
         self,
         backup_id: str,
         s3_parameters: Dict[str, str],
+        temp_restore_directory: str = MYSQL_DATA_DIR,
+        xbcloud_location: str = CHARMED_MYSQL_XBCLOUD_LOCATION,
+        xbstream_location: str = CHARMED_MYSQL_XBSTREAM_LOCATION,
+        user: str = MYSQL_SYSTEM_USER,
+        group: str = MYSQL_SYSTEM_GROUP,
     ) -> Tuple[str, str, str]:
         """Retrieve the specified backup from S3.
 
@@ -307,11 +325,11 @@ class MySQL(MySQLBase):
         return super().retrieve_backup_with_xbcloud(
             backup_id,
             s3_parameters,
-            MYSQL_DATA_DIR,
-            CHARMED_MYSQL_XBCLOUD_LOCATION,
-            CHARMED_MYSQL_XBSTREAM_LOCATION,
-            user=MYSQL_SYSTEM_USER,
-            group=MYSQL_SYSTEM_GROUP,
+            temp_restore_directory,
+            xbcloud_location,
+            xbstream_location,
+            user,
+            group,
         )
 
     def prepare_backup_for_restore(self, backup_location: str) -> Tuple[str, str]:
@@ -461,7 +479,7 @@ class MySQL(MySQLBase):
                     f"{self.server_config_password}@{self.instance_address}')"
                 ),
                 f'session.run_sql("GRANT ALL ON *.* TO `{username}`@`{hostname}` WITH GRANT OPTION;")',
-                f"session.run_sql(\"REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM `{username}`@`{hostname}`;\")",
+                f'session.run_sql("REVOKE {", ".join(super_privileges_to_revoke)} ON *.* FROM `{username}`@`{hostname}`;")',
                 'session.run_sql("FLUSH PRIVILEGES;")',
             )
 
@@ -508,7 +526,7 @@ class MySQL(MySQLBase):
                     f"shell.connect_to_primary('{self.server_config_user}:"
                     f"{self.server_config_password}@{self.instance_address}')"
                 ),
-                f"session.run_sql(\"DROP USER IF EXISTS {', '.join(users)};\")",
+                f'session.run_sql("DROP USER IF EXISTS {", ".join(users)};")',
             )
             self._run_mysqlsh_script("\n".join(drop_users_command))
         except MySQLClientError as e:
