@@ -6,7 +6,7 @@
 
 import json
 import logging
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import jinja2
 from charms.mysql.v0.mysql import (
@@ -45,7 +45,6 @@ from constants import (
     MYSQLD_SAFE_SERVICE,
     MYSQLD_SOCK_FILE,
     MYSQLSH_LOCATION,
-    MYSQLSH_SCRIPT_FILE,
     ROOT_SYSTEM_USER,
     XTRABACKUP_PLUGIN_DIR,
 )
@@ -205,7 +204,12 @@ class MySQL(MySQLBase):
         Initialise mysql data directory and create blank password root@localhost user.
         Raises MySQLInitialiseMySQLDError if the instance bootstrap fails.
         """
-        bootstrap_command = [MYSQLD_LOCATION, "--initialize-insecure", "-u", MYSQL_SYSTEM_USER]
+        bootstrap_command = [
+            MYSQLD_LOCATION,
+            "--initialize-insecure",
+            "-u",
+            MYSQL_SYSTEM_USER,
+        ]
 
         try:
             process = self.container.exec(
@@ -407,14 +411,16 @@ class MySQL(MySQLBase):
         """
         try:
             create_database_commands = (
-                (
-                    f"shell.connect_to_primary('{self.server_config_user}:"
-                    f"{self.server_config_password}@{self.instance_address}')"
-                ),
+                "shell.connect_to_primary()",
                 f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
             )
 
-            self._run_mysqlsh_script("\n".join(create_database_commands))
+            self._run_mysqlsh_script(
+                "\n".join(create_database_commands),
+                user=self.server_config_user,
+                host=self.instance_address,
+                password=self.server_config_password,
+            )
         except MySQLClientError as e:
             logger.exception(f"Failed to create database {database_name}", exc_info=e)
             raise MySQLCreateDatabaseError(e.message)
@@ -434,19 +440,21 @@ class MySQL(MySQLBase):
         try:
             escaped_user_attributes = json.dumps({"label": label}).replace('"', r"\"")
             create_user_commands = (
-                (
-                    f"shell.connect_to_primary('{self.server_config_user}:"
-                    f"{self.server_config_password}@{self.instance_address}')"
-                ),
+                "shell.connect_to_primary()",
                 (
                     f'session.run_sql("CREATE USER `{username}`@`{hostname}` IDENTIFIED'
                     f" BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")"
                 ),
             )
 
-            self._run_mysqlsh_script("\n".join(create_user_commands))
+            self._run_mysqlsh_script(
+                "\n".join(create_user_commands),
+                user=self.server_config_user,
+                host=self.instance_address,
+                password=self.server_config_password,
+            )
         except MySQLClientError as e:
-            logger.exception(f"Failed to create user {username}@{hostname}", exc_info=e)
+            logger.exception(f"Failed to create user {username}@{hostname}")
             raise MySQLCreateUserError(e.message)
 
     def escalate_user_privileges(self, username: str, hostname: str = "%") -> None:
@@ -474,19 +482,22 @@ class MySQL(MySQLBase):
             )
 
             escalate_user_privileges_commands = (
-                (
-                    f"shell.connect_to_primary('{self.server_config_user}:"
-                    f"{self.server_config_password}@{self.instance_address}')"
-                ),
+                "shell.connect_to_primary()",
                 f'session.run_sql("GRANT ALL ON *.* TO `{username}`@`{hostname}` WITH GRANT OPTION;")',
                 f'session.run_sql("REVOKE {", ".join(super_privileges_to_revoke)} ON *.* FROM `{username}`@`{hostname}`;")',
                 'session.run_sql("FLUSH PRIVILEGES;")',
             )
 
-            self._run_mysqlsh_script("\n".join(escalate_user_privileges_commands))
+            self._run_mysqlsh_script(
+                "\n".join(escalate_user_privileges_commands),
+                user=self.server_config_user,
+                host=self.instance_address,
+                password=self.server_config_password,
+            )
         except MySQLClientError as e:
             logger.exception(
-                f"Failed to escalate user privileges for {username}@{hostname}", exc_info=e
+                f"Failed to escalate user privileges for {username}@{hostname}",
+                exc_info=e,
             )
             raise MySQLEscalateUserPrivilegesError(e.message)
 
@@ -509,12 +520,11 @@ class MySQL(MySQLBase):
 
         try:
             output = self._run_mysqlcli_script(
-                "; ".join(get_label_users),
+                get_label_users,
                 user=self.server_config_user,
                 password=self.server_config_password,
             )
-            users = [line.strip() for line in output.split("\n") if line.strip()][1:]
-            users = [f"'{user.split('@')[0]}'@'{user.split('@')[1]}'" for user in users]
+            users = [f"'{user[0].split('@')[0]}'@'{user[0].split('@')[1]}'" for user in output]
 
             if len(users) == 0:
                 logger.debug(f"There are no users to drop for label {label_name}={label_value}")
@@ -522,13 +532,15 @@ class MySQL(MySQLBase):
 
             # Using server_config_user as we are sure it has drop user grants
             drop_users_command = (
-                (
-                    f"shell.connect_to_primary('{self.server_config_user}:"
-                    f"{self.server_config_password}@{self.instance_address}')"
-                ),
+                "shell.connect_to_primary()",
                 f'session.run_sql("DROP USER IF EXISTS {", ".join(users)};")',
             )
-            self._run_mysqlsh_script("\n".join(drop_users_command))
+            self._run_mysqlsh_script(
+                "\n".join(drop_users_command),
+                user=self.server_config_user,
+                host=self.instance_address,
+                password=self.server_config_password,
+            )
         except MySQLClientError as e:
             logger.exception(
                 f"Failed to query and delete users for label {label_name}={label_value}",
@@ -611,7 +623,14 @@ class MySQL(MySQLBase):
             raise MySQLExecError from None
 
     def _run_mysqlsh_script(
-        self, script: str, timeout: Optional[int] = None, verbose: int = 0
+        self,
+        script: str,
+        user: str,
+        host: str,
+        password: str,
+        timeout: Optional[int] = None,
+        exception_as_warning: bool = False,
+        verbose: int = 0,
     ) -> str:
         """Execute a MySQL shell script.
 
@@ -619,26 +638,29 @@ class MySQL(MySQLBase):
 
         Args:
             script: mysql-shell python script string
+            user: User to invoke the mysqlsh script with
+            host: Host to run the script on
+            password: Password to invoke the mysqlsh script
             verbose: mysqlsh verbosity level
             timeout: timeout to wait for the script
+            exception_as_warning: (optional) whether the exception should be treated as warning
 
         Returns:
             stdout of the script
         """
         # TODO: remove timeout from _run_mysqlsh_script contract/signature in the mysql lib
-        self.container.push(path=MYSQLSH_SCRIPT_FILE, source=script)
+        prepend_cmd = "shell.options.set('useWizards', False)\nprint('###')\n"
+        script = prepend_cmd + script
 
         # render command with remove file after run
         cmd = [
             MYSQLSH_LOCATION,
-            "--no-wizard",
+            "--passwords-from-stdin",
+            f"--uri={user}@{host}",
             "--python",
             f"--verbose={verbose}",
-            "-f",
-            MYSQLSH_SCRIPT_FILE,
-            ";",
-            "rm",
-            MYSQLSH_SCRIPT_FILE,
+            "-c",
+            script,
         ]
 
         # workaround for timeout not working on pebble exec
@@ -648,21 +670,25 @@ class MySQL(MySQLBase):
             cmd.insert(0, "timeout")
 
         try:
-            process = self.container.exec(cmd)
+            process = self.container.exec(cmd, stdin=password)
             stdout, _ = process.wait_output()
-            return stdout
-        except ExecError:
-            raise MySQLClientError
-        except ChangeError:
+            return stdout.split("###")[1].strip()
+        except (ExecError, ChangeError) as e:
+            if exception_as_warning:
+                logger.warning("Failed to execute mysql-shell command")
+            else:
+                self.strip_off_passwords_from_exception(e)
+                logger.exception("Failed to execute mysql-shell command")
             raise MySQLClientError
 
     def _run_mysqlcli_script(
         self,
-        script: str,
+        script: Union[Tuple[Any, ...], List[Any]],
         user: str = "root",
         password: Optional[str] = None,
         timeout: Optional[int] = None,
-    ) -> str:
+        exception_as_warning: bool = False,
+    ) -> list:
         """Execute a MySQL CLI script.
 
         Execute SQL script as instance root user.
@@ -670,31 +696,38 @@ class MySQL(MySQLBase):
 
         Args:
             script: raw SQL script string
-            password: root password to use for the script when needed
             user: user to run the script
+            password: root password to use for the script when needed
             timeout: a timeout to execute the mysqlcli script
+            exception_as_warning: (optional) whether the exception should be treated as warning
         """
         command = [
             MYSQL_CLI_LOCATION,
             "-u",
             user,
-            "--protocol=SOCKET",
+            "-N",
             f"--socket={MYSQLD_SOCK_FILE}",
             "-e",
-            script,
+            ";".join(script),
         ]
-        if password:
-            # password is needed after user
-            command.append(f"--password={password}")
 
         try:
-            process = self.container.exec(command, timeout=timeout)
+            if password:
+                # password is needed after user
+                command.insert(3, "-p")
+                process = self.container.exec(command, timeout=timeout, stdin=password)
+            else:
+                process = self.container.exec(command, timeout=timeout)
+
             stdout, _ = process.wait_output()
-            return stdout
-        except ExecError as e:
-            raise MySQLClientError(self.strip_off_passwords(e.stderr))
-        except ChangeError as e:
-            raise MySQLClientError(self.strip_off_passwords(e.err))
+            return [line.split("\t") for line in stdout.strip().split("\n")] if stdout else []
+        except (ExecError, ChangeError) as e:
+            if exception_as_warning:
+                logger.warning("Failed to execute MySQL cli command")
+            else:
+                self.strip_off_passwords_from_exception(e)
+                logger.exception("Failed to execute MySQL cli command")
+            raise MySQLClientError
 
     def write_content_to_file(
         self,
@@ -763,7 +796,7 @@ class MySQL(MySQLBase):
 
             return True
         except ExecError as e:
-            raise MySQLClientError(e.stderr)
+            raise MySQLClientError(e.stderr or "")
 
     def get_available_memory(self) -> int:
         """Get available memory for the container in bytes."""
