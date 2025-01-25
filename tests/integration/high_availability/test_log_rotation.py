@@ -45,7 +45,6 @@ async def test_log_rotation(
     log_files = ["error.log", "audit.log"]
     archive_directories = [
         "archive_error",
-        "archive_slow",
         "archive_audit",
     ]
 
