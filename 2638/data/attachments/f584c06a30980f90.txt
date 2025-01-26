@@ -1,0 +1,55 @@
+[32mINFO    [0m integration.conftest:conftest.py:20 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:100 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:106 Build charm locally
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:109 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:112 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:123 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.195:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.195:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.195:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:136 Wait for upgrade to complete
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:142 Ensure continuous_writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=20764 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=21368 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=21377 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:505 max_written_value=21387 on unit mysql-k8s/2
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.2    unsupported  01:34:42Z
+
+App        Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s  8.0.39-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.232  no       
+test-app   0.0.2                    active      1  mysql-test-app  latest/edge   63  10.152.183.103  no       Last written value=18350
+
+Unit          Workload  Agent      Address      Ports  Message
+mysql-k8s/0*  active    executing  10.1.214.81         
+mysql-k8s/1   active    idle       10.1.214.80         
+mysql-k8s/2   active    idle       10.1.214.79         Primary
+test-app/0*   active    idle       10.1.214.72         Last written value=18350
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:32:19 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 644, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('cluster-dd1606348bd6521165f8e9d7d1a159ff')\nprint(cluster.status()['defaultReplicaSet']['topology'].get('mysql-k8s-2', {}).get('status', 'NOT_A_MEMBER'))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.test.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:33:11 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 644, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('cluster-dd1606348bd6521165f8e9d7d1a159ff')\nprint(cluster.status()['defaultReplicaSet']['topology'].get('mysql-k8s-1', {}).get('status', 'NOT_A_MEMBER'))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-0: 01:34:13 ERROR unit.mysql-k8s/0.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 644, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.test.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('cluster-dd1606348bd6521165f8e9d7d1a159ff')\nprint(cluster.status()['defaultReplicaSet']['topology'].get('mysql-k8s-0', {}).get('status', 'NOT_A_MEMBER'))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.test.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
