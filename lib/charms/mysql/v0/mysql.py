@@ -3400,13 +3400,17 @@ class MySQLBase(ABC):
         logger.debug("Getting current group replication id")
 
         commands = (
-            f"shell.connect('{self.instance_def(self.server_config_user)}')",
             'result = session.run_sql("SELECT @@GLOBAL.group_replication_group_name")',
             'print(f"<ID>{result.fetch_one()[0]}</ID>")',
         )
 
         try:
-            output = self._run_mysqlsh_script("\n".join(commands))
+            output = self._run_mysqlsh_script(
+                "\n".join(commands),
+                user=self.server_config_user,
+                password=self.server_config_password,
+                host=self.instance_def(self.server_config_user),
+            )
         except MySQLClientError as e:
             logger.warning("Failed to get current group replication id", exc_info=e)
             raise MySQLGetGroupReplicationIDError(e.message)

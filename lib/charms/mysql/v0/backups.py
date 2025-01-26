@@ -848,7 +848,7 @@ class MySQLBackups(Object):
 
         bucket_url = (
             f"{s3_parameters['bucket']}/{s3_parameters['path']}binlogs"
-            if s3_parameters["path"][-1] == "/"
+            if not s3_parameters["path"] or s3_parameters["path"][-1] == "/"
             else f"{s3_parameters['bucket']}/{s3_parameters['path']}/binlogs"
         )
 
