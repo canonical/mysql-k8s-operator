@@ -1,0 +1,45 @@
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:126 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:131 Run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:134 Refresh with previous charm
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:141 Wait for upgrade to start
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:148 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:155 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.28:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.28:16443/apis/apps/v1/namespaces/test/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:168 Wait for application to recover
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.2    unsupported  01:34:07Z
+
+App        Version                  Status   Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s  8.0.34-0ubuntu0.22.04.1  waiting      3  mysql-k8s             1  10.152.183.177  no       waiting for units to settle down
+
+Unit          Workload  Agent      Address      Ports  Message
+mysql-k8s/0   active    executing  10.1.206.17         
+mysql-k8s/1   active    executing  10.1.206.16         
+mysql-k8s/2*  active    executing  10.1.206.15         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:31:17 ERROR unit.mysql-k8s/2.juju-log Unit failed to rejoin the cluster after upgrade
+unit-mysql-k8s-2: 01:31:17 CRITICAL unit.mysql-k8s/2.juju-log Upgrade failed, follow the instructions below to rollback:
+  1 - Run `juju run mysql-k8s/leader pre-upgrade-check` to configure rollback
+  2 - Run `juju refresh --revision <previous-revision> mysql-k8s` to initiate the rollback
+  3 - Run `juju run mysql-k8s/leader resume-upgrade` to resume the rollback
+unit-mysql-k8s-1: 01:33:12 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 644, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('cluster-b3a2a9ffd8112a02d7e1e789a144bdff')\nprint(cluster.status()['defaultReplicaSet']['topology'].get('mysql-k8s-1', {}).get('status', 'NOT_A_MEMBER'))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.test.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-0: 01:33:53 ERROR unit.mysql-k8s/0.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 644, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.test.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('cluster-b3a2a9ffd8112a02d7e1e789a144bdff')\nprint(cluster.status()['defaultReplicaSet']['topology'].get('mysql-k8s-0', {}).get('status', 'NOT_A_MEMBER'))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.test.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

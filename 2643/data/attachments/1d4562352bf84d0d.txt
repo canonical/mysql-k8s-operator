@@ -1,0 +1,66 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.2    unsupported  01:48:47Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.162  no       Last written value=255
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.85   no       Last written value=454
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.218  no       Last written value=205
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.234  no       Last written value=320
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.149  no       Last written value=197
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.206  no       Last written value=347
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.182  no       Last written value=370
+mysql    8.0.39-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.74   no       
+router0  8.0.39-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     584  10.152.183.126  no       
+router1  8.0.39-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     584  10.152.183.110  no       Waiting for K8s service connectivity
+router2  8.0.39-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     584  10.152.183.164  no       Waiting for K8s service connectivity
+router3  8.0.39-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     584  10.152.183.39   no       Waiting for K8s service connectivity
+router4  8.0.39-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     584  10.152.183.177  no       Waiting for K8s service connectivity
+router5  8.0.39-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     584  10.152.183.27   no       
+router6  8.0.39-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     584  10.152.183.245  no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.232.74         Last written value=255
+app1/0*     active    idle   10.1.232.76         Last written value=454
+app2/0*     active    idle   10.1.232.77         Last written value=205
+app3/0*     active    idle   10.1.232.79         Last written value=320
+app4/0*     active    idle   10.1.232.81         Last written value=197
+app5/0*     active    idle   10.1.232.83         Last written value=347
+app6/0*     active    idle   10.1.232.85         Last written value=370
+mysql/0*    active    idle   10.1.232.73         Primary
+router0/0*  active    idle   10.1.232.75         
+router1/0*  active    idle   10.1.232.78         
+router2/0*  active    idle   10.1.232.80         
+router3/0*  active    idle   10.1.232.82         
+router4/0*  active    idle   10.1.232.84         
+router5/0*  active    idle   10.1.232.86         
+router6/0*  active    idle   10.1.232.87         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-1: 01:44:58 ERROR unit.mysql/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-1/charm/src/mysql_k8s_helpers.py", line 644, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 124 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-1.mysql-endpoints.test.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('cluster-0d855d1e584d954991cc0dc253853044')\nprint(cluster.status({'extended': False}))"], stdout='\x1b[1mPlease provide the password for \'serverconfig@mysql-1.mysql-endpoints.test.svc.cluster.local:33062\': \x1b[0m###\n{"clusterName": "cluster-0d855d1e584d954991cc0dc253853044", "clusterRole": "PRIMARY", "defaultReplicaSet": {"name": "default", "primary": "mysql-0.mysql-endpoints.test.svc.cluster.local:3306", "ssl": "REQUIRED", "status": "OK", "statusText": "Cluster is ONLINE and can tolerate up to ONE failure.", "topology": {"mysql-0": {"address": "mysql-0.mysql-endpoints.test.svc.cluster.local:3306", "memberRole": "PRIMARY", "mode": "R/W", "readReplicas": {}, "role": "HA", "status": "ONLINE", "version": "8.0.39"}, "mysql-1": {"address": "mysql-1.mysql-endpoints.test.svc.cluster.local:3306", "memberRole": "SECONDARY", "mode": "R/O", "readReplicas": {}, "replicationLagFromImmediateSource": "", "replicationLagFromOriginalSource": "", "role": "HA", "status": "ONLINE", "version": "8.0.39"}, "mysql-2": {"address": "mysql-2.mysql-endpoints.test.svc.cluster.local:3306", "memberRole": "SECONDARY", "mode": "R/O", "readRep' [truncated], stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n'
+unit-mysql-1: 01:44:58 ERROR unit.mysql/1.juju-log Failed to get cluster status for cluster-0d855d1e584d954991cc0dc253853044
+unit-mysql-2: 01:45:00 ERROR unit.mysql/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 644, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 124 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-2.mysql-endpoints.test.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('cluster-0d855d1e584d954991cc0dc253853044')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-2.mysql-endpoints.test.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n'
+unit-mysql-2: 01:45:00 ERROR unit.mysql/2.juju-log Failed to get cluster status for cluster-0d855d1e584d954991cc0dc253853044
+unit-mysql-2: 01:48:23 ERROR unit.mysql/2.juju-log upgrade:2: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 644, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-2.mysql-endpoints.test.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('cluster-0d855d1e584d954991cc0dc253853044')\nprint(cluster.status()['defaultReplicaSet']['topology'].get('mysql-2', {}).get('status', 'NOT_A_MEMBER'))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-2.mysql-endpoints.test.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.get_cluster: This function is not available through a session to a standalone instance (metadata exists, instance does not belong to that metadata, and GR is not active)\n\n'
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
