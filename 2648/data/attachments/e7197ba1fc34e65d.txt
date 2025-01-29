@@ -1,0 +1,38 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:167 Running create replication action
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:177 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] active: 
+  db1/1 [executing] active: 
+  db1/2 [executing] maintenance: Sharing credentials with replica cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] waiting: Awaiting sync data from primary cluster
+  db2/1 [executing] waiting: waiting replica cluster be configured
+  db2/2 [executing] waiting: waiting replica cluster be configured
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] waiting: Waiting for primary cluster
+  db2/1 [idle] waiting: waiting replica cluster be configured
+  db2/2 [idle] waiting: waiting replica cluster be configured
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [idle] active: 
+  db1/2 [executing] maintenance: Adding replica cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] waiting: Waiting for recovery to complete on other units
+  db2/1 [idle] waiting: waiting to join the cluster
+  db2/2 [idle] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] waiting: Waiting for recovery to complete on other units
+  db2/1 [idle] waiting: waiting to join the cluster
+  db2/2 [idle] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] waiting: Waiting for recovery to complete on other units
+  db2/1 [idle] waiting: waiting to join the cluster
+  db2/2 [idle] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] waiting: Waiting for recovery to complete on other units
+  db2/1 [idle] maintenance: joining the cluster
+  db2/2 [idle] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] waiting: Waiting for recovery to complete on other units
+  db2/1 [idle] active: 
+  db2/2 [idle] maintenance: joining the cluster
