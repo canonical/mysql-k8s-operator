@@ -21,6 +21,7 @@ import time
 from typing import Dict, List, Tuple
 
 import boto3
+import botocore
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +33,34 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 9
+LIBPATCH = 10
 
 # botocore/urllib3 clutter the logs when on debug
 logging.getLogger("botocore").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+
+def _construct_endpoint(s3_parameters: dict) -> str:
+    """Construct the S3 service endpoint using the region.
+
+    This is needed when the provided endpoint is from AWS, and it doesn't contain the region.
+    """
+    # Use the provided endpoint if a region is not needed.
+    endpoint = s3_parameters["endpoint"]
+
+    # Load endpoints data.
+    loader = botocore.loaders.create_loader()
+    data = loader.load_data("endpoints")
+
+    # Construct the endpoint using the region.
+    resolver = botocore.regions.EndpointResolver(data)
+    endpoint_data = resolver.construct_endpoint("s3", s3_parameters["region"])
+
+    # Use the built endpoint if it is an AWS endpoint.
+    if endpoint_data and endpoint.endswith(endpoint_data["dnsSuffix"]):
+        endpoint = f"{endpoint.split('://')[0]}://{endpoint_data['hostname']}"
+
+    return endpoint
 
 
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
@@ -67,11 +91,7 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
             ca_file.flush()
             verif = ca_file.name
 
-        s3 = session.resource(
-            "s3",
-            endpoint_url=s3_parameters["endpoint"],
-            verify=verif,
-        )
+        s3 = session.resource("s3", endpoint_url=_construct_endpoint(s3_parameters), verify=verif)
 
         bucket = s3.Bucket(s3_parameters["bucket"])
 
