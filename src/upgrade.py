@@ -225,7 +225,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         self.charm._write_mysqld_configuration()
 
         logger.info("Setting up the logrotate configurations")
-        self.charm._mysql.setup_logrotate_config()
+        self.charm.log_rotate_setup.setup()
 
         try:
             self.charm._reconcile_pebble_layer(container)
