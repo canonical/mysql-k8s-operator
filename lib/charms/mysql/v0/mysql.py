@@ -133,7 +133,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 80
+LIBPATCH = 82
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1001,8 +1001,8 @@ class MySQLBase(ABC):
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
             "slow_query_log_file": f"{snap_common}/var/log/mysql/slow.log",
             "binlog_expire_logs_seconds": f"{binlog_retention_seconds}",
-            "loose-audit_log_policy": f"{audit_log_policy.upper()}",
             "loose-audit_log_filter": "OFF",
+            "loose-audit_log_policy": audit_log_policy.upper(),
             "loose-audit_log_file": f"{snap_common}/var/log/mysql/audit.log",
         }
 
@@ -1014,7 +1014,6 @@ class MySQLBase(ABC):
             config["mysqld"]["loose-audit_log_strategy"] = "ASYNCHRONOUS"
         else:
             config["mysqld"]["loose-audit_log_strategy"] = "SEMISYNCHRONOUS"
-
 
         if innodb_buffer_pool_chunk_size:
             config["mysqld"]["innodb_buffer_pool_chunk_size"] = str(innodb_buffer_pool_chunk_size)
@@ -2607,6 +2606,31 @@ class MySQLBase(ABC):
 
         raise MySQLNoMemberStateError("No member state retrieved")
 
+    def is_cluster_auto_rejoin_ongoing(self):
+        """Check if the instance is performing a cluster auto rejoin operation."""
+        cluster_auto_rejoin_command = (
+            "cursor = session.run_sql(\"SELECT work_completed, work_estimated FROM performance_schema.events_stages_current WHERE event_name LIKE '%auto-rejoin%'\")",
+            "result = cursor.fetch_one() or [0,0]",
+            "print(f'<COMPLETED_ATTEMPTS>{result[0]}</COMPLETED_ATTEMPTS>')",
+            "print(f'<ESTIMATED_ATTEMPTS>{result[1]}</ESTIMATED_ATTEMPTS>')",
+        )
+
+        try:
+            output = self._run_mysqlsh_script(
+                "\n".join(cluster_auto_rejoin_command),
+                user=self.server_config_user,
+                password=self.server_config_password,
+                host=self.instance_def(self.server_config_user),
+            )
+        except MySQLClientError as e:
+            logger.error("Failed to get cluster auto-rejoin information", exc_info=e)
+            raise
+
+        completed_matches = re.search(r"<COMPLETED_ATTEMPTS>(\d)</COMPLETED_ATTEMPTS>", output)
+        estimated_matches = re.search(r"<ESTIMATED_ATTEMPTS>(\d)</ESTIMATED_ATTEMPTS>", output)
+
+        return int(completed_matches.group(1)) < int(estimated_matches.group(1))
+
     def is_cluster_replica(self, from_instance: Optional[str] = None) -> Optional[bool]:
         """Check if this cluster is a replica in a cluster set."""
         cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
@@ -2927,8 +2951,8 @@ class MySQLBase(ABC):
         temp_restore_directory: str,
         xbcloud_location: str,
         xbstream_location: str,
-        user=None,
-        group=None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> Tuple[str, str, str]:
         """Retrieve the specified backup from S3."""
         nproc_command = ["nproc"]
@@ -2994,8 +3018,8 @@ class MySQLBase(ABC):
         backup_location: str,
         xtrabackup_location: str,
         xtrabackup_plugin_dir: str,
-        user=None,
-        group=None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Prepare the backup in the provided dir for restore."""
         try:
@@ -3035,8 +3059,8 @@ class MySQLBase(ABC):
     def empty_data_files(
         self,
         mysql_data_directory: str,
-        user=None,
-        group=None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> None:
         """Empty the mysql data directory in preparation of backup restore."""
         empty_data_files_command = [
@@ -3072,8 +3096,8 @@ class MySQLBase(ABC):
         defaults_config_file: str,
         mysql_data_directory: str,
         xtrabackup_plugin_directory: str,
-        user=None,
-        group=None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> Tuple[str, str]:
         """Restore the provided prepared backup."""
         restore_backup_command = [
@@ -3106,8 +3130,8 @@ class MySQLBase(ABC):
     def delete_temp_restore_directory(
         self,
         temp_restore_directory: str,
-        user=None,
-        group=None,
+        user: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> None:
         """Delete the temp restore directory from the mysql data directory."""
         logger.info(f"Deleting temp restore directory in {temp_restore_directory}")

@@ -6,7 +6,7 @@
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import jinja2
 from charms.mysql.v0.mysql import (
@@ -242,25 +242,27 @@ class MySQL(MySQLBase):
 
     def setup_logrotate_config(
         self,
-        logs_retention_period: str,
-        logs_compression_enabled: bool,
+        logs_retention_period: int,
         enabled_log_files: Iterable,
+        logs_compression: bool,
     ) -> None:
         """Set up logrotate config in the workload container."""
         logger.debug("Creating the logrotate config file")
 
+        # days * minutes/day = amount of rotated files to keep
+        logs_rotations = logs_retention_period * 1440
+
         with open("templates/logrotate.j2", "r") as file:
             template = jinja2.Template(file.read())
 
-        logs_rotations = int(logs_retention_period) * 1440
         rendered = template.render(
             system_user=MYSQL_SYSTEM_USER,
             system_group=MYSQL_SYSTEM_GROUP,
+            log_dir=MYSQL_LOG_DIR,
             logs_retention_period=logs_retention_period,
             logs_rotations=logs_rotations,
-            logs_compression_enabled=logs_compression_enabled,
+            logs_compression_enabled=logs_compression,
             enabled_log_files=enabled_log_files,
-            log_dir=MYSQL_LOG_DIR,
         )
 
         logger.debug("Writing the logrotate config file to the workload container")
@@ -670,6 +672,7 @@ class MySQL(MySQLBase):
             cmd.insert(0, "timeout")
 
         try:
+            self.container.pebble
             process = self.container.exec(cmd, stdin=password)
             stdout, _ = process.wait_output()
             return stdout.split("###")[1].strip()

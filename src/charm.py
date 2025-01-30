@@ -7,6 +7,8 @@
 from charms.mysql.v0.architecture import WrongArchitectureWarningCharm, is_wrong_architecture
 from ops.main import main
 
+from log_rotation_setup import LogRotationSetup
+
 if is_wrong_architecture() and __name__ == "__main__":
     main(WrongArchitectureWarningCharm)
 
@@ -184,6 +186,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.log_rotate_manager = LogRotateManager(self)
         self.log_rotate_manager.start_log_rotate_manager()
 
+        self.log_rotate_setup = LogRotationSetup(self)
         self.rotate_mysql_logs = RotateMySQLLogs(self)
         self.replication_offer = MySQLAsyncReplicationOffer(self)
         self.replication_consumer = MySQLAsyncReplicationConsumer(self)
@@ -536,7 +539,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         previous_config_dict = self.mysql_config.custom_config(config_content)
 
         # always setup log rotation
-        self._setup_log_rotation()
+        self.log_rotate_setup.setup()
 
         logger.info("Persisting configuration changes to file")
         new_config_dict = self._write_mysqld_configuration()
@@ -693,17 +696,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         return False
 
-    def _setup_log_rotation(self) -> None:
-        logger.info("Setting up the logrotate configurations")
-        if self.config.logs_retention_period == "auto":
-            # TODO: parse relations for COS
-            period = "3"
-        else:
-            period = self.config.logs_retention_period
-        self._mysql.setup_logrotate_config(
-            period, self.config.logs_compression_enabled, self.text_logs
-        )
-
     def _on_mysql_pebble_ready(self, event) -> None:
         """Pebble ready handler.
 
@@ -721,7 +713,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         container = event.workload
         self._write_mysqld_configuration()
 
-        self._setup_log_rotation()
+        self.log_rotate_setup.setup()
 
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration

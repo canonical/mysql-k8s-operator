@@ -63,7 +63,6 @@ class CharmConfig(BaseConfigModel):
     plugin_audit_enabled: bool
     plugin_audit_strategy: str
     logs_audit_policy: str
-    logs_compression_enabled: bool
     logs_retention_period: str
 
     @validator("profile")

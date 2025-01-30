@@ -379,11 +379,11 @@ class TestMySQL(unittest.TestCase):
             "nosharedscripts\nnocopytruncate\n\n\n/var/log/mysql/error.log {\n    olddir archi"
             "ve_error\n}\n\n/var/log/mysql/general.log {\n    olddir archive_general\n}\n\n/va"
             "r/log/mysql/slowquery.log {\n    olddir archive_slowquery\n}\n\n/var/log/mysql/au"
-            "dit.log {\n    olddir archive_audit\n}\n\n\n# vim: set ft=conf"
+            "dit.log {\n    olddir archive_audit\n}\n\n"
         )
 
         self.mysql.container = _container
-        self.mysql.setup_logrotate_config("1", False, ["error", "general", "slowquery", "audit"])
+        self.mysql.setup_logrotate_config(1, ["error", "general", "slowquery", "audit"], False)
 
         self.mysql.container.push.assert_called_once_with(
             "/etc/logrotate.d/flush_mysql_logs",
