@@ -54,13 +54,14 @@ options:
   logs_audit_policy:
     description: |
       Audit log policy. Allowed values are: "all", "logins" (default), "queries".
-      Reg. at https://docs.percona.com/percona-server/8.0/audit-log-plugin.html#audit_log_policy
+      Ref. at https://docs.percona.com/percona-server/8.0/audit-log-plugin.html#audit_log_policy
     type: string
     default: logins
   logs_retention_period:
     description: |
-      Period for rotated logs retention, in days. When set to "auto" (default) it will default to
-      to 3 days, or 1 day if related to COS.
+      Specifies the retention period for rotated logs, in days. Accepts an integer value of 3 or
+      greater, or the special value "auto". When set to "auto" (default), the retention period is
+      3 days, except when COS-related, where it is 1 day
     type: string
     default: auto
   # Experimental features
