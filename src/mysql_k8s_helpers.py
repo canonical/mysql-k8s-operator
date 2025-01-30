@@ -672,7 +672,6 @@ class MySQL(MySQLBase):
             cmd.insert(0, "timeout")
 
         try:
-            self.container.pebble
             process = self.container.exec(cmd, stdin=password)
             stdout, _ = process.wait_output()
             return stdout.split("###")[1].strip()
