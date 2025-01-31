@@ -258,6 +258,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     else "disabled",
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
+                    "environment": self.backups.get_binlogs_collector_config()
+                    if ("binlogs-collecting" in self.app_peer_data and self.unit.is_leader())
+                    else {},
                 },
             },
         }
@@ -727,8 +730,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             # Data directory is already initialised, skip configuration
             self.unit.status = MaintenanceStatus("Starting mysqld")
             logger.info("Data directory is already initialised, skipping configuration")
-            if self.unit.is_leader() and "binlogs-collecting" in self.app_peer_data:
-                self.backups.update_binlogs_collector_config()
             self._reconcile_pebble_layer(container)
             if self.is_new_unit:
                 # when unit is new and has data, it means the app is scaling out
@@ -973,11 +974,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if self._is_unit_waiting_to_join_cluster():
             self.join_unit_to_cluster()
 
-        if not self._mysql.reconcile_binlogs_collection(True):
+        if not self._mysql.reconcile_binlogs_collection(force_restart=True):
             logger.error("Failed to reconcile binlogs collection during peer relation event")
 
     def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
-        if not self._mysql.reconcile_binlogs_collection(True):
+        if not self._mysql.reconcile_binlogs_collection(force_restart=True):
             logger.error("Failed to reconcile binlogs collection during peer departed event")
 
     def _on_database_storage_detaching(self, _) -> None:

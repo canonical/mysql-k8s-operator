@@ -52,7 +52,6 @@ import re
 import typing
 from typing import Dict, List, Optional, Tuple
 
-import yaml
 from charms.data_platform_libs.v0.s3 import (
     CredentialsChangedEvent,
     CredentialsGoneEvent,
@@ -94,7 +93,6 @@ from ops.jujuversion import JujuVersion
 from ops.model import BlockedStatus, MaintenanceStatus
 
 from constants import (
-    MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE,
     MYSQL_DATA_DIR,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
@@ -814,7 +812,9 @@ class MySQLBackups(Object):
                 "binlogs-collecting": "",
             })
 
-        if not self.charm._mysql.reconcile_binlogs_collection(True):
+        if not self.charm._mysql.reconcile_binlogs_collection(
+            force_restart=True, ignore_inactive_error=True
+        ):
             logger.error("Failed to restart binlogs collecting after S3 relation update")
 
     def _on_s3_credentials_gone(self, event: CredentialsGoneEvent) -> None:
@@ -825,26 +825,25 @@ class MySQLBackups(Object):
             })
             if not self.charm._mysql.reconcile_binlogs_collection():
                 logger.error("Failed to stop binlogs collecting after S3 relation depart")
-        self.charm._mysql.delete_binlogs_collector_config()
 
-    def update_binlogs_collector_config(self) -> bool:
+    def get_binlogs_collector_config(self) -> Dict[str, str]:
         """Update binlogs collector service config file.
 
         Returns: whether this operation was successful.
         """
         if not self._s3_integrator_relation_exists:
             logger.error(
-                "Cannot update binlogs collector config: s3 integrator relation does not exist"
+                "Cannot get binlogs collector config: s3 integrator relation does not exist"
             )
-            return False
+            return {}
 
         logger.info("Retrieving s3 parameters from the s3-integrator relation")
         s3_parameters, missing_parameters = self._retrieve_s3_parameters()
         if missing_parameters:
             logger.error(
-                f"Cannot update binlogs collector config: Missing S3 parameters: {missing_parameters}"
+                f"Cannot get binlogs collector config: Missing S3 parameters: {missing_parameters}"
             )
-            return False
+            return {}
 
         bucket_url = (
             f"{s3_parameters['bucket']}/{s3_parameters['path']}binlogs"
@@ -852,25 +851,17 @@ class MySQLBackups(Object):
             else f"{s3_parameters['bucket']}/{s3_parameters['path']}/binlogs"
         )
 
-        content = yaml.dump({
-            "endpoint": s3_parameters["endpoint"],
-            "hosts": self.charm._mysql.get_cluster_members(),
-            "user": SERVER_CONFIG_USERNAME,
-            "pass": self.charm.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
-            "storage_type": "s3",
-            "s3": {
-                "access_key_id": s3_parameters["access-key"],
-                "secret_access_key": s3_parameters["secret-key"],
-                "bucket_url": bucket_url,
-                "default_region": s3_parameters["region"],
-            },
-        })
-        self.charm._mysql.write_content_to_file(
-            path=MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE,
-            content=content,
-        )
-
-        return True
+        return {
+            "ENDPOINT": s3_parameters["endpoint"],
+            "HOSTS": ",".join(self.charm._mysql.get_cluster_members()),
+            "USER": SERVER_CONFIG_USERNAME,
+            "PASS": self.charm.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
+            "STORAGE_TYPE": "s3",
+            "ACCESS_KEY_ID": s3_parameters["access-key"],
+            "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
+            "S3_BUCKET_URL": bucket_url,
+            "DEFAULT_REGION": s3_parameters["region"],
+        }
 
     def _is_mysql_timestamp(self, timestamp: str) -> bool:
         # Format is the same as in the mysql-pitr-helper project.

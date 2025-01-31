@@ -33,7 +33,6 @@ MYSQL_DATA_DIR = "/var/lib/mysql"
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
 MYSQLD_CONFIG_FILE = "/etc/mysql/mysql.conf.d/z-custom.cnf"
-MYSQL_BINLOGS_COLLECTOR_CONFIG_FILE = "/etc/mysql-pitr-helper-collector.yaml"
 MYSQL_LOG_FILES = [
     "/var/log/mysql/error.log",
     "/var/log/mysql/audit.log",

@@ -3548,21 +3548,19 @@ class MySQLBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def reconcile_binlogs_collection(self, force_restart: bool = False) -> bool:
+    def reconcile_binlogs_collection(
+        self, force_restart: bool = False, ignore_inactive_error: bool = False
+    ) -> bool:
         """Start or stop binlogs collecting service.
 
         Based on the `binlogs-collecting` app peer data value and unit leadership.
 
         Args:
             force_restart: whether to restart service even if it's already running.
+            ignore_inactive_error: whether to not log an error when the service should be enabled but not active right now.
 
         Returns: whether the operation was successful.
         """
-        raise NotImplementedError
-
-    @abstractmethod
-    def delete_binlogs_collector_config(self) -> None:
-        """Delete binlogs collector config file."""
         raise NotImplementedError
 
     @abstractmethod
