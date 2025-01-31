@@ -302,15 +302,13 @@ class MySQL(MySQLBase):
 
     def delete_temp_backup_directory(
         self,
-        tmp_base_directory: str = MYSQL_DATA_DIR,
-        user=MYSQL_SYSTEM_USER,
-        group=MYSQL_SYSTEM_GROUP,
+        from_directory: str = MYSQL_DATA_DIR,
     ) -> None:
         """Delete the temp backup directory in the data directory."""
         super().delete_temp_backup_directory(
-            tmp_base_directory,
-            user,
-            group,
+            from_directory,
+            user=MYSQL_SYSTEM_USER,
+            group=MYSQL_SYSTEM_GROUP,
         )
 
     def retrieve_backup_with_xbcloud(
