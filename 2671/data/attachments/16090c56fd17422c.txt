@@ -1,0 +1,55 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.2    unsupported  01:43:34Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.42   no       Last written value=213
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.164  no       Last written value=231
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.183  no       Last written value=259
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.85   no       Last written value=121
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.39   no       Last written value=190
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.251  no       Last written value=205
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   63  10.152.183.90   no       Last written value=205
+mysql    8.0.40-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.178  no       
+router0  8.0.39-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     587  10.152.183.209  no       Waiting for K8s service connectivity
+router1  8.0.39-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     587  10.152.183.248  no       
+router2  8.0.39-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     587  10.152.183.27   no       Waiting for K8s service connectivity
+router3  8.0.39-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     587  10.152.183.105  no       Waiting for K8s service connectivity
+router4  8.0.39-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     587  10.152.183.159  no       Waiting for K8s service connectivity
+router5  8.0.39-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     587  10.152.183.22   no       
+router6  8.0.39-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     587  10.152.183.51   no       
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.28.10         Last written value=213
+app1/0*     active    idle   10.1.28.11         Last written value=231
+app2/0*     active    idle   10.1.28.12         Last written value=259
+app3/0*     active    idle   10.1.28.18         Last written value=121
+app4/0*     active    idle   10.1.28.17         Last written value=190
+app5/0*     active    idle   10.1.28.20         Last written value=205
+app6/0*     active    idle   10.1.28.14         Last written value=205
+mysql/0*    active    idle   10.1.28.9          Primary
+router0/0*  active    idle   10.1.28.13         
+router1/0*  active    idle   10.1.28.16         
+router2/0*  active    idle   10.1.28.15         
+router3/0*  active    idle   10.1.28.19         
+router4/0*  active    idle   10.1.28.22         
+router5/0*  active    idle   10.1.28.21         
+router6/0*  active    idle   10.1.28.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+controller-0: 01:28:43 ERROR juju.worker.caasapplicationprovisioner.runner exited "router0": more than 20 retries ensuring scale: setting scale to 1 for "router0": statefulset "router0" not found
+controller-0: 01:28:45 ERROR juju.worker.caasapplicationprovisioner.runner exited "app1": more than 20 retries ensuring trust: updating application "app1" to desired trust false: getting service account role "app1": k8s: roles.rbac.authorization.k8s.io "app1" not found
+controller-0: 01:28:49 ERROR juju.worker.caasapplicationprovisioner.runner exited "app2": more than 20 retries ensuring trust: updating application "app2" to desired trust false: getting service account role "app2": k8s: roles.rbac.authorization.k8s.io "app2" not found
+controller-0: 01:28:51 ERROR juju.worker.caasapplicationprovisioner.runner exited "router1": more than 20 retries ensuring trust: updating application "router1" to desired trust true: getting service account role "router1": k8s: roles.rbac.authorization.k8s.io "router1" not found
+controller-0: 01:28:56 ERROR juju.worker.caasapplicationprovisioner.runner exited "router2": more than 20 retries ensuring trust: updating application "router2" to desired trust true: getting service account role "router2": k8s: roles.rbac.authorization.k8s.io "router2" not found
+controller-0: 01:28:56 ERROR juju.worker.caasapplicationprovisioner.runner exited "app3": more than 20 retries ensuring trust: updating application "app3" to desired trust false: getting service account role "app3": k8s: roles.rbac.authorization.k8s.io "app3" not found
+controller-0: 01:29:01 ERROR juju.worker.caasapplicationprovisioner.runner exited "app4": more than 20 retries ensuring trust: updating application "app4" to desired trust false: getting service account role "app4": k8s: roles.rbac.authorization.k8s.io "app4" not found
+controller-0: 01:29:07 ERROR juju.worker.caasapplicationprovisioner.runner exited "router3": more than 20 retries ensuring scale: setting scale to 1 for "router3": statefulset "router3" not found
+controller-0: 01:29:12 ERROR juju.worker.caasapplicationprovisioner.runner exited "router5": more than 20 retries ensuring scale: setting scale to 1 for "router5": statefulset "router5" not found
+controller-0: 01:29:14 ERROR juju.worker.caasapplicationprovisioner.runner exited "router4": more than 20 retries ensuring scale: setting scale to 1 for "router4": statefulset "router4" not found
+controller-0: 01:29:15 ERROR juju.worker.caasapplicationprovisioner.runner exited "app5": more than 20 retries ensuring scale: setting scale to 1 for "app5": statefulset "app5" not found
+controller-0: 01:29:17 ERROR juju.worker.caasapplicationprovisioner.runner exited "router6": more than 20 retries ensuring scale: setting scale to 1 for "router6": statefulset "router6" not found
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
