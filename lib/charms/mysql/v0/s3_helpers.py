@@ -215,7 +215,7 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # no
             "s3",
             aws_access_key_id=s3_parameters["access-key"],
             aws_secret_access_key=s3_parameters["secret-key"],
-            endpoint_url=s3_parameters["endpoint"],
+            endpoint_url=_construct_endpoint(s3_parameters),
             region_name=s3_parameters["region"] or None,
         )
         list_objects_v2_paginator = s3_client.get_paginator("list_objects_v2")
@@ -287,7 +287,7 @@ def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str
         "s3",
         aws_access_key_id=s3_parameters["access-key"],
         aws_secret_access_key=s3_parameters["secret-key"],
-        endpoint_url=s3_parameters["endpoint"],
+        endpoint_url=_construct_endpoint(s3_parameters),
         region_name=s3_parameters["region"] or None,
     )
 
