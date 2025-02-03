@@ -1,5 +1,5 @@
 services:
-  mysqld_safe:
+  mysqld:
     override: merge
     backoff-delay: 500ms
     backoff-limit: 30s

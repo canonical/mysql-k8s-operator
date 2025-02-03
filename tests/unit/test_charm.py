@@ -58,10 +58,10 @@ class TestCharm(unittest.TestCase):
             "summary": "mysqld services layer",
             "description": "pebble config layer for mysqld safe and exporter",
             "services": {
-                "mysqld_safe": {
+                "mysqld": {
                     "override": "replace",
                     "summary": "mysqld safe",
-                    "command": "mysqld_safe",
+                    "command": "/usr/sbin/mysqld",
                     "startup": "enabled",
                     "user": "mysql",
                     "group": "mysql",
