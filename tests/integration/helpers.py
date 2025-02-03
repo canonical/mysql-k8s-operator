@@ -24,7 +24,7 @@ from mysql.connector.errors import (
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, retry, stop_after_attempt, wait_fixed
 
-from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE, SERVER_CONFIG_USERNAME
+from constants import CONTAINER_NAME, MYSQLD_SERVICE, SERVER_CONFIG_USERNAME
 
 from . import juju_
 from .connector import MySQLConnector
@@ -461,7 +461,7 @@ async def stop_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
         unit_name: The name of the unit
     """
     await ops_test.juju(
-        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "stop", MYSQLD_SAFE_SERVICE
+        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "stop", MYSQLD_SERVICE
     )
 
 
@@ -473,7 +473,7 @@ async def start_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
         unit_name: The name of the unit
     """
     await ops_test.juju(
-        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "start", MYSQLD_SAFE_SERVICE
+        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "start", MYSQLD_SERVICE
     )
 
 
