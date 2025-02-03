@@ -144,3 +144,5 @@ Makefile
 
 # local pyright settings
 pyrightconfig.json
+
+wt*/
