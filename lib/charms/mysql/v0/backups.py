@@ -86,6 +86,7 @@ from charms.mysql.v0.s3_helpers import (
     fetch_and_check_existence_of_s3_path,
     list_backups_in_s3_path,
     upload_content_to_s3,
+    _construct_endpoint,
 )
 from ops.charm import ActionEvent
 from ops.framework import Object
@@ -859,7 +860,7 @@ class MySQLBackups(Object):
         )
 
         return {
-            "ENDPOINT": s3_parameters["endpoint"],
+            "ENDPOINT": _construct_endpoint(s3_parameters),
             "HOSTS": ",".join(self.charm._mysql.get_cluster_members()),
             "USER": SERVER_CONFIG_USERNAME,
             "PASS": self.charm.get_secret("app", SERVER_CONFIG_PASSWORD_KEY),
