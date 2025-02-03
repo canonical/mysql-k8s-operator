@@ -868,14 +868,13 @@ class MySQL(MySQLBase):
 
         Returns: whether the operation was successful.
         """
-        container = self.charm.unit.get_container(CONTAINER_NAME)
-        if not container.can_connect():
+        if not self.container.can_connect():
             logger.error(
                 "Cannot connect to the pebble in the mysql container to check binlogs collector"
             )
             return False
 
-        service = container.get_services(MYSQL_BINLOGS_COLLECTOR_SERVICE).get(
+        service = self.container.get_services(MYSQL_BINLOGS_COLLECTOR_SERVICE).get(
             MYSQL_BINLOGS_COLLECTOR_SERVICE
         )
         if not service:
@@ -892,11 +891,11 @@ class MySQL(MySQLBase):
             logger.error("Binlogs collector is enabled but not running. It will be restarted")
 
         if is_active and (not supposed_to_run or force_restart):
-            container.stop(MYSQL_BINLOGS_COLLECTOR_SERVICE)
+            self.container.stop(MYSQL_BINLOGS_COLLECTOR_SERVICE)
 
-        self.charm._reconcile_pebble_layer(container)
+        self.charm._reconcile_pebble_layer(self.container)
         # Replan anyway as we may need to restart already enabled binlogs collector service (therefore without pebble layers change)
-        container._pebble.replan_services(timeout=0)
+        self.container._pebble.replan_services(timeout=0)
 
         return True
 
