@@ -77,7 +77,7 @@ from constants import (
     MYSQLD_CONFIG_FILE,
     MYSQLD_EXPORTER_PORT,
     MYSQLD_EXPORTER_SERVICE,
-    MYSQLD_SAFE_SERVICE,
+    MYSQLD_SERVICE,
     PASSWORD_LENGTH,
     PEER,
     ROOT_PASSWORD_KEY,
@@ -226,10 +226,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             "summary": "mysqld services layer",
             "description": "pebble config layer for mysqld safe and exporter",
             "services": {
-                MYSQLD_SAFE_SERVICE: {
+                MYSQLD_SERVICE: {
                     "override": "replace",
                     "summary": "mysqld safe",
-                    "command": MYSQLD_SAFE_SERVICE,
+                    "command": f"/usr/sbin/{MYSQLD_SERVICE}",
                     "startup": "enabled",
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
@@ -425,7 +425,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if new_layer.services != current_layer.services:
             logger.info("Reconciling the pebble layer")
 
-            container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
+            container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
             container.replan()
             self._mysql.wait_until_mysql_connection()
 
@@ -462,7 +462,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         container = self.unit.get_container(CONTAINER_NAME)
         if container.can_connect():
             logger.debug("Restarting mysqld")
-            container.pebble.restart_services([MYSQLD_SAFE_SERVICE], timeout=3600)
+            container.pebble.restart_services([MYSQLD_SERVICE], timeout=3600)
             sleep(10)
             self._on_update_status(None)
 
@@ -627,8 +627,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             # Add the pebble layer
             logger.info("Adding pebble layer")
-            container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
-            container.restart(MYSQLD_SAFE_SERVICE)
+            container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=True)
+            container.restart(MYSQLD_SERVICE)
 
             logger.info("Waiting for instance to be ready")
             self._mysql.wait_until_mysql_connection(check_port=False)
