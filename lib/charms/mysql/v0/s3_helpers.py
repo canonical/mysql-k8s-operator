@@ -97,7 +97,11 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
                 ca_file.write(ca.encode())
                 ca_file.flush()
 
-            s3 = session.resource("s3", endpoint_url=_construct_endpoint(s3_parameters), verify=ca_file.name if ca_file else True)
+            s3 = session.resource(
+                "s3",
+                endpoint_url=_construct_endpoint(s3_parameters),
+                verify=ca_file.name if ca_file else True,
+            )
 
             bucket = s3.Bucket(s3_parameters["bucket"])
 
@@ -144,7 +148,11 @@ def _read_content_from_s3(content_path: str, s3_parameters: dict) -> str | None:
                 ca_file.write(ca.encode())
                 ca_file.flush()
 
-            s3 = session.resource("s3", endpoint_url=_construct_endpoint(s3_parameters), verify=ca_file.name if ca_file else True)
+            s3 = session.resource(
+                "s3",
+                endpoint_url=_construct_endpoint(s3_parameters),
+                verify=ca_file.name if ca_file else True,
+            )
 
             bucket = s3.Bucket(s3_parameters["bucket"])
 
