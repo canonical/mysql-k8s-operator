@@ -6,6 +6,7 @@
 
 from charms.mysql.v0.architecture import WrongArchitectureWarningCharm, is_wrong_architecture
 from ops.main import main
+from tenacity import retry, stop_after_delay, wait_fixed
 
 if is_wrong_architecture() and __name__ == "__main__":
     main(WrongArchitectureWarningCharm)
@@ -303,6 +304,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         unit_name = unit_name or self.unit.name
         return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
 
+    @retry(reraise=True, stop=stop_after_delay(120), wait=wait_fixed(2))
     def get_unit_address(self, unit: Optional[Unit] = None) -> str:
         """Get fqdn/address for a unit.
 
@@ -311,7 +313,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not unit:
             unit = self.unit
 
-        return getfqdn(self.get_unit_hostname(unit.name))
+        unit_hostname = self.get_unit_hostname(unit.name)
+        unit_dns_domain = getfqdn(self.get_unit_hostname(unit.name))
+
+        # When fully propagated, DNS domain name should contain unit hostname.
+        # For example:
+        # Hostname: mysql-k8s-0.mysql-k8s-endpoints
+        # Fully propagated: mysql-k8s-0.mysql-k8s-endpoints.dev.svc.cluster.local
+        # Not propagated yet: 10-1-142-191.mysql-k8s.dev.svc.cluster.local
+        if unit_hostname not in unit_dns_domain:
+            logger.error(
+                "get_unit_address: unit DNS domain name is not fully propagated yet, trying again"
+            )
+            raise RuntimeError("unit DNS domain name is not fully propagated yet")
+        return unit_dns_domain
 
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
