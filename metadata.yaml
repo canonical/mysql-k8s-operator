@@ -32,7 +32,7 @@ resources:
   mysql-image:
     type: oci-image
     description: Ubuntu LTS Docker image for MySQL
-    upstream-source: ghcr.io/canonical/charmed-mysql@sha256:dbba2661ebc38463ca1b9d16edb73cf2575d7da937274d863492a3dfb288c5b7
+    upstream-source: ghcr.io/canonical/charmed-mysql@sha256:111c09e5987504240c000c495542c49c7e392d4bbe8d220c3d7b5469349713bd
 
 peers:
   database-peers:
