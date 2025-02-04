@@ -8,8 +8,7 @@ import secrets
 import string
 import subprocess
 import tempfile
-from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import mysql.connector
 import yaml
@@ -791,10 +790,3 @@ async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str)
     )
 
     assert return_code == 0
-
-
-async def get_charm(charm_path: Union[str, Path], architecture: str) -> Path:
-    """Fetches packed charm from CI runner without checking for architecture."""
-    charm_path = Path(charm_path)
-    packed_charms = list(charm_path.glob(f"*-{architecture}.charm"))
-    return packed_charms[0].resolve(strict=True)
