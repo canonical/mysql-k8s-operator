@@ -652,9 +652,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 self._mysql.install_plugins(["audit_log", "audit_log_filter"])
 
             # Configure instance as a cluster node
-            # Explicit restart required to apply changes
-            self._mysql.configure_instance(restart=False)
-            container.restart(MYSQLD_SERVICE)
+            self._mysql.configure_instance()
         except (
             MySQLInitialiseMySQLDError,
             MySQLServiceNotRunningError,

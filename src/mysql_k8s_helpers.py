@@ -427,6 +427,11 @@ class MySQL(MySQLBase):
             logger.exception(f"Failed to create user {username}@{hostname}")
             raise MySQLCreateUserError(e.message)
 
+    def configure_instance(self, create_cluster_admin: bool = True, restart=False) -> None:
+        """Override parent class method to ensure manual restart."""
+        super().configure_instance(create_cluster_admin, restart=False)
+        self.container.restart(MYSQLD_SERVICE)
+
     def escalate_user_privileges(self, username: str, hostname: str = "%") -> None:
         """Escalates the provided user's privileges.
 
