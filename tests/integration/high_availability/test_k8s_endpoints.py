@@ -24,7 +24,6 @@ TEST_APP_ONE = "mysql-test-app1"
 TEST_APP_TWO = "mysql-test-app2"
 
 
-
 @pytest.mark.abort_on_fail
 async def test_labeling_of_k8s_endpoints(ops_test: OpsTest, charm):
     """Test the labeling of k8s endpoints when apps with same cluster-name deployed."""

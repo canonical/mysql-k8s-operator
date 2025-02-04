@@ -23,7 +23,6 @@ MYSQL_APP_NAME = "mysql-k8s"
 METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
 
 
-
 # TODO: remove after next incompatible MySQL server version released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
 @markers.amd64_only
@@ -54,7 +53,6 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
         )
 
 
-
 # TODO: remove after next incompatible MySQL server version released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
 @markers.amd64_only
@@ -67,7 +65,6 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     assert leader_unit is not None, "No leader unit found"
     logger.info("Run pre-upgrade-check action")
     await juju_.run_action(leader_unit, "pre-upgrade-check")
-
 
 
 # TODO: remove after next incompatible MySQL server version released in our snap
@@ -107,7 +104,6 @@ async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
         timeout=TIMEOUT,
         wait_period=5,
     )
-
 
 
 # TODO: remove after next incompatible MySQL server version released in our rock

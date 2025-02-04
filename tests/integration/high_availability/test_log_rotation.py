@@ -25,7 +25,6 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 
 
-
 @pytest.mark.abort_on_fail
 async def test_log_rotation(
     ops_test: OpsTest, highly_available_cluster, continuous_writes

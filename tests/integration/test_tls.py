@@ -46,7 +46,6 @@ else:
     tls_config = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
 
 
-
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
@@ -86,7 +85,6 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
         )
 
 
-
 @pytest.mark.abort_on_fail
 async def test_connection_before_tls(ops_test: OpsTest) -> None:
     """Ensure connections (with and without ssl) are possible before relating with TLS operator."""
@@ -114,7 +112,6 @@ async def test_connection_before_tls(ops_test: OpsTest) -> None:
         assert is_connection_possible(
             config, **{"ssl_disabled": True}
         ), f"❌ Unencrypted connection not possible to unit {unit.name} with disabled TLS"
-
 
 
 @pytest.mark.abort_on_fail
@@ -154,7 +151,6 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     # test for ca presence in a given unit
     logger.info("Assert TLS file exists")
     assert await get_tls_ca(ops_test, all_units[0].name), "❌ No CA found after TLS relation"
-
 
 
 @pytest.mark.abort_on_fail
@@ -204,7 +200,6 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
         assert not is_connection_possible(
             config, **{"ssl_disabled": True}
         ), f"❌ Unencrypted connection possible to unit {unit.name} with enabled TLS"
-
 
 
 @pytest.mark.abort_on_fail

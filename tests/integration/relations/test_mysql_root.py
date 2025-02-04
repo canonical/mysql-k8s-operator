@@ -29,6 +29,7 @@ CLUSTER_NAME = "test_cluster"
 
 # TODO: deploy and relate osm-grafana once it can be use with MySQL Group Replication
 
+
 @markers.amd64_only  # kafka-k8s charm not available for arm64
 async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest, charm) -> None:
     """Test the deployment and relation with osm bundle with mysql replacing mariadb."""
@@ -172,7 +173,6 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest, charm) -> None:
 
 
 @pytest.mark.abort_on_fail
-
 @markers.amd64_only  # kafka-k8s charm not available for arm64
 async def test_osm_pol_operations(ops_test: OpsTest) -> None:
     """Test the existence of databases and tables created by osm-pol's migrations."""

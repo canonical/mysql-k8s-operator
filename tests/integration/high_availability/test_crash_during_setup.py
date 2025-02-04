@@ -17,7 +17,6 @@ APP_NAME = METADATA["name"]
 TIMEOUT = 15 * 60
 
 
-
 @pytest.mark.abort_on_fail
 async def test_crash_during_cluster_setup(ops_test, charm) -> None:
     """Test primary crash during startup.

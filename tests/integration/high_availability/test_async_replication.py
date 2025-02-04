@@ -68,7 +68,6 @@ async def second_model(ops_test: OpsTest, first_model, request) -> Model:  # pyr
     await ops_test._controller.destroy_model(second_model_name, destroy_storage=True)
 
 
-
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(
@@ -116,7 +115,6 @@ async def test_build_and_deploy(
     )
 
 
-
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
@@ -153,7 +151,6 @@ async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model:
     )
 
 
-
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_create_replication(first_model: Model, second_model: Model) -> None:
@@ -181,7 +178,6 @@ async def test_create_replication(first_model: Model, second_model: Model) -> No
             timeout=5 * MINUTE,
         ),
     )
-
 
 
 @markers.juju3
@@ -220,7 +216,6 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
     )
 
 
-
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_data_replication(
@@ -231,7 +226,6 @@ async def test_data_replication(
     assert len(results) == 6, f"Expected 6 results, got {len(results)}"
     assert all(x == results[0] for x in results), "Data is not consistent across units"
     assert results[0] > 1, "No data was written to the database"
-
 
 
 @markers.juju3
@@ -259,7 +253,6 @@ async def test_standby_promotion(
     assert (
         cluster_set_status["clusters"]["cuzco"]["clusterrole"] == "primary"
     ), "standby not promoted to primary"
-
 
 
 @markers.juju3
@@ -299,7 +292,6 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
         )
 
 
-
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_rejoin_invalidated_cluster(
@@ -317,7 +309,6 @@ async def test_rejoin_invalidated_cluster(
     assert len(results) == 6, f"Expected 6 results, got {len(results)}"
     assert all(x == results[0] for x in results), "Data is not consistent across units"
     assert results[0] > 1, "No data was written to the database"
-
 
 
 @markers.juju3

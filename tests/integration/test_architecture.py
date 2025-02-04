@@ -4,7 +4,6 @@
 
 from pathlib import Path
 
-import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
@@ -13,7 +12,6 @@ from .helpers import get_charm
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-
 
 
 @markers.amd64_only
@@ -35,7 +33,6 @@ async def test_arm_charm_on_amd_host(ops_test: OpsTest) -> None:
         status="error",
         raise_on_error=False,
     )
-
 
 
 @markers.arm64_only

@@ -78,7 +78,6 @@ def clean_backups_from_buckets(cloud_credentials, cloud_configs):
         bucket_object.delete()
 
 
-
 async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
@@ -103,7 +102,6 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
         raise_on_blocked=False,
         timeout=TIMEOUT,
     )
-
 
 
 @pytest.mark.abort_on_fail
@@ -173,7 +171,6 @@ async def test_backup(
         TABLE_NAME,
         credentials,
     )
-
 
 
 @pytest.mark.abort_on_fail
@@ -258,7 +255,6 @@ async def test_restore_on_same_cluster(
         )
 
         assert sorted(values) == sorted([value_before_backup, value_after_restore])
-
 
 
 @pytest.mark.abort_on_fail

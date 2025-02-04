@@ -18,7 +18,6 @@ IMAGE_SOURCE = METADATA["resources"]["mysql-image"]["upstream-source"]
 TIMEOUT = 10 * 60
 
 
-
 @pytest.mark.abort_on_fail
 async def test_deploy_bundle_with_cos_integrations(ops_test: OpsTest, charm) -> None:
     """Test COS integrations formed before mysql is allocated and deployed."""

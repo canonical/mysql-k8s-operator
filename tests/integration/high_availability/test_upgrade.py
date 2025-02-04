@@ -36,7 +36,6 @@ MYSQL_APP_NAME = "mysql-k8s"
 TEST_APP_NAME = "mysql-test-app"
 
 
-
 @pytest.mark.abort_on_fail
 async def test_deploy_latest(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
@@ -68,7 +67,6 @@ async def test_deploy_latest(ops_test: OpsTest) -> None:
     assert len(ops_test.model.applications[MYSQL_APP_NAME].units) == 3
 
 
-
 @pytest.mark.abort_on_fail
 async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     """Test that the pre-upgrade-check action runs successfully."""
@@ -93,7 +91,6 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     logger.info("Assert partition is set to 2")
 
     assert get_sts_partition(ops_test, MYSQL_APP_NAME) == 2, "Partition not set to 2"
-
 
 
 @pytest.mark.abort_on_fail
@@ -138,7 +135,6 @@ async def test_upgrade_from_edge(ops_test: OpsTest, charm, continuous_writes, cr
 
     logger.info("Ensure continuous_writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
-
 
 
 @pytest.mark.abort_on_fail

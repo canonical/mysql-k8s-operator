@@ -14,7 +14,6 @@ SCALE_APPS = 7
 SCALE_UNITS = 3
 
 
-
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, charm):
     """Build the charm and deploy 1 units to ensure a cluster is formed."""
@@ -51,7 +50,6 @@ async def test_build_and_deploy(ops_test: OpsTest, charm):
         )
 
 
-
 @pytest.mark.abort_on_fail
 async def test_relate_all(ops_test: OpsTest):
     """Relate all the applications to the database."""
@@ -64,7 +62,6 @@ async def test_relate_all(ops_test: OpsTest):
         timeout=60 * 25,
         wait_period=5,
     )
-
 
 
 @pytest.mark.abort_on_fail
@@ -80,7 +77,6 @@ async def test_scale_out(ops_test: OpsTest):
         timeout=60 * 30,
         wait_period=5,
     )
-
 
 
 @pytest.mark.abort_on_fail

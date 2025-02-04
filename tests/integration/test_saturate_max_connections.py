@@ -21,7 +21,6 @@ CONNECTIONS = 10
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
 
-
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
     """Build the charm and deploy 1 units to ensure a cluster is formed."""
@@ -37,7 +36,6 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
         resources=resources,
         trust=True,
     )
-
 
 
 @pytest.mark.abort_on_fail
@@ -62,7 +60,6 @@ async def test_deploy_and_relate_test_app(ops_test: OpsTest) -> None:
         timeout=60 * 10,
         wait_period=5,
     )
-
 
 
 @pytest.mark.abort_on_fail

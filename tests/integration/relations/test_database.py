@@ -26,7 +26,6 @@ APPS = [DATABASE_APP_NAME, APPLICATION_APP_NAME]
 ENDPOINT = "database"
 
 
-
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
 async def test_build_and_deploy(ops_test: OpsTest, charm):
@@ -87,7 +86,6 @@ async def test_build_and_deploy(ops_test: OpsTest, charm):
     assert len(ops_test.model.applications[APPLICATION_APP_NAME].units) == 2
 
 
-
 @pytest.mark.abort_on_fail
 @markers.only_without_juju_secrets
 async def test_relation_creation_databag(ops_test: OpsTest):
@@ -102,7 +100,6 @@ async def test_relation_creation_databag(ops_test: OpsTest):
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
     assert {"password", "username"} <= set(relation_data[0]["application-data"])
-
 
 
 @pytest.mark.abort_on_fail
@@ -120,7 +117,6 @@ async def test_relation_creation(ops_test: OpsTest):
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
     assert not {"password", "username"} <= set(relation_data[0]["application-data"])
     assert "secret-user" in relation_data[0]["application-data"]
-
 
 
 @pytest.mark.abort_on_fail
