@@ -15,6 +15,7 @@ from constants import (
     BACKUPS_PASSWORD_KEY,
     CLUSTER_ADMIN_PASSWORD_KEY,
     MONITORING_PASSWORD_KEY,
+    MYSQLD_LOCATION,
     PASSWORD_LENGTH,
     ROOT_PASSWORD_KEY,
     SERVER_CONFIG_PASSWORD_KEY,
@@ -54,14 +55,22 @@ class TestCharm(unittest.TestCase):
         self._caplog = caplog
 
     def layer_dict(self, with_mysqld_exporter: bool = False):
+        mysqld_cmd = [
+            MYSQLD_LOCATION,
+            "--basedir=/usr",
+            "--datadir=/var/lib/mysql",
+            "--plugin-dir=/usr/lib/mysql/plugin",
+            "--log-error=/var/log/mysql/error.log",
+            f"--pid-file={self.charm.unit_label}.pid",
+        ]
         return {
             "summary": "mysqld services layer",
             "description": "pebble config layer for mysqld safe and exporter",
             "services": {
-                "mysqld_safe": {
+                "mysqld": {
                     "override": "replace",
                     "summary": "mysqld safe",
-                    "command": "mysqld_safe",
+                    "command": " ".join(mysqld_cmd),
                     "startup": "enabled",
                     "user": "mysql",
                     "group": "mysql",

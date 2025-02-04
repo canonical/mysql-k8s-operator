@@ -34,7 +34,7 @@ from tenacity.wait import wait_fixed
 from typing_extensions import override
 
 import k8s_helpers
-from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE
+from constants import CONTAINER_NAME, MYSQLD_SERVICE
 
 if TYPE_CHECKING:
     from charm import MySQLOperatorCharm
@@ -346,7 +346,7 @@ class MySQLK8sUpgrade(DataUpgrade):
 
     def _reset_on_unsupported_downgrade(self, container: Container) -> None:
         """Reset the cluster on unsupported downgrade."""
-        container.stop(MYSQLD_SAFE_SERVICE)
+        container.stop(MYSQLD_SERVICE)
         self.charm._mysql.reset_data_dir()
         self.charm._write_mysqld_configuration()
         self.charm._configure_instance(container)

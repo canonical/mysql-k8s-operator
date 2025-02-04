@@ -133,7 +133,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 81
+LIBPATCH = 82
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1462,10 +1462,16 @@ class MySQLBase(ABC):
         rows = json.loads(output)
         return rows[0][1]
 
-    def configure_instance(self, create_cluster_admin: bool = True) -> None:
-        """Configure the instance to be used in an InnoDB cluster."""
+    def configure_instance(self, create_cluster_admin: bool = True, restart: bool = True) -> None:
+        """Configure the instance to be used in an InnoDB cluster.
+
+        Args:
+            create_cluster_admin: Whether to create the cluster admin user.
+            restart: Daemon should be restarted automatically after configuration.
+                     If false, manual restart is required.
+        """
         options = {
-            "restart": "true",
+            "restart": restart,
         }
 
         if create_cluster_admin:

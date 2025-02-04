@@ -6,8 +6,8 @@
 PASSWORD_LENGTH = 24
 PEER = "database-peers"
 CONTAINER_NAME = "mysql"
-MYSQLD_LOCATION = "mysqld"
-MYSQLD_SAFE_SERVICE = "mysqld_safe"
+MYSQLD_SERVICE = "mysqld"
+MYSQLD_LOCATION = f"/usr/sbin/{MYSQLD_SERVICE}"
 ROOT_USERNAME = "root"
 CLUSTER_ADMIN_USERNAME = "clusteradmin"
 SERVER_CONFIG_USERNAME = "serverconfig"
