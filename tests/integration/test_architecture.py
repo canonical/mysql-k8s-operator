@@ -37,7 +37,7 @@ async def test_arm_charm_on_amd_host(ops_test: OpsTest) -> None:
 @markers.arm64_only
 async def test_amd_charm_on_arm_host(ops_test: OpsTest) -> None:
     """Tries deploying an amd64 charm on arm64 host."""
-    charm = "./mysql-k8s_ubuntu@22.04-amd64 .charm"
+    charm = "./mysql-k8s_ubuntu@22.04-amd64.charm"
 
     await ops_test.model.deploy(
         charm,
