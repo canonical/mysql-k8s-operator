@@ -71,7 +71,7 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
 @markers.amd64_only
 @pytest.mark.abort_on_fail
-async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
+async def test_upgrade_to_failling(ops_test: OpsTest, charm) -> None:
     assert ops_test.model
     application = ops_test.model.applications[MYSQL_APP_NAME]
 
@@ -81,7 +81,7 @@ async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
         replace_str="raise MySQLServiceNotRunningError",
     ):
         logger.info("Build charm with failure injected")
-        new_charm = await charm_local_build(ops_test, refresh=True)
+        new_charm = await charm_local_build(ops_test, charm, refresh=True)
 
     logger.info("Refresh the charm")
     # Current MySQL Image > 8.0.34
