@@ -27,7 +27,7 @@ async def test_deploy_bundle_with_cos_integrations(ops_test: OpsTest, charm) -> 
         ).read_text()
     )
     rendered_bundle = bundle_template.render(
-        mysql_charm_path=str(pathlib.Path(charm)), mysql_image_source=IMAGE_SOURCE
+        mysql_charm_path=str(pathlib.Path(charm).absolute()), mysql_image_source=IMAGE_SOURCE
     )
 
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".yaml") as rendered_bundle_file:
