@@ -30,7 +30,6 @@ MYSQL_APP_NAME = "mysql-k8s"
 TEST_APP_NAME = "test-app"
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_deploy_stable(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
@@ -63,7 +62,6 @@ async def test_deploy_stable(ops_test: OpsTest) -> None:
     assert len(ops_test.model.applications[MYSQL_APP_NAME].units) == 3
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     """Test that the pre-upgrade-check action runs successfully."""
@@ -89,19 +87,13 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     assert get_sts_partition(ops_test, MYSQL_APP_NAME) == 2, "Partition not set to 2"
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_upgrade_from_stable(ops_test: OpsTest, credentials):
+async def test_upgrade_from_stable(ops_test: OpsTest, charm, credentials):
     """Test updating from stable channel."""
     application = ops_test.model.applications[MYSQL_APP_NAME]
-    logger.info("Build charm locally")
-    charm = await ops_test.build_charm(".")
 
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
     application = ops_test.model.applications[MYSQL_APP_NAME]
-
-    logger.info("Build charm locally")
-    charm = await ops_test.build_charm(".")
 
     logger.info("Refresh the charm")
     await application.refresh(path=charm, resources=resources)

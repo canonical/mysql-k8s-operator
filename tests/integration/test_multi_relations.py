@@ -14,18 +14,15 @@ SCALE_APPS = 7
 SCALE_UNITS = 3
 
 
-@pytest.mark.group(1)
-@pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest):
-    """Build the charm and deploy 1 units to ensure a cluster is formed."""
-    # Build and deploy charm from local source folder
-    db_charm = await ops_test.build_charm(".")
 
+@pytest.mark.abort_on_fail
+async def test_build_and_deploy(ops_test: OpsTest, charm):
+    """Build the charm and deploy 1 units to ensure a cluster is formed."""
     config = {"profile": "testing"}
     resources = {"mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     await ops_test.model.deploy(
-        db_charm,
+        charm,
         application_name="mysql",
         config=config,
         num_units=1,
@@ -54,7 +51,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
         )
 
 
-@pytest.mark.group(1)
+
 @pytest.mark.abort_on_fail
 async def test_relate_all(ops_test: OpsTest):
     """Relate all the applications to the database."""
@@ -69,7 +66,7 @@ async def test_relate_all(ops_test: OpsTest):
     )
 
 
-@pytest.mark.group(1)
+
 @pytest.mark.abort_on_fail
 async def test_scale_out(ops_test: OpsTest):
     """Scale database and routers."""
@@ -85,7 +82,7 @@ async def test_scale_out(ops_test: OpsTest):
     )
 
 
-@pytest.mark.group(1)
+
 @pytest.mark.abort_on_fail
 async def test_scale_in(ops_test: OpsTest):
     """Scale database and routers."""

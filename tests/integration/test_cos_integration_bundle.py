@@ -18,20 +18,17 @@ IMAGE_SOURCE = METADATA["resources"]["mysql-image"]["upstream-source"]
 TIMEOUT = 10 * 60
 
 
-@pytest.mark.group(1)
-@pytest.mark.abort_on_fail
-async def test_deploy_bundle_with_cos_integrations(ops_test: OpsTest) -> None:
-    """Test COS integrations formed before mysql is allocated and deployed."""
-    logger.info("Building the mysql-k8s charm")
-    charm_path = await ops_test.build_charm(".")
 
+@pytest.mark.abort_on_fail
+async def test_deploy_bundle_with_cos_integrations(ops_test: OpsTest, charm) -> None:
+    """Test COS integrations formed before mysql is allocated and deployed."""
     bundle_template = jinja2.Template(
         pathlib.Path(
             "./tests/integration/bundle_templates/grafana_agent_integration.j2"
         ).read_text()
     )
     rendered_bundle = bundle_template.render(
-        mysql_charm_path=str(charm_path), mysql_image_source=IMAGE_SOURCE
+        mysql_charm_path=charm, mysql_image_source=IMAGE_SOURCE
     )
 
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".yaml") as rendered_bundle_file:

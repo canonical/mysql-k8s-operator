@@ -68,16 +68,13 @@ async def second_model(ops_test: OpsTest, first_model, request) -> Model:  # pyr
     await ops_test._controller.destroy_model(second_model_name, destroy_storage=True)
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(
-    ops_test: OpsTest, first_model: Model, second_model: Model
+    ops_test: OpsTest, charm, first_model: Model, second_model: Model
 ) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
-    logger.info("Build mysql charm")
-    charm = await ops_test.build_charm(".")
-
     config = {"cluster-name": "lima", "profile": "testing"}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
@@ -119,7 +116,7 @@ async def test_build_and_deploy(
     )
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
@@ -156,7 +153,7 @@ async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model:
     )
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_create_replication(first_model: Model, second_model: Model) -> None:
@@ -186,7 +183,7 @@ async def test_create_replication(first_model: Model, second_model: Model) -> No
     )
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_deploy_router_and_app(first_model: Model) -> None:
@@ -223,7 +220,7 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
     )
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_data_replication(
@@ -236,7 +233,7 @@ async def test_data_replication(
     assert results[0] > 1, "No data was written to the database"
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_standby_promotion(
@@ -264,7 +261,7 @@ async def test_standby_promotion(
     ), "standby not promoted to primary"
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
@@ -302,7 +299,7 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
         )
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_rejoin_invalidated_cluster(
@@ -322,7 +319,7 @@ async def test_rejoin_invalidated_cluster(
     assert results[0] > 1, "No data was written to the database"
 
 
-@pytest.mark.group(1)
+
 @markers.juju3
 @pytest.mark.abort_on_fail
 async def test_remove_relation_and_relate(

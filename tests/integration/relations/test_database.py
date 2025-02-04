@@ -26,20 +26,17 @@ APPS = [DATABASE_APP_NAME, APPLICATION_APP_NAME]
 ENDPOINT = "database"
 
 
-@pytest.mark.group(1)
+
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
-async def test_build_and_deploy(ops_test: OpsTest):
+async def test_build_and_deploy(ops_test: OpsTest, charm):
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
-    # Build and deploy charm from local source folder
-    db_charm = await ops_test.build_charm(".")
-
     config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
     resources = {"mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     await asyncio.gather(
         ops_test.model.deploy(
-            db_charm,
+            charm,
             application_name=DATABASE_APP_NAME,
             config=config,
             num_units=3,
@@ -90,7 +87,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     assert len(ops_test.model.applications[APPLICATION_APP_NAME].units) == 2
 
 
-@pytest.mark.group(1)
+
 @pytest.mark.abort_on_fail
 @markers.only_without_juju_secrets
 async def test_relation_creation_databag(ops_test: OpsTest):
@@ -107,7 +104,7 @@ async def test_relation_creation_databag(ops_test: OpsTest):
     assert {"password", "username"} <= set(relation_data[0]["application-data"])
 
 
-@pytest.mark.group(1)
+
 @pytest.mark.abort_on_fail
 @markers.only_with_juju_secrets
 async def test_relation_creation(ops_test: OpsTest):
@@ -125,7 +122,7 @@ async def test_relation_creation(ops_test: OpsTest):
     assert "secret-user" in relation_data[0]["application-data"]
 
 
-@pytest.mark.group(1)
+
 @pytest.mark.abort_on_fail
 async def test_relation_broken(ops_test: OpsTest):
     """Remove relation and wait for the expected changes in status."""

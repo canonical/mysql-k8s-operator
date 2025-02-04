@@ -24,13 +24,14 @@ TEST_APP_ONE = "mysql-test-app1"
 TEST_APP_TWO = "mysql-test-app2"
 
 
-@pytest.mark.group(1)
+
 @pytest.mark.abort_on_fail
-async def test_labeling_of_k8s_endpoints(ops_test: OpsTest):
+async def test_labeling_of_k8s_endpoints(ops_test: OpsTest, charm):
     """Test the labeling of k8s endpoints when apps with same cluster-name deployed."""
     logger.info("Deploying first mysql cluster")
     mysql_cluster_one = await deploy_and_scale_mysql(
         ops_test,
+        charm,
         check_for_existing_application=False,
         mysql_application_name=MYSQL_CLUSTER_ONE,
         cluster_name=MYSQL_CLUSTER_NAME,
@@ -52,6 +53,7 @@ async def test_labeling_of_k8s_endpoints(ops_test: OpsTest):
     logger.info("Deploying second mysql application with same cluster name")
     mysql_cluster_two = await deploy_and_scale_mysql(
         ops_test,
+        charm,
         check_for_existing_application=False,
         mysql_application_name=MYSQL_CLUSTER_TWO,
         cluster_name=MYSQL_CLUSTER_NAME,
