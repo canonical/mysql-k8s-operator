@@ -1,0 +1,27 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:218 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.2    unsupported  01:32:01Z
+
+App                       Version                  Status   Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.40-0ubuntu0.22.04.1  waiting      3  mysql-k8s                                  0  10.152.183.211  no       installing agent
+self-signed-certificates                           active       1  self-signed-certificates  latest/stable  155  10.152.183.216  no       
+
+Unit                         Workload     Agent      Address       Ports  Message
+mysql-k8s/0*                 maintenance  executing  10.1.219.139         Starting mysqld
+mysql-k8s/1                  active       executing  10.1.219.141         
+mysql-k8s/2                  active       executing  10.1.219.140         
+self-signed-certificates/0*  active       idle       10.1.219.142         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:30:55 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:30:58 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:31:01 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:31:05 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:31:06 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:31:07 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:31:36 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "56aed116-6e03-48f5-8ab7-fbc8fe83ac13:r#3#self-signed-certificates": settings 56aed116-6e03-48f5-8ab7-fbc8fe83ac13:r#3#self-signed-certificates not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
