@@ -1961,6 +1961,7 @@ class MySQLBase(ABC):
                 user=self.server_config_user,
                 password=self.server_config_password,
                 host=self.instance_def(self.server_config_user),
+                exception_as_warning=True,
             )
             return (
                 MySQLMemberState.ONLINE in output.lower()
