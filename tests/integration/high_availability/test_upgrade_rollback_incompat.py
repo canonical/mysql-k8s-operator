@@ -84,7 +84,7 @@ async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
 
     sub_regex_failing_rejoin = (
         's/logger.info("Recovering unit")'
-        '/self.charm._mysql.set_instance_offline_mode(True); raise RetryError("dummy")/'
+        '/self._mysql.set_instance_offline_mode(True); raise RetryError("dummy")/'
     )
     src_patch(sub_regex=sub_regex_failing_rejoin, file_name="src/charm.py")
     new_charm = await charm_local_build(ops_test, refresh=True)
