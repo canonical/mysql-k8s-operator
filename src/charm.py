@@ -455,17 +455,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if self.app.planned_units() == 1:
             self._mysql.reboot_from_complete_outage()
         else:
-            for attempt in Retrying(
-                stop=stop_after_attempt(recovery_attempts), wait=wait_fixed(15)
-            ):
-                with attempt:
-                    self._mysql.hold_if_recovering()
-                    if not self._mysql.is_instance_in_cluster(self.unit_label):
-                        logger.debug(
-                            "Instance not yet back in the cluster."
-                            f" Retry {attempt.retry_state.attempt_number}/{recovery_attempts}"
-                        )
-                        raise Exception
+            try:
+                for attempt in Retrying(
+                    stop=stop_after_attempt(recovery_attempts), wait=wait_fixed(15)
+                ):
+                    with attempt:
+                        self._mysql.hold_if_recovering()
+                        if not self._mysql.is_instance_in_cluster(self.unit_label):
+                            logger.debug(
+                                "Instance not yet back in the cluster."
+                                f" Retry {attempt.retry_state.attempt_number}/{recovery_attempts}"
+                            )
+                            raise Exception
+            except RetryError:
+                raise
 
     def _restart(self, _: EventBase) -> None:
         """Restart the service."""
