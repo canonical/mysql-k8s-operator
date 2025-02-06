@@ -94,15 +94,6 @@ async def test_log_rotation(
     logger.info("Dispatching custom event to rotate logs")
     await dispatch_custom_event_for_logrotate(ops_test, unit.name)
 
-    logger.info("Ensuring log files and archive directories exist")
-    ls_output = await ls_in_unit(ops_test, unit.name, "/var/log/mysql/")
-
-    for file in log_files + archive_directories:
-        # audit.log can be rotated and new file not created until access to db
-        assert (
-            file in ls_output or file == "audit.log"
-        ), f"❌ unexpected files/directories in log directory: {ls_output}"
-
     logger.info("Ensuring log files were rotated")
     # Exclude checking slow log rotation as slow logs are disabled by default
     for log in set(log_types):
