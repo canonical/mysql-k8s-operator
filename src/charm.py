@@ -553,9 +553,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 if "loose-audit_log_format" in changed_config:
                     # plugins are manipulated running daemon
                     if self.config.plugin_audit_enabled:
-                        self._mysql.install_plugins(["audit_log", "audit_log_filter"])
+                        self._mysql.install_plugins(["audit_log"])
                     else:
-                        self._mysql.uninstall_plugins(["audit_log", "audit_log_filter"])
+                        self._mysql.uninstall_plugins(["audit_log"])
                 # restart the service
                 self.on[f"{self.restart.name}"].acquire_lock.emit()
                 return
@@ -647,7 +647,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             if self.config.plugin_audit_enabled:
                 # Enable the audit plugin
-                self._mysql.install_plugins(["audit_log", "audit_log_filter"])
+                self._mysql.install_plugins(["audit_log"])
 
             # Configure instance as a cluster node
             self._mysql.configure_instance()

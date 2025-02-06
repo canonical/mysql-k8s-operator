@@ -36,6 +36,7 @@ async def test_log_rotation(
     when mysql-test-app runs start-continuous-writes (by logging into mysql).
     """
     unit = ops_test.model.applications[APP_NAME].units[0]
+    logger.info(f"Using unit {unit.name}")
 
     logger.info("Extending update-status-hook-interval to 60m")
     await ops_test.model.set_config({"update-status-hook-interval": "60m"})
@@ -112,4 +113,3 @@ async def test_log_rotation(
 
         ls_output = await ls_in_unit(ops_test, unit.name, f"/var/log/mysql/archive_{log}/")
         assert len(ls_output) != 0, f"❌ archive directory is empty: {ls_output}"
-

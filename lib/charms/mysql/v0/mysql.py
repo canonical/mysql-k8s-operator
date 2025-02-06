@@ -1001,7 +1001,6 @@ class MySQLBase(ABC):
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
             "slow_query_log_file": f"{snap_common}/var/log/mysql/slow.log",
             "binlog_expire_logs_seconds": f"{binlog_retention_seconds}",
-            "loose-audit_log_filter": "OFF",
             "loose-audit_log_policy": audit_log_policy.upper(),
             "loose-audit_log_file": f"{snap_common}/var/log/mysql/audit.log",
         }
