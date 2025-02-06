@@ -267,18 +267,14 @@ def deploy_chaos_mesh(namespace: str) -> None:
     env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
     logger.info("Deploying Chaos Mesh")
 
-    try:
-        subprocess.check_output(
-            " ".join([
-                "tests/integration/high_availability/scripts/deploy_chaos_mesh.sh",
-                namespace,
-            ]),
-            shell=True,
-            env=env,
-        )
-    except subprocess.CalledProcessError as e:
-        logger.error(f"FOOBAR {e.stderr}")
-        raise
+    subprocess.check_output(
+        " ".join([
+            "tests/integration/high_availability/scripts/deploy_chaos_mesh.sh",
+            namespace,
+        ]),
+        shell=True,
+        env=env,
+    )
     logger.info("Ensure chaos mesh is ready")
     try:
         for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
