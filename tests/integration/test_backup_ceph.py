@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 import boto3
-import botocore
+import botocore.exceptions
 import pytest
 from pytest_operator.plugin import OpsTest
 
