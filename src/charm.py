@@ -274,6 +274,18 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         }
         return self.unit_peer_data.keys() == _default_unit_data_keys
 
+    @property
+    def unit_initialized(self) -> bool:
+        """Return whether a unit is started.
+
+        Oveerride parent class method to include container accessibility check.
+        """
+        container = self.unit.get_container(CONTAINER_NAME)
+        if container.can_connect():
+            return super().unit_initialized
+        else:
+            return False
+
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
 
