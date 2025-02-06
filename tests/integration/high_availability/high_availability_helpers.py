@@ -265,6 +265,7 @@ def deploy_chaos_mesh(namespace: str) -> None:
     """
     env = os.environ
     env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
+    logger.error(f"BAR {os.path.expanduser('~/.kube/config')=}")
     logger.info("Deploying Chaos Mesh")
 
     try:
