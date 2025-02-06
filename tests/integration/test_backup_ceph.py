@@ -2,13 +2,18 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import dataclasses
+import json
 import logging
+import os
 import socket
+import subprocess
+import time
 from pathlib import Path
 
 import boto3
+import botocore
 import pytest
-import pytest_microceph
 from pytest_operator.plugin import OpsTest
 
 from . import juju_
@@ -37,10 +42,66 @@ DATABASE_NAME = "backup-database"
 TABLE_NAME = "backup-table"
 CLOUD = "ceph"
 value_before_backup, value_after_backup = None, None
+MICROCEPH_BUCKET = "testbucket"
+
+
+@dataclasses.dataclass(frozen=True)
+class MicrocephConnectionInformation:
+    access_key_id: str
+    secret_access_key: str
+    bucket: str
 
 
 @pytest.fixture(scope="session")
-def cloud_credentials(microceph: pytest_microceph.ConnectionInformation) -> dict[str, str]:
+def microceph():
+    if not os.environ.get("CI") == "true":
+        raise Exception("Not running on CI. Skipping microceph installation")
+    logger.info("Setting up microceph")
+    subprocess.run(["sudo", "snap", "install", "microceph"], check=True)
+    subprocess.run(["sudo", "microceph", "cluster", "bootstrap"], check=True)
+    subprocess.run(["sudo", "microceph", "disk", "add", "loop,4G,3"], check=True)
+    subprocess.run(["sudo", "microceph", "enable", "rgw"], check=True)
+    output = subprocess.run(
+        [
+            "sudo",
+            "microceph.radosgw-admin",
+            "user",
+            "create",
+            "--uid",
+            "test",
+            "--display-name",
+            "test",
+        ],
+        capture_output=True,
+        check=True,
+        encoding="utf-8",
+    ).stdout
+    key = json.loads(output)["keys"][0]
+    key_id = key["access_key"]
+    secret_key = key["secret_key"]
+    logger.info("Creating microceph bucket")
+    for attempt in range(3):
+        try:
+            boto3.client(
+                "s3",
+                endpoint_url="http://localhost",
+                aws_access_key_id=key_id,
+                aws_secret_access_key=secret_key,
+            ).create_bucket(Bucket=MICROCEPH_BUCKET)
+        except botocore.exceptions.EndpointConnectionError:
+            if attempt == 2:
+                raise
+            # microceph is not ready yet
+            logger.info("Unable to connect to microceph via S3. Retrying")
+            time.sleep(1)
+        else:
+            break
+    logger.info("Set up microceph")
+    return MicrocephConnectionInformation(key_id, secret_key, MICROCEPH_BUCKET)
+
+
+@pytest.fixture(scope="session")
+def cloud_credentials(microceph) -> dict[str, str]:
     """Read cloud credentials."""
     return {
         "access-key": microceph.access_key_id,
@@ -49,7 +110,7 @@ def cloud_credentials(microceph: pytest_microceph.ConnectionInformation) -> dict
 
 
 @pytest.fixture(scope="session")
-def cloud_configs(microceph: pytest_microceph.ConnectionInformation) -> dict[str, str]:
+def cloud_configs(microceph) -> dict[str, str]:
     return {
         "endpoint": f"http://{host_ip}",
         "bucket": microceph.bucket,
