@@ -550,6 +550,12 @@ async def test_cluster_manual_rejoin(
 
     # Verify unit comes back active
     async with ops_test.fast_forward():
+        logger.info("Waiting unit to be back online as secondary")
+        await ops_test.model.block_until(
+            lambda: primary_unit.workload_status == "active"
+            and primary_unit.workload_status_message == "",
+            timeout=TIMEOUT,
+        )
         logger.info("Waiting unit to be back online.")
         await ops_test.model.block_until(
             lambda: primary_unit.workload_status == "active",

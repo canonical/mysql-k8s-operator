@@ -14,7 +14,7 @@ import yaml
 from pytest_operator.plugin import OpsTest
 
 from .. import juju_, markers
-from ..helpers import get_leader_unit, get_unit_by_index
+from ..helpers import get_leader_unit, get_model_logs, get_unit_by_index
 from .high_availability_helpers import get_sts_partition
 
 logger = logging.getLogger(__name__)
@@ -151,6 +151,11 @@ async def test_rollback(ops_test) -> None:
         timeout=TIMEOUT,
         wait_period=5,
     )
+
+    logger.info("Ensure rollback has taken place")
+    message = "Downgrade is incompatible. Resetting workload"
+    warnings = await get_model_logs(ops_test, log_level="WARNING")
+    assert message in warnings
 
     logger.info("Resume upgrade")
     while get_sts_partition(ops_test, MYSQL_APP_NAME) == 2:

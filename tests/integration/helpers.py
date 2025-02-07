@@ -365,6 +365,25 @@ def is_connection_possible(credentials: Dict, **extra_opts) -> bool:
         return False
 
 
+async def get_model_logs(ops_test: OpsTest, log_level: str, log_lines: int = 100) -> str:
+    """Return the juju logs from a specific model.
+
+    Args:
+        ops_test: The ops test object passed into every test case
+        log_level: The logging level to return messages from
+        log_lines: The maximum lines to return at once
+    """
+    _, output, _ = await ops_test.juju(
+        "debug-log",
+        f"--model={ops_test.model.info.name}",
+        f"--level={log_level}",
+        f"--lines={log_lines}",
+        "--no-tail",
+    )
+
+    return output
+
+
 async def get_process_pid(
     ops_test: OpsTest, unit_name: str, container_name: str, process: str, full_match: bool = False
 ) -> Optional[int]:
@@ -688,7 +707,7 @@ async def stop_running_log_rotate_dispatcher(ops_test: OpsTest, unit_name: str):
         "pkill",
         "-9",
         "-f",
-        "/usr/bin/python3 scripts/log_rotate_dispatcher.py",
+        "log_rotate_dispatcher.py",
     )
 
     # hold execution until process is stopped

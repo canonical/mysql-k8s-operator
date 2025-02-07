@@ -220,7 +220,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         self.charm._write_mysqld_configuration()
 
         logger.info("Setting up the logrotate configurations")
-        self.charm._mysql.setup_logrotate_config()
+        self.charm.log_rotate_setup.setup()
 
         try:
             self.charm._reconcile_pebble_layer(container)
@@ -228,7 +228,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             self.charm.unit.status = MaintenanceStatus("recovering unit after upgrade")
             self.charm.recover_unit_after_restart()
             if self.charm.config.plugin_audit_enabled:
-                self.charm._mysql.install_plugins(["audit_log", "audit_log_filter"])
+                self.charm._mysql.install_plugins(["audit_log"])
             self._complete_upgrade()
         except MySQLRebootFromCompleteOutageError:
             logger.error("Failed to reboot single unit from outage after upgrade")

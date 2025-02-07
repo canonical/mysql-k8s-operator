@@ -70,7 +70,6 @@ async def second_model(ops_test: OpsTest, first_model, request) -> Model:  # pyr
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(
     ops_test: OpsTest, first_model: Model, second_model: Model
@@ -122,7 +121,6 @@ async def test_build_and_deploy(
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
     """Relate the two mysql clusters."""
@@ -160,7 +158,6 @@ async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model:
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_create_replication(first_model: Model, second_model: Model) -> None:
     """Run the create replication and wait for the applications to settle."""
@@ -191,7 +188,6 @@ async def test_create_replication(first_model: Model, second_model: Model) -> No
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_deploy_router_and_app(first_model: Model) -> None:
     """Deploy the router and the test application."""
@@ -229,7 +225,6 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_data_replication(
     first_model: Model, second_model: Model, continuous_writes
@@ -243,7 +238,6 @@ async def test_data_replication(
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_standby_promotion(
     ops_test: OpsTest, first_model: Model, second_model: Model, continuous_writes
@@ -272,7 +266,6 @@ async def test_standby_promotion(
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
     """Test switchover on primary cluster fail."""
@@ -311,7 +304,6 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_rejoin_invalidated_cluster(
     first_model: Model, second_model: Model, continuous_writes
@@ -332,7 +324,6 @@ async def test_rejoin_invalidated_cluster(
 
 @pytest.mark.group(1)
 @markers.juju3
-@markers.amd64_only  # TODO: remove after mysql-router-k8s arm64 stable release
 @pytest.mark.abort_on_fail
 async def test_remove_relation_and_relate(
     first_model: Model, second_model: Model, continuous_writes
