@@ -39,17 +39,17 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     resources = {
         "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
     }
-    async with ops_test.fast_forward("10s"):
-        await ops_test.model.deploy(
-            charm,
-            application_name=MYSQL_APP_NAME,
-            config=config,
-            num_units=3,
-            resources=resources,
-            trust=True,
-            base="ubuntu@22.04",
-        )
+    await ops_test.model.deploy(
+        charm,
+        application_name=MYSQL_APP_NAME,
+        config=config,
+        num_units=3,
+        resources=resources,
+        trust=True,
+        base="ubuntu@22.04",
+    )
 
+    async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(
             apps=[MYSQL_APP_NAME],
             status="active",
