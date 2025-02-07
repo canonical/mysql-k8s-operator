@@ -292,7 +292,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def unit_initialized(self) -> bool:
         """Return whether a unit is started.
 
-        Oveerride parent class method to include container accessibility check.
+        Override parent class method to include container accessibility check.
         """
         container = self.unit.get_container(CONTAINER_NAME)
         if container.can_connect():
