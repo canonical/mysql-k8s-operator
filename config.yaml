@@ -38,7 +38,7 @@ options:
     type: string
   plugin-audit-enabled:
     description: |
-      Audit log plugin state. When the plugin is enabled (default, audit logs will be enabled.
+      Audit log plugin state. When the plugin is enabled (default, audit logs will be enabled).
     type: boolean
     default: true
   plugin-audit-strategy:
