@@ -62,6 +62,8 @@ class CharmConfig(BaseConfigModel):
     binlog_retention_days: int
     plugin_audit_enabled: bool
     plugin_audit_strategy: str
+    logs_audit_policy: str
+    logs_retention_period: str
 
     @validator("profile")
     @classmethod
@@ -152,6 +154,25 @@ class CharmConfig(BaseConfigModel):
     def plugin_audit_strategy_validator(cls, value: str) -> Optional[str]:
         """Check profile config option is one of `testing` or `production`."""
         if value not in ["async", "semi-async"]:
-            raise ValueError("Value not one of 'async' or 'semi-async'")
+            raise ValueError("plugin_audit_strategy not one of 'async' or 'semi-async'")
+
+        return value
+
+    @validator("logs_audit_policy")
+    @classmethod
+    def logs_audit_policy_validator(cls, value: str) -> Optional[str]:
+        """Check values for audit log policy."""
+        valid_values = ["all", "logins", "queries"]
+        if value not in valid_values:
+            raise ValueError(f"logs_audit_policy not one of {', '.join(valid_values)}")
+
+        return value
+
+    @validator("logs_retention_period")
+    @classmethod
+    def logs_retention_period_validator(cls, value: str) -> str:
+        """Check logs retention period."""
+        if not re.match(r"auto|\d{1,3}", value) or value == "0":
+            raise ValueError("logs_retention_period must be integer greater than 0 or `auto`")
 
         return value

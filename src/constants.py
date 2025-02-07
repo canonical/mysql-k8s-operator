@@ -33,10 +33,11 @@ MYSQL_DATA_DIR = "/var/lib/mysql"
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
 MYSQLD_CONFIG_FILE = "/etc/mysql/mysql.conf.d/z-custom.cnf"
+MYSQL_LOG_DIR = "/var/log/mysql"
 MYSQL_LOG_FILES = [
-    "/var/log/mysql/error.log",
-    "/var/log/mysql/audit.log",
-    "/var/log/mysql/general.log",
+    f"{MYSQL_LOG_DIR}/error.log",
+    f"{MYSQL_LOG_DIR}/audit.log",
+    f"{MYSQL_LOG_DIR}/general.log",
 ]
 MYSQL_SYSTEM_USER = "mysql"
 MYSQL_SYSTEM_GROUP = "mysql"
@@ -50,6 +51,7 @@ MYSQLD_EXPORTER_SERVICE = "mysqld_exporter"
 GR_MAX_MEMBERS = 9
 # TODO: should be changed when adopting cos-agent
 COS_AGENT_RELATION_NAME = "metrics-endpoint"
+COS_LOGGING_RELATION_NAME = "logging"
 LOG_ROTATE_CONFIG_FILE = "/etc/logrotate.d/flush_mysql_logs"
 ROOT_SYSTEM_USER = "root"
 SECRET_KEY_FALLBACKS = {

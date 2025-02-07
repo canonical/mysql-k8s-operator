@@ -707,7 +707,7 @@ async def stop_running_log_rotate_dispatcher(ops_test: OpsTest, unit_name: str):
         "pkill",
         "-9",
         "-f",
-        "/usr/bin/python3 scripts/log_rotate_dispatcher.py",
+        "log_rotate_dispatcher.py",
     )
 
     # hold execution until process is stopped

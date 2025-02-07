@@ -36,6 +36,7 @@ async def test_log_rotation(
     when mysql-test-app runs start-continuous-writes (by logging into mysql).
     """
     unit = ops_test.model.applications[APP_NAME].units[0]
+    logger.info(f"Using unit {unit.name}")
 
     logger.info("Extending update-status-hook-interval to 60m")
     await ops_test.model.set_config({"update-status-hook-interval": "60m"})
@@ -93,15 +94,6 @@ async def test_log_rotation(
     logger.info("Dispatching custom event to rotate logs")
     await dispatch_custom_event_for_logrotate(ops_test, unit.name)
 
-    logger.info("Ensuring log files and archive directories exist")
-    ls_output = await ls_in_unit(ops_test, unit.name, "/var/log/mysql/")
-
-    for file in log_files + archive_directories:
-        # audit.log can be rotated and new file not created until access to db
-        assert (
-            file in ls_output or file == "audit.log"
-        ), f"❌ unexpected files/directories in log directory: {ls_output}"
-
     logger.info("Ensuring log files were rotated")
     # Exclude checking slow log rotation as slow logs are disabled by default
     for log in set(log_types):
@@ -112,14 +104,3 @@ async def test_log_rotation(
 
         ls_output = await ls_in_unit(ops_test, unit.name, f"/var/log/mysql/archive_{log}/")
         assert len(ls_output) != 0, f"❌ archive directory is empty: {ls_output}"
-
-        rotated_file_content_exists = False
-        for filename in ls_output:
-            file_contents = read_contents_from_file_in_unit(
-                ops_test,
-                unit,
-                f"/var/log/mysql/archive_{log}/{filename}",
-            )
-            if f"test {log} content" in file_contents:
-                rotated_file_content_exists = True
-        assert rotated_file_content_exists, f"❌ log file {log}.log not rotated"

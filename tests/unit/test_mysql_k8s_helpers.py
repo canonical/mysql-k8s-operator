@@ -371,20 +371,19 @@ class TestMySQL(unittest.TestCase):
     def test_log_rotate_config(self, _container):
         """Test log_rotate_config."""
         rendered_logrotate_config = (
-            "# Use system user\nsu mysql mysql\n\n# Create dedicated "
-            "subdirectory for rotated files\ncreateolddir 770 mysql mysql\n\n# Frequency of logs"
-            " rotation\nhourly\nmaxage 7\nrotate 10800\n\n# Naming of rotated files should be in"
-            " the format:\ndateext\ndateformat -%Y%m%d_%H%M\n\n# Settings to prevent"
-            " misconfigurations and unwanted behaviours\nifempty\nmissingok\nnocompress\nnomail\n"
-            "nosharedscripts\nnocopytruncate\n\n"
-            "/var/log/mysql/error.log {\n    olddir archive_error\n}\n\n"
-            "/var/log/mysql/general.log {\n    olddir archive_general\n}\n\n"
-            "/var/log/mysql/slow.log {\n    olddir archive_slow\n}\n\n"
-            "/var/log/mysql/audit.log {\n    olddir archive_audit\n}"
+            "# Use system user\nsu mysql mysql\n\n# Create dedicated subdirectory for rotated "
+            "files\ncreateolddir 770 mysql mysql\n\n# Frequency of logs rotation\nhourly\nmaxa"
+            "ge 1\nrotate 1440\n\n# Compression settings\n\nnocompress\n\n\n# Naming of rotate"
+            "d files should be in the format:\ndateext\ndateformat -%Y%m%d_%H%M\n\n# Settings "
+            "to prevent misconfigurations and unwanted behaviours\nifempty\nmissingok\nnomail\n"
+            "nosharedscripts\nnocopytruncate\n\n\n/var/log/mysql/error.log {\n    olddir archi"
+            "ve_error\n}\n\n/var/log/mysql/general.log {\n    olddir archive_general\n}\n\n/va"
+            "r/log/mysql/slowquery.log {\n    olddir archive_slowquery\n}\n\n/var/log/mysql/au"
+            "dit.log {\n    olddir archive_audit\n}\n\n"
         )
 
         self.mysql.container = _container
-        self.mysql.setup_logrotate_config()
+        self.mysql.setup_logrotate_config(1, ["error", "general", "slowquery", "audit"], False)
 
         self.mysql.container.push.assert_called_once_with(
             "/etc/logrotate.d/flush_mysql_logs",

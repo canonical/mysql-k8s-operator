@@ -6,7 +6,7 @@
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import jinja2
 from charms.mysql.v0.mysql import (
@@ -37,6 +37,7 @@ from constants import (
     LOG_ROTATE_CONFIG_FILE,
     MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
+    MYSQL_LOG_DIR,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
     MYSQLD_DEFAULTS_CONFIG_FILE,
@@ -240,9 +241,17 @@ class MySQL(MySQLBase):
 
         logger.debug("MySQL connection possible")
 
-    def setup_logrotate_config(self) -> None:
+    def setup_logrotate_config(
+        self,
+        logs_retention_period: int,
+        enabled_log_files: Iterable,
+        logs_compression: bool,
+    ) -> None:
         """Set up logrotate config in the workload container."""
         logger.debug("Creating the logrotate config file")
+
+        # days * minutes/day = amount of rotated files to keep
+        logs_rotations = logs_retention_period * 1440
 
         with open("templates/logrotate.j2", "r") as file:
             template = jinja2.Template(file.read())
@@ -250,6 +259,11 @@ class MySQL(MySQLBase):
         rendered = template.render(
             system_user=MYSQL_SYSTEM_USER,
             system_group=MYSQL_SYSTEM_GROUP,
+            log_dir=MYSQL_LOG_DIR,
+            logs_retention_period=logs_retention_period,
+            logs_rotations=logs_rotations,
+            logs_compression_enabled=logs_compression,
+            enabled_log_files=enabled_log_files,
         )
 
         logger.debug("Writing the logrotate config file to the workload container")
@@ -262,24 +276,35 @@ class MySQL(MySQLBase):
 
     def execute_backup_commands(
         self,
-        s3_directory: str,
+        s3_path: str,
         s3_parameters: Dict[str, str],
+        xtrabackup_location: str = CHARMED_MYSQL_XTRABACKUP_LOCATION,
+        xbcloud_location: str = CHARMED_MYSQL_XBCLOUD_LOCATION,
+        xtrabackup_plugin_dir: str = XTRABACKUP_PLUGIN_DIR,
+        mysqld_socket_file: str = MYSQLD_SOCK_FILE,
+        tmp_base_directory: str = MYSQL_DATA_DIR,
+        defaults_config_file: str = MYSQLD_DEFAULTS_CONFIG_FILE,
+        user: Optional[str] = MYSQL_SYSTEM_USER,
+        group: Optional[str] = MYSQL_SYSTEM_GROUP,
     ) -> Tuple[str, str]:
         """Executes commands to create a backup."""
         return super().execute_backup_commands(
-            s3_directory,
+            s3_path,
             s3_parameters,
-            CHARMED_MYSQL_XTRABACKUP_LOCATION,
-            CHARMED_MYSQL_XBCLOUD_LOCATION,
-            XTRABACKUP_PLUGIN_DIR,
-            MYSQLD_SOCK_FILE,
-            MYSQL_DATA_DIR,
-            MYSQLD_DEFAULTS_CONFIG_FILE,
-            user=MYSQL_SYSTEM_USER,
-            group=MYSQL_SYSTEM_GROUP,
+            xtrabackup_location,
+            xbcloud_location,
+            xtrabackup_plugin_dir,
+            mysqld_socket_file,
+            tmp_base_directory,
+            defaults_config_file,
+            user,
+            group,
         )
 
-    def delete_temp_backup_directory(self, from_directory: str = MYSQL_DATA_DIR) -> None:
+    def delete_temp_backup_directory(
+        self,
+        from_directory: str = MYSQL_DATA_DIR,
+    ) -> None:
         """Delete the temp backup directory in the data directory."""
         super().delete_temp_backup_directory(
             from_directory,
@@ -291,6 +316,11 @@ class MySQL(MySQLBase):
         self,
         backup_id: str,
         s3_parameters: Dict[str, str],
+        temp_restore_directory: str = MYSQL_DATA_DIR,
+        xbcloud_location: str = CHARMED_MYSQL_XBCLOUD_LOCATION,
+        xbstream_location: str = CHARMED_MYSQL_XBSTREAM_LOCATION,
+        user: str = MYSQL_SYSTEM_USER,
+        group: str = MYSQL_SYSTEM_GROUP,
     ) -> Tuple[str, str, str]:
         """Retrieve the specified backup from S3.
 
@@ -300,11 +330,11 @@ class MySQL(MySQLBase):
         return super().retrieve_backup_with_xbcloud(
             backup_id,
             s3_parameters,
-            MYSQL_DATA_DIR,
-            CHARMED_MYSQL_XBCLOUD_LOCATION,
-            CHARMED_MYSQL_XBSTREAM_LOCATION,
-            user=MYSQL_SYSTEM_USER,
-            group=MYSQL_SYSTEM_GROUP,
+            temp_restore_directory,
+            xbcloud_location,
+            xbstream_location,
+            user,
+            group,
         )
 
     def prepare_backup_for_restore(self, backup_location: str) -> Tuple[str, str]:
