@@ -245,6 +245,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
                     "kill-delay": "24h",
+                    "environment": {
+                        "MYSQLD_PARENT_PID": 1,
+                    },
                 },
                 MYSQLD_EXPORTER_SERVICE: {
                     "override": "replace",

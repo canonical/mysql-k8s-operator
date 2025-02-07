@@ -1462,16 +1462,14 @@ class MySQLBase(ABC):
         rows = json.loads(output)
         return rows[0][1]
 
-    def configure_instance(self, create_cluster_admin: bool = True, restart: bool = True) -> None:
+    def configure_instance(self, create_cluster_admin: bool = True) -> None:
         """Configure the instance to be used in an InnoDB cluster.
 
         Args:
             create_cluster_admin: Whether to create the cluster admin user.
-            restart: Daemon should be restarted automatically after configuration.
-                     If false, manual restart is required.
         """
         options = {
-            "restart": restart,
+            "restart": "true",
         }
 
         if create_cluster_admin:

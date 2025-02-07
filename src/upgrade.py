@@ -40,9 +40,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-RECOVER_ATTEMPTS = 10
-
-
 class MySQLK8sDependenciesModel(BaseModel):
     """MySQL dependencies model."""
 
