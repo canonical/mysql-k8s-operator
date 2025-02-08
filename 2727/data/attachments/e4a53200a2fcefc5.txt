@@ -1,0 +1,2 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:272 Freezing mysqld on primary cluster units
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:281 Promoting standby cluster to primary with force flag
