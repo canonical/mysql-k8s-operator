@@ -82,11 +82,11 @@ from charms.mysql.v0.mysql import (
     MySQLUnableToGetMemberStateError,
 )
 from charms.mysql.v0.s3_helpers import (
+    _construct_endpoint,
     ensure_s3_compatible_group_replication_id,
     fetch_and_check_existence_of_s3_path,
     list_backups_in_s3_path,
     upload_content_to_s3,
-    _construct_endpoint,
 )
 from ops.charm import ActionEvent
 from ops.framework import Object
@@ -832,7 +832,9 @@ class MySQLBackups(Object):
                 logger.error("Failed to stop binlogs collecting after S3 relation depart")
         except Exception as e:
             logger.error(e)
-            logger.error("Exception is occurred when trying to stop binlogs collecting after S3 relation depart. It may be a leader departure")
+            logger.error(
+                "Exception is occurred when trying to stop binlogs collecting after S3 relation depart. It may be a leader departure"
+            )
 
     def get_binlogs_collector_config(self) -> Dict[str, str]:
         """Update binlogs collector service config file.

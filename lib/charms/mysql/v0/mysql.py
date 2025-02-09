@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 82
+LIBPATCH = 84
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1475,7 +1475,11 @@ class MySQLBase(ABC):
         return rows[0][1]
 
     def configure_instance(self, create_cluster_admin: bool = True) -> None:
-        """Configure the instance to be used in an InnoDB cluster."""
+        """Configure the instance to be used in an InnoDB cluster.
+
+        Args:
+            create_cluster_admin: Whether to create the cluster admin user.
+        """
         options = {
             "restart": "true",
         }
@@ -1967,6 +1971,7 @@ class MySQLBase(ABC):
                 user=self.server_config_user,
                 password=self.server_config_password,
                 host=self.instance_def(self.server_config_user),
+                exception_as_warning=True,
             )
             return (
                 MySQLMemberState.ONLINE in output.lower()
