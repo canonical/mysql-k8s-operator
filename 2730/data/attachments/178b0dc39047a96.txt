@@ -1,0 +1,26 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:218 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model  Controller          Cloud/Region        Version  SLA          Timestamp
+test   microk8s-localhost  microk8s/localhost  3.6.2    unsupported  01:32:03Z
+
+App                       Version                  Status   Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.41-0ubuntu0.22.04.1  waiting      3  mysql-k8s                                  0  10.152.183.171  no       installing agent
+self-signed-certificates                           active       1  self-signed-certificates  latest/stable  155  10.152.183.232  no       
+
+Unit                         Workload     Agent  Address       Ports  Message
+mysql-k8s/0                  active       idle   10.1.186.139         
+mysql-k8s/1                  maintenance  idle   10.1.186.140         Starting mysqld
+mysql-k8s/2*                 active       idle   10.1.186.141         
+self-signed-certificates/0*  active       idle   10.1.186.142         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:30:56 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:31:00 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:31:05 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:31:06 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:31:08 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:31:38 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "4297c223-0952-4067-87d3-7da10de33c67:r#3#self-signed-certificates": settings 4297c223-0952-4067-87d3-7da10de33c67:r#3#self-signed-certificates not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
