@@ -8,6 +8,8 @@ from charms.mysql.v0.architecture import WrongArchitectureWarningCharm, is_wrong
 from ops.main import main
 from tenacity import retry, stop_after_delay, wait_fixed
 
+from log_rotation_setup import LogRotationSetup
+
 if is_wrong_architecture() and __name__ == "__main__":
     main(WrongArchitectureWarningCharm)
 
@@ -187,6 +189,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.log_rotate_manager = LogRotateManager(self)
         self.log_rotate_manager.start_log_rotate_manager()
 
+        self.log_rotate_setup = LogRotationSetup(self)
         self.rotate_mysql_logs = RotateMySQLLogs(self)
         self.replication_offer = MySQLAsyncReplicationOffer(self)
         self.replication_consumer = MySQLAsyncReplicationConsumer(self)
@@ -289,6 +292,29 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             "private-address",
         }
         return self.unit_peer_data.keys() == _default_unit_data_keys
+
+    @property
+    def text_logs(self) -> list:
+        """Enabled text logs."""
+        # slow logs isn't enabled by default
+        text_logs = ["error"]
+
+        if self.config.plugin_audit_enabled:
+            text_logs.append("audit")
+
+        return text_logs
+
+    @property
+    def unit_initialized(self) -> bool:
+        """Return whether a unit is started.
+
+        Override parent class method to include container accessibility check.
+        """
+        container = self.unit.get_container(CONTAINER_NAME)
+        if container.can_connect():
+            return super().unit_initialized
+        else:
+            return False
 
     def get_unit_hostname(self, unit_name: Optional[str] = None) -> str:
         """Get the hostname.localdomain for a unit.
@@ -556,34 +582,24 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         previous_config_dict = self.mysql_config.custom_config(config_content)
 
-        # render the new config
-        memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
-        new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
-            profile=self.config.profile,
-            audit_log_enabled=self.config.plugin_audit_enabled,
-            audit_log_strategy=self.config.plugin_audit_strategy,
-            memory_limit=memory_limit_bytes,
-            experimental_max_connections=self.config.experimental_max_connections,
-            binlog_retention_days=self.config.binlog_retention_days,
-        )
+        # always setup log rotation
+        self.log_rotate_setup.setup()
 
+        logger.info("Persisting configuration changes to file")
+        new_config_dict = self._write_mysqld_configuration()
         changed_config = compare_dictionaries(previous_config_dict, new_config_dict)
 
         if self.mysql_config.keys_requires_restart(changed_config):
             # there are static configurations in changed keys
-            logger.info("Persisting configuration changes to file")
-
-            # persist config to file
-            self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
 
             if self._mysql.is_mysqld_running():
                 logger.info("Configuration change requires restart")
                 if "loose-audit_log_format" in changed_config:
                     # plugins are manipulated running daemon
                     if self.config.plugin_audit_enabled:
-                        self._mysql.install_plugins(["audit_log", "audit_log_filter"])
+                        self._mysql.install_plugins(["audit_log"])
                     else:
-                        self._mysql.uninstall_plugins(["audit_log", "audit_log_filter"])
+                        self._mysql.uninstall_plugins(["audit_log"])
                 # restart the service
                 self.on[f"{self.restart.name}"].acquire_lock.emit()
                 return
@@ -592,7 +608,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             # if only dynamic config changed, apply it
             logger.info("Configuration does not requires restart")
             for config in dynamic_config:
-                self._mysql.set_dynamic_variable(config, new_config_dict[config])
+                self._mysql.set_dynamic_variable(
+                    config.removeprefix("loose-"), new_config_dict[config]
+                )
 
     def _on_leader_elected(self, _) -> None:
         """Handle the leader elected event.
@@ -635,18 +653,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             except ops.ModelError:
                 logger.exception("failed to open port")
 
-    def _write_mysqld_configuration(self):
+    def _write_mysqld_configuration(self) -> dict:
         """Write the mysqld configuration to the file."""
         memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
-        new_config_content, _ = self._mysql.render_mysqld_configuration(
+        new_config_content, new_config_dict = self._mysql.render_mysqld_configuration(
             profile=self.config.profile,
             audit_log_enabled=self.config.plugin_audit_enabled,
             audit_log_strategy=self.config.plugin_audit_strategy,
+            audit_log_policy=self.config.logs_audit_policy,
             memory_limit=memory_limit_bytes,
             experimental_max_connections=self.config.experimental_max_connections,
             binlog_retention_days=self.config.binlog_retention_days,
         )
         self._mysql.write_content_to_file(path=MYSQLD_CONFIG_FILE, content=new_config_content)
+        return new_config_dict
 
     def _configure_instance(self, container) -> None:
         """Configure the instance for use in Group Replication."""
@@ -671,7 +691,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             if self.config.plugin_audit_enabled:
                 # Enable the audit plugin
-                self._mysql.install_plugins(["audit_log", "audit_log_filter"])
+                self._mysql.install_plugins(["audit_log"])
             self._mysql.install_plugins(["binlog_utils_udf"])
 
             # Configure instance as a cluster node
@@ -738,8 +758,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         container = event.workload
         self._write_mysqld_configuration()
 
-        logger.info("Setting up the logrotate configurations")
-        self._mysql.setup_logrotate_config()
+        self.log_rotate_setup.setup()
 
         if self._mysql.is_data_dir_initialised():
             # Data directory is already initialised, skip configuration
