@@ -28,21 +28,16 @@ from ops import Container, JujuVersion
 from ops.model import BlockedStatus, MaintenanceStatus, RelationDataContent
 from ops.pebble import ChangeError
 from pydantic import BaseModel
-from tenacity import RetryError, Retrying
-from tenacity.stop import stop_after_attempt
-from tenacity.wait import wait_fixed
+from tenacity import RetryError
 from typing_extensions import override
 
 import k8s_helpers
-from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE
+from constants import CONTAINER_NAME, MYSQLD_SERVICE
 
 if TYPE_CHECKING:
     from charm import MySQLOperatorCharm
 
 logger = logging.getLogger(__name__)
-
-
-RECOVER_ATTEMPTS = 10
 
 
 class MySQLK8sDependenciesModel(BaseModel):
@@ -231,10 +226,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             self.charm._reconcile_pebble_layer(container)
             self._check_server_upgradeability()
             self.charm.unit.status = MaintenanceStatus("recovering unit after upgrade")
-            if self.charm.app.planned_units() > 1:
-                self._recover_multi_unit_cluster()
-            else:
-                self._recover_single_unit_cluster()
+            self.charm.recover_unit_after_restart()
             if self.charm.config.plugin_audit_enabled:
                 self.charm._mysql.install_plugins(["audit_log"])
             self._complete_upgrade()
@@ -268,28 +260,6 @@ class MySQLK8sUpgrade(DataUpgrade):
             logger.warning("Downgrade is incompatible. Resetting workload")
             self._reset_on_unsupported_downgrade(container)
             self._complete_upgrade()
-
-    def _recover_multi_unit_cluster(self) -> None:
-        logger.info("Recovering unit")
-        try:
-            for attempt in Retrying(
-                stop=stop_after_attempt(RECOVER_ATTEMPTS), wait=wait_fixed(10)
-            ):
-                with attempt:
-                    self.charm._mysql.hold_if_recovering()
-                    if not self.charm._mysql.is_instance_in_cluster(self.charm.unit_label):
-                        logger.debug(
-                            "Instance not yet back in the cluster."
-                            f" Retry {attempt.retry_state.attempt_number}/{RECOVER_ATTEMPTS}"
-                        )
-                        raise Exception
-        except RetryError:
-            raise
-
-    def _recover_single_unit_cluster(self) -> None:
-        """Recover single unit cluster."""
-        logger.debug("Recovering single unit cluster")
-        self.charm._mysql.reboot_from_complete_outage()
 
     def _complete_upgrade(self):
         # complete upgrade for the unit
@@ -346,7 +316,7 @@ class MySQLK8sUpgrade(DataUpgrade):
 
     def _reset_on_unsupported_downgrade(self, container: Container) -> None:
         """Reset the cluster on unsupported downgrade."""
-        container.stop(MYSQLD_SAFE_SERVICE)
+        container.stop(MYSQLD_SERVICE)
         self.charm._mysql.reset_data_dir()
         self.charm._write_mysqld_configuration()
         self.charm._configure_instance(container)

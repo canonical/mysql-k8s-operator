@@ -9,6 +9,7 @@ from charms.data_platform_libs.v0.upgrade import ClusterNotReadyError, Kubernete
 from charms.mysql.v0.mysql import MySQLSetClusterPrimaryError, MySQLSetVariableError
 from ops.model import BlockedStatus
 from ops.testing import Harness
+from tenacity import RetryError
 
 import k8s_helpers
 from charm import MySQLOperatorCharm
@@ -150,19 +151,17 @@ class TestUpgrade(unittest.TestCase):
         mock_set_rolling_update_partition.assert_called_once()
         assert mock_set_dynamic_variable.call_count == 2
 
+    @patch("charm.MySQLOperatorCharm.recover_unit_after_restart")
     @patch("mysql_k8s_helpers.MySQL.install_plugins")
     @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
     @patch("mysql_k8s_helpers.MySQL.setup_logrotate_config")
     @patch("charm.MySQLOperatorCharm._reconcile_pebble_layer")
     @patch("charm.MySQLOperatorCharm._write_mysqld_configuration")
-    @patch("upgrade.RECOVER_ATTEMPTS", 1)
     @patch("mysql_k8s_helpers.MySQL.hold_if_recovering")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.33")
     @patch("mysql_k8s_helpers.MySQL.verify_server_upgradable")
-    @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
     def test_pebble_ready(
         self,
-        mock_is_instance_in_cluster,
         mock_is_server_upgradable,
         mock_get_mysql_version,
         mock_hold_if_recovering,
@@ -171,6 +170,7 @@ class TestUpgrade(unittest.TestCase):
         mock_setup_logrotate_config,
         mock_cluster_metadata_exists,
         mock_install_plugins,
+        mock_recover_unit_after_restart,
     ):
         """Test the pebble ready."""
         self.charm.on.config_changed.emit()
@@ -191,13 +191,12 @@ class TestUpgrade(unittest.TestCase):
             self.harness.get_relation_data(self.upgrade_relation_id, "mysql-k8s/1")["state"],
             "idle",  # change to `completed` - behavior not yet set in the lib
         )
-        mock_is_instance_in_cluster.assert_called_once()
 
         self.harness.update_relation_data(
             self.upgrade_relation_id, "mysql-k8s/0", {"state": "upgrading"}
         )
         # setup for exception
-        mock_is_instance_in_cluster.return_value = False
+        mock_recover_unit_after_restart.side_effect = RetryError("dummy")
 
         with patch(
             "charm.MySQLOperatorCharm.unit_initialized",

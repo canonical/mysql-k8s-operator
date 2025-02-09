@@ -5,7 +5,6 @@ import logging
 import os
 import pathlib
 import shutil
-import subprocess
 from time import sleep
 from zipfile import ZipFile
 
@@ -39,17 +38,17 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     resources = {
         "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
     }
-    async with ops_test.fast_forward("10s"):
-        await ops_test.model.deploy(
-            charm,
-            application_name=MYSQL_APP_NAME,
-            config=config,
-            num_units=3,
-            resources=resources,
-            trust=True,
-            base="ubuntu@22.04",
-        )
+    await ops_test.model.deploy(
+        charm,
+        application_name=MYSQL_APP_NAME,
+        config=config,
+        num_units=3,
+        resources=resources,
+        trust=True,
+        base="ubuntu@22.04",
+    )
 
+    async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(
             apps=[MYSQL_APP_NAME],
             status="active",
@@ -79,16 +78,16 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
 @markers.amd64_only
 @pytest.mark.abort_on_fail
 async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
+    assert ops_test.model
     application = ops_test.model.applications[MYSQL_APP_NAME]
-    logger.info("Build charm locally")
 
-    sub_regex_failing_rejoin = (
-        's/logger.info("Recovering unit")'
-        '/self.charm._mysql.set_instance_offline_mode(True); raise RetryError("dummy")/'
-    )
-    src_patch(sub_regex=sub_regex_failing_rejoin, file_name="src/upgrade.py")
-    new_charm = await charm_local_build(ops_test, refresh=True)
-    src_patch(revert=True)
+    with InjectFailure(
+        path="src/upgrade.py",
+        original_str="self.charm.recover_unit_after_restart()",
+        replace_str="raise MySQLServiceNotRunningError",
+    ):
+        logger.info("Build charm with failure injected")
+        new_charm = await charm_local_build(ops_test, refresh=True)
 
     logger.info("Refresh the charm")
     # Current MySQL Image > 8.0.34
@@ -177,15 +176,26 @@ async def test_rollback(ops_test) -> None:
     )
 
 
-def src_patch(sub_regex: str = "", file_name: str = "", revert: bool = False) -> None:
-    """Apply a patch to the source code."""
-    if revert:
-        cmd = "git checkout src/"  # revert changes on src/ dir
-        logger.info("Reverting patch on source")
-    else:
-        cmd = f"sed -i -e '{sub_regex}' {file_name}"
-        logger.info("Applying patch to source")
-    subprocess.run([cmd], shell=True, check=True)
+class InjectFailure(object):
+    def __init__(self, path: str, original_str: str, replace_str: str):
+        self.path = path
+        self.original_str = original_str
+        self.replace_str = replace_str
+        with open(path, "r") as file:
+            self.original_content = file.read()
+
+    def __enter__(self):
+        logger.info("Injecting failure")
+        assert self.original_str in self.original_content, "replace content not found"
+        new_content = self.original_content.replace(self.original_str, self.replace_str)
+        assert self.original_str not in new_content, "original string not replaced"
+        with open(self.path, "w") as file:
+            file.write(new_content)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        logger.info("Reverting failure")
+        with open(self.path, "w") as file:
+            file.write(self.original_content)
 
 
 async def charm_local_build(ops_test: OpsTest, refresh: bool = False):

@@ -61,6 +61,7 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.pebble import Layer
+from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
 
 from config import CharmConfig, MySQLConfig
 from constants import (
@@ -79,7 +80,8 @@ from constants import (
     MYSQLD_CONFIG_FILE,
     MYSQLD_EXPORTER_PORT,
     MYSQLD_EXPORTER_SERVICE,
-    MYSQLD_SAFE_SERVICE,
+    MYSQLD_LOCATION,
+    MYSQLD_SERVICE,
     PASSWORD_LENGTH,
     PEER,
     ROOT_PASSWORD_KEY,
@@ -225,18 +227,30 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     @property
     def _pebble_layer(self) -> Layer:
         """Return a layer for the mysqld pebble service."""
+        mysqld_cmd = [
+            MYSQLD_LOCATION,
+            "--basedir=/usr",
+            "--datadir=/var/lib/mysql",
+            "--plugin-dir=/usr/lib/mysql/plugin",
+            "--log-error=/var/log/mysql/error.log",
+            f"--pid-file={self.unit_label}.pid",
+        ]
+
         layer = {
             "summary": "mysqld services layer",
             "description": "pebble config layer for mysqld safe and exporter",
             "services": {
-                MYSQLD_SAFE_SERVICE: {
+                MYSQLD_SERVICE: {
                     "override": "replace",
                     "summary": "mysqld safe",
-                    "command": MYSQLD_SAFE_SERVICE,
+                    "command": " ".join(mysqld_cmd),
                     "startup": "enabled",
                     "user": MYSQL_SYSTEM_USER,
                     "group": MYSQL_SYSTEM_GROUP,
                     "kill-delay": "24h",
+                    "environment": {
+                        "MYSQLD_PARENT_PID": 1,
+                    },
                 },
                 MYSQLD_EXPORTER_SERVICE: {
                     "override": "replace",
@@ -451,7 +465,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if new_layer.services != current_layer.services:
             logger.info("Reconciling the pebble layer")
 
-            container.add_layer(MYSQLD_SAFE_SERVICE, new_layer, combine=True)
+            container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
             container.replan()
             self._mysql.wait_until_mysql_connection()
 
@@ -463,34 +477,55 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             ):
                 container.stop(MYSQLD_EXPORTER_SERVICE)
 
-    def _restart(self, event: EventBase) -> None:
+    def recover_unit_after_restart(self) -> None:
+        """Wait for unit recovery/rejoin after restart."""
+        recovery_attempts = 30
+        logger.info("Recovering unit")
+        if self.app.planned_units() == 1:
+            self._mysql.reboot_from_complete_outage()
+        else:
+            try:
+                for attempt in Retrying(
+                    stop=stop_after_attempt(recovery_attempts), wait=wait_fixed(15)
+                ):
+                    with attempt:
+                        self._mysql.hold_if_recovering()
+                        if not self._mysql.is_instance_in_cluster(self.unit_label):
+                            logger.debug(
+                                "Instance not yet back in the cluster."
+                                f" Retry {attempt.retry_state.attempt_number}/{recovery_attempts}"
+                            )
+                            raise Exception
+            except RetryError:
+                raise
+
+    def _restart(self, _: EventBase) -> None:
         """Restart the service."""
-        if self.peers.units != self.restart_peers.units:
-            # defer restart until all units are in the relation
-            logger.debug("Deferring restart until all units are in the relation")
-            event.defer()
-            return
-        if self.peers.units and self._mysql.is_unit_primary(self.unit_label):
-            # delay primary on multi units
-            restart_states = {
-                self.restart_peers.data[unit].get("state", "unset") for unit in self.peers.units
-            }
-            if restart_states == {"unset"}:
-                logger.info("Restarting primary")
-            elif restart_states != {"release"}:
-                # Wait other units restart first to minimize primary switchover
-                message = "Primary restart deferred after other units"
-                logger.info(message)
-                self.unit.status = WaitingStatus(message)
-                event.defer()
-                return
-        self.unit.status = MaintenanceStatus("restarting MySQL")
         container = self.unit.get_container(CONTAINER_NAME)
-        if container.can_connect():
-            logger.debug("Restarting mysqld")
-            container.pebble.restart_services([MYSQLD_SAFE_SERVICE], timeout=3600)
-            sleep(10)
-            self._on_update_status(None)
+        if not container.can_connect():
+            return
+
+        if not self.unit_initialized:
+            logger.debug("Restarting standalone mysqld")
+            container.restart(MYSQLD_SERVICE)
+            return
+
+        if self.app.planned_units() > 1 and self._mysql.is_unit_primary(self.unit_label):
+            try:
+                new_primary = self.get_unit_address(self.peers.units.pop())
+                logger.debug(f"Switching primary to {new_primary}")
+                self._mysql.set_cluster_primary(new_primary)
+            except MySQLSetClusterPrimaryError:
+                logger.warning("Changing primary failed")
+
+        logger.debug("Restarting mysqld")
+        self.unit.status = MaintenanceStatus("restarting MySQL")
+        container.pebble.restart_services([MYSQLD_SERVICE], timeout=3600)
+        self.unit.status = MaintenanceStatus("recovering unit after restart")
+        sleep(10)
+        self.recover_unit_after_restart()
+
+        self._on_update_status(None)
 
     # =========================================================================
     # Charm event handlers
@@ -647,8 +682,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             # Add the pebble layer
             logger.info("Adding pebble layer")
-            container.add_layer(MYSQLD_SAFE_SERVICE, self._pebble_layer, combine=True)
-            container.restart(MYSQLD_SAFE_SERVICE)
+            container.add_layer(MYSQLD_SERVICE, self._pebble_layer, combine=True)
+            container.restart(MYSQLD_SERVICE)
 
             logger.info("Waiting for instance to be ready")
             self._mysql.wait_until_mysql_connection(check_port=False)

@@ -71,7 +71,7 @@ class TestMySQL(unittest.TestCase):
         self.mysql.initialise_mysqld()
 
         _container.exec.assert_called_once_with(
-            command=["mysqld", "--initialize-insecure", "-u", "mysql"],
+            command=["/usr/sbin/mysqld", "--initialize-insecure", "-u", "mysql"],
             user="mysql",
             group="mysql",
         )
