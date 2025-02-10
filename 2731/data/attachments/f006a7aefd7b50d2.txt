@@ -1,0 +1,9 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:31 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:414 Testing data replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:421 Stopping continuous writes and wait (5s) for replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:428 Querying max value on all units
+[32mINFO    [0m mysql.connector:authentication.py:66 package: mysql.connector.plugins
+[32mINFO    [0m mysql.connector:authentication.py:67 plugin_name: caching_sha2_password
+[32mINFO    [0m mysql.connector:authentication.py:71 AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:36 Clearing continuous writes
