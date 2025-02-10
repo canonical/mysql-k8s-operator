@@ -27,7 +27,6 @@ MYSQLD_PROCESS_NAME = "mysqld"
 TIMEOUT = 30 * 60
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_pod_eviction_and_pvc_deletion(
     ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials

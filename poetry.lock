@@ -17,25 +17,20 @@ allure-python-commons = "2.13.5"
 pytest = ">=4.5.0"
 
 [[package]]
-name = "allure-pytest-collection-report"
-version = "0.1.0"
-description = ""
+name = "allure-pytest-default-results"
+version = "0.1.2"
+description = "Generate default \"unknown\" results to show in Allure Report if test case does not run"
 optional = false
-python-versions = "^3.8"
+python-versions = ">=3.8"
 groups = ["integration"]
-files = []
-develop = false
+files = [
+    {file = "allure_pytest_default_results-0.1.2-py3-none-any.whl", hash = "sha256:8dc6c5a5d548661c38111a2890509e794204586fa81cefbe61315fb63996e50c"},
+    {file = "allure_pytest_default_results-0.1.2.tar.gz", hash = "sha256:eb6c16aa1c2ede69e653a0ee38094791685eaacb0ac6b2cae5c6da1379dbdbfd"},
+]
 
 [package.dependencies]
 allure-pytest = ">=2.13.5"
 pytest = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/canonical/data-platform-workflows"
-reference = "v29.0.0"
-resolved_reference = "90077c956fd22995aec4c1e5b86cf6248717d8c7"
-subdirectory = "python/pytest_plugins/allure_pytest_collection_report"
 
 [[package]]
 name = "allure-python-commons"
@@ -1721,44 +1716,6 @@ docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1.0)"]
 testing = ["coverage (>=6.2)", "flaky (>=3.5.0)", "hypothesis (>=5.7.1)", "mypy (>=0.931)", "pytest-trio (>=0.7.0)"]
 
 [[package]]
-name = "pytest-github-secrets"
-version = "0.1.0"
-description = ""
-optional = false
-python-versions = "^3.8"
-groups = ["integration"]
-files = []
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/canonical/data-platform-workflows"
-reference = "v29.0.0"
-resolved_reference = "90077c956fd22995aec4c1e5b86cf6248717d8c7"
-subdirectory = "python/pytest_plugins/github_secrets"
-
-[[package]]
-name = "pytest-microceph"
-version = "0.1.0"
-description = ""
-optional = false
-python-versions = "^3.8"
-groups = ["integration"]
-files = []
-develop = false
-
-[package.dependencies]
-boto3 = "*"
-pytest = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/canonical/data-platform-workflows"
-reference = "v29.0.0"
-resolved_reference = "90077c956fd22995aec4c1e5b86cf6248717d8c7"
-subdirectory = "python/pytest_plugins/microceph"
-
-[[package]]
 name = "pytest-mock"
 version = "3.14.0"
 description = "Thin-wrapper around the mock package for easier use with pytest"
@@ -1795,46 +1752,6 @@ juju = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pyyaml = "*"
-
-[[package]]
-name = "pytest-operator-cache"
-version = "0.1.0"
-description = ""
-optional = false
-python-versions = "^3.8"
-groups = ["integration"]
-files = []
-develop = false
-
-[package.dependencies]
-pyyaml = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/canonical/data-platform-workflows"
-reference = "v29.0.0"
-resolved_reference = "90077c956fd22995aec4c1e5b86cf6248717d8c7"
-subdirectory = "python/pytest_plugins/pytest_operator_cache"
-
-[[package]]
-name = "pytest-operator-groups"
-version = "0.1.0"
-description = ""
-optional = false
-python-versions = "^3.8"
-groups = ["integration"]
-files = []
-develop = false
-
-[package.dependencies]
-pytest = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/canonical/data-platform-workflows"
-reference = "v29.0.0"
-resolved_reference = "90077c956fd22995aec4c1e5b86cf6248717d8c7"
-subdirectory = "python/pytest_plugins/pytest_operator_groups"
 
 [[package]]
 name = "python-dateutil"
@@ -2520,4 +2437,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "bc9a1e749e383aee54e55e75e2bdf0b9ebe1391715b9f11945ccc66600bea350"
+content-hash = "d02251b3fd3c2540ef4cf6e4bdb69d857c202b58e1daa5fab853e3803fb8286b"

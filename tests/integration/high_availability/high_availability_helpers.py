@@ -41,8 +41,6 @@ MYSQL_DEFAULT_APP_NAME = METADATA["name"]
 APPLICATION_DEFAULT_APP_NAME = "mysql-test-app"
 TIMEOUT = 15 * 60
 
-mysql_charm, application_charm = None, None
-
 logger = logging.getLogger(__name__)
 
 
@@ -118,6 +116,7 @@ async def ensure_n_online_mysql_members(
 
 async def deploy_and_scale_mysql(
     ops_test: OpsTest,
+    charm,
     check_for_existing_application: bool = True,
     mysql_application_name: str = MYSQL_DEFAULT_APP_NAME,
     num_units: int = 3,
@@ -128,6 +127,7 @@ async def deploy_and_scale_mysql(
 
     Args:
         ops_test: The ops test framework
+        charm: `charm` fixture
         check_for_existing_application: Whether to check for existing mysql applications
             in the model
         mysql_application_name: The name of the mysql application if it is to be deployed
@@ -146,18 +146,12 @@ async def deploy_and_scale_mysql(
 
         return application_name
 
-    global mysql_charm
-    if not mysql_charm:
-        charm = await ops_test.build_charm(".")
-        # Cache the built charm to avoid rebuilding it between tests
-        mysql_charm = charm
-
     config = {"cluster-name": cluster_name, "profile": "testing"}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     async with ops_test.fast_forward("60s"):
         await ops_test.model.deploy(
-            mysql_charm,
+            charm,
             application_name=mysql_application_name,
             config=config,
             resources=resources,

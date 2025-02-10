@@ -3,8 +3,6 @@
 # See LICENSE file for licensing details.
 
 import logging
-import os
-import pathlib
 
 import pytest
 from pytest_operator.plugin import OpsTest
@@ -48,25 +46,16 @@ def chaos_mesh(ops_test: OpsTest) -> None:
     destroy_chaos_mesh(ops_test.model.info.name)
 
 
-@pytest.fixture()
-def built_charm(ops_test: OpsTest) -> pathlib.Path:
-    """Return the path of a previously built charm."""
-    if os.environ.get("CI") == "true":
-        return
-    charms_dst_dir = ops_test.tmp_path / "charms"
-    packed_charm = list(charms_dst_dir.glob("*.charm"))
-    return packed_charm[0].resolve(strict=True)
-
-
 @pytest.fixture(scope="module")
-async def highly_available_cluster(ops_test: OpsTest):
+async def highly_available_cluster(ops_test: OpsTest, charm):
     """Run the set up for high availability tests.
 
     Args:
         ops_test: The ops test framework
+        charm: `charm` fixture
     """
     logger.info("Deploying mysql-k8s and scaling to 3 units")
-    mysql_application_name = await deploy_and_scale_mysql(ops_test)
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm)
 
     logger.info("Deploying mysql-test-app")
     application_name = await deploy_and_scale_application(ops_test)
