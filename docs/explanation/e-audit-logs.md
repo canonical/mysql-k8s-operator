@@ -25,6 +25,13 @@ It's recommended to integrate the charm with [COS](/t/9900), from where the logs
     ```
     Valid value are `false` and `true`. By setting it to false, existing logs are still kept in the `archive_audit` directory.
 
+1. `logs_audit_policy` - Audit log policy:
+
+    ```bash
+    juju config mysql-k8s logs_audit_policy=queries
+    ```
+    Valid values are: "all", "logins" (default), "queries"
+
 1. `plugin-audit-strategy` - By default the audit plugin writes logs in asynchronous mode for better performance.
     To ensure logs are written to disk on more timely fashion, this configuration can be set to semi-synchronous mode:
 
