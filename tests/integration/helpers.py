@@ -8,8 +8,7 @@ import secrets
 import string
 import subprocess
 import tempfile
-from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import yaml
 from juju.model import Model
@@ -23,7 +22,7 @@ from mysql.connector.errors import (
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, retry, stop_after_attempt, wait_fixed
 
-from constants import CONTAINER_NAME, MYSQLD_SAFE_SERVICE, SERVER_CONFIG_USERNAME
+from constants import CONTAINER_NAME, MYSQLD_SERVICE, SERVER_CONFIG_USERNAME
 
 from . import juju_
 from .connector import MySQLConnector
@@ -476,7 +475,7 @@ async def stop_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
         unit_name: The name of the unit
     """
     await ops_test.juju(
-        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "stop", MYSQLD_SAFE_SERVICE
+        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "stop", MYSQLD_SERVICE
     )
 
 
@@ -488,7 +487,7 @@ async def start_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
         unit_name: The name of the unit
     """
     await ops_test.juju(
-        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "start", MYSQLD_SAFE_SERVICE
+        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "start", MYSQLD_SERVICE
     )
 
 
@@ -787,10 +786,3 @@ async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str)
     )
 
     assert return_code == 0
-
-
-async def get_charm(charm_path: Union[str, Path], architecture: str) -> Path:
-    """Fetches packed charm from CI runner without checking for architecture."""
-    charm_path = Path(charm_path)
-    packed_charms = list(charm_path.glob(f"*-{architecture}.charm"))
-    return packed_charms[0].resolve(strict=True)

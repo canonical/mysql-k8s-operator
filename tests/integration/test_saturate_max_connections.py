@@ -21,11 +21,9 @@ CONNECTIONS = 10
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest) -> None:
+async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
     """Build the charm and deploy 1 units to ensure a cluster is formed."""
-    charm = await ops_test.build_charm(".")
     config = {"profile-limit-memory": "2000", "experimental-max-connections": CONNECTIONS}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
@@ -40,7 +38,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     )
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_deploy_and_relate_test_app(ops_test: OpsTest) -> None:
     config = {"auto_start_writes": False, "sleep_interval": "500"}
@@ -65,7 +62,6 @@ async def test_deploy_and_relate_test_app(ops_test: OpsTest) -> None:
     )
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_saturate_max_connections(ops_test: OpsTest) -> None:
     app_unit = ops_test.model.applications[TEST_APP_NAME].units[0]

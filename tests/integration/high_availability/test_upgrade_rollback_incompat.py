@@ -2,10 +2,8 @@
 # See LICENSE file for licensing details.
 
 import logging
-import os
 import pathlib
 import shutil
-import subprocess
 from time import sleep
 from zipfile import ZipFile
 
@@ -25,31 +23,28 @@ MYSQL_APP_NAME = "mysql-k8s"
 METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
 
 
-@pytest.mark.group(1)
 # TODO: remove after next incompatible MySQL server version released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
 @markers.amd64_only
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest) -> None:
+async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
-    charm = await charm_local_build(ops_test)
-
     config = {"profile": "testing", "plugin-audit-enabled": "false"}
     # MySQL 8.0.34 image, last known minor version incompatible
     resources = {
         "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
     }
-    async with ops_test.fast_forward("10s"):
-        await ops_test.model.deploy(
-            charm,
-            application_name=MYSQL_APP_NAME,
-            config=config,
-            num_units=3,
-            resources=resources,
-            trust=True,
-            base="ubuntu@22.04",
-        )
+    await ops_test.model.deploy(
+        charm,
+        application_name=MYSQL_APP_NAME,
+        config=config,
+        num_units=3,
+        resources=resources,
+        trust=True,
+        base="ubuntu@22.04",
+    )
 
+    async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(
             apps=[MYSQL_APP_NAME],
             status="active",
@@ -58,7 +53,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         )
 
 
-@pytest.mark.group(1)
 # TODO: remove after next incompatible MySQL server version released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
 @markers.amd64_only
@@ -73,22 +67,21 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     await juju_.run_action(leader_unit, "pre-upgrade-check")
 
 
-@pytest.mark.group(1)
 # TODO: remove after next incompatible MySQL server version released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
 @markers.amd64_only
 @pytest.mark.abort_on_fail
-async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
+async def test_upgrade_to_failling(ops_test: OpsTest, charm) -> None:
+    assert ops_test.model
     application = ops_test.model.applications[MYSQL_APP_NAME]
-    logger.info("Build charm locally")
 
-    sub_regex_failing_rejoin = (
-        's/logger.info("Recovering unit")'
-        '/self.charm._mysql.set_instance_offline_mode(True); raise RetryError("dummy")/'
-    )
-    src_patch(sub_regex=sub_regex_failing_rejoin, file_name="src/upgrade.py")
-    new_charm = await charm_local_build(ops_test, refresh=True)
-    src_patch(revert=True)
+    with InjectFailure(
+        path="src/upgrade.py",
+        original_str="self.charm.recover_unit_after_restart()",
+        replace_str="raise MySQLServiceNotRunningError",
+    ):
+        logger.info("Build charm with failure injected")
+        new_charm = await charm_local_build(ops_test, charm, refresh=True)
 
     logger.info("Refresh the charm")
     # Current MySQL Image > 8.0.34
@@ -113,15 +106,12 @@ async def test_upgrade_to_failling(ops_test: OpsTest) -> None:
     )
 
 
-@pytest.mark.group(1)
 # TODO: remove after next incompatible MySQL server version released in our rock
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
 @markers.amd64_only
 @pytest.mark.abort_on_fail
-async def test_rollback(ops_test) -> None:
+async def test_rollback(ops_test, charm) -> None:
     application = ops_test.model.applications[MYSQL_APP_NAME]
-
-    charm = await charm_local_build(ops_test, refresh=True)
 
     logger.info("Get leader unit")
     leader_unit = await get_leader_unit(ops_test, MYSQL_APP_NAME)
@@ -177,18 +167,29 @@ async def test_rollback(ops_test) -> None:
     )
 
 
-def src_patch(sub_regex: str = "", file_name: str = "", revert: bool = False) -> None:
-    """Apply a patch to the source code."""
-    if revert:
-        cmd = "git checkout src/"  # revert changes on src/ dir
-        logger.info("Reverting patch on source")
-    else:
-        cmd = f"sed -i -e '{sub_regex}' {file_name}"
-        logger.info("Applying patch to source")
-    subprocess.run([cmd], shell=True, check=True)
+class InjectFailure(object):
+    def __init__(self, path: str, original_str: str, replace_str: str):
+        self.path = path
+        self.original_str = original_str
+        self.replace_str = replace_str
+        with open(path, "r") as file:
+            self.original_content = file.read()
+
+    def __enter__(self):
+        logger.info("Injecting failure")
+        assert self.original_str in self.original_content, "replace content not found"
+        new_content = self.original_content.replace(self.original_str, self.replace_str)
+        assert self.original_str not in new_content, "original string not replaced"
+        with open(self.path, "w") as file:
+            file.write(new_content)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        logger.info("Reverting failure")
+        with open(self.path, "w") as file:
+            file.write(self.original_content)
 
 
-async def charm_local_build(ops_test: OpsTest, refresh: bool = False):
+async def charm_local_build(ops_test: OpsTest, charm, refresh: bool = False):
     """Wrapper for a local charm build zip file updating."""
     local_charms = pathlib.Path().glob("local-*.charm")
     for lc in local_charms:
@@ -196,22 +197,18 @@ async def charm_local_build(ops_test: OpsTest, refresh: bool = False):
         # pytest_operator_cache globbing them
         lc.unlink()
 
-    charm = await ops_test.build_charm(".")
+    # update charm zip
 
-    if os.environ.get("CI") == "true":
-        # CI will get charm from common cache
-        # make local copy and update charm zip
+    update_files = ["src/constants.py", "src/upgrade.py"]
 
-        update_files = ["src/constants.py", "src/upgrade.py"]
+    charm = pathlib.Path(shutil.copy(charm, f"local-{pathlib.Path(charm).stem}.charm"))
 
-        charm = pathlib.Path(shutil.copy(charm, f"local-{charm.stem}.charm"))
+    for path in update_files:
+        with open(path, "r") as f:
+            content = f.read()
 
-        for path in update_files:
-            with open(path, "r") as f:
-                content = f.read()
-
-            with ZipFile(charm, mode="a") as charm_zip:
-                charm_zip.writestr(path, content)
+        with ZipFile(charm, mode="a") as charm_zip:
+            charm_zip.writestr(path, content)
 
     if refresh:
         # when refreshing, return posix path

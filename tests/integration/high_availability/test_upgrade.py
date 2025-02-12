@@ -3,6 +3,7 @@
 
 import json
 import logging
+import pathlib
 import shutil
 import zipfile
 from pathlib import Path
@@ -35,7 +36,6 @@ MYSQL_APP_NAME = "mysql-k8s"
 TEST_APP_NAME = "mysql-test-app"
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_deploy_latest(ops_test: OpsTest) -> None:
     """Simple test to ensure that the mysql and application charms get deployed."""
@@ -67,7 +67,6 @@ async def test_deploy_latest(ops_test: OpsTest) -> None:
     assert len(ops_test.model.applications[MYSQL_APP_NAME].units) == 3
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     """Test that the pre-upgrade-check action runs successfully."""
@@ -94,17 +93,13 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
     assert get_sts_partition(ops_test, MYSQL_APP_NAME) == 2, "Partition not set to 2"
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes, credentials) -> None:
+async def test_upgrade_from_edge(ops_test: OpsTest, charm, continuous_writes, credentials) -> None:
     logger.info("Ensure continuous_writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
     application = ops_test.model.applications[MYSQL_APP_NAME]
-
-    logger.info("Build charm locally")
-    charm = await ops_test.build_charm(".")
 
     logger.info("Refresh the charm")
     await application.refresh(path=charm, resources=resources)
@@ -142,9 +137,8 @@ async def test_upgrade_from_edge(ops_test: OpsTest, continuous_writes, credentia
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_fail_and_rollback(ops_test, continuous_writes, built_charm, credentials) -> None:
+async def test_fail_and_rollback(ops_test, charm, continuous_writes, credentials) -> None:
     logger.info("Get leader unit")
     leader_unit = await get_leader_unit(ops_test, MYSQL_APP_NAME)
     assert leader_unit is not None, "No leader unit found"
@@ -152,15 +146,8 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm, crede
     logger.info("Run pre-upgrade-check action")
     await juju_.run_action(leader_unit, "pre-upgrade-check")
 
-    if not built_charm:
-        # on CI built charm is cached and returned with build_charm
-        # by the pytest-operator-cache plugin
-        local_charm = await ops_test.build_charm(".")
-    else:
-        # return the built charm from the test
-        local_charm = built_charm
-    fault_charm = Path("/tmp/", local_charm.name)
-    shutil.copy(local_charm, fault_charm)
+    fault_charm = Path("/tmp/", pathlib.Path(charm).name)
+    shutil.copy(charm, fault_charm)
 
     logger.info("Inject dependency fault")
     await inject_dependency_fault(ops_test, MYSQL_APP_NAME, fault_charm)
@@ -190,7 +177,7 @@ async def test_fail_and_rollback(ops_test, continuous_writes, built_charm, crede
     await juju_.run_action(leader_unit, "pre-upgrade-check")
 
     logger.info("Re-refresh the charm")
-    await application.refresh(path=local_charm)
+    await application.refresh(path=charm)
 
     logger.info("Wait for upgrade to complete on first upgrading unit")
     await ops_test.model.block_until(

@@ -17,21 +17,18 @@ APP_NAME = METADATA["name"]
 TIMEOUT = 15 * 60
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_crash_during_cluster_setup(ops_test) -> None:
+async def test_crash_during_cluster_setup(ops_test, charm) -> None:
     """Test primary crash during startup.
 
     It must recover/end setup when the primary got offline.
     """
-    mysql_charm = await ops_test.build_charm(".")
-
     config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     logger.info("Deploying 1 units of mysql-k8s")
     mysql_application = await ops_test.model.deploy(
-        mysql_charm,
+        charm,
         application_name=APP_NAME,
         config=config,
         resources=resources,

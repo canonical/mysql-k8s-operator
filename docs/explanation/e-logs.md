@@ -2,7 +2,7 @@
 
 This explanation goes over the types of logging in MySQL and the configuration parameters for log rotation.
 
-The charm currently has audit, error and general logs enabled by default, while slow query logs are disabled by default. All of these files are rotated if present into a separate dedicated archive folder under the logs directory.
+The charm currently has audit and error logs enabled by default. All of these files are rotated if present into a separate dedicated archive folder under the logs directory. We do not yet support the rotation of binary logs (binlog, relay log, undo log, redo log, etc).
 
 We do not yet support the rotation of binary logs (binlog, relay log, undo log, redo log, etc).
 
@@ -10,8 +10,6 @@ We do not yet support the rotation of binary logs (binlog, relay log, undo log, 
 * [Log types](#log-types)
   * [Audit logs](#audit-logs)
   * [Error logs](#error-logs)
-  * [General logs](#general-logs)
-  * [Slowquery logs](#slowquery-logs)
 * [Log rotation configuration](#log-rotation-configuration)
 * [High Level Design](#high-level-design)
 
@@ -19,33 +17,24 @@ We do not yet support the rotation of binary logs (binlog, relay log, undo log, 
 
 ## Log types
 
-The charm stores its logs in `/var/snap/charmed-mysql/common/var/log/mysql`. 
+The charm stores its logs in `/var/log/mysql`. 
 
 ```shell
-$ ls -lahR /var/snap/charmed-mysql/common/var/log/mysql
+$ ls -lahR /var/log/mysql
 
 /var/log/mysql:
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_audit
 drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_error
-drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:46 archive_general
-drwxrwx--- 2 mysql mysql 4.0K Oct 23 20:45 archive_slowquery
 -rw-r----- 1 mysql mysql 1.1K Oct 23 20:46 audit.log
 -rw-r----- 1 mysql mysql 1.1K Oct 23 20:46 error.log
--rw-r----- 1 mysql mysql 1.7K Oct 23 20:46 general.log
 
-/var/snap/charmed-mysql/common/var/log/mysql/archive_audit:
--rw-r----- 1 snap_daemon root         43K Sep  3 01:24 audit.log-20240903_0124
--rw-r----- 1 snap_daemon root        109K Sep  3 01:25 audit.log-20240903_0125
+/var/log/mysql/archive_audit:
+-rw-r----- 1 snap_daemon root         43K Sep  3 01:24 audit.log-20240903_0124.gz
+-rw-r----- 1 snap_daemon root        109K Sep  3 01:25 audit.log-20240903_0125.gz
 
-/var/snap/charmed-mysql/common/var/log/mysql/archive_error:
--rw-r----- 1 mysql mysql 8.7K Oct 23 20:44 error.log-43_2045
--rw-r----- 1 mysql mysql 2.3K Oct 23 20:45 error.log-43_2046
-
-/var/snap/charmed-mysql/common/var/log/mysql/archive_general:
--rw-r----- 1 mysql mysql 8.0M Oct 23 20:45 general.log-43_2045
--rw-r----- 1 mysql mysql 4.6K Oct 23 20:46 general.log-43_2046
-
-/var/snap/charmed-mysql/common/var/log/mysql/archive_slowquery:
+/var/log/mysql/archive_error:
+-rw-r----- 1 mysql mysql 8.7K Oct 23 20:44 error.log-43_2045.gz
+-rw-r----- 1 mysql mysql 2.3K Oct 23 20:45 error.log-43_2046.gz
 ```
 
 It is recommended to set up a [COS integration] so that these log files can be streamed to Loki. This leads to better persistence and security of the logs.
@@ -112,51 +101,27 @@ For more details, see the [Audit Logs explanation].
 ```
 </details>
 
-### General logs
-
-<details>
-<summary>Example of general logs, with format <code>time thread_id command_type query_body</code></summary>
-```shell
-Time                 Id Command    Argument                                                          
-2023-10-23T20:50:02.023329Z        94 Quit                                                        
-2023-10-23T20:50:02.667063Z        95 Connect                                                       
-2023-10-23T20:50:02.667436Z        95 Query     /* xplugin authentication */ SELECT /*+ SET_VAR(SQL_MODE = 'TRADITIONAL') */ @@require_secure_transport, `authentication_string`, `plugin`, (`account_locked
-`='Y') as is_account_locked, (`password_expired`!='N') as `is_password_expired`, @@disconnect_on_expired_password as `disconnect_on_expired_password`, @@offline_mode and (`Super_priv`='N') as `is_offline_
-mode_and_not_super_user`, `ssl_type`, `ssl_cipher`, `x509_issuer`, `x509_subject` FROM mysql.user WHERE 'serverconfig' = `user` AND '%' = `host`                                                            
-2023-10-23T20:50:02.668277Z        95 Query     /* xplugin authentication */ SELECT /*+ SET_VAR(SQL_MODE = 'TRADITIONAL') */ @@require_secure_transport, `authentication_string`, `plugin`, (`account_locked
-`='Y') as is_account_locked, (`password_expired`!='N') as `is_password_expired`, @@disconnect_on_expired_password as `disconnect_on_expired_password`, @@offline_mode and (`Super_priv`='N') as `is_offline_
-mode_and_not_super_user`, `ssl_type`, `ssl_cipher`, `x509_issuer`, `x509_subject` FROM mysql.user WHERE 'serverconfig' = `user` AND '%' = `host`                                                            
-2023-10-23T20:50:02.668778Z        95 Query     select @@lower_case_table_names, @@version, connection_id(), variable_value from performance_schema.session_status where variable_name = 'mysqlx_ssl_cipher'
-2023-10-23T20:50:02.669991Z        95 Query     SET sql_log_bin = 0                       
-2023-10-23T20:50:02.670389Z        95 Query     FLUSH SLOW LOGS                              
-2023-10-23T20:50:02.670924Z        95 Quit  
-```
-</details>
-
-### Slowquery logs
-
-<details>
-<summary>Example of a slowquery log</summary>
-```shell
-Time                 Id Command    Argument
-# Time: 2023-10-23T22:22:47.564327Z
-# User@Host: serverconfig[serverconfig] @ localhost [127.0.0.1]  Id:    21
-# Query_time: 15.000332  Lock_time: 0.000000 Rows_sent: 0  Rows_examined: 1
-SET timestamp=1698099752;
-do sleep(15);
-```
-</details>
-
 ## Log rotation configuration
 
-For each log (audit, error, general and slow query):
+Following the configuration options exposed by the charm:
+
+| Configuration option | Description | Default value |
+| --- | --- | --- |
+| `plugin-audit-enabled` | Enable or disable the audit log | `true` |
+| `logs_audit_policy` | The audit log policy ("all", "logins", "queries") | `logins` |
+| `logs_retention_period` | The number of days to keep the rotated logs | `auto` |
+
+The `logs_retention_period` option accepts an integer value of 3 or greater, or the special value
+`auto`. When set to "auto" (default), the retention period is 3 days, except when COS-related,
+where it is 1 day
+
+For each log (audit, error):
 
 - The log file is rotated every minute (even if the log files are empty)
 - The rotated log file is formatted with a date suffix of `-%V-%H%M` (-weeknumber-hourminute)
-- The rotated log files are not compressed or mailed
+- The rotated log files are compressed but not mailed
 - The rotated log files are owned by the `snap_daemon` user and group
-- The rotated log files are retained for a maximum of 7 days before being deleted
-- The most recent 10080 rotated log files are retained before older rotated log files are deleted
+- By default the rotated log files are retained for 3 days before being deleted, but this can be configured.
 
 The following are logrotate config values used for log rotation:
 
@@ -171,15 +136,15 @@ The following are logrotate config values used for log rotation:
 | `dateformat` | -%V-%H%M |
 | `ifempty` | true |
 | `missingok` | true |
-| `nocompress` | true |
+| `compress` | true |
 | `nomail` | true |
 | `nosharedscripts` | true |
 | `nocopytruncate` | true |
-| `olddir` | archive_error / archive_general / archive_slowquery |
+| `olddir` | archive_<log_name> |
 
 ## High Level Design
 
-There is a cron job on the machine where the charm exists that is triggered every minute and runs `logrotate`. The logrotate utility does *not* use `copytruncate`. Instead, the existing log file is moved into the archive directory by logrotate, and then the logrotate's postrotate script invokes `juju-run` (or `juju-exec` depending on the juju version) to dispatch a custom event. This custom event's handler flushes the MySQL log with the [FLUSH](https://dev.mysql.com/doc/refman/8.0/en/flush.html) statement that will result in a new and empty log file being created under `/var/snap/charmed-mysql/common/var/log/mysql` and the rotated file's descriptor being closed.
+There is a cron job on the machine where the charm exists that is triggered every minute and runs `logrotate`. The logrotate utility does *not* use `copytruncate`. Instead, the existing log file is moved into the archive directory by logrotate, and then the logrotate's postrotate script invokes `juju-run` (or `juju-exec` depending on the juju version) to dispatch a custom event. This custom event's handler flushes the MySQL log with the [FLUSH](https://dev.mysql.com/doc/refman/8.0/en/flush.html) statement that will result in a new and empty log file being created under `/var/log/mysql` and the rotated file's descriptor being closed.
 
 We use a custom event in juju to execute the FLUSH statement in order to avoid storing any credentials on the disk. The charm code has a mechanism that will retrieve credentials from the peer relation databag or juju secrets backend, if available, and keep these credentials in memory for the duration of the event handler.
 

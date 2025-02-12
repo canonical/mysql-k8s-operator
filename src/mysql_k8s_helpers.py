@@ -43,7 +43,7 @@ from constants import (
     MYSQL_SYSTEM_USER,
     MYSQLD_DEFAULTS_CONFIG_FILE,
     MYSQLD_LOCATION,
-    MYSQLD_SAFE_SERVICE,
+    MYSQLD_SERVICE,
     MYSQLD_SOCK_FILE,
     MYSQLSH_LOCATION,
     ROOT_SYSTEM_USER,
@@ -562,22 +562,22 @@ class MySQL(MySQLBase):
         """Stops the mysqld process."""
         try:
             # call low-level pebble API to access timeout parameter
-            self.container.pebble.stop_services([MYSQLD_SAFE_SERVICE], timeout=5 * 60)
+            self.container.pebble.stop_services([MYSQLD_SERVICE], timeout=5 * 60)
         except ChangeError:
-            error_message = f"Failed to stop service {MYSQLD_SAFE_SERVICE}"
+            error_message = f"Failed to stop service {MYSQLD_SERVICE}"
             logger.exception(error_message)
             raise MySQLStopMySQLDError(error_message)
 
     def start_mysqld(self) -> None:
         """Starts the mysqld process."""
         try:
-            self.container.start(MYSQLD_SAFE_SERVICE)
+            self.container.start(MYSQLD_SERVICE)
             self.wait_until_mysql_connection()
         except (
             ChangeError,
             MySQLServiceNotRunningError,
         ):
-            error_message = f"Failed to start service {MYSQLD_SAFE_SERVICE}"
+            error_message = f"Failed to start service {MYSQLD_SERVICE}"
             logger.exception(error_message)
             raise MySQLStartMySQLDError(error_message)
 
@@ -793,7 +793,7 @@ class MySQL(MySQLBase):
             for line in stdout.strip().split("\n"):
                 [comm, stat] = line.split()
 
-                if comm == MYSQLD_SAFE_SERVICE:
+                if comm == MYSQLD_SERVICE:
                     return "T" in stat
 
             return True

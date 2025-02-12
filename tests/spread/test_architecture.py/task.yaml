@@ -1,0 +1,9 @@
+summary: test_architecture.py
+environment:
+  TEST_MODULE: test_architecture.py
+execute: |
+  tox run -e integration -- "tests/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
+artifacts:
+  - allure-results
+backends:
+  - -lxd-vm  # This task requires charm built on different architecture from host

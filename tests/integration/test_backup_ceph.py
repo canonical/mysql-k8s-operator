@@ -2,13 +2,18 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import dataclasses
+import json
 import logging
+import os
 import socket
+import subprocess
+import time
 from pathlib import Path
 
 import boto3
+import botocore.exceptions
 import pytest
-import pytest_microceph
 from pytest_operator.plugin import OpsTest
 
 from . import juju_
@@ -41,10 +46,66 @@ MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
 )
 
 backup_id, backups_by_cloud, value_before_backup, value_after_backup = None, None, None, None
+MICROCEPH_BUCKET = "testbucket"
+
+
+@dataclasses.dataclass(frozen=True)
+class MicrocephConnectionInformation:
+    access_key_id: str
+    secret_access_key: str
+    bucket: str
 
 
 @pytest.fixture(scope="session")
-def cloud_credentials(microceph: pytest_microceph.ConnectionInformation) -> dict[str, str]:
+def microceph():
+    if not os.environ.get("CI") == "true":
+        raise Exception("Not running on CI. Skipping microceph installation")
+    logger.info("Setting up microceph")
+    subprocess.run(["sudo", "snap", "install", "microceph"], check=True)
+    subprocess.run(["sudo", "microceph", "cluster", "bootstrap"], check=True)
+    subprocess.run(["sudo", "microceph", "disk", "add", "loop,4G,3"], check=True)
+    subprocess.run(["sudo", "microceph", "enable", "rgw"], check=True)
+    output = subprocess.run(
+        [
+            "sudo",
+            "microceph.radosgw-admin",
+            "user",
+            "create",
+            "--uid",
+            "test",
+            "--display-name",
+            "test",
+        ],
+        capture_output=True,
+        check=True,
+        encoding="utf-8",
+    ).stdout
+    key = json.loads(output)["keys"][0]
+    key_id = key["access_key"]
+    secret_key = key["secret_key"]
+    logger.info("Creating microceph bucket")
+    for attempt in range(3):
+        try:
+            boto3.client(
+                "s3",
+                endpoint_url="http://localhost",
+                aws_access_key_id=key_id,
+                aws_secret_access_key=secret_key,
+            ).create_bucket(Bucket=MICROCEPH_BUCKET)
+        except botocore.exceptions.EndpointConnectionError:
+            if attempt == 2:
+                raise
+            # microceph is not ready yet
+            logger.info("Unable to connect to microceph via S3. Retrying")
+            time.sleep(1)
+        else:
+            break
+    logger.info("Set up microceph")
+    return MicrocephConnectionInformation(key_id, secret_key, MICROCEPH_BUCKET)
+
+
+@pytest.fixture(scope="session")
+def cloud_credentials(microceph) -> dict[str, str]:
     """Read cloud credentials."""
     return {
         "access-key": microceph.access_key_id,
@@ -53,7 +114,7 @@ def cloud_credentials(microceph: pytest_microceph.ConnectionInformation) -> dict
 
 
 @pytest.fixture(scope="session")
-def cloud_configs(microceph: pytest_microceph.ConnectionInformation) -> dict[str, str]:
+def cloud_configs(microceph) -> dict[str, str]:
     return {
         "endpoint": f"http://{host_ip}",
         "bucket": microceph.bucket,
@@ -82,11 +143,10 @@ def clean_backups_from_buckets(cloud_credentials, cloud_configs):
         bucket_object.delete()
 
 
-@pytest.mark.group(1)
-async def test_build_and_deploy(ops_test: OpsTest) -> None:
+async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
-    mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm, num_units=1)
 
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     assert mysql_unit
@@ -109,12 +169,13 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     )
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_backup(ops_test: OpsTest, cloud_credentials, cloud_configs, credentials) -> None:
+async def test_backup(
+    ops_test: OpsTest, charm, cloud_credentials, cloud_configs, credentials
+) -> None:
     """Test to create a backup and list backups."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
-    mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm, num_units=1)
 
     global backup_id, backups_by_cloud, value_before_backup, value_after_backup
 
@@ -177,14 +238,13 @@ async def test_backup(ops_test: OpsTest, cloud_credentials, cloud_configs, crede
     )
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_restore_on_same_cluster(
-    ops_test: OpsTest, cloud_credentials, cloud_configs, credentials
+    ops_test: OpsTest, charm, cloud_credentials, cloud_configs, credentials
 ) -> None:
     """Test to restore a backup to the same mysql cluster."""
     # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
-    mysql_application_name = await deploy_and_scale_mysql(ops_test, num_units=1)
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm, num_units=1)
 
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     assert mysql_unit
@@ -277,14 +337,16 @@ async def test_restore_on_same_cluster(
     ), "cluster should migrate to blocked status after restore"
 
 
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_restore_on_new_cluster(ops_test: OpsTest, cloud_credentials, cloud_configs) -> None:
+async def test_restore_on_new_cluster(
+    ops_test: OpsTest, charm, cloud_credentials, cloud_configs
+) -> None:
     """Test to restore a backup on a new mysql cluster."""
     logger.info("Deploying a new mysql cluster")
 
     new_mysql_application_name = await deploy_and_scale_mysql(
         ops_test,
+        charm,
         check_for_existing_application=False,
         mysql_application_name="another-mysql-k8s",
         num_units=1,
