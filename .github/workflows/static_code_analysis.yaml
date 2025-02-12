@@ -1,0 +1,17 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+name: Static code Analysis TICS
+
+on:
+  schedule:
+    - cron: "0 2 * * 6" # Every Saturday 2:00 AM UTC
+  workflow_dispatch:
+
+jobs:
+  code_analysis:
+    name: Tiobe Code Analysis
+    uses: canonical/data-platform-workflows/.github/workflows/static_code_analysis.yaml@v29.3.0
+    with:
+      project: mysql-k8s-operator
+    secrets:
+      tics-token: ${{ secrets.TICSAUTHTOKEN }}
