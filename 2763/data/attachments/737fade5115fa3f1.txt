@@ -1,0 +1,87 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:67 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.2    unsupported  01:37:46Z
+
+App               Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+db1               8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s                        0  10.152.183.70   no       
+mysql-router-k8s  8.0.41-0ubuntu0.22.04.1  active      1  mysql-router-k8s  8.0/edge     593  10.152.183.103  no       
+mysql-test-app    0.0.2                    active      1  mysql-test-app    latest/edge   65  10.152.183.78   no       
+
+Unit                 Workload  Agent      Address     Ports  Message
+db1/0                active    executing  10.1.77.12         
+db1/1                active    executing  10.1.77.14         
+db1/2*               active    executing  10.1.77.13         Primary
+mysql-router-k8s/0*  active    idle       10.1.77.21         
+mysql-test-app/0*    active    idle       10.1.77.22         
+
+Offer  Application  Charm      Rev  Connected  Endpoint           Interface    Role
+db1    db1          mysql-k8s  0    1/1        replication-offer  mysql_async  provider
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-test-app-0: 01:36:35 ERROR unit.mysql-test-app/0.juju-log Unable to query the database
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 611, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Table 'continuous_writes_database.data' doesn't exist
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/charm.py", line 229, in _stop_continuous_writes
+    last_written_value = self._max_written_value()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/charm.py", line 241, in _max_written_value
+    cursor.execute(
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 330, in execute
+    result = self._cnx.cmd_query(
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 619, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1146 (42S02): Table 'continuous_writes_database.data' doesn't exist
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/charm.py", line 227, in _stop_continuous_writes
+    for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(5)):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 443, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 376, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 419, in exc_check
+    raise retry_exc from fut.exception()
+tenacity.RetryError: RetryError[<Future at 0x7fa83171e9b0 state=finished raised ProgrammingError>]
+unit-mysql-test-app-0: 01:37:39 ERROR unit.mysql-test-app/0.juju-log Unable to query the database
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 611, in cmd_query
+    self._cmysql.query(
+_mysql_connector.MySQLInterfaceError: Table 'continuous_writes_database.data' doesn't exist
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/charm.py", line 229, in _stop_continuous_writes
+    last_written_value = self._max_written_value()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/charm.py", line 241, in _max_written_value
+    cursor.execute(
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/mysql/connector/cursor_cext.py", line 330, in execute
+    result = self._cnx.cmd_query(
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/mysql/connector/connection_cext.py", line 619, in cmd_query
+    raise get_mysql_exception(
+mysql.connector.errors.ProgrammingError: 1146 (42S02): Table 'continuous_writes_database.data' doesn't exist
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/charm.py", line 227, in _stop_continuous_writes
+    for attempt in Retrying(stop=stop_after_delay(60), wait=wait_fixed(5)):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 443, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 376, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 419, in exc_check
+    raise retry_exc from fut.exception()
+tenacity.RetryError: RetryError[<Future at 0x7f00bab1ea10 state=finished raised ProgrammingError>]
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

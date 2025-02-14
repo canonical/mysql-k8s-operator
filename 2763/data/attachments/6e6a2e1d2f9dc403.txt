@@ -1,0 +1,52 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:29 Deploying 1 units of mysql-k8s
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:40 Waiting for single unit to be ready
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:46 Scale to 3 units
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:49 Waiting until application enters waiting status
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:54 Deleting pod
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:58 Waiting until cluster is fully active
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: 
+  mysql-k8s/2 [executing] maintenance: Initialising mysqld
+  mysql-k8s/1 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: offline
+  mysql-k8s/2 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/2 [executing] active: 
+  mysql-k8s/1 [executing] maintenance: joining the cluster
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.2    unsupported  01:31:26Z
+
+App        Version                  Status  Scale  Charm      Channel  Rev  Address        Exposed  Message
+mysql-k8s  8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s             0  10.152.183.78  no       
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0*  active    idle   10.1.228.14         Primary
+mysql-k8s/1   active    idle   10.1.228.13         
+mysql-k8s/2   active    idle   10.1.228.12         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:30:10 ERROR unit.mysql-k8s/0.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+unit-mysql-k8s-1: 01:30:19 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\nshell.connect_to_primary()\nprimary_address = shell.parse_uri(session.uri)['host']\nprint(f'<PRIMARY_ADDRESS>{primary_address}</PRIMARY_ADDRESS>')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Shell.connect_to_primary: No primaries found in an InnoDB cluster\n\n'
+unit-mysql-k8s-1: 01:30:23 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\nshell.connect_to_primary()\nprimary_address = shell.parse_uri(session.uri)['host']\nprint(f'<PRIMARY_ADDRESS>{primary_address}</PRIMARY_ADDRESS>')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Shell.connect_to_primary: No primaries found in an InnoDB cluster\n\n'
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
