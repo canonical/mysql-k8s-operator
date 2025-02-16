@@ -1,0 +1,28 @@
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: 
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-test-app/0 [executing] active: 
+  mysql-test-app/1 [executing] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.2    unsupported  01:32:19Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.41-0ubuntu0.22.04.1  active       3  mysql-k8s                      0  10.152.183.198  no       
+mysql-test-app  0.0.2                    waiting      2  mysql-test-app  latest/edge   69  10.152.183.110  no       
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0        active    idle   10.1.160.13         
+mysql-k8s/1*       active    idle   10.1.160.15         Primary
+mysql-k8s/2        active    idle   10.1.160.14         
+mysql-test-app/0*  waiting   idle   10.1.160.8          
+mysql-test-app/1   waiting   idle   10.1.160.9          
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-test-app-0: 01:31:59 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "db4a9e9f-c330-48a5-87c9-96f4ba602330:r#4#mysql-k8s": settings db4a9e9f-c330-48a5-87c9-96f4ba602330:r#4#mysql-k8s not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
