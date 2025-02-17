@@ -1,0 +1,25 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:211 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.2    unsupported  01:34:08Z
+
+App                       Version                  Status  Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s                                  0  10.152.183.232  no       
+self-signed-certificates                           active      1  self-signed-certificates  latest/stable  155  10.152.183.202  no       
+
+Unit                         Workload  Agent  Address       Ports  Message
+mysql-k8s/0                  active    idle   10.1.233.139         
+mysql-k8s/1*                 active    idle   10.1.233.141         
+mysql-k8s/2                  active    idle   10.1.233.140         
+self-signed-certificates/0*  active    idle   10.1.233.142         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:33:04 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:33:09 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:33:10 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:33:10 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:33:14 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
