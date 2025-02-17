@@ -1,10 +1,4 @@
 self-hosted-runner:
   labels:
-    - large
-    - xlarge
-    - two-xlarge
-    - jammy
     - self-hosted
-    - linux
-    - amd64
     - tiobe
