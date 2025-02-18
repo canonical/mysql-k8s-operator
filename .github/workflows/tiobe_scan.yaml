@@ -37,7 +37,7 @@ jobs:
       - name: Run tox tests to create coverage.xml
         run: tox run -e unit
 
-      - name: move results to necessary folder for TICS
+      - name: Move results to necessary folder for TICS
         run: |
           mkdir -p .cover
           mv coverage.xml .cover/cobertura.xml
