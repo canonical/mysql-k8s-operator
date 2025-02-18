@@ -102,6 +102,8 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | e-architecture | [Architecture](/t/11757) |
 | 2 | e-interfaces-endpoints | [Interfaces/endpoints](/t/10249) |
 | 2 | e-users | [Users](/t/10791) |
+| 2 | e-security | [Security](/t/16782) |
+| 2 | e-cryptography | [Cryptography](/t/16783) |
 | 2 | e-logs | [Logs](/t/12080) |
 | 3 | e-audit-logs | [Audit Logs](/t/15423) |
 | 2 | e-juju | [Juju](/t/11984) |
