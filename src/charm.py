@@ -49,7 +49,7 @@ from charms.mysql.v0.tls import MySQLTLS
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
-from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer
+from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer, charm_tracing_config
 from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, UpdateStatusEvent
 from ops.model import (
@@ -89,6 +89,7 @@ from constants import (
     SERVER_CONFIG_USERNAME,
     TRACING_PROTOCOL,
     TRACING_RELATION_NAME,
+    CHARM_CA_CERT_PATH,
 )
 from k8s_helpers import KubernetesHelpers
 from log_rotate_manager import LogRotateManager
@@ -104,7 +105,8 @@ logger = logging.getLogger(__name__)
 
 
 @trace_charm(
-    tracing_endpoint="tracing_endpoint",
+    tracing_endpoint="charm_tracing_endpoint",
+    server_cert="charm_tracing_server_cert",
     extra_types=(
         GrafanaDashboardProvider,
         KubernetesHelpers,
@@ -197,11 +199,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self, protocols=[TRACING_PROTOCOL], relation_name=TRACING_RELATION_NAME
         )
 
-    @property
-    def tracing_endpoint(self) -> Optional[str]:
-        """Otlp http endpoint for charm instrumentation."""
-        if self.tracing.is_ready():
-            return self.tracing.get_endpoint(TRACING_PROTOCOL)
+        self.charm_tracing_endpoint, self.charm_tracing_server_cert = charm_tracing_config(
+            self.tracing,
+            #  Fixme: this None here means that if Tempo is related to a tls certificate provider,
+            #   and mysql is getting an https endpoint from tempo, you will get a big fat warning
+            #   and tracing will be disabled as tempo will reject non-https connections.
+            #   https://github.com/canonical/mysql-k8s-operator/issues/586
+            None)
 
     @property
     def _mysql(self) -> MySQL:
