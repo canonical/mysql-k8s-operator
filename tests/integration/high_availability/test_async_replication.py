@@ -153,35 +153,6 @@ async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model:
 
 @markers.juju3
 @pytest.mark.abort_on_fail
-async def test_create_replication(first_model: Model, second_model: Model) -> None:
-    """Run the create replication and wait for the applications to settle."""
-    logger.info("Running create replication action")
-    leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
-    assert leader_unit is not None, "No leader unit found"
-
-    await juju_.run_action(
-        leader_unit,
-        "create-replication",
-        **{"--wait": "5m"},
-    )
-
-    logger.info("Waiting for the applications to settle")
-    await gather(
-        first_model.wait_for_idle(
-            apps=[MYSQL_APP1],
-            status="active",
-            timeout=5 * MINUTE,
-        ),
-        second_model.wait_for_idle(
-            apps=[MYSQL_APP2],
-            status="active",
-            timeout=5 * MINUTE,
-        ),
-    )
-
-
-@markers.juju3
-@pytest.mark.abort_on_fail
 async def test_deploy_router_and_app(first_model: Model) -> None:
     """Deploy the router and the test application."""
     logger.info("Deploying router and application")
@@ -213,6 +184,35 @@ async def test_deploy_router_and_app(first_model: Model) -> None:
         apps=[MYSQL_ROUTER_APP_NAME, APPLICATION_APP_NAME],
         timeout=10 * MINUTE,
         raise_on_error=False,
+    )
+
+
+@markers.juju3
+@pytest.mark.abort_on_fail
+async def test_create_replication(first_model: Model, second_model: Model) -> None:
+    """Run the create replication and wait for the applications to settle."""
+    logger.info("Running create replication action")
+    leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
+    assert leader_unit is not None, "No leader unit found"
+
+    await juju_.run_action(
+        leader_unit,
+        "create-replication",
+        **{"--wait": "5m"},
+    )
+
+    logger.info("Waiting for the applications to settle")
+    await gather(
+        first_model.wait_for_idle(
+            apps=[MYSQL_APP1],
+            status="active",
+            timeout=5 * MINUTE,
+        ),
+        second_model.wait_for_idle(
+            apps=[MYSQL_APP2],
+            status="active",
+            timeout=5 * MINUTE,
+        ),
     )
 
 
