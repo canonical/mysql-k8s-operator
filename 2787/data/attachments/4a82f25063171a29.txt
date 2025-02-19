@@ -1,0 +1,39 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/mysql-k8s-234
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/mysql-test-app-73
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+  mysql-k8s/2 [allocating] waiting: installing agent
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: installing charm software
+  mysql-k8s/1 [executing] maintenance: installing charm software
+  mysql-k8s/2 [executing] maintenance: installing charm software
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] unknown: 
+  mysql-k8s/1 [idle] unknown: 
+  mysql-k8s/2 [idle] unknown: 
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] maintenance: Initialising mysqld
+  mysql-k8s/1 [idle] maintenance: Initialising mysqld
+  mysql-k8s/2 [idle] maintenance: Initialising mysqld
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] maintenance: joining the cluster
+  mysql-k8s/1 [idle] waiting: waiting to join the cluster
+  mysql-k8s/2 [idle] active: Primary
+  mysql-test-app/0 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] maintenance: joining the cluster
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:60 Wait for applications to become active
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+  mysql-test-app/0 [idle] active:
