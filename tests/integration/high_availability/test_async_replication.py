@@ -317,14 +317,6 @@ async def test_remove_relation_and_relate(
     first_model: Model, second_model: Model, continuous_writes
 ) -> None:
     """Test removing and re-relating the two mysql clusters."""
-    logger.info("Stopping continuous writes after 5s")
-    # part 1/2 of workaround for https://github.com/canonical/mysql-k8s-operator/issues/399
-    # sleep is need to ensure there is enough time for the `continuous_writes` database be
-    # created/populated (by the fixture) before stopping the continuous writes
-    sleep(5)
-    application_unit = first_model.applications[APPLICATION_APP_NAME].units[0]
-    await juju_.run_action(application_unit, "stop-continuous-writes")
-
     logger.info("Remove async relation")
     await second_model.applications[MYSQL_APP2].remove_relation(
         f"{MYSQL_APP2}:replication", MYSQL_APP1
@@ -386,9 +378,6 @@ async def test_remove_relation_and_relate(
             timeout=10 * MINUTE,
         ),
     )
-
-    # part 2/2 of workaround for https://github.com/canonical/mysql-k8s-operator/issues/399
-    await juju_.run_action(application_unit, "start-continuous-writes")
 
     results = await get_max_written_value(first_model, second_model)
     assert len(results) == 6, f"Expected 6 results, got {len(results)}"
