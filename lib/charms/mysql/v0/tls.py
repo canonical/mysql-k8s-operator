@@ -91,7 +91,7 @@ class MySQLTLS(Object):
 
     def _on_tls_relation_joined(self, event) -> None:
         """Request certificate when TLS relation joined."""
-        if not self.charm.unit_initialized:
+        if not self.charm.unit_initialized():
             event.defer()
             return
         self._request_certificate(None)
