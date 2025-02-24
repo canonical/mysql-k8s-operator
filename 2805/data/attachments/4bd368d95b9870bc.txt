@@ -1,0 +1,1035 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.2    unsupported  01:52:40Z
+
+App        Version  Status   Scale  Charm      Channel  Rev  Address        Exposed  Message
+mysql-k8s           waiting      3  mysql-k8s             0  10.152.183.50  no       installing agent
+
+Unit          Workload     Agent  Address      Ports  Message
+mysql-k8s/0*  active       idle   10.1.76.148         Primary
+mysql-k8s/1   waiting      idle   10.1.76.150         waiting to join the cluster
+mysql-k8s/2   maintenance  idle   10.1.76.149         joining the cluster
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-3: 01:33:26 ERROR unit.mysql-k8s/3.juju-log upgrade:2: Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/src/mysql_k8s_helpers.py", line 719, in _run_mysqlcli_script
+    process = self.container.exec(command, timeout=timeout, stdin=password)
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-mysql-k8s-3/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (exec 82: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2025-02-24T01:33:26Z ERROR exec 82: timeout waiting for websocket connections: context deadline exceeded
+-----
+unit-mysql-k8s-3: 01:33:26 ERROR unit.mysql-k8s/3.juju-log upgrade:2: Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:38:59 ERROR unit.mysql-k8s/2.juju-log database-peers:1: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-2', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-2', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-2: 01:38:59 ERROR unit.mysql-k8s/2.juju-log database-peers:1: Failed to add instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:39:06 ERROR unit.mysql-k8s/1.juju-log database-peers:1: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:39:06 ERROR unit.mysql-k8s/1.juju-log database-peers:1: Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:39:14 ERROR unit.mysql-k8s/2.juju-log database-peers:1: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-2', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-2', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-2: 01:39:14 ERROR unit.mysql-k8s/2.juju-log database-peers:1: Failed to add instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:39:22 ERROR unit.mysql-k8s/1.juju-log upgrade:2: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:39:22 ERROR unit.mysql-k8s/1.juju-log upgrade:2: Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:39:24 ERROR unit.mysql-k8s/2.juju-log upgrade:2: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-2', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-2', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-2: 01:39:24 ERROR unit.mysql-k8s/2.juju-log upgrade:2: Failed to add instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:39:29 ERROR unit.mysql-k8s/1.juju-log upgrade:2: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:39:29 ERROR unit.mysql-k8s/1.juju-log upgrade:2: Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:39:44 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-2', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-2', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-2: 01:39:44 ERROR unit.mysql-k8s/2.juju-log Failed to add instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:39:44 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:39:44 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:39:44 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:39:46 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:39:46 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:39:46 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:40:57 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:40:57 ERROR unit.mysql-k8s/1.juju-log Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:40:57 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:40:57 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:40:57 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:40:58 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:40:58 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:40:58 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:42:00 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:42:00 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:42:00 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:42:00 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:42:00 ERROR unit.mysql-k8s/1.juju-log Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:42:01 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:42:01 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:42:01 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:42:56 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:42:56 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:42:56 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:42:56 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:42:56 ERROR unit.mysql-k8s/1.juju-log Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:42:57 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:42:57 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:42:57 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:43:47 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:43:47 ERROR unit.mysql-k8s/1.juju-log Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:43:47 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:43:47 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:43:47 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:43:48 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:43:48 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:43:48 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:44:51 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:44:51 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:44:51 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:44:51 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-2', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-2', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-2: 01:44:51 ERROR unit.mysql-k8s/2.juju-log Failed to add instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:44:52 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:44:52 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:44:52 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:45:40 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:45:40 ERROR unit.mysql-k8s/1.juju-log Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:45:40 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:45:40 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:45:40 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:45:42 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:45:42 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:45:42 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:46:37 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:46:37 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:46:37 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:46:37 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-2', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-2', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-2: 01:46:37 ERROR unit.mysql-k8s/2.juju-log Failed to add instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:46:38 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:46:38 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:46:38 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:47:44 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:47:44 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:47:44 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:47:45 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:47:45 ERROR unit.mysql-k8s/1.juju-log Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:47:46 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:47:46 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:47:46 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:48:38 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:48:38 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:48:38 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:48:39 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:48:39 ERROR unit.mysql-k8s/1.juju-log Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:48:40 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:48:40 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:48:40 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:49:38 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-1', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-1', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-1: 01:49:38 ERROR unit.mysql-k8s/1.juju-log Failed to add instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-2: 01:49:39 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:49:39 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:49:39 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-1: 01:49:40 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:49:40 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:49:40 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:50:48 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-2', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-2', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-2: 01:50:48 ERROR unit.mysql-k8s/2.juju-log Failed to add instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:50:49 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:50:49 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:50:49 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:50:50 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:50:50 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:50:50 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:51:58 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '7Xl3Hfhg4d4vzmuJBrwJfFXQ', 'label': 'mysql-k8s-2', 'recoveryMethod': 'auto'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 1821, in add_instance_to_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 683, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nshell.options['dba.restartWaitTimeout'] = 3600\ncluster.add_instance('clusteradmin@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local', {'password': '*****', 'label': 'mysql-k8s-2', 'recoveryMethod': 'clone'})"], stdout="\x1b[1mPlease provide the password for 'serverconfig@10-1-76-148.mysql-k8s.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mThe password option is deprecated and will be removed in a future release.\n\n\x1b[31mERROR: \x1b[0mRuntimeError: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\nTraceback (most recent call last):\n  File "<string>", line 5, in <module>\nRuntimeError: Cluster.add_instance: The instance \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:3306\' is already part of another InnoDB Cluster\n\n'
+unit-mysql-k8s-2: 01:51:58 ERROR unit.mysql-k8s/2.juju-log Failed to add instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local' to self.cluster_name='test_cluster' on self.instance_address='mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local'
+unit-mysql-k8s-1: 01:51:58 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-1: 01:51:58 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-1: 01:51:58 ERROR unit.mysql-k8s/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-mysql-k8s-2: 01:51:59 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 675, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nmysqlsh.Error: Shell Error (51314): Dba.get_cluster: This function is not available through a session to an InnoDB Cluster that belongs to an InnoDB ClusterSet but is not ONLINE\n'
+unit-mysql-k8s-2: 01:51:59 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:51:59 ERROR unit.mysql-k8s/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 856, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/mysql/v0/mysql.py", line 2097, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
