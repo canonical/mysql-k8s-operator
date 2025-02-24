@@ -688,9 +688,12 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.info("Waiting for instance to be ready")
             self._mysql.wait_until_mysql_connection(check_port=False)
 
+            logger.info("Resetting root password and starting mysqld")
+            self._mysql.reset_root_password_and_start_mysqld()
+
             logger.info("Configuring initialized mysqld")
             # Configure all base users and revoke privileges from the root users
-            self._mysql.configure_mysql_users(password_needed=False)
+            self._mysql.configure_mysql_users()
 
             if self.config.plugin_audit_enabled:
                 # Enable the audit plugin
