@@ -889,7 +889,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             if self._mysql.is_cluster_auto_rejoin_ongoing():
                 logger.info("Cluster auto-rejoin attempts are still ongoing.")
-            elif all_states != {"offline"}:
+            else:
                 logger.info("Cluster auto-rejoin attempts are exhausted. Attempting manual rejoin")
                 self._execute_manual_rejoin()
 
