@@ -234,8 +234,8 @@ class MySQL(MySQLBase):
             raise MySQLServiceNotRunningError
 
         try:
-            if check_port and not self.check_mysqlsh_connection():
-                raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
+            if check_port and not self.check_mysqlcli_connection():
+                raise MySQLServiceNotRunningError("Connection with mysqlcli not possible")
         except MySQLClientError:
             raise MySQLServiceNotRunningError
 
@@ -689,6 +689,7 @@ class MySQL(MySQLBase):
         password: Optional[str] = None,
         timeout: Optional[int] = None,
         exception_as_warning: bool = False,
+        **_,
     ) -> list:
         """Execute a MySQL CLI script.
 

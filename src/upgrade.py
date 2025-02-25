@@ -200,7 +200,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         """
         if not self.charm.unit.get_container(CONTAINER_NAME).can_connect():
             return
-        if not self.upgrade_stack and self.idle and self.charm.unit_initialized:
+        if not self.upgrade_stack and self.idle and self.charm.unit_initialized():
             self.charm._on_update_status(None)
 
     def _on_pebble_ready(self, event) -> None:
