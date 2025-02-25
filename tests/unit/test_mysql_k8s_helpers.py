@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, call, patch
 
 import tenacity
 from charms.mysql.v0.mysql import MySQLClientError
-from ops.pebble import ExecError
+from ops.pebble import ExecError, PathError
 
 from mysql_k8s_helpers import (
     MYSQLD_SOCK_FILE,
@@ -17,6 +17,7 @@ from mysql_k8s_helpers import (
     MySQLDeleteUsersWithLabelError,
     MySQLEscalateUserPrivilegesError,
     MySQLInitialiseMySQLDError,
+    MySQLServiceNotRunningError,
     MySQLWaitUntilUnitRemovedFromClusterError,
 )
 
@@ -431,7 +432,7 @@ class TestMySQL(unittest.TestCase):
         self.mysql.container.push.assert_has_calls([
             call(
                 "/alter-root-user.sql",
-                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH_PRIVILEGES;",
+                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH PRIVILEGES;",
                 encoding="utf-8",
                 permissions=384,
                 user="mysql",
@@ -460,15 +461,18 @@ class TestMySQL(unittest.TestCase):
     ):
         """Test exceptions in reset_root_password_and_start_mysqld()."""
         self.mysql.container = _container
-        _container.push.side_effect = [None, Exception("Should be a pebble exception")]
+        _container.push.side_effect = [
+            None,
+            PathError("not-found", "Should be a pebble exception"),
+        ]
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(PathError):
             self.mysql.reset_root_password_and_start_mysqld()
 
         self.mysql.container.push.assert_has_calls([
             call(
                 "/alter-root-user.sql",
-                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH_PRIVILEGES;",
+                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH PRIVILEGES;",
                 encoding="utf-8",
                 permissions=384,
                 user="mysql",
@@ -483,16 +487,16 @@ class TestMySQL(unittest.TestCase):
         _container.remove_path.reset_mock()
 
         _wait_until_mysql_connection.side_effect = [
-            Exception("Should be an error waiting for mysql connection")
+            MySQLServiceNotRunningError("mysqld not running")
         ]
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(MySQLServiceNotRunningError):
             self.mysql.reset_root_password_and_start_mysqld()
 
         self.mysql.container.push.assert_has_calls([
             call(
                 "/alter-root-user.sql",
-                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH_PRIVILEGES;",
+                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH PRIVILEGES;",
                 encoding="utf-8",
                 permissions=384,
                 user="mysql",

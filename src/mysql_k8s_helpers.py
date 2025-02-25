@@ -234,7 +234,7 @@ class MySQL(MySQLBase):
         logger.debug("Resetting root user password and starting mysqld")
         alter_user_queries = [
             f"ALTER USER 'root'@'localhost' IDENTIFIED BY '{self.root_password}';",
-            "FLUSH_PRIVILEGES;",
+            "FLUSH PRIVILEGES;",
         ]
 
         self.container.push(
@@ -255,7 +255,7 @@ class MySQL(MySQLBase):
                 user=MYSQL_SYSTEM_USER,
                 group=MYSQL_SYSTEM_GROUP,
             )
-        except Exception:
+        except PathError:
             self.container.remove_path("/alter-root-user.sql")
 
             logger.exception("Failed to write the custom config file for init-file")
@@ -264,15 +264,12 @@ class MySQL(MySQLBase):
         try:
             self.container.restart(MYSQLD_SERVICE)
             self.wait_until_mysql_connection(check_port=False)
-        except Exception:
-            self.container.remove_path("/alter-root-user.sql")
-            self.container.remove_path(MYSQLD_INIT_CONFIG_FILE)
-
+        except (TypeError, MySQLServiceNotRunningError):
             logger.exception("Failed to run init-file and wait for connection")
             raise
-
-        self.container.remove_path("/alter-root-user.sql")
-        self.container.remove_path(MYSQLD_INIT_CONFIG_FILE)
+        finally:
+            self.container.remove_path("/alter-root-user.sql")
+            self.container.remove_path(MYSQLD_INIT_CONFIG_FILE)
 
     @retry(reraise=True, stop=stop_after_delay(120), wait=wait_fixed(2))
     def wait_until_mysql_connection(self, check_port: bool = True) -> None:
