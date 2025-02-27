@@ -62,7 +62,7 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.pebble import ChangeError, Layer
-from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
+from tenacity import RetryError, Retrying, stop_after_attempt
 
 from config import CharmConfig, MySQLConfig
 from constants import (
