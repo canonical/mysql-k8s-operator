@@ -376,7 +376,7 @@ async def get_model_logs(ops_test: OpsTest, log_level: str, log_lines: int = 100
         "debug-log",
         f"--model={ops_test.model.info.name}",
         f"--level={log_level}",
-        f"--lines={log_lines}",
+        f"--limit={log_lines}",
         "--no-tail",
     )
 
