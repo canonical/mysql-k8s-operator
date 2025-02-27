@@ -1038,7 +1038,7 @@ class MySQLBase(ABC):
             config.write(string_io)
             return string_io.getvalue(), dict(config["mysqld"])
 
-    def configure_mysql_users(self, password_needed: bool = True) -> None:
+    def configure_mysql_users(self) -> None:
         """Configure the MySQL users for the instance."""
         # SYSTEM_USER and SUPER privileges to revoke from the root users
         # Reference: https://dev.mysql.com/doc/refman/8.0/en/privileges-provided.html#priv_super
@@ -1076,13 +1076,10 @@ class MySQLBase(ABC):
 
         try:
             logger.debug(f"Configuring MySQL users for {self.instance_address}")
-            if password_needed:
-                self._run_mysqlcli_script(
-                    configure_users_commands,
-                    password=self.root_password,
-                )
-            else:
-                self._run_mysqlcli_script(configure_users_commands)
+            self._run_mysqlcli_script(
+                configure_users_commands,
+                password=self.root_password,
+            )
         except MySQLClientError:
             logger.error(f"Failed to configure users for: {self.instance_address}")
             raise MySQLConfigureMySQLUsersError

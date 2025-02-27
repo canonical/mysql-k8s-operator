@@ -33,6 +33,7 @@ MYSQL_DATA_DIR = "/var/lib/mysql"
 MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLSH_SCRIPT_FILE = "/tmp/script.py"
 MYSQLD_CONFIG_FILE = "/etc/mysql/mysql.conf.d/z-custom.cnf"
+MYSQLD_INIT_CONFIG_FILE = "/etc/mysql/mysql.conf.d/z-custom-init-file.cnf"
 MYSQL_LOG_DIR = "/var/log/mysql"
 MYSQL_LOG_FILES = [
     f"{MYSQL_LOG_DIR}/error.log",

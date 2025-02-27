@@ -1,6 +1,6 @@
-summary: test_self_healing_3.py
+summary: test_self_healing_network_cut.py
 environment:
-  TEST_MODULE: high_availability/test_self_healing_3.py
+  TEST_MODULE: high_availability/test_self_healing_network_cut.py
 execute: |
   tox run -e integration -- "tests/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
 artifacts:

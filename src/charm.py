@@ -51,7 +51,7 @@ from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer
-from ops import EventBase, RelationBrokenEvent, RelationCreatedEvent
+from ops import EventBase, ModelError, RelationBrokenEvent, RelationCreatedEvent
 from ops.charm import RelationChangedEvent, RelationDepartedEvent, UpdateStatusEvent
 from ops.model import (
     ActiveStatus,
@@ -61,7 +61,7 @@ from ops.model import (
     Unit,
     WaitingStatus,
 )
-from ops.pebble import Layer
+from ops.pebble import ChangeError, Layer
 from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
 
 from config import CharmConfig, MySQLConfig
@@ -720,9 +720,12 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.info("Waiting for instance to be ready")
             self._mysql.wait_until_mysql_connection(check_port=False)
 
+            logger.info("Resetting root password and starting mysqld")
+            self._mysql.reset_root_password_and_start_mysqld()
+
             logger.info("Configuring initialized mysqld")
             # Configure all base users and revoke privileges from the root users
-            self._mysql.configure_mysql_users(password_needed=False)
+            self._mysql.configure_mysql_users()
 
             if self.config.plugin_audit_enabled:
                 # Enable the audit plugin
@@ -736,6 +739,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             MySQLServiceNotRunningError,
             MySQLConfigureMySQLUsersError,
             MySQLConfigureInstanceError,
+            ChangeError,
+            TimeoutError,
+            ModelError,
         ):
             # On any error, reset the data directory so hook is retried
             # on empty data directory
