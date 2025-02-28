@@ -1,0 +1,10 @@
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 3 units, current : 0)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] waiting: Waiting for instance to join the cluster
+  mysql-k8s/1 [executing] waiting: Waiting for instance to join the cluster
+  mysql-k8s/2 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: joining the cluster
+  mysql-k8s/1 [executing] waiting: waiting to join the cluster
+  mysql-k8s/2 [executing] active: Primary
