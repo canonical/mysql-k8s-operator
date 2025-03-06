@@ -1,0 +1,156 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.3    unsupported  01:43:50Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.210  no       Last written value=354
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.211  no       Last written value=248
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.112  no       Last written value=241
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.81   no       Last written value=97
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.207  no       Last written value=315
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.79   no       Last written value=266
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.136  no       Last written value=126
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.97   no       
+router0  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     600  10.152.183.152  no       Waiting for K8s service connectivity
+router1  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     600  10.152.183.108  no       
+router2  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     600  10.152.183.91   no       
+router3  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     600  10.152.183.68   no       
+router4  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     600  10.152.183.125  no       
+router5  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     600  10.152.183.248  no       Waiting for K8s service connectivity
+router6  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     600  10.152.183.164  no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.152.10         Last written value=354
+app1/0*     active    idle   10.1.152.11         Last written value=248
+app2/0*     active    idle   10.1.152.13         Last written value=241
+app3/0*     active    idle   10.1.152.15         Last written value=97
+app4/0*     active    idle   10.1.152.17         Last written value=315
+app5/0*     active    idle   10.1.152.18         Last written value=266
+app6/0*     active    idle   10.1.152.21         Last written value=126
+mysql/0*    active    idle   10.1.152.9          Primary
+router0/0*  active    idle   10.1.152.12         
+router1/0*  active    idle   10.1.152.14         
+router2/0*  active    idle   10.1.152.16         
+router3/0*  active    idle   10.1.152.19         
+router4/0*  active    idle   10.1.152.20         
+router5/0*  active    idle   10.1.152.22         
+router6/0*  active    idle   10.1.152.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router4-1: 01:34:59 ERROR unit.router4/1.juju-log backend-database:39: Failed to run MySQL Shell script:
+import json
+import mysqlsh
+import traceback
+
+try:
+    # Disable wizards in this script, since it will be invoked without --no-wizard
+    shell.options.set('useWizards', False)
+    import json
+
+    cluster_set = dba.get_cluster_set()
+    routers = cluster_set.list_routers()
+    # mysqlsh objects are weird—they quack (i.e. duck typing) like standard Python objects (e.g. list,
+    # dict), but do not serialize to JSON correctly.
+    # Cast to str & load from JSON str before serializing
+    routers = json.loads(str(routers))
+    with open("/tmp/mysqlsh_output.json", "w") as file:
+        json.dump(routers, file)
+except mysqlsh.DBError as exception:
+    error = {
+        "message": str(exception),
+        "code": exception.code,
+        "traceback_message": "".join(traceback.format_exception(exception)),
+    }
+else:
+    error = None
+with open("/tmp/mysqlsh_error.json", "w") as file:
+    json.dump(error, file)
+
+stderr:
+Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+MySQL Error 1040 (HY000): Too many connections
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/rock.py", line 245, in _run_command
+    output, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1441, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['mysqlsh', '--passwords-from-stdin', '--uri', 'relation-39_6da2013bb35a47@mysql-primary.testing.svc.cluster.local:3306', '--python', '--file', '/tmp/mysqlsh_script.py'], stdout="\x1b[1mPlease provide the password for 'relation-39_6da2013bb35a47@mysql-primary.testing.svc.cluster.local:3306': \x1b[0m", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 1040 (HY000): Too many connections\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/mysql_shell/__init__.py", line 74, in _run_code
+    self._container.run_mysql_shell(
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/container.py", line 212, in run_mysql_shell
+    return self._run_command(args, timeout=timeout, input=input)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/rock.py", line 247, in _run_command
+    raise container.CalledProcessError(
+container.CalledProcessError: Command '['mysqlsh', '--passwords-from-stdin', '--uri', 'relation-39_6da2013bb35a47@mysql-primary.testing.svc.cluster.local:3306', '--python', '--file', '/tmp/mysqlsh_script.py']' returned non-zero exit status 1.
+unit-router4-1: 01:34:59 ERROR unit.router4/1.juju-log backend-database:39: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/rock.py", line 245, in _run_command
+    output, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1441, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['mysqlsh', '--passwords-from-stdin', '--uri', 'relation-39_6da2013bb35a47@mysql-primary.testing.svc.cluster.local:3306', '--python', '--file', '/tmp/mysqlsh_script.py'], stdout="\x1b[1mPlease provide the password for 'relation-39_6da2013bb35a47@mysql-primary.testing.svc.cluster.local:3306': \x1b[0m", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 1040 (HY000): Too many connections\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/charm.py", line 448, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 3141, in _on_relation_changed_event
+    getattr(self.on, "database_created").emit(
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/abstract_charm.py", line 375, in reconcile
+    self.set_status(event=event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/abstract_charm.py", line 232, in set_status
+    self.unit.status = self._determine_unit_status(event=event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/abstract_charm.py", line 217, in _determine_unit_status
+    workload_status = self.get_workload(event=event).status
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/workload.py", line 414, in status
+    if not self.shell.is_router_in_cluster_set(self._router_id):
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/mysql_shell/__init__.py", line 214, in is_router_in_cluster_set
+    self._run_code(
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/mysql_shell/__init__.py", line 74, in _run_code
+    self._container.run_mysql_shell(
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/container.py", line 212, in run_mysql_shell
+    return self._run_command(args, timeout=timeout, input=input)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/rock.py", line 247, in _run_command
+    raise container.CalledProcessError(
+container.CalledProcessError: Command '['mysqlsh', '--passwords-from-stdin', '--uri', 'relation-39_6da2013bb35a47@mysql-primary.testing.svc.cluster.local:3306', '--python', '--file', '/tmp/mysqlsh_script.py']' returned non-zero exit status 1.
+unit-router4-1: 01:35:00 ERROR juju.worker.uniter.operation hook "backend-database-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
