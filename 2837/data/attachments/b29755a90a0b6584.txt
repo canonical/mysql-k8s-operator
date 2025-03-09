@@ -1,0 +1,41 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:29 Deploying 1 units of mysql-k8s
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:40 Waiting for single unit to be ready
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:46 Scale to 3 units
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:49 Waiting until application enters waiting status
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:54 Deleting pod
+[32mINFO    [0m integration.high_availability.test_crash_during_setup:test_crash_during_setup.py:58 Waiting until cluster is fully active
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: 
+  mysql-k8s/1 [executing] maintenance: Initialising mysqld
+  mysql-k8s/2 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/1 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [executing] maintenance: joining the cluster
+  mysql-k8s/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/2 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.3    unsupported  01:29:52Z
+
+App        Version                  Status  Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s  8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s             0  10.152.183.244  no       
+
+Unit          Workload  Agent  Address       Ports  Message
+mysql-k8s/0*  active    idle   10.1.184.206         Primary
+mysql-k8s/1   active    idle   10.1.184.204         
+mysql-k8s/2   active    idle   10.1.184.205         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:28:27 ERROR unit.mysql-k8s/0.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
