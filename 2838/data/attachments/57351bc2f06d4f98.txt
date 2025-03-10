@@ -1,0 +1,186 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:320 Remove async relation
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:326 waiting for units to be blocked
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:332 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] maintenance: Removing replica cluster
+  db1/1 [idle] active: 
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [idle] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] blocked: Standalone read-only unit.
+  db2/1 [idle] blocked: Standalone read-only unit.
+  db2/2 [idle] blocked: Standalone read-only unit.
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:346 Re relating the two mysql clusters
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:349 Waiting for the applications to settle
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:358 Running create replication action
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:368 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Wait until unit is initialized before running create-replication on offer side
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] maintenance: Sharing credentials with replica cluster
+  db1/1 [executing] active: 
+  db1/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] maintenance: Sharing credentials with replica cluster
+  db1/1 [executing] active: 
+  db1/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] active: 
+  db2/1 [executing] waiting: Waiting other units join the cluster
+  db2/2 [executing] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] waiting: Waiting for primary cluster
+  db2/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] maintenance: Adding replica cluster
+  db1/1 [idle] active: 
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] maintenance: joining the cluster
+  db2/1 [idle] waiting: Waiting for recovery to complete on other units
+  db2/2 [idle] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] active: Primary
+  db1/1 [idle] active: 
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] waiting: Waiting for recovery to complete on other units
+  db2/2 [executing] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] active: Standby
+  db2/2 [idle] active: 
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:391 Testing data replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:398 Stopping continuous writes and wait (5s) for replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:405 Querying max value on all units
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:67 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.3    unsupported  01:46:31Z
+
+App               Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+db1               8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s                        0  10.152.183.113  no       
+mysql-router-k8s  8.0.41-0ubuntu0.22.04.1  active      1  mysql-router-k8s  8.0/edge     600  10.152.183.233  no       
+mysql-test-app    0.0.2                    active      1  mysql-test-app    latest/edge   73  10.152.183.45   no       Last written value=3120
+
+Unit                 Workload  Agent      Address       Ports  Message
+db1/0*               active    executing  10.1.103.204         Primary
+db1/1                active    executing  10.1.103.205         
+db1/2                active    executing  10.1.103.206         
+mysql-router-k8s/0*  active    idle       10.1.103.213         
+mysql-test-app/0*    active    idle       10.1.103.214         Last written value=3120
+
+Offer  Application  Charm      Rev  Connected  Endpoint           Interface    Role
+db1    db1          mysql-k8s  0    1/1        replication-offer  mysql_async  provider
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-router-k8s-0: 01:31:36 ERROR unit.mysql-router-k8s/0.juju-log backend-database:9: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 235, in raise_for_status
+    resp.raise_for_status()
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/httpx/_models.py", line 761, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Server error '500 Internal Server Error' for url 'https://10.152.183.1/api/v1/namespaces/testing/services/mysql-router-k8s-service'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/src/charm.py", line 448, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 3141, in _on_relation_changed_event
+    getattr(self.on, "database_created").emit(
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/src/abstract_charm.py", line 352, in reconcile
+    self._update_endpoints()
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/src/charm.py", line 277, in _update_endpoints
+    if self._check_service_connectivity():
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/src/charm.py", line 238, in _check_service_connectivity
+    if not self._get_service() or not isinstance(
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/src/charm.py", line 141, in _get_service
+    service = self._lightkube_client.get(
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/lightkube/core/client.py", line 230, in get
+    return self._client.request("get", res=res, name=name, namespace=namespace)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 311, in request
+    return self.handle_response(method, resp, br)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 251, in handle_response
+    self.raise_for_status(resp)
+  File "/var/lib/juju/agents/unit-mysql-router-k8s-0/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 237, in raise_for_status
+    raise transform_exception(e)
+lightkube.core.exceptions.ApiError: rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/7660/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+unit-mysql-router-k8s-0: 01:31:36 ERROR juju.worker.uniter.operation hook "backend-database-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-db1-2: 01:38:33 ERROR unit.db1/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-2/charm/src/mysql_k8s_helpers.py", line 722, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-2.db1-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('lima')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-2.db1-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mError connecting to Cluster: RuntimeError: Could not open connection to \'db2-1.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.get_cluster: Could not open connection to \'db2-1.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\n\n'
+unit-db1-2: 01:38:33 ERROR unit.db1/2.juju-log Failed to get cluster status for lima
+unit-db1-2: 01:38:33 ERROR unit.db1/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-2/charm/src/mysql_k8s_helpers.py", line 903, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-db1-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-2/charm/lib/charms/mysql/v0/mysql.py", line 2094, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-db1-1: 01:38:33 ERROR unit.db1/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 722, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('lima')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mError connecting to Cluster: RuntimeError: Could not open connection to \'db2-1.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.get_cluster: Could not open connection to \'db2-1.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\n\n'
+unit-db1-1: 01:38:33 ERROR unit.db1/1.juju-log Failed to get cluster status for lima
+unit-db1-1: 01:38:33 ERROR unit.db1/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 903, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 2094, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
