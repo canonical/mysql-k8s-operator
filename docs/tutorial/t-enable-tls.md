@@ -29,7 +29,7 @@ Check [this guide](/t/11664) for an overview of the TLS certificates charms avai
 To enable TLS on Charmed MySQL K8s, we must deploy the `self-signed-certificates` charm and integrate it with MySQL.
 
 ### Deploy TLS charm
-Deploy the `self-signed-certificates` TLS charm with the following command:
+Deploy the `self-signed-certificates` charm with the following command:
 ```shell
 juju deploy self-signed-certificates --config ca-common-name="Tutorial CA"
 ```
