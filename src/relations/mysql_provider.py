@@ -217,7 +217,7 @@ class MySQLProvider(Object):
             return
 
         relations = self.charm.model.relations.get(DB_RELATION_NAME, [])
-        if not relations or not self.charm.unit_initialized:
+        if not relations or not self.charm.unit_initialized():
             return
 
         relation_data = self.database.fetch_relation_data()
@@ -248,7 +248,7 @@ class MySQLProvider(Object):
         if (
             not container.can_connect()
             or not self.charm.cluster_initialized
-            or not self.charm.unit_initialized
+            or not self.charm.unit_initialized()
         ):
             return
 

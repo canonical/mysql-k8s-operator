@@ -730,7 +730,7 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
         """Handle the async_replica relation being created on the leader unit."""
         if not self._charm.unit.is_leader():
             return
-        if not self._charm.unit_initialized and not self.returning_cluster:
+        if not self._charm.unit_initialized() and not self.returning_cluster:
             # avoid running too early for non returning clusters
             self._charm.unit.status = BlockedStatus(
                 "Wait until unit is initialized before running create-replication on offer side"
