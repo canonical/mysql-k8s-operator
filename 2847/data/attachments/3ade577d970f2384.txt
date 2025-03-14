@@ -1,0 +1,14 @@
+[32mINFO    [0m integration.conftest:conftest.py:28 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:126 Inserting value before backup
+[32mINFO    [0m mysql.connector:authentication.py:66 package: mysql.connector.plugins
+[32mINFO    [0m mysql.connector:authentication.py:67 plugin_name: caching_sha2_password
+[32mINFO    [0m mysql.connector:authentication.py:71 AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:134 Setting s3 config
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:136 Syncing credentials
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [executing] blocked: Missing parameters: ['access-key', 'secret-key']
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:150 Listing existing backup ids
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:157 Creating backup
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:163 Listing backup ids post backup
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:172 Inserting value after backup
