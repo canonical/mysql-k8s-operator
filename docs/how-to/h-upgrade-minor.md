@@ -1,8 +1,8 @@
-[note]
+
 **Note**: All commands are written for `juju >= v.3.0`
 
 If you are using an earlier version, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#heading--juju-3-0-0---22-oct-2022).
-[/note]
+
 
 # Perform a minor upgrade
 
@@ -20,10 +20,9 @@ We strongly recommend to **NOT** perform any other extraordinary operations on a
 
 The concurrency with other operations is not supported, and it can lead the cluster into inconsistent states.
 
-[note type=caution]
-Make sure to have a backup of your data when running any type of upgrades!
+
+**Note**: Make sure to have a backup of your data when running any type of upgrades!
 See: [How to create a backup](/t/9653)
-[/note]
 
 It is recommended to deploy your application in conjunction with [Charmed MySQL Router K8s](https://charmhub.io/mysql-router-k8s). This will ensure minimal service disruption, if any.
 
@@ -40,11 +39,10 @@ It is recommended to deploy your application in conjunction with [Charmed MySQL 
 
 ## Step 1: Collect
 
-[note]
-This step is only valid when deploying from [charmhub](https://charmhub.io/). 
+
+**Note**:  This step is only valid when deploying from [charmhub](https://charmhub.io/). 
 
 If a [local charm](https://juju.is/docs/sdk/deploy-a-charm) is deployed (revision is small, e.g. 0-10), make sure the proper/current local revision of the `.charm` file is available BEFORE going further. You might need it for a rollback.
-[/note]
 
 The first step is to record the revision of the running application as a safety measure for a rollback action. To accomplish this, run the `juju status` command and look for the deployed Charmed MySQL K8s revision in the command output, e.g:
 
@@ -104,6 +102,7 @@ Use the [`juju refresh`](https://juju.is/docs/juju/juju-refresh) command to trig
 Example with channel selection
 ```shell
 juju refresh mysql-k8s --channel 8.0/edge --trust
+```
 
 Example with specific revision selection (do not forget the OCI resource)
 ```shell

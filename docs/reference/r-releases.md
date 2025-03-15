@@ -8,6 +8,7 @@ To see all releases and commits, check the [Charmed MySQL K8s Releases page on G
 
 | Release | MySQL version | Juju version | [TLS encryption](/t/9655)* | [COS monitoring](/t/9981) | [Minor version upgrades](/t/11752) | [Cross-regional async replication](/t/13458) |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| [240], [241] | 8.0.41 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] |
 | [210], [211] | 8.0.39 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] |
 | [180], [181] | 8.0.37 | `3.4.3+` | ![check] | ![check] | ![check] | ![check] |
 | [153] | 8.0.36 | `3.4.3+` | ![check] | ![check] | ![check] | ![check] |
@@ -32,10 +33,15 @@ Several [revisions](https://juju.is/docs/sdk/revision) are released simultaneous
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
+|[240]  |![check] | | ![check]  |
+|[241] |  | ![check]| ![check] |
+
+[details=Older releases]
+| Revision | amd64 | arm64 | Ubuntu 22.04 LTS
+|:--------:|:-----:|:-----:|:-----:|
 |[210]  |![check] | | ![check]  |
 |[211] |  | ![check]| ![check] |
 
-[details=Older releases]
 ### Release 180-181
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
@@ -75,15 +81,17 @@ Several [revisions](https://juju.is/docs/sdk/revision) are released simultaneous
 [/details]
 
 <!-- LINKS -->
-[210]: /t/16133
-[211]: /t/16133
-[180]: /t/15276
-[181]: /t/15276
-[153]: /t/14072
-[127]: /t/13522
-[113]: /t/12221
-[99]: /t/11880
-[75]: /t/11879
+[240]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev240
+[241]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev240
+[210]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev210
+[211]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev210
+[180]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev180
+[181]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev180
+[153]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev153
+[127]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev127
+[113]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev113
+[99]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev99
+[75]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev75
 
 <!-- BADGES -->
 [check]: https://img.icons8.com/color/20/checkmark--v1.png
