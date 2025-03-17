@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, call, patch
 
 import tenacity
 from charms.mysql.v0.mysql import MySQLClientError
-from ops.pebble import ExecError
+from ops.pebble import ExecError, PathError
 
 from mysql_k8s_helpers import (
     MYSQLD_SOCK_FILE,
@@ -17,6 +17,7 @@ from mysql_k8s_helpers import (
     MySQLDeleteUsersWithLabelError,
     MySQLEscalateUserPrivilegesError,
     MySQLInitialiseMySQLDError,
+    MySQLServiceNotRunningError,
     MySQLWaitUntilUnitRemovedFromClusterError,
 )
 
@@ -71,7 +72,7 @@ class TestMySQL(unittest.TestCase):
         self.mysql.initialise_mysqld()
 
         _container.exec.assert_called_once_with(
-            command=["/usr/sbin/mysqld", "--initialize-insecure", "-u", "mysql"],
+            command=["/usr/sbin/mysqld", "--initialize", "-u", "mysql"],
             user="mysql",
             group="mysql",
         )
@@ -420,3 +421,98 @@ class TestMySQL(unittest.TestCase):
         _get_cluster_endpoints.assert_called_once()
 
         _label_pod.assert_has_calls(calls)
+
+    @patch("ops.model.Container")
+    @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
+    def test_reset_root_password_and_start_mysqld(self, _wait_until_mysql_connection, _container):
+        """Test for reset_root_password_and_start_mysqld()."""
+        self.mysql.container = _container
+        self.mysql.reset_root_password_and_start_mysqld()
+
+        self.mysql.container.push.assert_has_calls([
+            call(
+                "/alter-root-user.sql",
+                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH PRIVILEGES;",
+                encoding="utf-8",
+                permissions=384,
+                user="mysql",
+                group="mysql",
+            ),
+            call(
+                "/etc/mysql/mysql.conf.d/z-custom-init-file.cnf",
+                "[mysqld]\ninit_file = /alter-root-user.sql",
+                encoding="utf-8",
+                permissions=384,
+                user="mysql",
+                group="mysql",
+            ),
+        ])
+        self.mysql.container.restart.assert_called_once_with("mysqld")
+        _wait_until_mysql_connection.assert_called_once_with(check_port=False)
+        self.mysql.container.remove_path.assert_has_calls([
+            call("/alter-root-user.sql"),
+            call("/etc/mysql/mysql.conf.d/z-custom-init-file.cnf"),
+        ])
+
+    @patch("ops.model.Container")
+    @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
+    def test_reset_root_password_and_start_mysqld_error(
+        self, _wait_until_mysql_connection, _container
+    ):
+        """Test exceptions in reset_root_password_and_start_mysqld()."""
+        self.mysql.container = _container
+        _container.push.side_effect = [
+            None,
+            PathError("not-found", "Should be a pebble exception"),
+        ]
+
+        with self.assertRaises(PathError):
+            self.mysql.reset_root_password_and_start_mysqld()
+
+        self.mysql.container.push.assert_has_calls([
+            call(
+                "/alter-root-user.sql",
+                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH PRIVILEGES;",
+                encoding="utf-8",
+                permissions=384,
+                user="mysql",
+                group="mysql",
+            ),
+        ])
+        self.mysql.container.remove_path.assert_called_once_with("/alter-root-user.sql")
+        _wait_until_mysql_connection.assert_not_called()
+
+        _container.push.side_effect = [None, None]
+        _container.push.reset_mock()
+        _container.remove_path.reset_mock()
+
+        _wait_until_mysql_connection.side_effect = [
+            MySQLServiceNotRunningError("mysqld not running")
+        ]
+
+        with self.assertRaises(MySQLServiceNotRunningError):
+            self.mysql.reset_root_password_and_start_mysqld()
+
+        self.mysql.container.push.assert_has_calls([
+            call(
+                "/alter-root-user.sql",
+                "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';\nFLUSH PRIVILEGES;",
+                encoding="utf-8",
+                permissions=384,
+                user="mysql",
+                group="mysql",
+            ),
+            call(
+                "/etc/mysql/mysql.conf.d/z-custom-init-file.cnf",
+                "[mysqld]\ninit_file = /alter-root-user.sql",
+                encoding="utf-8",
+                permissions=384,
+                user="mysql",
+                group="mysql",
+            ),
+        ])
+        self.mysql.container.restart.assert_called_once_with("mysqld")
+        self.mysql.container.remove_path.assert_has_calls([
+            call("/alter-root-user.sql"),
+            call("/etc/mysql/mysql.conf.d/z-custom-init-file.cnf"),
+        ])
