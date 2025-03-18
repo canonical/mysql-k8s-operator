@@ -1,0 +1,74 @@
+[32mINFO    [0m integration.conftest:conftest.py:28 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:98 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:101 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:112 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.89:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.89:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:125 Wait for upgrade to complete
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:131 Ensure continuous_writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=18285 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=18837 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=18844 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=18850 on unit mysql-k8s/2
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:39:15Z
+
+App        Version                  Status  Scale  Charm           Channel      Rev  Address        Exposed  Message
+mysql-k8s  8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.96  no       
+test-app   0.0.2                    active      1  mysql-test-app  latest/edge   73  10.152.183.19  no       
+
+Unit          Workload  Agent      Address      Ports  Message
+mysql-k8s/0   active    executing  10.1.36.209         
+mysql-k8s/1*  active    executing  10.1.36.208         
+mysql-k8s/2   active    executing  10.1.36.207         Primary
+test-app/0*   active    idle       10.1.36.200         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:34:07 ERROR unit.mysql-k8s/1.juju-log Failed to initialise MySQL data directory
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 216, in initialise_mysqld
+    process = self.container.exec(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/sbin/mysqld" (exec 5: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2025-03-18T01:34:07Z ERROR exec 5: timeout waiting for websocket connections: context deadline exceeded
+-----
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
