@@ -83,14 +83,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 3 | h-async-removal | [Removal](/t/13468) |
 | 2 | h-contribute | [Contribute](/t/14655) |
 | 1 | reference | [Reference]() |
-| 2 | r-releases | [Release Notes](/t/11878) |
-| 3 | r-revision-210-211 | [Revision 210/211](/t/16133) |
-| 3 | r-revision-180-181 | [Revision 180/181](/t/15276) |
-| 3 | r-revision-153 | [Revision 153](/t/14072) |
-| 3 | r-revision-127 | [Revision 127](/t/13522) |
-| 3 | r-revision-113 | [Revision 113](/t/12221) |
-| 3 | r-revision-99 | [Revision 99](/t/11880) |
-| 3 | r-revision-75 | [Revision 75](/t/11879) |
+| 2 | r-releases | [Releases](/t/11878) |
 | 2 | r-system-requirements | [System requirements](/t/11421) |
 | 2 | r-testing | [Testing](/t/11772) |
 | 2 | r-profiles | [Profiles](/t/11892) |
@@ -102,6 +95,8 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | e-architecture | [Architecture](/t/11757) |
 | 2 | e-interfaces-endpoints | [Interfaces/endpoints](/t/10249) |
 | 2 | e-users | [Users](/t/10791) |
+| 2 | e-security | [Security](/t/16782) |
+| 2 | e-cryptography | [Cryptography](/t/16783) |
 | 2 | e-logs | [Logs](/t/12080) |
 | 3 | e-audit-logs | [Audit Logs](/t/15423) |
 | 2 | e-juju | [Juju](/t/11984) |
@@ -111,8 +106,16 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 
 [/details]
 
-<!--
+<!--Archived
 | 2 | h-development| [Development](/t/11884) |
 | 3 | h-upgrade-major | [Perform a major upgrade](/t/11750) |
 | 3 | h-rollback-major | [Perform a major rollback](/t/11751) |
---> Charmed MySQL K8s Documentation
+
+| 3 | r-revision-210-211 | [Revision 210/211](/t/16133) |
+| 3 | r-revision-180-181 | [Revision 180/181](/t/15276) |
+| 3 | r-revision-153 | [Revision 153](/t/14072) |
+| 3 | r-revision-127 | [Revision 127](/t/13522) |
+| 3 | r-revision-113 | [Revision 113](/t/12221) |
+| 3 | r-revision-99 | [Revision 99](/t/11880) |
+| 3 | r-revision-75 | [Revision 75](/t/11879) |
+-->
