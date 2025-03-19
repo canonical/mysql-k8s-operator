@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 85
+LIBPATCH = 86
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -3206,11 +3206,8 @@ class MySQLBase(ABC):
             user: the user with which to execute the commands.
             group: the group with which to execute the commands.
         """
-        bucket_url = (
-            f"{s3_parameters['bucket']}/{s3_parameters['path']}binlogs"
-            if s3_parameters["path"][-1] == "/"
-            else f"{s3_parameters['bucket']}/{s3_parameters['path']}/binlogs"
-        )
+        binlogs_path = s3_parameters["path"].rstrip("/")
+        bucket_url = f"{s3_parameters['bucket']}/{binlogs_path}/binlogs"
 
         try:
             return self._execute_commands(
