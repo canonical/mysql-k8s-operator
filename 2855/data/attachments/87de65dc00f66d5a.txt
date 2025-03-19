@@ -1,0 +1,360 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:50:48Z
+
+App        Version  Status   Scale  Charm      Channel  Rev  Address        Exposed  Message
+mysql-k8s           waiting      3  mysql-k8s             0  10.152.183.95  no       installing agent
+
+Unit          Workload     Agent      Address       Ports  Message
+mysql-k8s/0*  active       idle       10.1.244.204         Primary
+mysql-k8s/1   active       idle       10.1.244.210         
+mysql-k8s/2   maintenance  executing  10.1.244.211         Starting mysqld
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:38:11 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 1056, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 775, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 470, in _reconcile_pebble_layer
+    self._mysql.wait_until_mysql_connection()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 330, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 467, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 368, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 410, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 183, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 470, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 281, in wait_until_mysql_connection
+    raise MySQLServiceNotRunningError
+charms.mysql.v0.mysql.MySQLServiceNotRunningError
+unit-mysql-k8s-2: 01:38:12 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:38:12 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:40:13 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 1056, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 775, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 470, in _reconcile_pebble_layer
+    self._mysql.wait_until_mysql_connection()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 330, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 467, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 368, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 410, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 183, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 470, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 281, in wait_until_mysql_connection
+    raise MySQLServiceNotRunningError
+charms.mysql.v0.mysql.MySQLServiceNotRunningError
+unit-mysql-k8s-2: 01:40:14 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:40:14 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:42:16 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 1056, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 775, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 470, in _reconcile_pebble_layer
+    self._mysql.wait_until_mysql_connection()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 330, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 467, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 368, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 410, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 183, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 470, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 281, in wait_until_mysql_connection
+    raise MySQLServiceNotRunningError
+charms.mysql.v0.mysql.MySQLServiceNotRunningError
+unit-mysql-k8s-2: 01:42:16 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:42:16 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:44:18 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 1056, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 775, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 470, in _reconcile_pebble_layer
+    self._mysql.wait_until_mysql_connection()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 330, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 467, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 368, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 410, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 183, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 470, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 281, in wait_until_mysql_connection
+    raise MySQLServiceNotRunningError
+charms.mysql.v0.mysql.MySQLServiceNotRunningError
+unit-mysql-k8s-2: 01:44:18 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:44:18 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:46:20 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 1056, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 775, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 470, in _reconcile_pebble_layer
+    self._mysql.wait_until_mysql_connection()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 330, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 467, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 368, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 410, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 183, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 470, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 281, in wait_until_mysql_connection
+    raise MySQLServiceNotRunningError
+charms.mysql.v0.mysql.MySQLServiceNotRunningError
+unit-mysql-k8s-2: 01:46:20 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:46:20 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:48:22 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 1056, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 775, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 470, in _reconcile_pebble_layer
+    self._mysql.wait_until_mysql_connection()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 330, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 467, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 368, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 410, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 183, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 470, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 281, in wait_until_mysql_connection
+    raise MySQLServiceNotRunningError
+charms.mysql.v0.mysql.MySQLServiceNotRunningError
+unit-mysql-k8s-2: 01:48:23 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:48:23 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:50:24 ERROR unit.mysql-k8s/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 1056, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 775, in _on_mysql_pebble_ready
+    self._reconcile_pebble_layer(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/charm.py", line 470, in _reconcile_pebble_layer
+    self._mysql.wait_until_mysql_connection()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 330, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 467, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 368, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 410, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 183, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 470, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 281, in wait_until_mysql_connection
+    raise MySQLServiceNotRunningError
+charms.mysql.v0.mysql.MySQLServiceNotRunningError
+unit-mysql-k8s-2: 01:50:24 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-2: 01:50:24 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
