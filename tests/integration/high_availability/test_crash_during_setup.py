@@ -2,13 +2,14 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import asyncio
 import logging
 from pathlib import Path
 
 import pytest
 import yaml
 
-from .high_availability_helpers import CLUSTER_NAME, delete_pod, scale_application
+from .high_availability_helpers import CLUSTER_NAME, delete_pod
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +44,12 @@ async def test_crash_during_cluster_setup(ops_test, charm) -> None:
     # leader unit is the 1st unit
     leader_unit = mysql_application.units[0]
 
-    logger.info("Scale to 3 units")
-    await scale_application(ops_test, APP_NAME, 3, False)
-
-    logger.info("Waiting until application enters waiting status")
-    await ops_test.model.block_until(
-        lambda: mysql_application.status == "waiting", timeout=TIMEOUT
+    logger.info("Scaling to 3 units and wait until application enters waiting status")
+    await asyncio.gather(
+        ops_test.model.block_until(
+            lambda: len(mysql_application.units) == 3, timeout=TIMEOUT, wait_period=0.1
+        ),
+        ops_test.model.applications[APP_NAME].scale(3),
     )
 
     logger.info("Deleting pod")
