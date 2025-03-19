@@ -179,7 +179,6 @@ class TestUpgrade(unittest.TestCase):
         )
         with patch(
             "charm.MySQLOperatorCharm.unit_initialized",
-            new_callable=PropertyMock,
             return_value=True,
         ), patch(
             "charm.MySQLOperatorCharm.cluster_initialized",
@@ -200,7 +199,6 @@ class TestUpgrade(unittest.TestCase):
 
         with patch(
             "charm.MySQLOperatorCharm.unit_initialized",
-            new_callable=PropertyMock,
             return_value=True,
         ), patch(
             "charm.MySQLOperatorCharm.cluster_initialized",
@@ -210,9 +208,7 @@ class TestUpgrade(unittest.TestCase):
             self.harness.container_pebble_ready("mysql")
         self.assertTrue(isinstance(self.charm.unit.status, BlockedStatus))
 
-    @patch(
-        "charm.MySQLOperatorCharm.unit_initialized", new_callable=PropertyMock(return_value=True)
-    )
+    @patch("charm.MySQLOperatorCharm.unit_initialized", return_value=True)
     @patch("k8s_helpers.KubernetesHelpers.set_rolling_update_partition")
     def test_set_rolling_update_partition(
         self, mock_set_rolling_update_partition, mock_unit_initialized

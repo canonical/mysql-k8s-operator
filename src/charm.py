@@ -318,15 +318,14 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         return text_logs
 
-    @property
-    def unit_initialized(self) -> bool:
+    def unit_initialized(self, raise_exceptions: bool = False) -> bool:
         """Return whether a unit is started.
 
         Override parent class method to include container accessibility check.
         """
         container = self.unit.get_container(CONTAINER_NAME)
         if container.can_connect():
-            return super().unit_initialized
+            return super().unit_initialized()
         else:
             return False
 
@@ -397,7 +396,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             and self.unit_peer_data.get("member-state") == "waiting"
             and self.unit_configured
             and (
-                not self.unit_initialized
+                not self.unit_initialized()
                 or not self._mysql.is_instance_in_cluster(self.unit_label)
             )
             and self.cluster_initialized
@@ -537,7 +536,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not container.can_connect():
             return
 
-        if not self.unit_initialized:
+        if not self.unit_initialized():
             logger.debug("Restarting standalone mysqld")
             container.restart(MYSQLD_SERVICE)
             return
@@ -1059,7 +1058,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _on_database_storage_detaching(self, _) -> None:
         """Handle the database storage detaching event."""
         # Only executes if the unit was initialised
-        if not self.unit_initialized:
+        if not self.unit_initialized():
             return
 
         # No need to remove the instance from the cluster if it is not a member of the cluster
