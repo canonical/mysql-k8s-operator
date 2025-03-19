@@ -89,6 +89,14 @@ class TestCharm(unittest.TestCase):
                         "EXPORTER_PASS": self.charm.get_secret("app", "monitoring-password"),
                     },
                 },
+                "mysql-pitr-helper-collector": {
+                    "command": "/start-mysql-pitr-helper-collector.sh",
+                    "group": "mysql",
+                    "override": "replace",
+                    "startup": "disabled",
+                    "summary": "mysql-pitr-helper binlogs collector",
+                    "user": "mysql",
+                },
             },
         }
 

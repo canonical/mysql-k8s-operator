@@ -16,12 +16,16 @@
 
 import base64
 import logging
+import pathlib
 import tempfile
 import time
+from contextlib import nullcontext
+from io import BytesIO
 from typing import Dict, List, Tuple
 
 import boto3
 import botocore
+import botocore.exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +37,9 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 10
+LIBPATCH = 11
+
+S3_GROUP_REPLICATION_ID_FILE = "group_replication_id.txt"
 
 # botocore/urllib3 clutter the logs when on debug
 logging.getLogger("botocore").setLevel(logging.WARNING)
@@ -63,6 +69,39 @@ def _construct_endpoint(s3_parameters: dict) -> str:
     return endpoint
 
 
+def _get_bucket(s3_parameters: Dict) -> boto3.resources.base.ServiceResource:
+    """Get an S3 bucket resource.
+
+    Args:
+        s3_parameters: A dictionary containing the S3 parameters
+            The following are expected keys in the dictionary: bucket, region,
+            endpoint, access-key and secret-key
+
+    Returns: an S3 bucket resource
+    """
+    session = boto3.session.Session(
+        aws_access_key_id=s3_parameters["access-key"],
+        aws_secret_access_key=s3_parameters["secret-key"],
+        region_name=s3_parameters["region"] or None,
+    )
+
+    ca_chain = s3_parameters.get("tls-ca-chain")
+
+    with tempfile.NamedTemporaryFile() if ca_chain else nullcontext() as ca_file:
+        if ca_file:
+            ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
+            ca_file.write(ca.encode())
+            ca_file.flush()
+
+        s3 = session.resource(
+            "s3",
+            endpoint_url=_construct_endpoint(s3_parameters),
+            verify=ca_file.name if ca_file else True,
+        )
+
+    return s3.Bucket(s3_parameters["bucket"])
+
+
 def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
     """Uploads the provided contents to the provided S3 bucket.
 
@@ -75,30 +114,14 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
 
     Returns: a boolean indicating success.
     """
-    ca_file = None
     try:
         logger.info(f"Uploading content to bucket={s3_parameters['bucket']}, path={content_path}")
-        session = boto3.session.Session(
-            aws_access_key_id=s3_parameters["access-key"],
-            aws_secret_access_key=s3_parameters["secret-key"],
-            region_name=s3_parameters["region"] or None,
-        )
-        verif = True
-        if ca_chain := s3_parameters.get("tls-ca-chain"):
-            ca_file = tempfile.NamedTemporaryFile()
-            ca = "\n".join([base64.b64decode(s).decode() for s in ca_chain])
-            ca_file.write(ca.encode())
-            ca_file.flush()
-            verif = ca_file.name
 
-        s3 = session.resource("s3", endpoint_url=_construct_endpoint(s3_parameters), verify=verif)
-
-        bucket = s3.Bucket(s3_parameters["bucket"])
+        bucket = _get_bucket(s3_parameters)
 
         with tempfile.NamedTemporaryFile() as temp_file:
             temp_file.write(content.encode("utf-8"))
             temp_file.flush()
-
             bucket.upload_file(temp_file.name, content_path)
     except Exception as e:
         logger.exception(
@@ -106,11 +129,48 @@ def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -
             exc_info=e,
         )
         return False
-    finally:
-        if ca_file:
-            ca_file.close()
 
     return True
+
+
+def _read_content_from_s3(content_path: str, s3_parameters: dict) -> str | None:
+    """Reads specified content from the provided S3 bucket.
+
+    Args:
+        content_path: The S3 path from which download the content
+        s3_parameters: A dictionary containing the S3 parameters
+            The following are expected keys in the dictionary: bucket, region,
+            endpoint, access-key and secret-key
+
+    Returns:
+        a string with the content if object is successfully downloaded and None if file is not existing or error
+        occurred during download.
+    """
+    try:
+        logger.info(f"Reading content from bucket={s3_parameters['bucket']}, path={content_path}")
+
+        bucket = _get_bucket(s3_parameters)
+
+        with BytesIO() as buf:
+            bucket.download_fileobj(content_path, buf)
+            return buf.getvalue().decode("utf-8")
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            logger.info(
+                f"No such object to read from S3 bucket={s3_parameters['bucket']}, path={content_path}"
+            )
+        else:
+            logger.exception(
+                f"Failed to read content from S3 bucket={s3_parameters['bucket']}, path={content_path}",
+                exc_info=e,
+            )
+    except Exception as e:
+        logger.exception(
+            f"Failed to read content from S3 bucket={s3_parameters['bucket']}, path={content_path}",
+            exc_info=e,
+        )
+
+    return None
 
 
 def _compile_backups_from_file_ids(
@@ -150,7 +210,7 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # no
             "s3",
             aws_access_key_id=s3_parameters["access-key"],
             aws_secret_access_key=s3_parameters["secret-key"],
-            endpoint_url=s3_parameters["endpoint"],
+            endpoint_url=_construct_endpoint(s3_parameters),
             region_name=s3_parameters["region"] or None,
         )
         list_objects_v2_paginator = s3_client.get_paginator("list_objects_v2")
@@ -222,7 +282,7 @@ def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str
         "s3",
         aws_access_key_id=s3_parameters["access-key"],
         aws_secret_access_key=s3_parameters["secret-key"],
-        endpoint_url=s3_parameters["endpoint"],
+        endpoint_url=_construct_endpoint(s3_parameters),
         region_name=s3_parameters["region"] or None,
     )
 
@@ -237,3 +297,28 @@ def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str
             exc_info=e,
         )
         raise
+
+
+def ensure_s3_compatible_group_replication_id(
+    group_replication_id: str, s3_parameters: Dict[str, str]
+) -> bool:
+    """Checks if group replication id is equal to the one in the provided S3 repository.
+
+    If S3 doesn't have this claim (so it's not initialized),
+    then it will be populated automatically with the provided id.
+
+    Args:
+        group_replication_id: group replication id of the current cluster
+        s3_parameters: A dictionary containing the S3 parameters
+            The following are expected keys in the dictionary: bucket, region,
+            endpoint, access-key and secret-key
+    """
+    s3_id_path = str(pathlib.Path(s3_parameters["path"]) / S3_GROUP_REPLICATION_ID_FILE)
+    s3_id = _read_content_from_s3(s3_id_path, s3_parameters)
+    if s3_id and s3_id != group_replication_id:
+        logger.info(
+            f"s3 repository is not compatible based on group replication id: {group_replication_id} != {s3_id}"
+        )
+        return False
+    upload_content_to_s3(group_replication_id, s3_id_path, s3_parameters)
+    return True

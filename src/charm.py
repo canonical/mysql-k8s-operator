@@ -6,6 +6,7 @@
 
 from charms.mysql.v0.architecture import WrongArchitectureWarningCharm, is_wrong_architecture
 from ops.main import main
+from tenacity import retry, stop_after_delay, wait_fixed
 
 from log_rotation_setup import LogRotationSetup
 
@@ -51,7 +52,7 @@ from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer
 from ops import EventBase, ModelError, RelationBrokenEvent, RelationCreatedEvent
-from ops.charm import RelationChangedEvent, UpdateStatusEvent
+from ops.charm import RelationChangedEvent, RelationDepartedEvent, UpdateStatusEvent
 from ops.model import (
     ActiveStatus,
     BlockedStatus,
@@ -61,7 +62,7 @@ from ops.model import (
     WaitingStatus,
 )
 from ops.pebble import ChangeError, Layer
-from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
+from tenacity import RetryError, Retrying, stop_after_attempt
 
 from config import CharmConfig, MySQLConfig
 from constants import (
@@ -74,6 +75,7 @@ from constants import (
     GR_MAX_MEMBERS,
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
+    MYSQL_BINLOGS_COLLECTOR_SERVICE,
     MYSQL_LOG_FILES,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
@@ -149,6 +151,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         self.framework.observe(self.on[PEER].relation_joined, self._on_peer_relation_joined)
         self.framework.observe(self.on[PEER].relation_changed, self._on_peer_relation_changed)
+        self.framework.observe(self.on[PEER].relation_departed, self._on_peer_relation_departed)
 
         self.framework.observe(
             self.on[COS_AGENT_RELATION_NAME].relation_created, self._reconcile_mysqld_exporter
@@ -264,6 +267,19 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                         "EXPORTER_PASS": self.get_secret("app", MONITORING_PASSWORD_KEY),
                     },
                 },
+                MYSQL_BINLOGS_COLLECTOR_SERVICE: {
+                    "override": "replace",
+                    "summary": "mysql-pitr-helper binlogs collector",
+                    "command": "/start-mysql-pitr-helper-collector.sh",
+                    "startup": "enabled"
+                    if ("binlogs-collecting" in self.app_peer_data and self.unit.is_leader())
+                    else "disabled",
+                    "user": MYSQL_SYSTEM_USER,
+                    "group": MYSQL_SYSTEM_GROUP,
+                    "environment": self.backups.get_binlogs_collector_config()
+                    if ("binlogs-collecting" in self.app_peer_data and self.unit.is_leader())
+                    else {},
+                },
             },
         }
         return Layer(layer)  # pyright: ignore [reportArgumentType]
@@ -327,6 +343,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         unit_name = unit_name or self.unit.name
         return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
 
+    @retry(reraise=True, stop=stop_after_delay(120), wait=wait_fixed(2))
     def get_unit_address(self, unit: Optional[Unit] = None) -> str:
         """Get fqdn/address for a unit.
 
@@ -335,7 +352,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not unit:
             unit = self.unit
 
-        return getfqdn(self.get_unit_hostname(unit.name))
+        unit_hostname = self.get_unit_hostname(unit.name)
+        unit_dns_domain = getfqdn(self.get_unit_hostname(unit.name))
+
+        # When fully propagated, DNS domain name should contain unit hostname.
+        # For example:
+        # Hostname: mysql-k8s-0.mysql-k8s-endpoints
+        # Fully propagated: mysql-k8s-0.mysql-k8s-endpoints.dev.svc.cluster.local
+        # Not propagated yet: 10-1-142-191.mysql-k8s.dev.svc.cluster.local
+        if unit_hostname not in unit_dns_domain:
+            logger.error(
+                "get_unit_address: unit DNS domain name is not fully propagated yet, trying again"
+            )
+            raise RuntimeError("unit DNS domain name is not fully propagated yet")
+        return unit_dns_domain
 
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
@@ -465,7 +495,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.info("Reconciling the pebble layer")
 
             container.add_layer(MYSQLD_SERVICE, new_layer, combine=True)
-            container.replan()
+            # Do not wait for all services to successfully start as binlogs collector may restart several times
+            # (pebble failure restart) until MySQL is ready
+            container._pebble.replan_services(timeout=0)
             self._mysql.wait_until_mysql_connection()
 
             if (
@@ -697,6 +729,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             if self.config.plugin_audit_enabled:
                 # Enable the audit plugin
                 self._mysql.install_plugins(["audit_log"])
+            self._mysql.install_plugins(["binlog_utils_udf"])
 
             # Configure instance as a cluster node
             self._mysql.configure_instance()
@@ -822,6 +855,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         ):
             logger.exception("Failed to initialize primary")
             raise
+
+        self._mysql.reconcile_binlogs_collection(force_restart=True)
 
     def _handle_potential_cluster_crash_scenario(self) -> bool:  # noqa: C901
         """Handle potential full cluster crash scenarios.
@@ -994,6 +1029,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not primary_address:
             return
 
+        if "s3-block-message" in self.app_peer_data:
+            self.app.status = BlockedStatus(self.app_peer_data["s3-block-message"])
+            return
+
         # Set active status when primary is known
         self.app.status = ActiveStatus()
 
@@ -1008,6 +1047,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         if self._is_unit_waiting_to_join_cluster():
             self.join_unit_to_cluster()
+
+        if not self._mysql.reconcile_binlogs_collection(force_restart=True):
+            logger.error("Failed to reconcile binlogs collection during peer relation event")
+
+    def _on_peer_relation_departed(self, event: RelationDepartedEvent) -> None:
+        if not self._mysql.reconcile_binlogs_collection(force_restart=True):
+            logger.error("Failed to reconcile binlogs collection during peer departed event")
 
     def _on_database_storage_detaching(self, _) -> None:
         """Handle the database storage detaching event."""
