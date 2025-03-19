@@ -206,7 +206,7 @@ class TestCharm(unittest.TestCase):
             self.layer_dict(with_mysqld_exporter=True)["services"],
         )
 
-    @patch("charm.MySQLOperatorCharm.unit_initialized", new_callable=PropertyMock)
+    @patch("charm.MySQLOperatorCharm.unit_initialized")
     @patch("charm.MySQLOperatorCharm.cluster_initialized", new_callable=PropertyMock)
     @patch("charm.MySQLOperatorCharm.join_unit_to_cluster")
     @patch("charm.MySQLOperatorCharm._configure_instance")

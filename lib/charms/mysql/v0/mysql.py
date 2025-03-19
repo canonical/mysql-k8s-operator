@@ -133,7 +133,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 84
+LIBPATCH = 85
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -418,6 +418,10 @@ class MySQLPluginInstallError(Error):
     """Exception raised when there is an issue installing a MySQL plugin."""
 
 
+class MySQLClusterMetadataExistsError(Error):
+    """Exception raised when there is an issue checking if cluster metadata exists."""
+
+
 @dataclasses.dataclass
 class RouterUser:
     """MySQL Router user."""
@@ -618,8 +622,15 @@ class MySQLCharmBase(CharmBase, ABC):
             return False
 
         for unit in self.app_units:
-            if self._mysql.cluster_metadata_exists(self.get_unit_address(unit)):
-                return True
+            try:
+                if unit != self.unit and self._mysql.cluster_metadata_exists(
+                    self.get_unit_address(unit)
+                ):
+                    return True
+                elif self._mysql.cluster_metadata_exists():
+                    return True
+            except MySQLClusterMetadataExistsError:
+                pass
 
         return False
 
@@ -659,11 +670,6 @@ class MySQLCharmBase(CharmBase, ABC):
         return self._mysql.is_instance_configured_for_innodb(
             self.get_unit_address(self.unit), self.unit_label
         )
-
-    @property
-    def unit_initialized(self) -> bool:
-        """Check if the unit is added to the cluster."""
-        return self._mysql.cluster_metadata_exists(self.get_unit_address(self.unit))
 
     @property
     def app_peer_data(self) -> Union[ops.RelationDataContent, dict]:
@@ -742,6 +748,15 @@ class MySQLCharmBase(CharmBase, ABC):
     def removing_unit(self) -> bool:
         """Check if the unit is being removed."""
         return self.unit_peer_data.get("unit-status") == "removing"
+
+    def unit_initialized(self, raise_exceptions: bool = False) -> bool:
+        """Check if the unit is added to the cluster."""
+        try:
+            return self._mysql.cluster_metadata_exists()
+        except MySQLClusterMetadataExistsError:
+            if raise_exceptions:
+                raise
+            return False
 
     def peer_relation_data(self, scope: Scopes) -> DataPeerData:
         """Returns the peer relation data per scope."""
@@ -1671,35 +1686,62 @@ class MySQLBase(ABC):
 
         return cluster_name in cs_status["clusters"]
 
-    def cluster_metadata_exists(self, from_instance: str) -> bool:
-        """Check if this cluster metadata exists on database."""
-        check_cluster_metadata_commands = (
-            "result = session.run_sql(\"SHOW DATABASES LIKE 'mysql_innodb_cluster_metadata'\")",
-            "content = result.fetch_all()",
-            "if content:",
-            (
-                '  result = session.run_sql("SELECT cluster_name FROM mysql_innodb_cluster_metadata'
-                f".clusters where cluster_name = '{self.cluster_name}';\")"
-            ),
-            "  print(bool(result.fetch_one()))",
-            "else:",
-            "  print(False)",
+    def cluster_metadata_exists(self, from_instance: Optional[str] = None) -> bool:
+        """Check if this cluster metadata exists on database.
+
+        Use mysqlsh when querying clusters from remote instances. However, use
+        mysqlcli when querying locally since this method can be called before
+        the cluster is initialized (before serverconfig and root users are set up
+        correctly)
+        """
+        get_clusters_query = (
+            "SELECT cluster_name "
+            "FROM mysql_innodb_cluster_metadata.clusters "
+            "WHERE EXISTS ("
+            "SELECT * "
+            "FROM information_schema.schemata "
+            "WHERE schema_name = 'mysql_innodb_cluster_metadata'"
+            ")"
         )
 
+        if from_instance:
+            check_cluster_metadata_commands = (
+                f'cursor = session.run_sql("{get_clusters_query}")',
+                "print(cursor.fetch_all())",
+            )
+
+            try:
+                output = self._run_mysqlsh_script(
+                    "\n".join(check_cluster_metadata_commands),
+                    user=self.server_config_user,
+                    password=self.server_config_password,
+                    host=self.instance_def(self.server_config_user, from_instance),
+                    timeout=60,
+                    exception_as_warning=True,
+                )
+            except MySQLClientError:
+                logger.warning(f"Failed to check if cluster metadata exists {from_instance=}")
+                raise MySQLClusterMetadataExistsError(
+                    f"Failed to check if cluster metadata exists {from_instance=}"
+                )
+
+            return self.cluster_name in output
+
         try:
-            output = self._run_mysqlsh_script(
-                "\n".join(check_cluster_metadata_commands),
-                user=self.server_config_user,
-                password=self.server_config_password,
-                host=self.instance_def(self.server_config_user, from_instance),
+            output = self._run_mysqlcli_script(
+                (get_clusters_query,),
+                user=ROOT_USERNAME,
+                password=self.root_password,
                 timeout=60,
                 exception_as_warning=True,
+                log_errors=False,
             )
         except MySQLClientError:
-            logger.warning(f"Failed to check if cluster metadata exists {from_instance=}")
-            return False
+            logger.warning("Failed to check if local cluster metadata exists")
+            raise MySQLClusterMetadataExistsError("Failed to check if cluster metadata exists")
 
-        return output.strip() == "True"
+        cluster_names = [entry[0].strip() for entry in output]
+        return self.cluster_name in cluster_names
 
     def rejoin_cluster(self, cluster_name) -> None:
         """Try to rejoin a cluster to the cluster set."""
@@ -1939,8 +1981,11 @@ class MySQLBase(ABC):
 
     def is_instance_in_cluster(self, unit_label: str) -> bool:
         """Confirm if instance is in the cluster."""
-        if not self.cluster_metadata_exists(self.instance_address):
-            # early return if instance has no cluster metadata
+        try:
+            if not self.cluster_metadata_exists(self.instance_address):
+                # early return if instance has no cluster metadata
+                return False
+        except MySQLClusterMetadataExistsError:
             return False
 
         commands = (
@@ -3244,21 +3289,26 @@ class MySQLBase(ABC):
             logger.error("Failed to kill external sessions")
             raise MySQLKillSessionError
 
-    def check_mysqlsh_connection(self) -> bool:
-        """Checks if it is possible to connect to the server with mysqlsh."""
-        connect_commands = 'session.run_sql("SELECT 1")'
+    def check_mysqlcli_connection(self) -> bool:
+        """Checks if it is possible to connect to the server with mysqlcli."""
+        connect_commands = ("SELECT 1",)
 
         try:
-            self._run_mysqlsh_script(
+            self._run_mysqlcli_script(
                 connect_commands,
                 user=self.server_config_user,
                 password=self.server_config_password,
-                host=self.instance_def(self.server_config_user),
             )
             return True
         except MySQLClientError:
-            logger.error("Failed to connect to MySQL with mysqlsh")
-            return False
+            logger.warning("Failed to connect to MySQL with mysqlcli with server config user")
+
+            try:
+                self._run_mysqlcli_script(connect_commands)
+                return True
+            except MySQLClientError:
+                logger.error("Failed to connect to MySQL with mysqlcli with default root user")
+                return False
 
     def get_pid_of_port_3306(self) -> Optional[str]:
         """Retrieves the PID of the process that is bound to port 3306."""
@@ -3427,6 +3477,7 @@ class MySQLBase(ABC):
         password: Optional[str] = None,
         timeout: Optional[int] = None,
         exception_as_warning: bool = False,
+        log_errors: bool = False,
     ) -> list:
         """Execute a MySQL CLI script.
 
@@ -3442,6 +3493,7 @@ class MySQLBase(ABC):
             password: (optional) password to invoke the mysql cli script with
             timeout: (optional) time before the query should timeout
             exception_as_warning: (optional) whether the exception should be treated as warning
+            log_errors: (optional) whether errors in the output should be logged
         """
         raise NotImplementedError
 

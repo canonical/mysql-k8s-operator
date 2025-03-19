@@ -46,7 +46,7 @@ class RotateMySQLLogs(Object):
         if (
             self.charm.peers is None
             or not self.charm._mysql.is_mysqld_running()
-            or not self.charm.unit_initialized
+            or not self.charm.unit_initialized()
             or not self.charm.upgrade.idle
         ):
             # skip when not initialized, during an upgrade, or when mysqld is not running

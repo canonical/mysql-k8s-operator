@@ -38,7 +38,7 @@ class LogRotateManager(Object):
             not isinstance(self.charm.unit.status, ActiveStatus)
             or self.charm.peers is None
             or not container.can_connect()
-            or not self.charm.unit_initialized
+            or not self.charm.unit_initialized()
         ):
             return
 
