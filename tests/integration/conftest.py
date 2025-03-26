@@ -2,6 +2,8 @@
 # See LICENSE file for licensing details.
 
 import logging
+import os
+import uuid
 
 import pytest
 from pytest_operator.plugin import OpsTest
@@ -31,3 +33,33 @@ async def credentials(ops_test: OpsTest):
     credentials = await juju_.run_action(unit, "get-password", username=SERVER_CONFIG_USERNAME)
 
     yield credentials
+
+
+@pytest.fixture(scope="session")
+def cloud_configs_aws() -> tuple[dict[str, str], dict[str, str]]:
+    configs = {
+        "endpoint": "https://s3.amazonaws.com",
+        "bucket": "data-charms-testing",
+        "path": f"mysql-k8s/{uuid.uuid4()}",
+        "region": "us-east-1",
+    }
+    credentials = {
+        "access-key": os.environ["AWS_ACCESS_KEY"],
+        "secret-key": os.environ["AWS_SECRET_KEY"],
+    }
+    return configs, credentials
+
+
+@pytest.fixture(scope="session")
+def cloud_configs_gcp() -> tuple[dict[str, str], dict[str, str]]:
+    configs = {
+        "endpoint": "https://storage.googleapis.com",
+        "bucket": "data-charms-testing",
+        "path": f"mysql-k8s/{uuid.uuid4()}",
+        "region": "",
+    }
+    credentials = {
+        "access-key": os.environ["GCP_ACCESS_KEY"],
+        "secret-key": os.environ["GCP_SECRET_KEY"],
+    }
+    return configs, credentials

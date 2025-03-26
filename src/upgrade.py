@@ -229,6 +229,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             self.charm.recover_unit_after_restart()
             if self.charm.config.plugin_audit_enabled:
                 self.charm._mysql.install_plugins(["audit_log"])
+            self.charm._mysql.install_plugins(["binlog_utils_udf"])
             self._complete_upgrade()
         except MySQLRebootFromCompleteOutageError:
             logger.error("Failed to reboot single unit from outage after upgrade")

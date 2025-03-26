@@ -35,6 +35,7 @@ from constants import (
     CHARMED_MYSQL_XTRABACKUP_LOCATION,
     CONTAINER_NAME,
     LOG_ROTATE_CONFIG_FILE,
+    MYSQL_BINLOGS_COLLECTOR_SERVICE,
     MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
     MYSQL_LOG_DIR,
@@ -932,3 +933,56 @@ class MySQL(MySQLBase):
             path: Path to the file to check
         """
         return self.container.exists(path)
+
+    def reconcile_binlogs_collection(
+        self, force_restart: bool = False, ignore_inactive_error: bool = False
+    ) -> bool:
+        """Start or stop binlogs collecting service.
+
+        Based on the "binlogs-collecting" app peer data value and unit leadership.
+
+        Args:
+            force_restart: whether to restart service even if it's already running.
+            ignore_inactive_error: whether to not log an error when the service should be enabled but not active right now.
+
+        Returns: whether the operation was successful.
+        """
+        if not self.container.can_connect():
+            logger.error(
+                "Cannot connect to the pebble in the mysql container to check binlogs collector"
+            )
+            return False
+
+        service = self.container.get_services(MYSQL_BINLOGS_COLLECTOR_SERVICE).get(
+            MYSQL_BINLOGS_COLLECTOR_SERVICE
+        )
+        if not service:
+            logger.error("Binlogs collector service does not exist")
+            return False
+
+        is_enabled = service.startup == "enabled"
+        is_active = service.is_running()
+        supposed_to_run = (
+            self.charm.unit.is_leader() and "binlogs-collecting" in self.charm.app_peer_data
+        )
+
+        if supposed_to_run and is_enabled and not is_active and not ignore_inactive_error:
+            logger.error("Binlogs collector is enabled but not running. It will be restarted")
+
+        if is_active and (not supposed_to_run or force_restart):
+            self.container.stop(MYSQL_BINLOGS_COLLECTOR_SERVICE)
+
+        self.charm._reconcile_pebble_layer(self.container)
+        # Replan anyway as we may need to restart already enabled binlogs collector service (therefore without pebble layers change)
+        self.container._pebble.replan_services(timeout=0)
+
+        return True
+
+    def get_cluster_members(self) -> list[str]:
+        """Get cluster members in MySQL MEMBER_HOST format.
+
+        Returns: list of cluster members in MySQL MEMBER_HOST format.
+        """
+        return [self.charm.get_unit_address(self.charm.unit)] + [
+            self.charm.get_unit_address(unit) for unit in self.charm.peers.units
+        ]

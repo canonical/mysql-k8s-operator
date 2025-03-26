@@ -45,10 +45,12 @@ MYSQL_SYSTEM_GROUP = "mysql"
 CHARMED_MYSQL_XTRABACKUP_LOCATION = "xtrabackup"
 CHARMED_MYSQL_XBCLOUD_LOCATION = "xbcloud"
 CHARMED_MYSQL_XBSTREAM_LOCATION = "xbstream"
+CHARMED_MYSQL_PITR_HELPER = "mysql-pitr-helper"
 XTRABACKUP_PLUGIN_DIR = "/usr/lib64/xtrabackup/plugin"
 MYSQLD_DEFAULTS_CONFIG_FILE = "/etc/mysql/my.cnf"
 MYSQLD_EXPORTER_PORT = "9104"
 MYSQLD_EXPORTER_SERVICE = "mysqld_exporter"
+MYSQL_BINLOGS_COLLECTOR_SERVICE = "mysql-pitr-helper-collector"
 GR_MAX_MEMBERS = 9
 # TODO: should be changed when adopting cos-agent
 COS_AGENT_RELATION_NAME = "metrics-endpoint"
