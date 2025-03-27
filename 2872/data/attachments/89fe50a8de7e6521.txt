@@ -1,0 +1,74 @@
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:289 Deploying a new mysql cluster
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-1
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [executing] maintenance: Initialising mysqld
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:308 Rotating all mysql credentials
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:325 Syncing credentials
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:339 Waiting for blocked application status with another cluster S3 repository
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:347 Restoring backup_id='2025-03-27T01:31:47Z'
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:352 Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:366 Inserting value after restore
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:375 Ensuring that pre-backup and post-restore values exist in the database
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:386 Scaling mysql application to 3 units
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s (waiting for exactly 3 units, current : 1)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [executing] active: Primary
+  another-mysql-k8s/1 [executing] maintenance: Initialising mysqld
+  another-mysql-k8s/2 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  another-mysql-k8s/1 [executing] waiting: waiting to get cluster primary from peers
+  another-mysql-k8s/2 [idle] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [executing] active: Primary
+  another-mysql-k8s/1 [executing] active: 
+  another-mysql-k8s/2 [executing] active: 
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:394 Ensuring inserted values before backup and after restore exist on all units
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:412 Waiting for blocked application status after restore
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:42:53Z
+
+App                Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+another-mysql-k8s  8.0.41-0ubuntu0.22.04.1  blocked      3  mysql-k8s                       1  10.152.183.52   no       Move restored cluster to another S3 repository
+mysql-k8s          8.0.41-0ubuntu0.22.04.1  blocked      3  mysql-k8s                       0  10.152.183.111  no       Move restored cluster to another S3 repository
+s3-integrator                               active       1  s3-integrator  latest/stable  145  10.152.183.81   no       
+
+Unit                  Workload  Agent  Address    Ports  Message
+another-mysql-k8s/0*  active    idle   10.1.1.80         Primary
+another-mysql-k8s/1   active    idle   10.1.1.83         
+another-mysql-k8s/2   active    idle   10.1.1.84         
+mysql-k8s/0*          active    idle   10.1.1.73         Primary
+mysql-k8s/1           active    idle   10.1.1.78         
+mysql-k8s/2           active    idle   10.1.1.77         
+s3-integrator/0*      active    idle   10.1.1.74         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:33:21 ERROR unit.mysql-k8s/0.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:33:23 ERROR unit.mysql-k8s/0.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:33:25 ERROR unit.mysql-k8s/0.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:43 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:45 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:33:46 ERROR unit.mysql-k8s/1.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:47 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:58 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:00 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:02 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-another-mysql-k8s-1: 01:42:08 ERROR unit.another-mysql-k8s/1.juju-log database-peers:7: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-another-mysql-k8s-1: 01:42:10 ERROR unit.another-mysql-k8s/1.juju-log database-peers:7: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-another-mysql-k8s-1: 01:42:12 ERROR unit.another-mysql-k8s/1.juju-log database-peers:7: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:75 Cleaning backups from buckets
