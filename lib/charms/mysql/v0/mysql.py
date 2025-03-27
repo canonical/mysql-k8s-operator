@@ -134,7 +134,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 86
+LIBPATCH = 87
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1023,6 +1023,7 @@ class MySQLBase(ABC):
             "log_error": f"{snap_common}/var/log/mysql/error.log",
             "general_log": "OFF",
             "general_log_file": f"{snap_common}/var/log/mysql/general.log",
+            "loose-group_replication_paxos_single_leader": "ON",
             "slow_query_log_file": f"{snap_common}/var/log/mysql/slow.log",
             "binlog_expire_logs_seconds": f"{binlog_retention_seconds}",
             "loose-audit_log_policy": audit_log_policy.upper(),
