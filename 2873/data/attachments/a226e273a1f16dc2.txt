@@ -1,0 +1,1207 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:57 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+  mysql-k8s/2 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: installing charm software
+  mysql-k8s/1 [executing] maintenance: installing charm software
+  mysql-k8s/2 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [executing] maintenance: Starting mysqld
+  mysql-k8s/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [executing] maintenance: Starting mysqld
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] maintenance: Unable to get member state
+  mysql-k8s/2 [idle] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:44:02Z
+
+App        Version                  Status       Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s  8.0.41-0ubuntu0.22.04.1  maintenance      3  mysql-k8s             0  10.152.183.237  no       Unable to get member state
+
+Unit          Workload     Agent  Address       Ports  Message
+mysql-k8s/0   waiting      idle   10.1.148.139         waiting to get cluster primary from peers
+mysql-k8s/1*  maintenance  idle   10.1.148.141         Unable to get member state
+mysql-k8s/2   waiting      idle   10.1.148.140         waiting to get cluster primary from peers
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:29:49 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 768, in _run_mysqlcli_script
+    process = self.container.exec(command, timeout=timeout, stdin=password)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (exec 9: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2025-03-28T01:29:49Z ERROR exec 9: timeout waiting for websocket connections: context deadline exceeded
+-----
+unit-mysql-k8s-1: 01:29:49 ERROR unit.mysql-k8s/1.juju-log Failed to get installed plugins
+unit-mysql-k8s-1: 01:29:49 ERROR unit.mysql-k8s/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 768, in _run_mysqlcli_script
+    process = self.container.exec(command, timeout=timeout, stdin=password)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (exec 9: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2025-03-28T01:29:49Z ERROR exec 9: timeout waiting for websocket connections: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1123, in install_plugins
+    installed_plugins = self._get_installed_plugins()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1201, in _get_installed_plugins
+    output = self._run_mysqlcli_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 780, in _run_mysqlcli_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 1101, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 828, in _on_mysql_pebble_ready
+    self._configure_instance(container)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 731, in _configure_instance
+    self._mysql.install_plugins(["audit_log"])
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1159, in install_plugins
+    logger.error(f"Failed to install {plugin=}")  # type: ignore
+UnboundLocalError: local variable 'plugin' referenced before assignment
+unit-mysql-k8s-1: 01:29:49 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-1: 01:29:49 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-1: 01:29:51 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('test_cluster', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', 'label', 'mysql-k8s-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\'.\n\nValidating instance configuration at mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062...\n\nThis instance reports its own address as \x1b[1mmysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.' [truncated]
+unit-mysql-k8s-1: 01:29:51 ERROR unit.mysql-k8s/1.juju-log Failed to create cluster on instance: mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local
+unit-mysql-k8s-1: 01:29:51 ERROR unit.mysql-k8s/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('test_cluster', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', 'label', 'mysql-k8s-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\'.\n\nValidating instance configuration at mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062...\n\nThis instance reports its own address as \x1b[1mmysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.' [truncated]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1536, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 731, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 1101, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 814, in _on_mysql_pebble_ready
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 611, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1544, in create_cluster
+    raise MySQLCreateClusterError
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-mysql-k8s-1: 01:29:51 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-1: 01:29:51 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-1: 01:29:56 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('test_cluster', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', 'label', 'mysql-k8s-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\'.\n\nValidating instance configuration at mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062...\n\nThis instance reports its own address as \x1b[1mmysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.' [truncated]
+unit-mysql-k8s-1: 01:29:56 ERROR unit.mysql-k8s/1.juju-log Failed to create cluster on instance: mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local
+unit-mysql-k8s-1: 01:29:56 ERROR unit.mysql-k8s/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('test_cluster', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', 'label', 'mysql-k8s-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\'.\n\nValidating instance configuration at mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062...\n\nThis instance reports its own address as \x1b[1mmysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.' [truncated]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1536, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 731, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 1101, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 814, in _on_mysql_pebble_ready
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 611, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1544, in create_cluster
+    raise MySQLCreateClusterError
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-mysql-k8s-1: 01:29:57 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-1: 01:29:57 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-1: 01:30:01 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('test_cluster', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', 'label', 'mysql-k8s-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\'.\n\nValidating instance configuration at mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062...\n\nThis instance reports its own address as \x1b[1mmysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.' [truncated]
+unit-mysql-k8s-1: 01:30:01 ERROR unit.mysql-k8s/1.juju-log Failed to create cluster on instance: mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local
+unit-mysql-k8s-1: 01:30:01 ERROR unit.mysql-k8s/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('test_cluster', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local', 'label', 'mysql-k8s-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\'.\n\nValidating instance configuration at mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:33062...\n\nThis instance reports its own address as \x1b[1mmysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.' [truncated]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1536, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 731, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 1101, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 814, in _on_mysql_pebble_ready
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 611, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/mysql/v0/mysql.py", line 1544, in create_cluster
+    raise MySQLCreateClusterError
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-mysql-k8s-1: 01:30:01 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-1: 01:30:01 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-k8s-2: 01:30:02 ERROR unit.mysql-k8s/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:04 ERROR unit.mysql-k8s/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:06 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:06 ERROR unit.mysql-k8s/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:21 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:30:21 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:30:31 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:30:31 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:30:41 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:30:41 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:30:41 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:30:41 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:30:41 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:30:51 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:30:51 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:31:01 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:31:01 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:31:01 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:31:08 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:31:08 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-0: 01:31:09 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:31:11 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:31:13 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:31:18 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:31:18 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:31:28 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:31:28 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:31:28 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:31:28 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:31:28 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:31:38 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:31:38 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:31:49 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:31:49 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:31:49 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:32:17 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:32:17 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:32:18 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:32:20 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:32:22 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:32:24 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:32:26 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:32:27 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:32:27 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:32:28 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:32:37 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:32:37 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:32:37 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:32:37 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:32:37 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:32:47 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:32:47 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:32:57 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:32:57 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:32:57 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:33:25 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:33:25 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-0: 01:33:25 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:26 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:33:27 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:28 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:33:29 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:30 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:33:35 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:33:35 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:33:45 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:33:45 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:33:45 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:33:45 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:33:45 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:33:55 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:33:55 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:34:05 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:34:05 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:34:05 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:34:24 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:34:24 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:34:24 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:26 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:28 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:34 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:34:34 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:34:44 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:34:44 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:34:44 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:34:45 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:34:45 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:34:55 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:34:55 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:35:05 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:35:05 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:35:05 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:35:30 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:35:30 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:35:40 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:35:40 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:35:50 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:35:50 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:35:50 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:35:51 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:35:51 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:36:01 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:36:01 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:36:11 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:36:11 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:36:11 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:36:26 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:36:26 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:36:36 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:36:36 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:36:46 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:36:46 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:36:46 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:36:46 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:36:46 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:36:56 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:36:56 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:06 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:37:06 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:06 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:37:15 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:37:15 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:25 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:37:25 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:35 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:37:35 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:35 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:37:35 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:37:35 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:45 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:37:45 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:55 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:37:55 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:55 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:38:13 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:38:13 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:23 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:38:23 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:33 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:38:33 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:33 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:38:34 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:38:34 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:44 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:38:44 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:54 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:38:54 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:54 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:39:02 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:39:02 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-0: 01:39:02 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:39:03 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:39:04 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:39:05 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:39:06 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:39:07 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:39:12 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:39:12 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:39:22 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:39:22 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:39:22 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:39:22 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:39:22 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:39:32 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:39:32 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:39:42 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:39:42 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:39:42 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:40:07 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:40:07 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:40:08 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:08 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:40:10 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:10 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:40:12 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:12 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:40:14 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:14 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:40:16 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:16 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:40:17 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:40:17 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-2: 01:40:18 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:18 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:40:20 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:20 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:40:22 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:22 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:40:24 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:40:24 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:40:27 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:40:27 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:40:27 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:40:27 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:40:27 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:40:37 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:40:37 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:40:48 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:40:48 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:40:48 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:41:03 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:41:03 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:41:13 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:41:13 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:41:23 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:41:23 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:41:23 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:41:23 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:41:23 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:41:33 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:41:33 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:41:43 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:41:43 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:41:43 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:41:52 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:41:52 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:42:02 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:42:02 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:42:12 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:42:12 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:42:12 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:42:12 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:42:12 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:42:22 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:42:22 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:42:32 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:42:32 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:42:32 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:43:01 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:43:01 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:43:11 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:43:11 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:43:21 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:43:21 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:43:21 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:43:21 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:43:21 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:43:31 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:43:31 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:43:41 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-mysql-k8s-1: 01:43:41 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:43:41 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
