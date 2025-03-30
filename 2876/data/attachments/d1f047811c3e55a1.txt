@@ -1,0 +1,48 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:43:17Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.17   no       Last written value=322
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.200  no       Last written value=261
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.237  no       Last written value=122
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.98   no       Last written value=109
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.81   no       Last written value=229
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.99   no       Last written value=101
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.29   no       Last written value=219
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.168  no       
+router0  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     600  10.152.183.125  no       Waiting for K8s service connectivity
+router1  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     600  10.152.183.181  no       Waiting for K8s service connectivity
+router2  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     600  10.152.183.253  no       Waiting for K8s service connectivity
+router3  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     600  10.152.183.119  no       Waiting for K8s service connectivity
+router4  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     600  10.152.183.233  no       Waiting for K8s service connectivity
+router5  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     600  10.152.183.32   no       
+router6  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     600  10.152.183.122  no       Waiting for K8s service connectivity
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.77.10         Last written value=322
+app1/0*     active    idle   10.1.77.11         Last written value=261
+app2/0*     active    idle   10.1.77.13         Last written value=122
+app3/0*     active    idle   10.1.77.15         Last written value=109
+app4/0*     active    idle   10.1.77.17         Last written value=229
+app5/0*     active    idle   10.1.77.19         Last written value=101
+app6/0*     active    idle   10.1.77.20         Last written value=219
+mysql/0*    active    idle   10.1.77.9          Primary
+router0/0*  active    idle   10.1.77.12         
+router1/0*  active    idle   10.1.77.14         
+router2/0*  active    idle   10.1.77.16         
+router3/0*  active    idle   10.1.77.18         
+router4/0*  active    idle   10.1.77.21         
+router5/0*  active    idle   10.1.77.22         
+router6/0*  active    idle   10.1.77.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-1: 01:39:11 ERROR unit.mysql/1.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:13 ERROR unit.mysql/1.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:15 ERROR unit.mysql/1.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:42:54 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-0: 01:43:00 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
