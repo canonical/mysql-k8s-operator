@@ -9,9 +9,6 @@ concurrency:
 on:
   pull_request:
     paths-ignore:
-      - '.gitignore'
-      - '.jujuignore'
-      - 'LICENSE'
       - '**.md'
       - '.github/renovate.json5'
       - '.github/workflows/sync_docs.yaml'
