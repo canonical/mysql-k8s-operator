@@ -1,0 +1,246 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:320 Remove async relation
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:326 waiting for units to be blocked
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:332 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [idle] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] active: Primary
+  db1/1 [executing] active: 
+  db1/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] active: Primary
+  db1/1 [idle] active: 
+  db1/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [idle] blocked: Standalone read-only unit.
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:346 Re relating the two mysql clusters
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:349 Waiting for the applications to settle
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:358 Running create replication action
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:368 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Wait until unit is initialized before running create-replication on offer side
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] maintenance: Sharing credentials with replica cluster
+  db1/1 [executing] active: 
+  db1/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] waiting: waiting to join the cluster
+  db2/1 [idle] active: 
+  db2/2 [executing] waiting: Waiting other units join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] maintenance: Sharing credentials with replica cluster
+  db1/1 [idle] active: 
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] active: 
+  db2/2 [executing] maintenance: Dissolving replica cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] maintenance: Sharing credentials with replica cluster
+  db1/1 [idle] active: 
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] active: Primary
+  db1/1 [idle] active: 
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] waiting: waiting to join the cluster
+  db2/1 [executing] waiting: waiting to join the cluster
+  db2/2 [executing] waiting: Waiting for recovery to complete on other units
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] maintenance: joining the cluster
+  db2/1 [idle] active: 
+  db2/2 [idle] waiting: Waiting for recovery to complete on other units
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] active: 
+  db2/2 [idle] active: Standby
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:391 Testing data replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:398 Stopping continuous writes and wait (5s) for replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:405 Querying max value on all units
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:67 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:47:58Z
+
+App               Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+db1               8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s                        0  10.152.183.214  no       
+mysql-router-k8s  8.0.41-0ubuntu0.22.04.1  active      1  mysql-router-k8s  8.0/edge     627  10.152.183.192  no       
+mysql-test-app    0.0.2                    active      1  mysql-test-app    latest/edge   73  10.152.183.68   no       Last written value=5044
+
+Unit                 Workload  Agent      Address      Ports  Message
+db1/0*               active    executing  10.1.176.12         Primary
+db1/1                active    executing  10.1.176.13         
+db1/2                active    executing  10.1.176.14         
+mysql-router-k8s/0*  active    idle       10.1.176.21         
+mysql-test-app/0*    active    idle       10.1.176.22         Last written value=5044
+
+Offer  Application  Charm      Rev  Connected  Endpoint           Interface    Role
+db1    db1          mysql-k8s  0    1/1        replication-offer  mysql_async  provider
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-db1-1: 01:30:37 ERROR unit.db1/1.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:30:39 ERROR unit.db1/1.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:30:40 ERROR unit.db1/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:30:41 ERROR unit.db1/1.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:31:29 ERROR unit.db1/2.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:31:31 ERROR unit.db1/2.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:31:33 ERROR unit.db1/2.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-test-app-0: 01:32:51 ERROR unit.mysql-test-app/0.juju-log database:8: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 3320, in _run
+    result = subprocess.run(args, **kwargs)  # type: ignore
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '('/var/lib/juju/tools/unit-mysql-test-app-0/secret-get', 'secret://39baf920-1a7f-4ba3-81ea-55813460826d/cvnjdffqgd1s7bfkfcag', '--label', 'database.8.user.secret', '--format=json')' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/src/charm.py", line 485, in <module>
+    main(MySQLTestApplication)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 40, in main
+    return _main.main(charm_class=charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/_main.py", line 558, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/_main.py", line 543, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/_main.py", line 502, in _emit
+    self._emit_charm_event(self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/_main.py", line 530, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 347, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 906, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 996, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 3117, in _on_relation_changed_event
+    self.relation_data._register_secrets_to_relation(event.relation, diff.added)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1744, in _register_secrets_to_relation
+    self._register_secret_to_relation(relation.name, relation.id, secret_uri, group)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1729, in _register_secret_to_relation
+    CachedSecret(self._model, self.component, label, secret_id).meta
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 645, in meta
+    self._secret_meta = self._model.get_secret(id=self._secret_uri, label=self.label)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 308, in get_secret
+    content = self._backend.secret_get(id=id, label=label)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 3692, in secret_get
+    result = self._run('secret-get', *args, return_output=True, use_json=True)
+  File "/var/lib/juju/agents/unit-mysql-test-app-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 3322, in _run
+    raise ModelError(e.stderr) from e
+ops.model.ModelError: ERROR rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/7967/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+
+unit-mysql-test-app-0: 01:32:52 ERROR juju.worker.uniter.operation hook "database-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-db1-1: 01:39:06 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:39:08 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:39:10 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:39:12 ERROR unit.db1/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-2/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-2.db1-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('lima')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-2.db1-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mError connecting to Cluster: RuntimeError: Could not open connection to \'db2-2.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.get_cluster: Could not open connection to \'db2-2.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\n\n'
+unit-db1-2: 01:39:12 ERROR unit.db1/2.juju-log Failed to get cluster status for lima
+unit-db1-2: 01:39:12 ERROR unit.db1/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-2/charm/src/mysql_k8s_helpers.py", line 905, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-db1-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-2/charm/lib/charms/mysql/v0/mysql.py", line 2152, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-db1-1: 01:39:19 ERROR unit.db1/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('lima')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mError connecting to Cluster: RuntimeError: Could not open connection to \'db2-2.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.get_cluster: Could not open connection to \'db2-2.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\n\n'
+unit-db1-1: 01:39:19 ERROR unit.db1/1.juju-log Failed to get cluster status for lima
+unit-db1-1: 01:39:19 ERROR unit.db1/1.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 905, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 2152, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-db1-0: 01:40:51 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:40:53 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:40:55 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:40:57 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:40:59 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:41:01 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:41:03 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:41:05 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:41:07 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:20 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:22 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:24 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:26 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:28 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:30 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:32 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:34 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:36 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:39 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:41 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:42:43 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:20 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:20 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:22 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:22 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:24 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:24 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:26 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:26 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:28 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:28 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:30 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:30 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:32 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:32 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:34 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:34 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:35 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:36 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:36 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:37 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:39 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:39 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:44 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:46 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:46 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:48 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:48 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:50 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:51 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:52 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:53 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:55 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:55 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:57 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:57 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:43:59 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:59 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:44:01 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:44:01 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:44:03 ERROR unit.db1/0.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:44:03 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

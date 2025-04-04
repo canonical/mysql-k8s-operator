@@ -1,0 +1,57 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:29:54Z
+
+App        Version  Status  Scale  Charm      Channel  Rev  Address        Exposed  Message
+mysql-k8s           error       1  mysql-k8s             0  10.152.183.52  no       hook failed: "install"
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0*  error     idle   10.1.193.73         hook failed: "install"
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:29:33 ERROR unit.mysql-k8s/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 14, in <module>
+    main(WrongArchitectureWarningCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 549, in main
+    manager = _Manager(charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 432, in __init__
+    self.charm = self._make_charm(self.framework, self.dispatcher)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 435, in _make_charm
+    charm = self._charm_class(framework)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/architecture.py", line 59, in __init__
+    raise RuntimeError(
+RuntimeError: Incompatible architecture: this charm revision does not support x86_64. If this app is being refreshed, rollback with instructions from Charmhub docs. If this app is being deployed for the first time, remove it and deploy it again using a compatible revision.
+unit-mysql-k8s-0: 01:29:33 ERROR juju.worker.uniter.operation hook "install" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-0: 01:29:38 ERROR unit.mysql-k8s/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 14, in <module>
+    main(WrongArchitectureWarningCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 549, in main
+    manager = _Manager(charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 432, in __init__
+    self.charm = self._make_charm(self.framework, self.dispatcher)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 435, in _make_charm
+    charm = self._charm_class(framework)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/architecture.py", line 59, in __init__
+    raise RuntimeError(
+RuntimeError: Incompatible architecture: this charm revision does not support x86_64. If this app is being refreshed, rollback with instructions from Charmhub docs. If this app is being deployed for the first time, remove it and deploy it again using a compatible revision.
+unit-mysql-k8s-0: 01:29:39 ERROR juju.worker.uniter.operation hook "install" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-0: 01:29:49 ERROR unit.mysql-k8s/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 14, in <module>
+    main(WrongArchitectureWarningCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 549, in main
+    manager = _Manager(charm_class, use_juju_for_storage=use_juju_for_storage)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 432, in __init__
+    self.charm = self._make_charm(self.framework, self.dispatcher)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 435, in _make_charm
+    charm = self._charm_class(framework)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/architecture.py", line 59, in __init__
+    raise RuntimeError(
+RuntimeError: Incompatible architecture: this charm revision does not support x86_64. If this app is being refreshed, rollback with instructions from Charmhub docs. If this app is being deployed for the first time, remove it and deploy it again using a compatible revision.
+unit-mysql-k8s-0: 01:29:49 ERROR juju.worker.uniter.operation hook "install" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
