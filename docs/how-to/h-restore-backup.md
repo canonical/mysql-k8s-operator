@@ -15,10 +15,15 @@ To restore a backup that was made from the a *different* cluster, (i.e. cluster 
 - Access to S3 storage
 - [Have configured settings for S3 storage](/t/charmed-mysql-k8s-how-to-configure-s3/9651)
 - [Have existing backups in your S3-storage](/t/charmed-mysql-k8s-how-to-create-and-list-backups/9653)
+- Point-in-time recovery requires the following MySQL K8s charm revisions:
+  * 248+ for arm64
+  * 249+ for amd64
+
 
 ## Summary
 
 * [List backups](#list-backups)
+* [Point-in-time recovery](#point-in-time-recovery)
 * [Restore backup](#restore-backup)
 
 ---
@@ -38,6 +43,10 @@ This should show your available backups
       YYYY-MM-DDTHH:MM:SSZ  | physical     | finished
 ```
 
+## Point-in-time recovery
+
+Point-in-time recovery (PITR) is a MySQL K8s feature that enables restorations to the database state at specific points in time. The feature is enabled by default when there’s a working relation with S3 storage.
+
 ## Restore backup
 
 To restore a backup from that list, run the `restore` command and pass the `backup-id` to restore:
@@ -46,3 +55,17 @@ juju run mysql-k8s/leader restore backup-id=YYYY-MM-DDTHH:MM:SSZ
 ```
 
 Your restore will then be in progress.
+
+However, if the user needs to restore to a specific point in time between different backups (e.g. to restore only specific transactions made between those backups), they can use the restore-to-time parameter to pass a timestamp related to the moment they want to restore.
+
+ ```shell
+juju run mysql-k8s/leader restore restore-to-time="YYYY-MM-DD HH:MM:SS"
+```
+
+Your restore will then be in progress.
+
+It’s also possible to restore to the latest point from a specific timeline by passing the ID of a backup taken on that timeline and restore-to-time=latest when requesting a restore:
+
+ ```shell
+juju run mysql-k8s/leader restore restore-to-time=latest
+```
