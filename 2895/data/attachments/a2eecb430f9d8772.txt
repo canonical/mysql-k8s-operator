@@ -1,0 +1,119 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:44:16Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.28   no       Last written value=329
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.252  no       Last written value=331
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.202  no       Last written value=230
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.138  no       Last written value=223
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.70   no       Last written value=242
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.194  no       Last written value=213
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.109  no       Last written value=255
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.179  no       
+router0  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.226  no       
+router1  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.118  no       Waiting for K8s service connectivity
+router2  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.212  no       Waiting for K8s service connectivity
+router3  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.63   no       
+router4  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.173  no       Waiting for K8s service connectivity
+router5  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.114  no       
+router6  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.213  no       
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.49.74         Last written value=329
+app1/0*     active    idle   10.1.49.75         Last written value=331
+app2/0*     active    idle   10.1.49.77         Last written value=230
+app3/0*     active    idle   10.1.49.79         Last written value=223
+app4/0*     active    idle   10.1.49.81         Last written value=242
+app5/0*     active    idle   10.1.49.83         Last written value=213
+app6/0*     active    idle   10.1.49.84         Last written value=255
+mysql/0*    active    idle   10.1.49.73         Primary
+router0/0*  active    idle   10.1.49.76         
+router1/0*  active    idle   10.1.49.78         
+router2/0*  active    idle   10.1.49.80         
+router3/0*  active    idle   10.1.49.82         
+router4/0*  active    idle   10.1.49.85         
+router5/0*  active    idle   10.1.49.86         
+router6/0*  active    idle   10.1.49.87         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-2: 01:36:17 ERROR unit.mysql/2.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'root', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', "CREATE USER 'serverconfig'@'%' IDENTIFIED BY '*****';GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION;CREATE USER 'monitoring'@'%' IDENTIFIED BY '*****' WITH MAX_USER_CONNECTIONS 3;GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%';CREATE USER 'backups'@'%' IDENTIFIED BY '*****';GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO 'backups'@'%';GRANT SELECT ON performance_schema.log_status TO 'backups'@'%';GRANT SELECT ON performance_schema.keyring_component_status TO 'backups'@'%';GRANT SELECT ON performance_schema.replication_group_members TO 'backups'@'%';UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';ALTER USER 'root'@'localhost' IDENTIFIED BY '*****';REVOKE SYSTEM_USER, SYSTEM_VARIABLES_ADMIN, SUPER, REPLICATION_SLAVE_ADMIN, GROUP_REPLICATION_ADMIN, BINLOG_ADMIN, SET_USER_ID, ENCRYPTION_KEY_ADMIN, VERSION_TOKEN_ADMIN, CONNECTION_ADMIN ON *.* FROM 'root'@'localhost';FLUSH PRIVILEGES"], stdout='', stderr="Enter password: ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)\n"
+unit-mysql-2: 01:36:17 ERROR unit.mysql/2.juju-log Failed to configure users for: mysql-2.mysql-endpoints.testing.svc.cluster.local
+unit-mysql-2: 01:36:17 ERROR unit.mysql/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'root', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', "CREATE USER 'serverconfig'@'%' IDENTIFIED BY '*****';GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION;CREATE USER 'monitoring'@'%' IDENTIFIED BY '*****' WITH MAX_USER_CONNECTIONS 3;GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%';CREATE USER 'backups'@'%' IDENTIFIED BY '*****';GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO 'backups'@'%';GRANT SELECT ON performance_schema.log_status TO 'backups'@'%';GRANT SELECT ON performance_schema.keyring_component_status TO 'backups'@'%';GRANT SELECT ON performance_schema.replication_group_members TO 'backups'@'%';UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';ALTER USER 'root'@'localhost' IDENTIFIED BY '*****';REVOKE SYSTEM_USER, SYSTEM_VARIABLES_ADMIN, SUPER, REPLICATION_SLAVE_ADMIN, GROUP_REPLICATION_ADMIN, BINLOG_ADMIN, SET_USER_ID, ENCRYPTION_KEY_ADMIN, VERSION_TOKEN_ADMIN, CONNECTION_ADMIN ON *.* FROM 'root'@'localhost';FLUSH PRIVILEGES"], stdout='', stderr="Enter password: ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)\n"
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/mysql/v0/mysql.py", line 1095, in configure_mysql_users
+    self._run_mysqlcli_script(
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 780, in _run_mysqlcli_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/charm.py", line 1101, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/charm.py", line 828, in _on_mysql_pebble_ready
+    self._configure_instance(container)
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/charm.py", line 727, in _configure_instance
+    self._mysql.configure_mysql_users()
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-2/charm/lib/charms/mysql/v0/mysql.py", line 1101, in configure_mysql_users
+    raise MySQLConfigureMySQLUsersError
+charms.mysql.v0.mysql.MySQLConfigureMySQLUsersError
+unit-mysql-2: 01:36:20 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-2: 01:36:20 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-mysql-2: 01:36:30 ERROR unit.mysql/2.juju-log Failed to initialise MySQL data directory
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-2/charm/src/mysql_k8s_helpers.py", line 227, in initialise_mysqld
+    process.wait()
+  File "/var/lib/juju/agents/unit-mysql-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1697, in wait
+    raise ExecError(self._command, exit_code, None, None)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/sbin/mysqld', '--initialize', '-u', 'mysql']
+unit-mysql-0: 01:39:31 ERROR unit.mysql/0.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-0: 01:39:33 ERROR unit.mysql/0.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-0: 01:39:35 ERROR unit.mysql/0.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:42 ERROR unit.mysql/1.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:44 ERROR unit.mysql/1.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:46 ERROR unit.mysql/1.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:43:42 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: write tcp 10.1.49.99:60636->10.152.183.217:17070: write: connection reset by peer: write tcp 10.1.49.99:60636->10.152.183.217:17070: write: connection reset by peer
+unit-mysql-0: 01:44:00 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
