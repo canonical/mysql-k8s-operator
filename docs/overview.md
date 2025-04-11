@@ -32,8 +32,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 
 | Level | Path | Navlink |
 |---------|---------|-------------|
-| 1 | tutorial | [Tutorial]() |
-| 2 | t-overview | [Overview](/t/9677) |
+| 1 | tutorial | [Tutorial](/t/9677) |
 | 2 | t-set-up | [1. Set up the environment](/t/9679) |
 | 2 | t-deploy | [2. Deploy MySQL](/t/9667) |
 | 2 | t-scale | [3. Scale replicas](/t/9675) |
@@ -41,7 +40,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 2 | t-integrate | [5. Integrate applications](/t/9671)  |
 | 2 | t-enable-tls | [6. Enable TLS encryption](/t/9669) |
 | 2 | t-clean-up | [7. Clean up the environment](/t/9665) |
-| 1 | how-to | [How To]() |
+| 1 | how-to | [How-to guides](/t/17234) |
 | 2 | h-setup | [Deploy]() |
 | 3 | h-deploy-canonical-k8s | [Canonical K8s](/t/15939) |
 | 3 | h-deploy-microk8s | [MicroK8s](/t/11869) |
@@ -52,7 +51,7 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 3 | h-deploy-terraform | [Terraform](/t/14926) |
 | 3 | h-deploy-airgapped | [Air-gapped](/t/15729) |
 | 2 | h-integrate| [Integrate with another application](/t/9657) |
-| 2 | h-external-access | [External access](/t/15728) |
+| 2 | h-external-access | [External network access](/t/15728) |
 | 2 | h-scale | [Scale replicas](/t/9659) |
 | 2 | h-enable-tls | [Enable TLS](/t/9655) |
 | 2 | h-backups | [Back up and restore]() |
@@ -69,39 +68,39 @@ Charmed MySQL K8s is an official distribution of MySQL. It’s an open-source pr
 | 3 | h-upgrade-juju | [Upgrade Juju](/t/14333) |
 | 3 | h-upgrade-minor | [Perform a minor upgrade](/t/11752) |
 | 3 | h-rollback-minor | [Perform a minor rollback](/t/11753) |
-| 2 | h-development| [Development]() |
-| 3 | h-development-integrate | [Integrate with your charm](/t/11885) |
-| 3 | h-migrate-mysqldump | [Migrate data via mysqldump](/t/11992) |
-| 3 | h-migrate-mydumper | [Migrate data via mydumper](/t/12006) |
-| 3 | h-migrate-backup-restore | [Migrate data via backup/restore](/t/12007) |
-| 3 | h-troubleshooting | [Troubleshooting](/t/11886) |
 | 2 | h-async | [Cross-regional async replication]() |
 | 3 | h-async-deployment | [Deploy](/t/13458) |
 | 3 | h-async-clients | [Clients](/t/13459) |
 | 3 | h-async-failover | [Switchover / Failover](/t/13460) |
 | 3 | h-async-recovery | [Recovery](/t/13467) |
 | 3 | h-async-removal | [Removal](/t/13468) |
+| 2 | h-development| [Development]() |
+| 3 | h-development-integrate | [Integrate with your charm](/t/11885) |
+| 3 | h-migrate-mysqldump | [Migrate data via mysqldump](/t/11992) |
+| 3 | h-migrate-mydumper | [Migrate data via mydumper](/t/12006) |
+| 3 | h-migrate-backup-restore | [Migrate data via backup/restore](/t/12007) |
+| 3 | h-troubleshooting | [Troubleshooting](/t/11886) |
 | 2 | h-contribute | [Contribute](/t/14655) |
-| 1 | reference | [Reference]() |
+| 1 | reference | [Reference](/t/17236) |
 | 2 | r-releases | [Releases](/t/11878) |
 | 2 | r-system-requirements | [System requirements](/t/11421) |
-| 2 | r-testing | [Testing](/t/11772) |
+| 2 | r-testing | [Software testing](/t/11772) |
 | 2 | r-profiles | [Profiles](/t/11892) |
 | 2 | r-plugins-extensions | [Plugins/extensions](/t/15482) |
 | 2 | r-alert-rules | [Alert rules](/t/15838) |
-| 2 | r-statuses | [Statuses](/t/11866) |
+| 2 | r-statuses | [Charm statuses](/t/11866) |
 | 2 | r-contacts | [Contacts](/t/11868) |
-| 1 | explanation | [Explanation]() |
+| 1 | explanation | [Explanation](/t/17238) |
 | 2 | e-architecture | [Architecture](/t/11757) |
 | 2 | e-interfaces-endpoints | [Interfaces/endpoints](/t/10249) |
+| 2 | e-juju | [Juju](/t/11984) |
+| 2 | e-legacy-charm | [Legacy charm](/t/11236) |
 | 2 | e-users | [Users](/t/10791) |
-| 2 | e-security | [Security](/t/16782) |
-| 2 | e-cryptography | [Cryptography](/t/16783) |
 | 2 | e-logs | [Logs](/t/12080) |
 | 3 | e-audit-logs | [Audit Logs](/t/15423) |
-| 2 | e-juju | [Juju](/t/11984) |
+| 2 | e-security | [Security](/t/16782) |
+| 2 | e-cryptography | [Cryptography](/t/16783) |
 | 2 | e-flowcharts | [Flowcharts](/t/10031) |
-| 2 | e-legacy-charm | [Legacy charm](/t/11236) |
 | 1 | search | [Search](https://canonical.com/data/docs/mysql/k8s) |
 
 [/details]
