@@ -1,0 +1,49 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.4    unsupported  01:42:59Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.200  no       Last written value=251
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.87   no       Last written value=218
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.230  no       Last written value=113
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.95   no       Last written value=216
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.120  no       Last written value=230
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.121  no       Last written value=241
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.242  no       Last written value=219
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.61   no       
+router0  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.83   no       
+router1  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.207  no       Waiting for K8s service connectivity
+router2  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.89   no       Waiting for K8s service connectivity
+router3  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.208  no       Waiting for K8s service connectivity
+router4  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.32   no       Waiting for K8s service connectivity
+router5  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.88   no       Waiting for K8s service connectivity
+router6  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.243  no       
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.3.138         Last written value=251
+app1/0*     active    idle   10.1.3.140         Last written value=218
+app2/0*     active    idle   10.1.3.141         Last written value=113
+app3/0*     active    idle   10.1.3.143         Last written value=216
+app4/0*     active    idle   10.1.3.145         Last written value=230
+app5/0*     active    idle   10.1.3.147         Last written value=241
+app6/0*     active    idle   10.1.3.149         Last written value=219
+mysql/0*    active    idle   10.1.3.137         Primary
+router0/0*  active    idle   10.1.3.139         
+router1/0*  active    idle   10.1.3.142         
+router2/0*  active    idle   10.1.3.144         
+router3/0*  active    idle   10.1.3.146         
+router4/0*  active    idle   10.1.3.148         
+router5/0*  active    idle   10.1.3.150         
+router6/0*  active    idle   10.1.3.151         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-1: 01:39:01 ERROR unit.mysql/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:03 ERROR unit.mysql/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:05 ERROR unit.mysql/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:07 ERROR unit.mysql/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:09 ERROR unit.mysql/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:11 ERROR unit.mysql/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
