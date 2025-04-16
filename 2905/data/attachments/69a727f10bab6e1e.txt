@@ -1,0 +1,61 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.5    unsupported  01:43:11Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.54   no       Last written value=227
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.41   no       Last written value=283
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.140  no       Last written value=208
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.225  no       Last written value=283
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.236  no       Last written value=234
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.48   no       Last written value=251
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.55   no       Last written value=291
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.252  no       
+router0  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.57   no       
+router1  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.56   no       Waiting for K8s service connectivity
+router2  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.66   no       
+router3  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.226  no       Waiting for K8s service connectivity
+router4  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.201  no       Waiting for K8s service connectivity
+router5  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     656  10.152.183.211  no       Waiting for K8s service connectivity
+router6  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     656  10.152.183.17   no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.164.10         Last written value=227
+app1/0*     active    idle   10.1.164.11         Last written value=283
+app2/0*     active    idle   10.1.164.13         Last written value=208
+app3/0*     active    idle   10.1.164.15         Last written value=283
+app4/0*     active    idle   10.1.164.17         Last written value=234
+app5/0*     active    idle   10.1.164.19         Last written value=251
+app6/0*     active    idle   10.1.164.21         Last written value=291
+mysql/0*    active    idle   10.1.164.9          Primary
+router0/0*  active    idle   10.1.164.12         
+router1/0*  active    idle   10.1.164.14         
+router2/0*  active    idle   10.1.164.16         
+router3/0*  active    idle   10.1.164.18         
+router4/0*  active    idle   10.1.164.20         
+router5/0*  active    idle   10.1.164.22         
+router6/0*  active    idle   10.1.164.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-2: 01:39:14 ERROR unit.mysql/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:15 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-2: 01:39:16 ERROR unit.mysql/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:17 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-2: 01:39:18 ERROR unit.mysql/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:19 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:31 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:33 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:35 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:37 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:40 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:42 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:49 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:51 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:39:53 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:40:00 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:40:02 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-1: 01:40:04 ERROR unit.mysql/1.juju-log upgrade:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
