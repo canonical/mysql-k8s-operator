@@ -26,7 +26,7 @@ Canonical does not prescribe how you should set up your specific air-gapped envi
 ## Air-gapped day-to-day example
 
 **1.** Exporting K8s Charms and OCI Resources are currently independent processes.
-> Sseveral improvements are planned:  [#1](https://warthogs.atlassian.net/browse/PF-5369), [#2](https://warthogs.atlassian.net/browse/PF-5185)
+> Several improvements are planned:  [#1](https://warthogs.atlassian.net/browse/PF-5369), [#2](https://warthogs.atlassian.net/browse/PF-5185)
 
 **1.1.** Charm. The necessary charm(s) can be exported as bundle OR independently (charm-by-charm). The special store-admin tool is designed to simplify the process. At the moment exporting of Charms and OCI resources are separated, but in the future the `store-admin export` [could](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#export-charms) export all necessary OCI resource(s)) from official CharmHub.
 
