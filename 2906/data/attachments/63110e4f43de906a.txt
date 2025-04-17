@@ -1,0 +1,152 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.5    unsupported  01:53:51Z
+
+App      Version                  Status   Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active       1  mysql-test-app    latest/edge   73  10.152.183.249  no       Last written value=570
+app1     0.0.2                    active       1  mysql-test-app    latest/edge   73  10.152.183.94   no       Last written value=583
+app2     0.0.2                    active       1  mysql-test-app    latest/edge   73  10.152.183.214  no       Last written value=565
+app3     0.0.2                    active       1  mysql-test-app    latest/edge   73  10.152.183.134  no       Last written value=539
+app4     0.0.2                    active       1  mysql-test-app    latest/edge   73  10.152.183.99   no       Last written value=668
+app5     0.0.2                    active       1  mysql-test-app    latest/edge   73  10.152.183.131  no       Last written value=588
+app6     0.0.2                    waiting      1  mysql-test-app    latest/edge   73  10.152.183.133  no       
+mysql    8.0.41-0ubuntu0.22.04.1  active       1  mysql-k8s                        0  10.152.183.192  no       
+router0  8.0.41-0ubuntu0.22.04.1  active       1  mysql-router-k8s  8.0/edge     656  10.152.183.222  no       
+router1  8.0.41-0ubuntu0.22.04.1  active       1  mysql-router-k8s  8.0/edge     656  10.152.183.132  no       
+router2  8.0.41-0ubuntu0.22.04.1  active       1  mysql-router-k8s  8.0/edge     656  10.152.183.174  no       
+router3  8.0.41-0ubuntu0.22.04.1  active       1  mysql-router-k8s  8.0/edge     656  10.152.183.80   no       
+router4  8.0.41-0ubuntu0.22.04.1  active       1  mysql-router-k8s  8.0/edge     656  10.152.183.115  no       
+router5  8.0.41-0ubuntu0.22.04.1  active       1  mysql-router-k8s  8.0/edge     656  10.152.183.107  no       
+router6  8.0.41-0ubuntu0.22.04.1  waiting      1  mysql-router-k8s  8.0/edge     656  10.152.183.202  no       Waiting for mysql app on backend-database endpoint
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.76.138         Last written value=570
+app1/0*     active    idle   10.1.76.139         Last written value=583
+app2/0*     active    idle   10.1.76.141         Last written value=565
+app3/0*     active    idle   10.1.76.143         Last written value=539
+app4/0*     active    idle   10.1.76.145         Last written value=668
+app5/0*     active    idle   10.1.76.146         Last written value=588
+app6/0*     waiting   idle   10.1.76.149         
+mysql/0*    active    idle   10.1.76.137         Primary
+router0/0*  active    idle   10.1.76.140         
+router1/0*  active    idle   10.1.76.142         
+router2/0*  active    idle   10.1.76.144         
+router3/0*  active    idle   10.1.76.147         
+router4/0*  active    idle   10.1.76.148         
+router5/0*  active    idle   10.1.76.150         
+router6/0*  waiting   idle   10.1.76.151         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-0: 01:30:52 ERROR unit.mysql/0.juju-log database:43: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/src/mysql_k8s_helpers.py", line 722, in _run_mysqlsh_script
+    process = self.container.exec(cmd, stdin=password)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysqlsh" (exec 111: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2025-04-17T01:30:52Z ERROR exec 111: timeout waiting for websocket connections: context deadline exceeded
+-----
+unit-mysql-0: 01:30:52 ERROR unit.mysql/0.juju-log database:43: Failed to create application database mysql_innodb_cluster_metadata and scoped user relation-43_508907dfd4d146@%
+unit-mysql-0: 01:30:52 ERROR unit.mysql/0.juju-log database:43: Failed to set up database relation
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/src/mysql_k8s_helpers.py", line 722, in _run_mysqlsh_script
+    process = self.container.exec(cmd, stdin=password)
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysqlsh" (exec 111: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2025-04-17T01:30:52Z ERROR exec 111: timeout waiting for websocket connections: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/lib/charms/mysql/v0/mysql.py", line 1306, in create_application_database_and_scoped_user
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-0/charm/src/mysql_k8s_helpers.py", line 731, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/src/relations/mysql_provider.py", line 137, in _on_database_requested
+    self.charm._mysql.create_application_database_and_scoped_user(
+  File "/var/lib/juju/agents/unit-mysql-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-0/charm/lib/charms/mysql/v0/mysql.py", line 1316, in create_application_database_and_scoped_user
+    raise MySQLCreateApplicationDatabaseAndScopedUserError(e.message)
+charms.mysql.v0.mysql.MySQLCreateApplicationDatabaseAndScopedUserError
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
