@@ -1,0 +1,504 @@
+[32mINFO    [0m mysql.connector:authentication.py:66 package: mysql.connector.plugins
+[32mINFO    [0m mysql.connector:authentication.py:67 plugin_name: caching_sha2_password
+[32mINFO    [0m mysql.connector:authentication.py:71 AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.5    unsupported  01:48:55Z
+
+App           Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+kafka                                  blocked      1  kafka-k8s      latest/stable    5  10.152.183.151  no       need zookeeper relation
+mongodb                                error        1  mongodb-k8s    5/edge          36  10.152.183.39   no       hook failed: "update-status"
+mysql-k8s     8.0.41-0ubuntu0.22.04.1  active       1  mysql-k8s                       0  10.152.183.76   no       
+osm-keystone                           blocked      1  osm-keystone   latest/beta     10  10.152.183.218  no       mysql relation is missing
+osm-pol                                blocked      1  osm-pol        latest/beta    337  10.152.183.160  no       need kafka, mongodb, mysql relations
+zookeeper                              active       1  zookeeper-k8s  latest/stable   10  10.152.183.65   no       
+
+Unit             Workload  Agent  Address      Ports  Message
+kafka/0*         blocked   idle   10.1.194.15         need zookeeper relation
+mongodb/0*       error     idle   10.1.194.12         hook failed: "update-status"
+mysql-k8s/0*     active    idle   10.1.194.16         Primary
+osm-keystone/0*  blocked   idle   10.1.194.8          mysql relation is missing
+osm-pol/0*       blocked   idle   10.1.194.10         need kafka, mongodb, mysql relations
+zookeeper/0*     active    idle   10.1.194.17         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mongodb-0: 01:34:20 ERROR unit.mongodb/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1218, in <module>
+    main(MongoDBCharm)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 441, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 149, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 344, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 833, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 922, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 475, in _on_update_status
+    self._relation_changes_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 397, in _relation_changes_handler
+    self._connect_pbm_agent()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1110, in _connect_pbm_agent
+    container.replan()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/model.py", line 1894, in replan
+    self._pebble.replan_services()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1658, in replan_services
+    return self._services_action('replan', [], timeout, delay)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1737, in _services_action
+    change = self.wait_change(change_id, timeout=timeout, delay=delay)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1766, in wait_change
+    return self._wait_change_using_wait(change_id, timeout)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1787, in _wait_change_using_wait
+    return self._wait_change(change_id, this_timeout)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1809, in _wait_change
+    return Change.from_dict(resp['result'])
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 651, in from_dict
+    tasks=[Task.from_dict(t) for t in d.get('tasks') or []],
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 651, in <listcomp>
+    tasks=[Task.from_dict(t) for t in d.get('tasks') or []],
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 590, in from_dict
+    ready_time=(timeconv.parse_rfc3339(d['ready-time'])
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/_private/timeconv.py", line 54, in parse_rfc3339
+    return datetime.datetime(int(y), int(m), int(d), int(hh), int(mm), int(ss),
+ValueError: microsecond must be in 0..999999
+unit-mongodb-0: 01:34:20 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:34:25 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:34:31 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:34:36 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:34:36 ERROR unit.mongodb/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1218, in <module>
+    main(MongoDBCharm)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 439, in main
+    framework.reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 843, in reemit
+    self._reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 922, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 389, in _on_start
+    self._initialise_replica_set(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 776, in _initialise_replica_set
+    self._init_operator_user()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 325, in iter
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 158, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 628, in _init_operator_user
+    raise AdminUserCreationError
+exceptions.AdminUserCreationError
+unit-mongodb-0: 01:34:36 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:34:46 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:34:51 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:34:57 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:34:57 ERROR unit.mongodb/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1218, in <module>
+    main(MongoDBCharm)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 439, in main
+    framework.reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 843, in reemit
+    self._reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 922, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 389, in _on_start
+    self._initialise_replica_set(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 776, in _initialise_replica_set
+    self._init_operator_user()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 325, in iter
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 158, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 628, in _init_operator_user
+    raise AdminUserCreationError
+exceptions.AdminUserCreationError
+unit-mongodb-0: 01:34:57 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:35:18 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:35:23 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:35:28 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:35:28 ERROR unit.mongodb/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1218, in <module>
+    main(MongoDBCharm)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 439, in main
+    framework.reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 843, in reemit
+    self._reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 922, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 389, in _on_start
+    self._initialise_replica_set(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 776, in _initialise_replica_set
+    self._init_operator_user()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 325, in iter
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 158, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 628, in _init_operator_user
+    raise AdminUserCreationError
+exceptions.AdminUserCreationError
+unit-mongodb-0: 01:35:28 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:36:10 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:36:15 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:36:20 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:36:20 ERROR unit.mongodb/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1218, in <module>
+    main(MongoDBCharm)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 439, in main
+    framework.reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 843, in reemit
+    self._reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 922, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 389, in _on_start
+    self._initialise_replica_set(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 776, in _initialise_replica_set
+    self._init_operator_user()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 325, in iter
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 158, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 628, in _init_operator_user
+    raise AdminUserCreationError
+exceptions.AdminUserCreationError
+unit-mongodb-0: 01:36:20 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:37:44 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:37:49 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:37:54 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:37:54 ERROR unit.mongodb/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1218, in <module>
+    main(MongoDBCharm)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 439, in main
+    framework.reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 843, in reemit
+    self._reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 922, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 389, in _on_start
+    self._initialise_replica_set(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 776, in _initialise_replica_set
+    self._init_operator_user()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 325, in iter
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 158, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 628, in _init_operator_user
+    raise AdminUserCreationError
+exceptions.AdminUserCreationError
+unit-mongodb-0: 01:37:54 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:40:42 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:40:48 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:40:53 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:40:53 ERROR unit.mongodb/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1218, in <module>
+    main(MongoDBCharm)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 439, in main
+    framework.reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 843, in reemit
+    self._reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 922, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 389, in _on_start
+    self._initialise_replica_set(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 776, in _initialise_replica_set
+    self._init_operator_user()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 325, in iter
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 158, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 628, in _init_operator_user
+    raise AdminUserCreationError
+exceptions.AdminUserCreationError
+unit-mongodb-0: 01:40:53 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mongodb-0: 01:45:54 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:45:59 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:46:04 ERROR unit.mongodb/0.juju-log Failed to create the operator user: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+unit-mongodb-0: 01:46:04 ERROR unit.mongodb/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 625, in _init_operator_user
+    process.wait_output()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/pebble.py", line 1333, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 252 executing ['/usr/bin/mongo', 'mongodb://localhost/admin', '--quiet', '--eval', "db.createUser({  user: 'operator',  pwd: passwordPrompt(),  roles:[    {'role': 'userAdminAnyDatabase', 'db': 'admin'},     {'role': 'readWriteAnyDatabase', 'db': 'admin'},     {'role': 'clusterAdmin', 'db': 'admin'},   ],  mechanisms: ['SCRAM-SHA-256'],  passwordDigestor: 'server',})"], stdout="uncaught exception: Error: couldn't add user: command createUser requires authentication :\n_getErrorWithCode@src/mongo/shell/utils.js:25:13\nDB.prototype.createUser@src/mongo/shell/db.js:1367:11\n@(shell eval):1:1\nexiting with code -4\n", stderr='Enter password: \n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 1218, in <module>
+    main(MongoDBCharm)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/main.py", line 439, in main
+    framework.reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 843, in reemit
+    self._reemit()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/ops/framework.py", line 922, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 389, in _on_start
+    self._initialise_replica_set(event)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 776, in _initialise_replica_set
+    self._init_operator_user()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 325, in iter
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 158, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/venv/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mongodb-0/charm/./src/charm.py", line 628, in _init_operator_user
+    raise AdminUserCreationError
+exceptions.AdminUserCreationError
+unit-mongodb-0: 01:46:04 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
