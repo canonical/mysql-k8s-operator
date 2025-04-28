@@ -1,0 +1,47 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.5    unsupported  01:44:13Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.124  no       Last written value=247
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.211  no       Last written value=117
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.161  no       Last written value=200
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.208  no       Last written value=242
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.204  no       Last written value=227
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.220  no       Last written value=118
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.38   no       Last written value=229
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.64   no       
+router0  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     727  10.152.183.109  no       Waiting for K8s service connectivity
+router1  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     727  10.152.183.87   no       
+router2  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     727  10.152.183.116  no       Waiting for K8s service connectivity
+router3  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     727  10.152.183.121  no       
+router4  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     727  10.152.183.216  no       Waiting for K8s service connectivity
+router5  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     727  10.152.183.188  no       Waiting for K8s service connectivity
+router6  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     727  10.152.183.137  no       
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.33.10         Last written value=247
+app1/0*     active    idle   10.1.33.11         Last written value=117
+app2/0*     active    idle   10.1.33.13         Last written value=200
+app3/0*     active    idle   10.1.33.15         Last written value=242
+app4/0*     active    idle   10.1.33.17         Last written value=227
+app5/0*     active    idle   10.1.33.19         Last written value=118
+app6/0*     active    idle   10.1.33.21         Last written value=229
+mysql/0*    active    idle   10.1.33.9          Primary
+router0/0*  active    idle   10.1.33.12         
+router1/0*  active    idle   10.1.33.14         
+router2/0*  active    idle   10.1.33.16         
+router3/0*  active    idle   10.1.33.18         
+router4/0*  active    idle   10.1.33.20         
+router5/0*  active    idle   10.1.33.22         
+router6/0*  active    idle   10.1.33.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-2: 01:39:59 ERROR unit.mysql/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-2: 01:40:01 ERROR unit.mysql/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-2: 01:40:03 ERROR unit.mysql/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-0: 01:44:00 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
