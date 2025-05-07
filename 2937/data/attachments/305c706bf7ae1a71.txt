@@ -1,0 +1,145 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:57 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+  mysql-k8s/2 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: installing charm software
+  mysql-k8s/1 [executing] maintenance: installing charm software
+  mysql-k8s/2 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/2 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] waiting: waiting to join the cluster
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:60 Deploying mysql-test-app
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/mysql-test-app-73
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:63 Relating mysql-k8s with mysql-test-app
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m integration.conftest:conftest.py:30 Getting credentials for the MySQL cluster
+[32mINFO    [0m mysql.connector:authentication.py:66 package: mysql.connector.plugins
+[32mINFO    [0m mysql.connector:authentication.py:67 plugin_name: caching_sha2_password
+[32mINFO    [0m mysql.connector:authentication.py:71 AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 4 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: 
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [executing] active: Primary
+  mysql-k8s/3 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+  mysql-k8s/3 [idle] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+  mysql-k8s/3 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/3 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 3 units, current : 4)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 3 units, current : 4)
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.5    unsupported  01:35:38Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.160  no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   73  10.152.183.161  no       Last written value=458
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0        active    idle   10.1.24.139         
+mysql-k8s/1        active    idle   10.1.24.140         
+mysql-k8s/2*       active    idle   10.1.24.141         Primary
+mysql-test-app/0*  active    idle   10.1.24.142         Last written value=458
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:30:04 ERROR unit.mysql-k8s/0.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:30:06 ERROR unit.mysql-k8s/0.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:30:08 ERROR unit.mysql-k8s/0.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:32:15 ERROR unit.mysql-k8s/1.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:32:16 ERROR unit.mysql-k8s/0.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:32:17 ERROR unit.mysql-k8s/1.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:32:18 ERROR unit.mysql-k8s/0.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:32:19 ERROR unit.mysql-k8s/1.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:32:19 ERROR unit.mysql-k8s/2.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:32:20 ERROR unit.mysql-k8s/0.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:32:21 ERROR unit.mysql-k8s/1.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:32:21 ERROR unit.mysql-k8s/2.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:21 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:23 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:25 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:27 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:29 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:31 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:34 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:36 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:33:38 ERROR unit.mysql-k8s/3.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:33:56 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:33:56 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:56 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:33:58 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:33:58 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:58 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:00 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:00 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:00 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:02 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:02 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:02 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:04 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:04 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:04 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:34:05 ERROR unit.mysql-k8s/3.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:06 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:06 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:06 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:34:07 ERROR unit.mysql-k8s/3.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:08 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:08 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:08 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-3: 01:34:09 ERROR unit.mysql-k8s/3.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:10 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:10 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:10 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:12 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:12 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:12 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:14 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:14 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:14 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:16 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:16 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:16 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:34:18 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:34:18 ERROR unit.mysql-k8s/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:34:18 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
