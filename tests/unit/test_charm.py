@@ -135,6 +135,7 @@ class TestCharm(unittest.TestCase):
                 secret_data[password].isalnum() and len(secret_data[password]) == PASSWORD_LENGTH
             )
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("mysql_k8s_helpers.MySQL.install_plugins")
     @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.rescan_cluster")
@@ -184,6 +185,7 @@ class TestCharm(unittest.TestCase):
         _rescan_cluster,
         _cluster_metadata_exists,
         _install_plugins,
+        _get_unit_address,
     ):
         # Check if initial plan is empty
         self.harness.set_can_connect("mysql", True)
@@ -254,8 +256,9 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(self.charm.unit_peer_data["member-role"], "secondary")
         self.assertEqual(self.charm.unit_peer_data["member-state"], "waiting")
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("charm.MySQLOperatorCharm._mysql", new_callable=PropertyMock)
-    def test_mysql_pebble_ready_non_leader(self, _mysql_mock):
+    def test_mysql_pebble_ready_non_leader(self, _mysql_mock, mock_get_unit_address):
         # Test pebble ready when not leader
         # Expect unit to be in waiting status
         self.harness.update_relation_data(
@@ -266,8 +269,9 @@ class TestCharm(unittest.TestCase):
         self.harness.container_pebble_ready("mysql")
         self.assertTrue(isinstance(self.charm.unit.status, WaitingStatus))
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("charm.MySQLOperatorCharm._mysql")
-    def test_mysql_pebble_ready_exception(self, _mysql_mock):
+    def test_mysql_pebble_ready_exception(self, _mysql_mock, mock_get_unit_address):
         # Test exception raised in bootstrapping
         self.harness.set_leader()
         self.charm._mysql = _mysql_mock
@@ -294,8 +298,9 @@ class TestCharm(unittest.TestCase):
             self.charm.peers.data[self.charm.app]["cluster-name"], "not_valid_cluster_name"
         )
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("mysql_k8s_helpers.MySQL.is_data_dir_initialised", return_value=False)
-    def test_mysql_property(self, _):
+    def test_mysql_property(self, _, mock_get_unit_address):
         # Test mysql property instance of mysql_k8s_helpers.MySQL
         # set leader and populate peer relation data
         self.harness.set_leader()
@@ -356,6 +361,7 @@ class TestCharm(unittest.TestCase):
             == "test-password"
         )
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("charm.MySQLOperatorCharm.unit_initialized", return_value=True)
     @patch("charms.mysql.v0.mysql.MySQLBase.is_cluster_replica", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.remove_instance")
@@ -370,6 +376,7 @@ class TestCharm(unittest.TestCase):
         mock_remove_instance,
         mock_is_cluster_replica,
         mock_unit_initialized,
+        mock_get_unit_address,
     ):
         self.harness.update_relation_data(
             self.peer_relation_id,

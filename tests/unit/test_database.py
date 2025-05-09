@@ -55,6 +55,7 @@ class TestDatabase(unittest.TestCase):
     def tearDown(self) -> None:
         self.patcher.stop()
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
     @patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_process_locks")
     @patch("k8s_helpers.KubernetesHelpers.wait_service_ready")
@@ -75,6 +76,7 @@ class TestDatabase(unittest.TestCase):
         _wait_service_ready,
         _,
         _cluster_metadata_exists,
+        _get_unit_address,
     ):
         # run start-up events to enable usage of the helper class
         self.harness.set_leader(True)
