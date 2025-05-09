@@ -54,7 +54,7 @@ backends:
     restore-each: |
       cd "$SPREAD_PATH"
       # Revert python-libjuju version override
-      git restore pyproject.toml poetry.lock
+      git restore pyproject.toml uv.lock
 
       # Use instead of `concierge restore` to save time between tests
       # For example, with microk8s, using `concierge restore` takes twice as long as this (e.g. 6
@@ -116,14 +116,16 @@ prepare: |
   # Install charmcraft & pipx (on lxd-vm backend)
   concierge prepare --trace
 
-  pipx install tox poetry
+  pipx install tox
+  pipx install uv
 prepare-each: |
   cd "$SPREAD_PATH"
   if [[ $SPREAD_VARIANT == *"juju29"* ]]
   then
     # Each version of python-libjuju is only compatible with one major Juju version
-    # Override python-libjuju version pinned in poetry.lock
-    poetry add --lock --group integration juju@^2
+    # Override python-libjuju version pinned in uv.lock
+    uv remove --group integration juju
+    uv add --group integration 'juju<3'
   fi
   # `concierge prepare` needs to be run for each spread job in case Juju version changed
   concierge prepare --trace
