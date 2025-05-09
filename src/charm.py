@@ -365,6 +365,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 "get_unit_address: unit DNS domain name is not fully propagated yet, trying again"
             )
             raise RuntimeError("unit DNS domain name is not fully propagated yet")
+        if unit_dns_domain == unit_hostname:
+            logger.error("Can't get fully qualified domain name for unit. IS DNS not ready?")
+            raise RuntimeError("Can't get unit fqdn")
         return unit_dns_domain
 
     def is_unit_busy(self) -> bool:
