@@ -33,9 +33,9 @@ async def test_network_cut_affecting_an_instance(
     assert mysql_application_name, "mysql application name is not set"
 
     logger.info("Ensuring that there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application does not have three online nodes"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application does not have three online nodes"
+    )
 
     logger.info("Ensuring that all instances have incrementing continuous writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
@@ -102,9 +102,9 @@ async def test_network_cut_affecting_an_instance(
     assert isolated_primary_memberrole == "secondary"
 
     logger.info("Ensure there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application does not have three online nodes"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application does not have three online nodes"
+    )
 
     logger.info("Ensure all units have incrementing continuous writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)

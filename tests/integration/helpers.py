@@ -120,9 +120,9 @@ async def get_relation_data(
     data = yaml.safe_load(raw_data)
     # Filter the data based on the relation name.
     relation_data = [v for v in data[unit_name]["relation-info"] if v["endpoint"] == relation_name]
-    assert (
-        relation_data
-    ), f"no relation data could be grabbed on relation with endpoint {relation_name}"
+    assert relation_data, (
+        f"no relation data could be grabbed on relation with endpoint {relation_name}"
+    )
 
     return relation_data
 
@@ -408,9 +408,9 @@ async def get_process_pid(
     if return_code == 1:
         return None
 
-    assert (
-        return_code == 0
-    ), f"Failed getting pid, unit={unit_name}, container={container_name}, process={process}"
+    assert return_code == 0, (
+        f"Failed getting pid, unit={unit_name}, container={container_name}, process={process}"
+    )
 
     stripped_pid = pid.strip()
     if not stripped_pid:

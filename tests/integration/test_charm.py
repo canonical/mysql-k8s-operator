@@ -320,9 +320,9 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
         resp = http.request("GET", mysql_exporter_url)
 
         assert resp.status == 200, "Can't get metrics from mysql_exporter"
-        assert "mysql_exporter_last_scrape_error 0" in resp.data.decode(
-            "utf8"
-        ), "Scrape error in mysql_exporter"
+        assert "mysql_exporter_last_scrape_error 0" in resp.data.decode("utf8"), (
+            "Scrape error in mysql_exporter"
+        )
 
 
 @pytest.mark.abort_on_fail
