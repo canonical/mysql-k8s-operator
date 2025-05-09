@@ -62,12 +62,18 @@ class TestUpgrade(unittest.TestCase):
         """Test the highest ordinal."""
         self.assertEqual(1, self.charm.upgrade.highest_ordinal)
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_process_locks")
     @patch("mysql_k8s_helpers.MySQL.rescan_cluster")
     @patch("upgrade.MySQLK8sUpgrade._pre_upgrade_prepare")
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=MOCK_STATUS_ONLINE)
     def test_pre_upgrade_check(
-        self, mock_get_cluster_status, mock_pre_upgrade_prepare, mock_rescan_cluster, _
+        self,
+        mock_get_cluster_status,
+        mock_pre_upgrade_prepare,
+        mock_rescan_cluster,
+        _,
+        mock_get_unit_address,
     ):
         """Test the pre upgrade check."""
         self.harness.set_leader(True)
@@ -128,6 +134,7 @@ class TestUpgrade(unittest.TestCase):
         ]
         mock_logging.assert_has_calls(calls)
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_process_locks")
     @patch("mysql_k8s_helpers.MySQL.set_dynamic_variable")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label", return_value="mysql-k8s-1")
@@ -140,6 +147,7 @@ class TestUpgrade(unittest.TestCase):
         mock_get_primary_label,
         mock_set_dynamic_variable,
         _,
+        mock_get_unit_address,
     ):
         """Test the pre upgrade prepare."""
         self.harness.set_leader(True)
@@ -151,6 +159,7 @@ class TestUpgrade(unittest.TestCase):
         mock_set_rolling_update_partition.assert_called_once()
         assert mock_set_dynamic_variable.call_count == 2
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("charm.MySQLOperatorCharm.recover_unit_after_restart")
     @patch("mysql_k8s_helpers.MySQL.install_plugins")
     @patch("mysql_k8s_helpers.MySQL.cluster_metadata_exists", return_value=True)
@@ -171,6 +180,7 @@ class TestUpgrade(unittest.TestCase):
         mock_cluster_metadata_exists,
         mock_install_plugins,
         mock_recover_unit_after_restart,
+        mock_get_unit_address,
     ):
         """Test the pebble ready."""
         self.charm.on.config_changed.emit()
@@ -221,8 +231,11 @@ class TestUpgrade(unittest.TestCase):
         with self.assertRaises(KubernetesClientError):
             self.charm.upgrade._set_rolling_update_partition(partition=1)
 
+    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("mysql_k8s_helpers.MySQL.verify_server_upgradable")
-    def test_check_server_upgradeability(self, mock_verify_server_upgradeable):
+    def test_check_server_upgradeability(
+        self, mock_verify_server_upgradeable, mock_get_unit_address
+    ):
         """Test the server upgradeability check."""
         self.charm.upgrade._check_server_upgradeability()
         mock_verify_server_upgradeable.assert_not_called()
