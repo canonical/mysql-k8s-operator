@@ -177,13 +177,16 @@ class TestUpgrade(unittest.TestCase):
         self.harness.update_relation_data(
             self.upgrade_relation_id, "mysql-k8s/0", {"state": "upgrading"}
         )
-        with patch(
-            "charm.MySQLOperatorCharm.unit_initialized",
-            return_value=True,
-        ), patch(
-            "charm.MySQLOperatorCharm.cluster_initialized",
-            new_callable=PropertyMock,
-            return_value=True,
+        with (
+            patch(
+                "charm.MySQLOperatorCharm.unit_initialized",
+                return_value=True,
+            ),
+            patch(
+                "charm.MySQLOperatorCharm.cluster_initialized",
+                new_callable=PropertyMock,
+                return_value=True,
+            ),
         ):
             self.harness.container_pebble_ready("mysql")
         self.assertEqual(
@@ -197,13 +200,16 @@ class TestUpgrade(unittest.TestCase):
         # setup for exception
         mock_recover_unit_after_restart.side_effect = RetryError("dummy")
 
-        with patch(
-            "charm.MySQLOperatorCharm.unit_initialized",
-            return_value=True,
-        ), patch(
-            "charm.MySQLOperatorCharm.cluster_initialized",
-            new_callable=PropertyMock,
-            return_value=True,
+        with (
+            patch(
+                "charm.MySQLOperatorCharm.unit_initialized",
+                return_value=True,
+            ),
+            patch(
+                "charm.MySQLOperatorCharm.cluster_initialized",
+                new_callable=PropertyMock,
+                return_value=True,
+            ),
         ):
             self.harness.container_pebble_ready("mysql")
         self.assertTrue(isinstance(self.charm.unit.status, BlockedStatus))

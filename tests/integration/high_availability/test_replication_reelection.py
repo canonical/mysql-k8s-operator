@@ -61,9 +61,9 @@ async def test_kill_primary_check_reelection(
         assert primary_name != new_primary_name
 
         # wait (and retry) until the killed pod is back online in the mysql cluster
-        assert await ensure_n_online_mysql_members(
-            ops_test, 3
-        ), "Old primary has not come back online after being killed"
+        assert await ensure_n_online_mysql_members(ops_test, 3), (
+            "Old primary has not come back online after being killed"
+        )
 
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
 
