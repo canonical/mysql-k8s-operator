@@ -29,10 +29,10 @@ jobs:
       - name: Add pipx to PATH
         run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
 
-      - name: Install tox and poetry using pipx
+      - name: Install tox and uv
         run: |
           pipx install tox
-          pipx install poetry
+          pipx install uv
 
       - name: Run tox tests to create coverage.xml
         run: tox run -e unit
