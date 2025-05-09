@@ -1,72 +1,75 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-[tool.poetry]
-package-mode = false
-requires-poetry = ">=2.0.0"
+[project]
+name = "mysql-k8s-operator"
+version = "0.1.0"
+description = "Kubernetes charm for MySQL following the operator framework"
+readme = "README.md"
+requires-python = ">=3.10"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-ops = "^2.15.0"
-lightkube = "^0.15.0"
-tenacity = "^8.2.2"
-boto3 = "^1.28.22"
-jinja2 = "^3.1.2"
-pyyaml = "^6.0.2"
+[dependency-groups]
+charm = [
+    "boto3 ~= 1.28",
+    "jinja2 ~= 3.1",
+    "lightkube ~= 0.15",
+    "ops ~= 2.15",
+    "pyyaml ~= 6.0",
+    "tenacity ~= 8.2",
+]
 
-[tool.poetry.group.charm-libs.dependencies]
-# data_platform_libs/v0/data_interfaces.py
-ops = ">=2.0.0"
-# data_platform_libs/v0/upgrade.py
-poetry-core = "*"
-# data_platform_libs/v0/upgrade.py requires pydantic ^1.10
-# data_platform_libs/v0/data_models.py requires pydantic ^1.10
-# tempo_coordinator_k8s/v0/charm_tracing.py requires pydantic
-pydantic = "^1.10"
-# tls_certificates_interface/v1/tls_certificates.py
-# tls_certificates lib uses a feature only available in cryptography >=42.0.5
-cryptography = ">=42.0.5"
-jsonschema = "*"
-# loki_k8s/v0/loki_push_api.py and prometheus_k8s/v0/prometheus_scrape.py
-cosl = ">=0.0.50"
-# tempo_coordinator_k8s/v0/charm_tracing.py
-opentelemetry-exporter-otlp-proto-http = "1.21.0"
+libs = [
+    # data_platform_libs/v0/data_interfaces.py
+    "ops >=2.0.0",
+    # data_platform_libs/v0/upgrade.py
+    "poetry-core",
+    # data_platform_libs/v0/upgrade.py requires pydantic ^1.10
+    # data_platform_libs/v0/data_models.py requires pydantic ^1.10
+    # tempo_coordinator_k8s/v0/charm_tracing.py requires pydantic
+    "pydantic ~= 1.10",
+    # loki_k8s/v0/loki_push_api.py and prometheus_k8s/v0/prometheus_scrape.py
+    "cosl >= 0.0.50",
+    # tempo_coordinator_k8s/v0/charm_tracing.py
+    "opentelemetry-exporter-otlp-proto-http == 1.21.0",
+    # tls_certificates_interface/v1/tls_certificates.py
+    # tls_certificates lib uses a feature only available in cryptography >=42.0.5
+    "cryptography >= 42.0.5",
+    "jsonschema",
+]
 
-[tool.poetry.group.format]
-optional = true
+format = [
+    "ruff ~= 0.4",
+]
 
-[tool.poetry.group.format.dependencies]
-ruff = "^0.4.5"
+lint = [
+    "codespell ~= 2.3",
+    "ruff ~= 0.4",
+    "shellcheck-py ~= 0.9",
+]
 
-[tool.poetry.group.lint]
-optional = true
+unit = [
+    "coverage[toml] ~= 7.2",
+    "parameterized ~= 0.9",
+    "pytest ~= 7.4",
+    "pytest-mock ~= 3.11",
+]
 
-[tool.poetry.group.lint.dependencies]
-ruff = "^0.4.5"
-codespell = "^2.3.0"
-shellcheck-py = "^0.9.0.5"
-
-[tool.poetry.group.unit.dependencies]
-pytest = "^7.4.0"
-pytest-mock = "^3.11.1"
-coverage = {extras = ["toml"], version = "^7.2.7"}
-parameterized = "^0.9.0"
-
-[tool.poetry.group.integration.dependencies]
-pytest = "^7.4.0"
-pytest-operator = "^0.28.0"
-juju = "^3.6.0.0"
-ops = "^2.15.0"
-mysql-connector-python = "~8.0.33"
-tenacity = "^8.2.2"
-boto3 = "^1.28.22"
-pyyaml = "^6.0.1"
-urllib3 = "^1.26.16"
-lightkube = "^0.15.0"
-kubernetes = "^27.2.0"
-allure-pytest = "^2.13.2"
-allure-pytest-default-results = "^0.1.2"
-pytest-asyncio = "^0.21.1"
+integration = [
+    "allure-pytest ~= 2.13",
+    "allure-pytest-default-results ~= 0.1",
+    "boto3 ~= 1.28",
+    "juju ~= 3.6",
+    "kubernetes ~= 27.2",
+    "lightkube ~= 0.15",
+    "mysql-connector-python ~= 8.0",
+    "pytest ~= 7.4",
+    "pytest-asyncio ~= 0.21",
+    "pytest-operator ~= 0.28",
+    "pyyaml ~= 6.0",
+    "ops ~= 2.15",
+    "tenacity ~= 8.2",
+    "urllib3 ~= 1.26",
+]
 
 [tool.coverage.run]
 branch = true
@@ -109,3 +112,6 @@ max-complexity = 10
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.uv]
+no-binary = false
