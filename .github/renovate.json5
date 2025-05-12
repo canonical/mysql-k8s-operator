@@ -8,7 +8,7 @@
     // MySQL 8.X does not follow semantic versioning (e.g. 8.0.1 -> 8.0.2 can include a breaking change)
     // Therefore, use a separate Renovate group so that it has a separate PR
     {
-      "matchManagers": ["poetry"],
+      "matchManagers": ["pep621"],
       "matchPackageNames": ["mysql-connector-python"],
       "groupName": "MySQL Connector/Python"
     }
