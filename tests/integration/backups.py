@@ -171,9 +171,9 @@ async def pitr_operations(
         "restore", **{"backup-id": backup_id, "restore-to-time": "bad"}
     )
     await action.wait()
-    assert (
-        action.status == "failed"
-    ), "restore should fail with bad restore-to-time parameter, but it succeeded"
+    assert action.status == "failed", (
+        "restore should fail with bad restore-to-time parameter, but it succeeded"
+    )
 
     logger.info(f"Restoring backup {backup_id} with year_before restore-to-time parameter")
     await juju_.run_action(
@@ -183,9 +183,9 @@ async def pitr_operations(
         apps=[MYSQL_APPLICATION_NAME, S3_INTEGRATOR],
         timeout=TIMEOUT,
     )
-    assert await check_test_data_existence(
-        first_mysql_ip, should_not_exist=[td1, td2]
-    ), "test data should not exist"
+    assert await check_test_data_existence(first_mysql_ip, should_not_exist=[td1, td2]), (
+        "test data should not exist"
+    )
 
     logger.info(f"Restoring backup {backup_id} with year_after restore-to-time parameter")
     await juju_.run_action(
@@ -195,9 +195,9 @@ async def pitr_operations(
         apps=[MYSQL_APPLICATION_NAME, S3_INTEGRATOR],
         timeout=TIMEOUT,
     )
-    assert await check_test_data_existence(
-        first_mysql_ip, should_exist=[td1, td2]
-    ), "both test data should exist"
+    assert await check_test_data_existence(first_mysql_ip, should_exist=[td1, td2]), (
+        "both test data should exist"
+    )
 
     logger.info(f"Restoring backup {backup_id} with actual restore-to-time parameter")
     await juju_.run_action(
@@ -219,9 +219,9 @@ async def pitr_operations(
         apps=[MYSQL_APPLICATION_NAME, S3_INTEGRATOR],
         timeout=TIMEOUT,
     )
-    assert await check_test_data_existence(
-        first_mysql_ip, should_exist=[td1, td2]
-    ), "both test data should exist"
+    assert await check_test_data_existence(first_mysql_ip, should_exist=[td1, td2]), (
+        "both test data should exist"
+    )
     clean_backups_from_buckets(cloud_configs, cloud_credentials)
 
 

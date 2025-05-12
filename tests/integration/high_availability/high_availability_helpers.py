@@ -337,9 +337,9 @@ async def send_signal_to_pod_container_process(
     )
     response.run_forever(timeout=5)
 
-    assert (
-        response.returncode == 0
-    ), f"Failed to send {signal_code} signal, unit={unit_name}, container={container_name}, process={process}"
+    assert response.returncode == 0, (
+        f"Failed to send {signal_code} signal, unit={unit_name}, container={container_name}, process={process}"
+    )
 
 
 async def get_process_stat(
@@ -362,9 +362,9 @@ async def get_process_stat(
     ]
     return_code, stat, _ = await ops_test.juju(*get_stat_commands)
 
-    assert (
-        return_code == 0
-    ), f"Failed to get STAT, unit_name={unit_name}, container_name={container_name}, process={process}"
+    assert return_code == 0, (
+        f"Failed to get STAT, unit_name={unit_name}, container_name={container_name}, process={process}"
+    )
 
     return stat
 
@@ -498,9 +498,9 @@ async def ensure_all_units_continuous_writes_incrementing(
                         ops_test, unit, credentials
                     )
                     logger.info(f"{max_written_value=} on unit {unit.name}")
-                    assert (
-                        max_written_value > last_max_written_value
-                    ), "Continuous writes not incrementing"
+                    assert max_written_value > last_max_written_value, (
+                        "Continuous writes not incrementing"
+                    )
 
                     last_max_written_value = max_written_value
 
@@ -573,9 +573,9 @@ async def ensure_process_not_running(
     get_pid_commands = ["ssh", "--container", container_name, unit_name, "pgrep", "-x", process]
     return_code, pid, _ = await ops_test.juju(*get_pid_commands)
 
-    assert (
-        return_code != 0
-    ), f"Process {process} is still running with pid {pid} on unit {unit_name}, container {container_name}"
+    assert return_code != 0, (
+        f"Process {process} is still running with pid {pid} on unit {unit_name}, container {container_name}"
+    )
 
 
 def get_sts_partition(ops_test: OpsTest, app_name: str) -> int:

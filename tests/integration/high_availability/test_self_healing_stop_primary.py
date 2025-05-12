@@ -33,9 +33,9 @@ async def test_graceful_crash_of_primary(
     assert mysql_application_name, "mysql application name is not set"
 
     logger.info("Ensuring that there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application does not have three online nodes"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application does not have three online nodes"
+    )
 
     logger.info("Ensuring that all units have incrementing continuous writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
@@ -59,9 +59,9 @@ async def test_graceful_crash_of_primary(
     new_mysql_pid = await get_process_pid(
         ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
     )
-    assert (
-        new_mysql_pid == mysql_pid
-    ), "mysql process id is not the same as it was before process was stopped"
+    assert new_mysql_pid == mysql_pid, (
+        "mysql process id is not the same as it was before process was stopped"
+    )
 
     remaining_online_units = [
         unit
@@ -73,9 +73,9 @@ async def test_graceful_crash_of_primary(
     # retrying as it may take time for the cluster to recognize that the primary process is stopped
     for attempt in Retrying(stop=stop_after_delay(2 * 60), wait=wait_fixed(10)):
         with attempt:
-            assert await ensure_n_online_mysql_members(
-                ops_test, 3
-            ), "The deployed mysql application does not have three online nodes"
+            assert await ensure_n_online_mysql_members(ops_test, 3), (
+                "The deployed mysql application does not have three online nodes"
+            )
 
             new_primary = await get_primary_unit(
                 ops_test, remaining_online_units[0], mysql_application_name

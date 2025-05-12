@@ -85,9 +85,9 @@ async def test_labeling_of_k8s_endpoints(ops_test: OpsTest, charm):
     )
 
     for primary in cluster_one_primary_addresses:
-        assert (
-            primary in cluster_one_ips
-        ), f"{primary} (not belonging to cluster 1) should not be in cluster one addresses"
+        assert primary in cluster_one_ips, (
+            f"{primary} (not belonging to cluster 1) should not be in cluster one addresses"
+        )
 
     assert set(cluster_one_primary_addresses + cluster_one_replica_addresses) == set(
         cluster_one_ips
@@ -106,9 +106,9 @@ async def test_labeling_of_k8s_endpoints(ops_test: OpsTest, charm):
     )
 
     for primary in cluster_two_primary_addresses:
-        assert (
-            primary in cluster_two_ips
-        ), f"{primary} (not belonging to cluster w) should not be in cluster two addresses"
+        assert primary in cluster_two_ips, (
+            f"{primary} (not belonging to cluster w) should not be in cluster two addresses"
+        )
 
     assert set(cluster_two_primary_addresses + cluster_two_replica_addresses) == set(
         cluster_two_ips

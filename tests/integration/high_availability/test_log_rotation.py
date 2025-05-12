@@ -86,9 +86,9 @@ async def test_log_rotation(
 
     for file in log_files:
         # audit.log can be rotated and new file not created until access to db
-        assert (
-            file in ls_output or file == "audit.log"
-        ), f"❌ files other than log files exist {ls_output}"
+        assert file in ls_output or file == "audit.log", (
+            f"❌ files other than log files exist {ls_output}"
+        )
 
     logger.info("Dispatching custom event to rotate logs")
     await dispatch_custom_event_for_logrotate(ops_test, unit.name)

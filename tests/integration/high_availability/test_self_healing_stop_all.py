@@ -34,9 +34,9 @@ async def test_graceful_full_cluster_crash_test(
     assert mysql_application_name, "mysql application name is not set"
 
     logger.info("Ensure there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application does not have three online nodes"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application does not have three online nodes"
+    )
 
     logger.info("Ensure that all units have incrementing continuous writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)

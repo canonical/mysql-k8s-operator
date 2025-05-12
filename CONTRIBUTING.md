@@ -20,12 +20,12 @@ this operator.
   the `main` branch. This also avoids merge commits and creates a linear Git commit history.
 
 ## Developing
-Install `tox`, `poetry`, and `charmcraftcache`
+Install `tox`, `uv`, and `charmcraftcache`
 
 Install pipx: https://pipx.pypa.io/stable/installation/
 ```shell
 pipx install tox
-pipx install poetry
+pipx install uv
 pipx install charmcraftcache
 ```
 
