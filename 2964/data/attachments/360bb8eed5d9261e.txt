@@ -1,0 +1,34 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:211 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.5    unsupported  01:33:55Z
+
+App                       Version                  Status   Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.41-0ubuntu0.22.04.1  waiting      3  mysql-k8s                                  0  10.152.183.213  no       installing agent
+self-signed-certificates                           active       1  self-signed-certificates  latest/stable  264  10.152.183.234  no       
+
+Unit                         Workload     Agent  Address     Ports  Message
+mysql-k8s/0                  active       idle   10.1.68.75         
+mysql-k8s/1*                 maintenance  idle   10.1.68.77         Starting mysqld
+mysql-k8s/2                  active       idle   10.1.68.76         
+self-signed-certificates/0*  active       idle   10.1.68.78         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:30:33 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:35 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:37 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:39 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:40 ERROR unit.mysql-k8s/1.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:41 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:42 ERROR unit.mysql-k8s/1.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:43 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:32:51 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:32:53 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:32:57 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:32:57 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:32:58 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:33:30 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "2057a035-712e-4a82-8954-56f99beaf009:r#3#self-signed-certificates": settings 2057a035-712e-4a82-8954-56f99beaf009:r#3#self-signed-certificates not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
