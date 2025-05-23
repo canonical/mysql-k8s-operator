@@ -1,0 +1,46 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.5    unsupported  01:42:35Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.135  no       Last written value=137
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.106  no       Last written value=213
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.230  no       Last written value=257
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.75   no       Last written value=239
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.84   no       Last written value=250
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.173  no       Last written value=246
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.236  no       Last written value=104
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.165  no       
+router0  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     739  10.152.183.146  no       Waiting for K8s service connectivity
+router1  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     739  10.152.183.145  no       Waiting for K8s service connectivity
+router2  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     739  10.152.183.207  no       Waiting for K8s service connectivity
+router3  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     739  10.152.183.67   no       Waiting for K8s service connectivity
+router4  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     739  10.152.183.152  no       Waiting for K8s service connectivity
+router5  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     739  10.152.183.110  no       Waiting for K8s service connectivity
+router6  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     739  10.152.183.40   no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.164.10         Last written value=137
+app1/0*     active    idle   10.1.164.11         Last written value=213
+app2/0*     active    idle   10.1.164.13         Last written value=257
+app3/0*     active    idle   10.1.164.15         Last written value=239
+app4/0*     active    idle   10.1.164.17         Last written value=250
+app5/0*     active    idle   10.1.164.20         Last written value=246
+app6/0*     active    idle   10.1.164.21         Last written value=104
+mysql/0*    active    idle   10.1.164.9          Primary
+router0/0*  active    idle   10.1.164.12         
+router1/0*  active    idle   10.1.164.14         
+router2/0*  active    idle   10.1.164.16         
+router3/0*  active    idle   10.1.164.18         
+router4/0*  active    idle   10.1.164.19         
+router5/0*  active    idle   10.1.164.22         
+router6/0*  active    idle   10.1.164.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-2: 01:38:10 ERROR unit.mysql/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-2: 01:38:12 ERROR unit.mysql/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-2: 01:38:14 ERROR unit.mysql/2.juju-log database-peers:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
