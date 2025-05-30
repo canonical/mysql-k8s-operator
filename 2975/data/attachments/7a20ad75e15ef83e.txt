@@ -1,0 +1,56 @@
+[32mINFO    [0m integration.backups:backups.py:125 Creating backup
+[32mINFO    [0m integration.backups:backups.py:129 Creating test data 1
+[32mINFO    [0m mysql.connector:authentication.py:66 package: mysql.connector.plugins
+[32mINFO    [0m mysql.connector:authentication.py:67 plugin_name: caching_sha2_password
+[32mINFO    [0m mysql.connector:authentication.py:71 AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+[32mINFO    [0m integration.backups:backups.py:145 Creating test data 2
+[32mINFO    [0m integration.backups:backups.py:157 Scaling down to 1 unit
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:169 Restoring backup 2025-05-30T01:32:19Z with bad restore-to-time parameter
+[32mINFO    [0m integration.backups:backups.py:178 Restoring backup 2025-05-30T01:32:19Z with year_before restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:190 Restoring backup 2025-05-30T01:32:19Z with year_after restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:202 Restoring backup 2025-05-30T01:32:19Z with actual restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m integration.backups:backups.py:214 Restoring backup 2025-05-30T01:32:19Z with restore-to-time=latest parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:38 Cleaning backups from cloud buckets
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.6    unsupported  01:37:02Z
+
+App            Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+mysql-k8s      8.0.41-0ubuntu0.22.04.1  blocked      1  mysql-k8s                       0  10.152.183.193  no       Move restored cluster to another S3 repository
+s3-integrator                           active       1  s3-integrator  latest/stable  145  10.152.183.153  no       
+
+Unit              Workload  Agent  Address     Ports  Message
+mysql-k8s/0*      active    idle   10.1.33.76         Primary
+s3-integrator/0*  active    idle   10.1.33.72         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:29:54 ERROR unit.mysql-k8s/2.juju-log upgrade:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:29:56 ERROR unit.mysql-k8s/2.juju-log upgrade:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:29:58 ERROR unit.mysql-k8s/2.juju-log upgrade:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:04 ERROR unit.mysql-k8s/1.juju-log upgrade:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:06 ERROR unit.mysql-k8s/1.juju-log upgrade:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:08 ERROR unit.mysql-k8s/1.juju-log upgrade:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
