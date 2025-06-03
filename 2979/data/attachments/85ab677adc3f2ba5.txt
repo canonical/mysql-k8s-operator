@@ -1,0 +1,77 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m integration.conftest:conftest.py:30 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:142 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:146 Run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:152 Inject dependency fault
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:157 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:160 Get first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:164 Wait for upgrade to fail on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:170 Ensure continuous_writes while in failure state on remaining units
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=4348 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=4358 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:176 Re-run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:179 Re-refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:182 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:187 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.167:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.167:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:200 Wait for application to recover
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:206 Ensure continuous_writes after rollback procedure
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=15643 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=16283 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=16294 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=16304 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.6    unsupported  01:39:32Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s                      2  10.152.183.36   no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   73  10.152.183.126  no       
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0        active    idle   10.1.66.149         
+mysql-k8s/1        active    idle   10.1.66.148         Primary
+mysql-k8s/2*       active    idle   10.1.66.147         
+mysql-test-app/0*  active    idle   10.1.66.142         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:30:27 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:28 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:29 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:30 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:30:31 ERROR unit.mysql-k8s/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:30:36 ERROR unit.mysql-k8s/0.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:30:38 ERROR unit.mysql-k8s/0.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:30:41 ERROR unit.mysql-k8s/0.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:30:43 ERROR unit.mysql-k8s/0.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-0: 01:30:45 ERROR unit.mysql-k8s/0.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:50 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:52 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:54 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:56 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:30:58 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:31:00 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:31:03 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:31:05 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:31:07 ERROR unit.mysql-k8s/1.juju-log upgrade:0: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:33:43 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:33:45 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:33:47 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:36:22 ERROR unit.mysql-k8s/2.juju-log charms.data_platform_libs.v0.upgrade.VersionError - {'message': 'Versions incompatible, charm 1 can not be upgraded to 999.999.999', 'cause': 'Upgrades only supported for specific versions, charm versions satisfying requirement >1', 'resolution': ''}
+unit-mysql-k8s-2: 01:36:22 CRITICAL unit.mysql-k8s/2.juju-log Upgrade failed, follow the instructions below to rollback:
+  1 - Run `juju run mysql-k8s/leader pre-upgrade-check` to configure rollback
+  2 - Run `juju refresh --revision <previous-revision> mysql-k8s` to initiate the rollback
+  3 - Run `juju run mysql-k8s/leader resume-upgrade` to resume the rollback
+unit-mysql-k8s-1: 01:37:55 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:37:57 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:37:59 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:38:01 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:38:03 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-1: 01:38:05 ERROR unit.mysql-k8s/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
