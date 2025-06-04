@@ -92,11 +92,17 @@ class LogRotationSetup(Object):
         self.charm.unit_peer_data[_LOGS_SYNCED] = "true"
         self.setup()
 
-    def _cos_relation_created(self, _):
+    def _cos_relation_created(self, event):
         """Handle relation created."""
         container = self.charm.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
             return
+
+        if not self.charm.app_peer_data.get("cluster-name"):
+            event.defer()
+            logger.info("Cluster name not set, deferring log rotation setup")
+            return
+
         logger.info("Reconfigure log rotation on cos relation created")
         self.setup()
 
