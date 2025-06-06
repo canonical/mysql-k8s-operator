@@ -1,0 +1,30 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:211 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.6    unsupported  01:34:00Z
+
+App                       Version                  Status   Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.41-0ubuntu0.22.04.1  waiting      3  mysql-k8s                                  0  10.152.183.32   no       installing agent
+self-signed-certificates                           active       1  self-signed-certificates  latest/stable  264  10.152.183.121  no       
+
+Unit                         Workload     Agent      Address       Ports  Message
+mysql-k8s/0*                 active       executing  10.1.112.203         
+mysql-k8s/1                  active       idle       10.1.112.205         
+mysql-k8s/2                  maintenance  executing  10.1.112.204         Starting mysqld
+self-signed-certificates/0*  active       idle       10.1.112.206         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:32:54 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:32:56 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:32:59 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:33:00 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:33:03 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:33:04 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:33:34 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "0facd68b-7149-4243-8e93-039e228ba197:r#3#self-signed-certificates": settings 0facd68b-7149-4243-8e93-039e228ba197:r#3#self-signed-certificates not found (not found)
+unit-mysql-k8s-2: 01:33:43 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:45 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-mysql-k8s-2: 01:33:47 ERROR unit.mysql-k8s/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
