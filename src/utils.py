@@ -75,3 +75,10 @@ def compare_dictionaries(dict1: dict, dict2: dict) -> set:
     different_keys = different_keys | dict2.keys() ^ dict1.keys()
 
     return different_keys
+
+
+def dotappend(string: str) -> str:
+    """Append a dot to a string if it does not already end with one."""
+    if not string.endswith("."):
+        string += "."
+    return string
