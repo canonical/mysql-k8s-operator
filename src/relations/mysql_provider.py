@@ -22,7 +22,7 @@ from ops.model import ActiveStatus, BlockedStatus
 
 from constants import CONTAINER_NAME, CONTAINER_RESTARTS, DB_RELATION_NAME, PASSWORD_LENGTH, PEER
 from k8s_helpers import KubernetesClientError
-from utils import generate_random_password
+from utils import dotappend, generate_random_password
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +125,8 @@ class MySQLProvider(Object):
             # create k8s services for endpoints
             self.charm.k8s_helpers.create_endpoint_services(["primary", "replicas"])
 
-            primary_endpoint = socket.getfqdn(f"{self.charm.app.name}-primary")
-            replicas_endpoint = socket.getfqdn(f"{self.charm.app.name}-replicas")
+            primary_endpoint = dotappend(socket.getfqdn(f"{self.charm.app.name}-primary"))
+            replicas_endpoint = dotappend(socket.getfqdn(f"{self.charm.app.name}-replicas"))
 
             db_version = self.charm._mysql.get_mysql_version()
 
