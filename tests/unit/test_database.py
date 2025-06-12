@@ -108,9 +108,9 @@ class TestDatabase(unittest.TestCase):
                 "data": '{"database": "test_db"}',
                 "password": "super_secure_password",
                 "username": username,
-                "endpoints": "mysql-k8s-primary:3306",
+                "endpoints": "mysql-k8s-primary.:3306",
                 "version": "8.0.29-0ubuntu0.20.04.3",
-                "read-only-endpoints": "mysql-k8s-replicas:3306",
+                "read-only-endpoints": "mysql-k8s-replicas.:3306",
                 "database": "test_db",
             },
         )

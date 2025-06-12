@@ -100,7 +100,7 @@ from relations.mysql_provider import MySQLProvider
 from relations.mysql_root import MySQLRootRelation
 from rotate_mysql_logs import RotateMySQLLogs, RotateMySQLLogsCharmEvents
 from upgrade import MySQLK8sUpgrade, get_mysql_k8s_dependencies_model
-from utils import compare_dictionaries, generate_random_password
+from utils import compare_dictionaries, dotappend, generate_random_password
 
 logger = logging.getLogger(__name__)
 
@@ -361,14 +361,15 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # Fully propagated: mysql-k8s-0.mysql-k8s-endpoints.dev.svc.cluster.local
         # Not propagated yet: 10-1-142-191.mysql-k8s.dev.svc.cluster.local
         if unit_hostname not in unit_dns_domain:
-            logger.error(
+            logger.warning(
                 "get_unit_address: unit DNS domain name is not fully propagated yet, trying again"
             )
             raise RuntimeError("unit DNS domain name is not fully propagated yet")
         if unit_dns_domain == unit_hostname:
-            logger.error("Can't get fully qualified domain name for unit. IS DNS not ready?")
+            logger.warning("Can't get fully qualified domain name for unit. IS DNS not ready?")
             raise RuntimeError("Can't get unit fqdn")
-        return unit_dns_domain
+
+        return dotappend(unit_dns_domain)
 
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
