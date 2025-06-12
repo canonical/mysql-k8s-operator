@@ -1,0 +1,259 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:320 Remove async relation
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:326 waiting for units to be blocked
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:332 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [executing] maintenance: Removing replica cluster
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [idle] blocked: Standalone read-only unit.
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/1 [executing] active: Primary
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:346 Re relating the two mysql clusters
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:349 Waiting for the applications to settle
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:358 Running create replication action
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:368 Waiting for the applications to settle
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] blocked: Standalone read-only unit.
+  db2/1 [executing] blocked: Wait until unit is initialized before running create-replication on offer side
+  db2/2 [executing] blocked: Standalone read-only unit.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] active: 
+  db1/1 [executing] maintenance: Sharing credentials with replica cluster
+  db1/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] maintenance: joining the cluster
+  db2/1 [executing] waiting: Waiting other units join the cluster
+  db2/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [executing] active: 
+  db1/1 [executing] maintenance: Sharing credentials with replica cluster
+  db1/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [idle] waiting: Waiting for primary cluster
+  db2/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [executing] maintenance: Adding replica cluster
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [executing] waiting: waiting to join the cluster
+  db2/1 [executing] waiting: Waiting for recovery to complete on other units
+  db2/2 [executing] maintenance: offline
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/0 [idle] active: 
+  db1/1 [executing] active: Primary
+  db1/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] waiting: waiting to join the cluster
+  db2/1 [idle] waiting: Waiting for recovery to complete on other units
+  db2/2 [executing] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db1/1 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  db2/0 [idle] active: 
+  db2/1 [executing] waiting: Waiting for recovery to complete on other units
+  db2/2 [executing] active: 
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:391 Testing data replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:398 Stopping continuous writes and wait (5s) for replication
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:405 Querying max value on all units
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:67 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.7    unsupported  01:47:38Z
+
+App               Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+db1               8.0.41-0ubuntu0.22.04.1  active      3  mysql-k8s                        0  10.152.183.42   no       
+mysql-router-k8s  8.0.41-0ubuntu0.22.04.1  active      1  mysql-router-k8s  8.0/edge     746  10.152.183.55   no       
+mysql-test-app    0.0.2                    active      1  mysql-test-app    latest/edge   73  10.152.183.242  no       Last written value=10886
+
+Unit                 Workload  Agent      Address       Ports  Message
+db1/0                active    executing  10.1.230.204         
+db1/1*               active    executing  10.1.230.206         Primary
+db1/2                active    executing  10.1.230.205         
+mysql-router-k8s/0*  active    idle       10.1.230.213         
+mysql-test-app/0*    active    idle       10.1.230.214         Last written value=10886
+
+Offer  Application  Charm      Rev  Connected  Endpoint           Interface    Role
+db1    db1          mysql-k8s  0    1/1        replication-offer  mysql_async  provider
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-db1-1: 01:30:36 ERROR unit.db1/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'root', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', "CREATE USER 'serverconfig'@'%' IDENTIFIED BY '*****';GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION;CREATE USER 'monitoring'@'%' IDENTIFIED BY '*****' WITH MAX_USER_CONNECTIONS 3;GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%';CREATE USER 'backups'@'%' IDENTIFIED BY '*****';GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO 'backups'@'%';GRANT SELECT ON performance_schema.log_status TO 'backups'@'%';GRANT SELECT ON performance_schema.keyring_component_status TO 'backups'@'%';GRANT SELECT ON performance_schema.replication_group_members TO 'backups'@'%';UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';ALTER USER 'root'@'localhost' IDENTIFIED BY '*****';REVOKE SYSTEM_USER, SYSTEM_VARIABLES_ADMIN, SUPER, REPLICATION_SLAVE_ADMIN, GROUP_REPLICATION_ADMIN, BINLOG_ADMIN, SET_USER_ID, ENCRYPTION_KEY_ADMIN, VERSION_TOKEN_ADMIN, CONNECTION_ADMIN ON *.* FROM 'root'@'localhost';FLUSH PRIVILEGES"], stdout='', stderr="Enter password: ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)\n"
+unit-db1-1: 01:30:36 ERROR unit.db1/1.juju-log Failed to configure users for: db1-1.db1-endpoints.testing.svc.cluster.local
+unit-db1-1: 01:30:37 ERROR unit.db1/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 772, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'root', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', "CREATE USER 'serverconfig'@'%' IDENTIFIED BY '*****';GRANT ALL ON *.* TO 'serverconfig'@'%' WITH GRANT OPTION;CREATE USER 'monitoring'@'%' IDENTIFIED BY '*****' WITH MAX_USER_CONNECTIONS 3;GRANT SYSTEM_USER, SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%';CREATE USER 'backups'@'%' IDENTIFIED BY '*****';GRANT CONNECTION_ADMIN, BACKUP_ADMIN, PROCESS, RELOAD, LOCK TABLES, REPLICATION CLIENT ON *.* TO 'backups'@'%';GRANT SELECT ON performance_schema.log_status TO 'backups'@'%';GRANT SELECT ON performance_schema.keyring_component_status TO 'backups'@'%';GRANT SELECT ON performance_schema.replication_group_members TO 'backups'@'%';UPDATE mysql.user SET authentication_string=null WHERE User='root' and Host='localhost';ALTER USER 'root'@'localhost' IDENTIFIED BY '*****';REVOKE SYSTEM_USER, SYSTEM_VARIABLES_ADMIN, SUPER, REPLICATION_SLAVE_ADMIN, GROUP_REPLICATION_ADMIN, BINLOG_ADMIN, SET_USER_ID, ENCRYPTION_KEY_ADMIN, VERSION_TOKEN_ADMIN, CONNECTION_ADMIN ON *.* FROM 'root'@'localhost';FLUSH PRIVILEGES"], stdout='', stderr="Enter password: ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)\n"
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1095, in configure_mysql_users
+    self._run_mysqlcli_script(
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 780, in _run_mysqlcli_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 1104, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 831, in _on_mysql_pebble_ready
+    self._configure_instance(container)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 730, in _configure_instance
+    self._mysql.configure_mysql_users()
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1101, in configure_mysql_users
+    raise MySQLConfigureMySQLUsersError
+charms.mysql.v0.mysql.MySQLConfigureMySQLUsersError
+unit-db1-1: 01:30:37 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-db1-1: 01:30:37 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-db1-1: 01:30:39 ERROR unit.db1/1.juju-log Failed to initialise MySQL data directory
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 227, in initialise_mysqld
+    process.wait()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1697, in wait
+    raise ExecError(self._command, exit_code, None, None)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/sbin/mysqld', '--initialize', '-u', 'mysql']
+unit-db1-1: 01:30:44 ERROR unit.db1/1.juju-log Failed to initialise MySQL data directory
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 227, in initialise_mysqld
+    process.wait()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1697, in wait
+    raise ExecError(self._command, exit_code, None, None)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/sbin/mysqld', '--initialize', '-u', 'mysql']
+unit-db1-1: 01:30:49 ERROR unit.db1/1.juju-log Failed to initialise MySQL data directory
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 227, in initialise_mysqld
+    process.wait()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1697, in wait
+    raise ExecError(self._command, exit_code, None, None)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/sbin/mysqld', '--initialize', '-u', 'mysql']
+unit-db1-2: 01:31:50 ERROR unit.db1/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:31:52 ERROR unit.db1/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:31:54 ERROR unit.db1/1.juju-log upgrade:2: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:31:54 ERROR unit.db1/2.juju-log database-peers:1: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:35:27 ERROR unit.db1/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:35:29 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:35:29 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:35:29 ERROR unit.db1/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:35:31 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:35:31 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:35:31 ERROR unit.db1/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:35:33 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:35:33 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:40:17 ERROR unit.db1/0.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-0/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-0.db1-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('lima')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-0.db1-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mError connecting to Cluster: RuntimeError: Could not open connection to \'db2-1.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.get_cluster: Could not open connection to \'db2-1.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\n\n'
+unit-db1-0: 01:40:17 ERROR unit.db1/0.juju-log Failed to get cluster status for lima
+unit-db1-0: 01:40:17 ERROR unit.db1/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-0/charm/src/mysql_k8s_helpers.py", line 905, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-db1-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-0/charm/lib/charms/mysql/v0/mysql.py", line 2152, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-db1-2: 01:40:18 ERROR unit.db1/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-2/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['timeout', '30', '/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-2.db1-endpoints.testing.svc.cluster.local:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('lima')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-2.db1-endpoints.testing.svc.cluster.local:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mError connecting to Cluster: RuntimeError: Could not open connection to \'db2-1.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.get_cluster: Could not open connection to \'db2-1.db2-endpoints.testing-other.svc.cluster.local:3306\': The provided URI uses the X protocol, which is not supported by this command.\n\n'
+unit-db1-2: 01:40:18 ERROR unit.db1/2.juju-log Failed to get cluster status for lima
+unit-db1-2: 01:40:18 ERROR unit.db1/2.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-2/charm/src/mysql_k8s_helpers.py", line 905, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+  File "/var/lib/juju/agents/unit-db1-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-2/charm/lib/charms/mysql/v0/mysql.py", line 2152, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster status
+unit-db1-1: 01:42:22 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:42:24 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:42:26 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:09 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:43:11 ERROR unit.db1/2.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:23 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:25 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:27 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:29 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:31 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:33 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:35 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:37 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:43:39 ERROR unit.db1/1.juju-log replication-offer:3: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:45:36 ERROR unit.db1/1.juju-log replication-offer:10: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:45:38 ERROR unit.db1/1.juju-log replication-offer:10: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:45:40 ERROR unit.db1/1.juju-log replication-offer:10: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:45:42 ERROR unit.db1/1.juju-log replication-offer:10: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:45:44 ERROR unit.db1/1.juju-log replication-offer:10: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:45:46 ERROR unit.db1/1.juju-log replication-offer:10: get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:45:54 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:45:55 ERROR unit.db1/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:45:56 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:45:57 ERROR unit.db1/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:45:58 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:45:58 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-2: 01:45:59 ERROR unit.db1/2.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:46:00 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:46:01 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:46:02 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:46:03 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:46:04 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:46:05 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:46:06 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-0: 01:46:07 ERROR unit.db1/0.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+unit-db1-1: 01:46:08 ERROR unit.db1/1.juju-log get_unit_address: unit DNS domain name is not fully propagated yet, trying again
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
