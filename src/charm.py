@@ -411,7 +411,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         Try to join the unit from the primary unit.
         """
-        instance_label = self.unit.name.replace("/", "-")
+        instance_label = self.get_unit_label(self.unit)
         instance_address = self.get_unit_address(self.unit)
 
         if not self._mysql.is_instance_in_cluster(instance_label):
