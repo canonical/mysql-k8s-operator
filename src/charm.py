@@ -210,7 +210,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _mysql(self) -> MySQL:
         """Returns an instance of the MySQL object from mysql_k8s_helpers."""
         return MySQL(
-            self.get_unit_address(),
+            self.unit_address,
             self.app_peer_data["cluster-name"],
             self.app_peer_data["cluster-set-domain-name"],
             self.get_secret("app", ROOT_PASSWORD_KEY),  # pyright: ignore [reportArgumentType]
@@ -292,7 +292,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     @property
     def unit_address(self) -> str:
         """Return the address of this unit."""
-        return self.get_unit_address()
+        return self.get_unit_address(self.unit)
 
     @property
     def is_new_unit(self) -> bool:
@@ -344,14 +344,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         return f"{unit_name.replace('/', '-')}.{self.app.name}-endpoints"
 
     @retry(reraise=True, stop=stop_after_delay(120), wait=wait_fixed(2))
-    def get_unit_address(self, unit: Optional[Unit] = None) -> str:
+    def get_unit_address(self, unit: Unit, relation_name: str = PEER) -> str:
         """Get fqdn/address for a unit.
 
         Translate juju unit name to resolvable hostname.
         """
-        if not unit:
-            unit = self.unit
-
         unit_hostname = self.get_unit_hostname(unit.name)
         unit_dns_domain = getfqdn(self.get_unit_hostname(unit.name))
 

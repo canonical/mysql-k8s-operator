@@ -984,6 +984,6 @@ class MySQL(MySQLBase):
 
         Returns: list of cluster members in MySQL MEMBER_HOST format.
         """
-        return [self.charm.get_unit_address(self.charm.unit)] + [
+        return [self.charm.unit_address] + [
             self.charm.get_unit_address(unit) for unit in self.charm.peers.units
         ]
