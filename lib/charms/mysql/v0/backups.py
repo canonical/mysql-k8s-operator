@@ -95,6 +95,7 @@ from ops.model import BlockedStatus, MaintenanceStatus
 
 from constants import (
     MYSQL_DATA_DIR,
+    PEER,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
@@ -112,7 +113,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 13
+LIBPATCH = 14
 
 ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE = "S3 repository claimed by another cluster"
 MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
@@ -120,13 +121,13 @@ MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
 )
 
 if typing.TYPE_CHECKING:
-    from charm import MySQLOperatorCharm
+    from mysql import MySQLCharmBase
 
 
 class MySQLBackups(Object):
     """Encapsulation of backups for MySQL."""
 
-    def __init__(self, charm: "MySQLOperatorCharm", s3_integrator: S3Requirer) -> None:
+    def __init__(self, charm: "MySQLCharmBase", s3_integrator: S3Requirer) -> None:
         super().__init__(charm, MYSQL_BACKUPS)
 
         self.charm = charm
@@ -715,7 +716,7 @@ class MySQLBackups(Object):
         try:
             logger.info("Restoring point-in-time-recovery")
             stdout, stderr = self.charm._mysql.restore_pitr(
-                host=self.charm.get_unit_address(self.charm.unit),
+                host=self.charm.get_unit_address(self.charm.unit, PEER),
                 mysql_user=self.charm._mysql.server_config_user,
                 password=self.charm._mysql.server_config_password,
                 s3_parameters=s3_parameters,
@@ -744,8 +745,7 @@ class MySQLBackups(Object):
 
         try:
             logger.info("Creating cluster on restored node")
-            unit_label = self.charm.unit.name.replace("/", "-")
-            self.charm._mysql.create_cluster(unit_label)
+            self.charm._mysql.create_cluster(self.charm.unit_label)
             self.charm._mysql.create_cluster_set()
             self.charm._mysql.initialize_juju_units_operations_table()
 
