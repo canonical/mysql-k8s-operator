@@ -9,6 +9,7 @@ import tenacity
 from charms.mysql.v0.mysql import MySQLClientError
 from ops.pebble import ExecError, PathError
 
+from constants import PEER
 from mysql_k8s_helpers import (
     MYSQLD_SOCK_FILE,
     MySQL,
@@ -394,21 +395,21 @@ class TestMySQL(unittest.TestCase):
             group="root",
         )
 
-    @patch(
-        "mysql_k8s_helpers.MySQL.get_cluster_endpoints",
-        return_value=(
-            "mysql-0.mysql-endpoints",
-            "mysql-1.mysql-endpoints,mysql-2.mysql-endpoints",
-            "mysql-3.mysql-endpoints",
-        ),
-    )
-    def test_update_endpoints(self, _get_cluster_endpoints):
+    def test_update_endpoints(self):
         """Test the successful execution of update_endpoints."""
         _label_pod = MagicMock()
         _mock_k8s_helper = MagicMock()
         _mock_k8s_helper.label_pod = _label_pod
 
+        _mock_charm = MagicMock()
+        _mock_charm.get_cluster_endpoints.return_value = (
+            "mysql-0.mysql-endpoints",
+            "mysql-1.mysql-endpoints,mysql-2.mysql-endpoints",
+            "mysql-3.mysql-endpoints",
+        )
+
         self.mysql.k8s_helper = _mock_k8s_helper
+        self.mysql.charm = _mock_charm
 
         calls = [
             call("primary", "mysql-0"),
@@ -417,8 +418,8 @@ class TestMySQL(unittest.TestCase):
             call("offline", "mysql-3"),
         ]
 
-        self.mysql.update_endpoints()
-        _get_cluster_endpoints.assert_called_once()
+        self.mysql.update_endpoints(PEER)
+        self.mysql.charm.get_cluster_endpoints.assert_called_once()
 
         _label_pod.assert_has_calls(calls)
 
