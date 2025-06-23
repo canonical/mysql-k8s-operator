@@ -10,6 +10,7 @@ from lightkube.models.core_v1 import ServicePort, ServiceSpec
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.core_v1 import Pod, Service
 from ops.charm import CharmBase
+from ops.model import Unit
 from ops.testing import Harness
 
 from k8s_helpers import KubernetesHelpers
@@ -19,6 +20,11 @@ class _FakeCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self.app_peer_data = {"cluster-name": "test-cluster"}
+
+    @staticmethod
+    def get_unit_label(unit: Unit) -> str:
+        """Return unit label."""
+        return unit.name.replace("/", "-")
 
 
 class TestK8sHelpers(unittest.TestCase):

@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 # The unique Charmhub library identifier, never change it
 LIBID = "4de21f1a022c4e2c87ac8e672ec16f6a"
 LIBAPI = 0
-LIBPATCH = 6
+LIBPATCH = 7
 
 RELATION_OFFER = "replication-offer"
 RELATION_CONSUMER = "replication"
@@ -553,7 +553,7 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             unit_label = remote_data["node-label"]
 
             logger.debug("Looking for a donor node")
-            _, ro, _ = self._charm._mysql.get_cluster_endpoints(get_ips=False)
+            _, ro, _ = self._charm.get_cluster_endpoints(self.relation.name)
 
             if not ro:
                 logger.debug(f"Adding replica {cluster=} with {endpoint=}. Primary is the donor")
@@ -716,15 +716,16 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
         secret = self._obtain_secret()
         return secret.peek_content()
 
-    def _get_endpoint(self) -> str:
+    def _get_endpoint(self) -> Optional[str]:
         """Get endpoint to be used by the primary cluster.
 
         This is the address in which the unit must be reachable from the primary cluster.
         Not necessarily the locally resolved address, but an ingress address.
         """
-        # TODO: devise method to inform the real address
-        # using unit informed address (fqdn or ip)
-        return self._charm.unit_address
+        if self.relation.name == RELATION_CONSUMER:
+            return self._charm.get_unit_address(self._charm.unit, RELATION_CONSUMER)
+        if self.relation.name == RELATION_OFFER:
+            return self._charm.get_unit_address(self._charm.unit, RELATION_OFFER)
 
     def _on_consumer_relation_created(self, event):
         """Handle the async_replica relation being created on the leader unit."""

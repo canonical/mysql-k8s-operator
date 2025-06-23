@@ -74,7 +74,6 @@ import json
 import logging
 import os
 import re
-import socket
 import sys
 import time
 from abc import ABC, abstractmethod
@@ -134,7 +133,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 87
+LIBPATCH = 88
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -495,10 +494,15 @@ class MySQLCharmBase(CharmBase, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_unit_address(self, unit: Unit) -> str:
+    def get_unit_address(self, unit: Unit, relation_name: str) -> str:
         """Return unit address."""
         # each platform has its own way to get an arbitrary unit address
         raise NotImplementedError
+
+    @staticmethod
+    def get_unit_label(unit: Unit) -> str:
+        """Return unit label."""
+        return unit.name.replace("/", "-")
 
     def _on_get_password(self, event: ActionEvent) -> None:
         """Action used to retrieve the system user's password."""
@@ -633,7 +637,7 @@ class MySQLCharmBase(CharmBase, ABC):
         for unit in self.app_units:
             try:
                 if unit != self.unit and self._mysql.cluster_metadata_exists(
-                    self.get_unit_address(unit)
+                    self.get_unit_address(unit, PEER)
                 ):
                     return True
                 elif self._mysql.cluster_metadata_exists():
@@ -652,13 +656,14 @@ class MySQLCharmBase(CharmBase, ABC):
         total_cluster_nodes = 0
         for unit in self.app_units:
             total_cluster_nodes += self._mysql.get_cluster_node_count(
-                from_instance=self.get_unit_address(unit)
+                from_instance=self.get_unit_address(unit, PEER)
             )
 
         total_online_cluster_nodes = 0
         for unit in self.app_units:
             total_online_cluster_nodes += self._mysql.get_cluster_node_count(
-                from_instance=self.get_unit_address(unit), node_status=MySQLMemberState["ONLINE"]
+                from_instance=self.get_unit_address(unit, PEER),
+                node_status=MySQLMemberState.ONLINE,
             )
 
         return total_cluster_nodes == 1 and total_online_cluster_nodes == 0
@@ -669,7 +674,7 @@ class MySQLCharmBase(CharmBase, ABC):
 
         Fully initialized means that all unit that can be joined are joined.
         """
-        return self._mysql.get_cluster_node_count(node_status=MySQLMemberState["ONLINE"]) == min(
+        return self._mysql.get_cluster_node_count(node_status=MySQLMemberState.ONLINE) == min(
             GR_MAX_MEMBERS, self.app.planned_units()
         )
 
@@ -677,7 +682,8 @@ class MySQLCharmBase(CharmBase, ABC):
     def unit_configured(self) -> bool:
         """Check if the unit is configured to be part of the cluster."""
         return self._mysql.is_instance_configured_for_innodb(
-            self.get_unit_address(self.unit), self.unit_label
+            self.get_unit_address(self.unit, PEER),
+            self.unit_label,
         )
 
     @property
@@ -707,7 +713,7 @@ class MySQLCharmBase(CharmBase, ABC):
     @property
     def unit_label(self):
         """Return unit label."""
-        return self.unit.name.replace("/", "-")
+        return self.get_unit_label(self.unit)
 
     @property
     def _is_peer_data_set(self) -> bool:
@@ -773,6 +779,37 @@ class MySQLCharmBase(CharmBase, ABC):
             return self.peer_relation_app
         elif scope == UNIT_SCOPE:
             return self.peer_relation_unit
+
+    def get_cluster_endpoints(self, relation_name: str) -> Tuple[str, str, str]:
+        """Return (rw, ro, offline) endpoints tuple names or IPs."""
+        repl_topology = self._mysql.get_cluster_topology()
+        repl_cluster = self._mysql.is_cluster_replica()
+
+        if not repl_topology:
+            raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster topology")
+
+        unit_labels = {self.get_unit_label(unit): unit for unit in self.app_units}
+
+        no_endpoints = set()
+        ro_endpoints = set()
+        rw_endpoints = set()
+
+        for k, v in repl_topology.items():
+            address = f"{self.get_unit_address(unit_labels[k], relation_name)}:3306"
+
+            if v["status"] != MySQLMemberState.ONLINE:
+                no_endpoints.add(address)
+            if v["status"] == MySQLMemberState.ONLINE and v["mode"] == "r/o":
+                ro_endpoints.add(address)
+            if v["status"] == MySQLMemberState.ONLINE and v["mode"] == "r/w" and not repl_cluster:
+                rw_endpoints.add(address)
+
+        # Replica return global primary address
+        if repl_cluster:
+            primary_address = f"{self._mysql.get_cluster_set_global_primary_address()}:3306"
+            rw_endpoints.add(primary_address)
+
+        return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
     def get_secret(
         self,
@@ -2144,51 +2181,6 @@ class MySQLBase(ABC):
 
         return int(matches.group(1)) if matches else 0
 
-    def get_cluster_endpoints(self, get_ips: bool = True) -> Tuple[str, str, str]:
-        """Return (rw, ro, ofline) endpoints tuple names or IPs."""
-        status = self.get_cluster_status()
-
-        if not status:
-            raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster status")
-
-        topology = status["defaultreplicaset"]["topology"]
-
-        def _get_host_ip(host: str) -> str:
-            try:
-                port = None
-                if ":" in host:
-                    host, port = host.split(":")
-
-                host_ip = socket.gethostbyname(host)
-                return f"{host_ip}:{port}" if port else host_ip
-            except socket.gaierror:
-                raise MySQLGetClusterEndpointsError(f"Failed to query IP for host {host}")
-
-        ro_endpoints = {
-            _get_host_ip(v["address"]) if get_ips else v["address"]
-            for v in topology.values()
-            if v["mode"] == "r/o" and v["status"] == MySQLMemberState.ONLINE
-        }
-
-        if self.is_cluster_replica():
-            # replica return global primary address
-            global_primary = self.get_cluster_set_global_primary_address()
-            if not global_primary:
-                raise MySQLGetClusterEndpointsError("Failed to get global primary address")
-            rw_endpoints = {_get_host_ip(global_primary) if get_ips else global_primary}
-        else:
-            rw_endpoints = {
-                _get_host_ip(v["address"]) if get_ips else v["address"]
-                for v in topology.values()
-                if v["mode"] == "r/w" and v["status"] == MySQLMemberState.ONLINE
-            }
-        # won't get offline endpoints to IP as they maybe unreachable
-        no_endpoints = {
-            v["address"] for v in topology.values() if v["status"] != MySQLMemberState.ONLINE
-        }
-
-        return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
-
     def execute_remove_instance(
         self, connect_instance: Optional[str] = None, force: bool = False
     ) -> None:
@@ -2478,12 +2470,21 @@ class MySQLBase(ABC):
 
         return address
 
-    def get_primary_label(self) -> Optional[str]:
-        """Get the label of the cluster's primary."""
+    def get_cluster_topology(self) -> Optional[dict]:
+        """Get the cluster topology."""
         status = self.get_cluster_status()
         if not status:
             return None
-        for label, value in status["defaultreplicaset"]["topology"].items():
+
+        return status["defaultreplicaset"]["topology"]
+
+    def get_primary_label(self) -> Optional[str]:
+        """Get the label of the cluster's primary."""
+        topology = self.get_cluster_topology()
+        if not topology:
+            return None
+
+        for label, value in topology.items():
             if value["memberrole"] == "primary":
                 return label
 
