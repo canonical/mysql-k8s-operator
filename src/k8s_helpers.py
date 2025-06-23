@@ -41,7 +41,7 @@ class KubernetesHelpers:
         Args:
             charm: a `CharmBase` parent object
         """
-        self.pod_name = charm.unit.name.replace("/", "-")
+        self.pod_name = charm.get_unit_label(charm.unit)
         self.namespace = charm.model.name
         self.app_name = charm.model.app.name
         self.cluster_name = charm.app_peer_data.get("cluster-name")

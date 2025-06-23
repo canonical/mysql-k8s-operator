@@ -274,7 +274,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         if self.charm.unit_label == f"{self.charm.app.name}/1":
             # penultimate unit, reset the primary for faster switchover
             try:
-                self.charm._mysql.set_cluster_primary(self.charm.get_unit_address(self.charm.unit))
+                self.charm._mysql.set_cluster_primary(self.charm.unit_address)
             except MySQLSetClusterPrimaryError:
                 logger.debug("Failed to set primary")
 
