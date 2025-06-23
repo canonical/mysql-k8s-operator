@@ -28,7 +28,7 @@ jobs:
       - name: Check libs
         uses: canonical/charming-actions/check-libraries@2.6.3
         with:
-          credentials: ${{ secrets.CHARMHUB_TOKEN }} # FIXME: current token will expire in 2023-07-04
+          credentials: ${{ secrets.CHARMHUB_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   ci-tests:
@@ -44,9 +44,9 @@ jobs:
     needs:
       - lib-check
       - ci-tests
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@v32.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v31.1.1
     with:
-      track: '8.0'
+      channel: '8.0/edge'
       artifact-prefix: ${{ needs.ci-tests.outputs.artifact-prefix }}
     secrets:
       charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
