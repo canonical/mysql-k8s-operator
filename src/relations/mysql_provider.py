@@ -120,7 +120,7 @@ class MySQLProvider(Object):
 
         try:
             # make sure pods are labeled before adding service
-            self.charm._mysql.update_endpoints()
+            self.charm._mysql.update_endpoints(DB_RELATION_NAME)
 
             # create k8s services for endpoints
             self.charm.k8s_helpers.create_endpoint_services(["primary", "replicas"])
@@ -228,7 +228,7 @@ class MySQLProvider(Object):
                 break
             return
 
-        self.charm._mysql.update_endpoints()
+        self.charm._mysql.update_endpoints(DB_RELATION_NAME)
 
     def _on_update_status(self, _) -> None:
         """Handle the update status event.
@@ -252,7 +252,7 @@ class MySQLProvider(Object):
         ):
             return
 
-        self.charm._mysql.update_endpoints()
+        self.charm._mysql.update_endpoints(DB_RELATION_NAME)
 
     def _on_database_broken(self, event: RelationBrokenEvent) -> None:
         """Handle the removal of database relation.

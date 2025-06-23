@@ -10,7 +10,7 @@ applications:
       mysql-image: {{ mysql_image_source }}
   grafana-agent-k8s:
     charm: grafana-agent-k8s
-    channel: latest/stable
+    channel: 1/stable
     scale: 1
 relations:
   - - grafana-agent-k8s:logging-provider

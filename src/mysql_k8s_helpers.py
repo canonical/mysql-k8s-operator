@@ -47,6 +47,7 @@ from constants import (
     MYSQLD_SERVICE,
     MYSQLD_SOCK_FILE,
     MYSQLSH_LOCATION,
+    PEER,
     ROOT_SYSTEM_USER,
     XTRABACKUP_PLUGIN_DIR,
 )
@@ -898,11 +899,11 @@ class MySQL(MySQLBase):
         except ExecError:
             return False
 
-    def update_endpoints(self) -> None:
+    def update_endpoints(self, relation_name: str) -> None:
         """Updates pod labels to reflect role of the unit."""
         logger.debug("Updating pod labels")
         try:
-            rw_endpoints, ro_endpoints, offline = self.get_cluster_endpoints(get_ips=False)
+            rw_endpoints, ro_endpoints, offline = self.charm.get_cluster_endpoints(relation_name)
 
             for endpoints, label in (
                 (rw_endpoints, "primary"),
@@ -920,7 +921,7 @@ class MySQL(MySQLBase):
     def set_cluster_primary(self, new_primary_address: str) -> None:
         """Set the cluster primary and update pod labels."""
         super().set_cluster_primary(new_primary_address)
-        self.update_endpoints()
+        self.update_endpoints(PEER)
 
     def fetch_error_log(self) -> Optional[str]:
         """Fetch the MySQL error log."""
@@ -983,6 +984,6 @@ class MySQL(MySQLBase):
 
         Returns: list of cluster members in MySQL MEMBER_HOST format.
         """
-        return [self.charm.get_unit_address(self.charm.unit)] + [
+        return [self.charm.unit_address] + [
             self.charm.get_unit_address(unit) for unit in self.charm.peers.units
         ]
