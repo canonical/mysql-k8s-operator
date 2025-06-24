@@ -1,0 +1,358 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.7    unsupported  01:44:17Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.196  no       Last written value=246
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.127  no       Last written value=326
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.36   no       Last written value=316
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.55   no       Last written value=199
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.62   no       Last written value=335
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.108  no       Last written value=225
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.52   no       Last written value=222
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.114  no       
+router0  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     748  10.152.183.120  no       Waiting for K8s service connectivity
+router1  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     748  10.152.183.83   no       Waiting for K8s service connectivity
+router2  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     748  10.152.183.193  no       
+router3  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     748  10.152.183.243  no       Waiting for K8s service connectivity
+router4  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     748  10.152.183.38   no       
+router5  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     748  10.152.183.57   no       
+router6  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     748  10.152.183.214  no       Waiting for K8s service connectivity
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.15.74         Last written value=246
+app1/0*     active    idle   10.1.15.75         Last written value=326
+app2/0*     active    idle   10.1.15.77         Last written value=316
+app3/0*     active    idle   10.1.15.79         Last written value=199
+app4/0*     active    idle   10.1.15.81         Last written value=335
+app5/0*     active    idle   10.1.15.82         Last written value=225
+app6/0*     active    idle   10.1.15.84         Last written value=222
+mysql/0*    active    idle   10.1.15.73         Primary
+router0/0*  active    idle   10.1.15.76         
+router1/0*  active    idle   10.1.15.78         
+router2/0*  active    idle   10.1.15.80         
+router3/0*  active    idle   10.1.15.83         
+router4/0*  active    idle   10.1.15.85         
+router5/0*  active    idle   10.1.15.86         
+router6/0*  active    idle   10.1.15.87         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+controller-0: 01:34:49 ERROR juju.worker.caasapplicationprovisioner.runner exited "router2": refreshing application status for "router2": rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+controller-0: 01:34:49 ERROR juju.worker.caasapplicationprovisioner.runner exited "app5": refreshing application status for "app5": rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+controller-0: 01:34:49 ERROR juju.worker.caasapplicationprovisioner.runner exited "router4": rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+unit-router0-0: 01:34:49 ERROR unit.router0/0.juju-log upgrade-version-a:4: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 235, in raise_for_status
+    resp.raise_for_status()
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/httpx/_models.py", line 761, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Server error '500 Internal Server Error' for url 'https://10.152.183.1/api/v1/namespaces/testing/services/router0-service'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/charm.py", line 448, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/abstract_charm.py", line 375, in reconcile
+    self.set_status(event=event)
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/abstract_charm.py", line 229, in set_status
+    self.app.status = self._determine_app_status(event=event)
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/abstract_charm.py", line 207, in _determine_app_status
+    if self._status:
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/charm.py", line 126, in _status
+    and not self._check_service_connectivity()
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/charm.py", line 238, in _check_service_connectivity
+    if not self._get_service() or not isinstance(
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/charm.py", line 141, in _get_service
+    service = self._lightkube_client.get(
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/lightkube/core/client.py", line 230, in get
+    return self._client.request("get", res=res, name=name, namespace=namespace)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 311, in request
+    return self.handle_response(method, resp, br)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 251, in handle_response
+    self.raise_for_status(resp)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 237, in raise_for_status
+    raise transform_exception(e)
+lightkube.core.exceptions.ApiError: rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+unit-router3-2: 01:34:49 ERROR unit.router3/2.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 235, in raise_for_status
+    resp.raise_for_status()
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/httpx/_models.py", line 761, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Server error '500 Internal Server Error' for url 'https://10.152.183.1/apis/apps/v1/namespaces/testing/statefulsets/router3'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router3-2/charm/src/charm.py", line 448, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router3-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router3-2/charm/src/charm.py", line 426, in _on_workload_container_pebble_ready
+    self.reconcile()
+  File "/var/lib/juju/agents/unit-router3-2/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router3-2/charm/src/abstract_charm.py", line 272, in reconcile
+    if not self._upgrade:
+  File "/var/lib/juju/agents/unit-router3-2/charm/src/charm.py", line 110, in _upgrade
+    return kubernetes_upgrade.Upgrade(self)
+  File "/var/lib/juju/agents/unit-router3-2/charm/src/kubernetes_upgrade.py", line 74, in __init__
+    partition.get(app_name=charm_.app.name)
+  File "/var/lib/juju/agents/unit-router3-2/charm/src/kubernetes_upgrade.py", line 55, in get
+    lightkube.Client()
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/lightkube/core/client.py", line 230, in get
+    return self._client.request("get", res=res, name=name, namespace=namespace)
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 311, in request
+    return self.handle_response(method, resp, br)
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 251, in handle_response
+    self.raise_for_status(resp)
+  File "/var/lib/juju/agents/unit-router3-2/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 237, in raise_for_status
+    raise transform_exception(e)
+lightkube.core.exceptions.ApiError: rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+unit-router3-1: 01:34:49 ERROR unit.router3/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 235, in raise_for_status
+    resp.raise_for_status()
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/httpx/_models.py", line 761, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Server error '500 Internal Server Error' for url 'https://10.152.183.1/apis/apps/v1/namespaces/testing/statefulsets/router3'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router3-1/charm/src/charm.py", line 448, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router3-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router3-1/charm/src/charm.py", line 426, in _on_workload_container_pebble_ready
+    self.reconcile()
+  File "/var/lib/juju/agents/unit-router3-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router3-1/charm/src/abstract_charm.py", line 372, in reconcile
+    self._upgrade.unit_state = upgrade.UnitState.HEALTHY
+  File "/var/lib/juju/agents/unit-router3-1/charm/src/charm.py", line 110, in _upgrade
+    return kubernetes_upgrade.Upgrade(self)
+  File "/var/lib/juju/agents/unit-router3-1/charm/src/kubernetes_upgrade.py", line 74, in __init__
+    partition.get(app_name=charm_.app.name)
+  File "/var/lib/juju/agents/unit-router3-1/charm/src/kubernetes_upgrade.py", line 55, in get
+    lightkube.Client()
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/lightkube/core/client.py", line 230, in get
+    return self._client.request("get", res=res, name=name, namespace=namespace)
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 311, in request
+    return self.handle_response(method, resp, br)
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 251, in handle_response
+    self.raise_for_status(resp)
+  File "/var/lib/juju/agents/unit-router3-1/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 237, in raise_for_status
+    raise transform_exception(e)
+lightkube.core.exceptions.ApiError: rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+unit-router1-0: 01:34:49 ERROR unit.router1/0.juju-log upgrade-version-a:10: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2955, in _run
+    result = subprocess.run(args, **kwargs)  # type: ignore
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '('/var/lib/juju/tools/unit-router1-0/secret-get', '--label', 'backend-database.33.user.secret', '--format=json')' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router1-0/charm/src/charm.py", line 448, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router1-0/charm/src/abstract_charm.py", line 278, in reconcile
+    workload_ = self.get_workload(event=event)
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router1-0/charm/src/abstract_charm.py", line 167, in get_workload
+    if connection_info := self._database_requires.get_connection_info(event=event):
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router1-0/charm/src/relations/database_requires.py", line 120, in get_connection_info
+    return CompleteConnectionInformation(interface=self._interface, event=event)
+  File "/var/lib/juju/agents/unit-router1-0/charm/src/relations/database_requires.py", line 82, in __init__
+    databag = remote_databag.RemoteDatabag(interface=interface, relation=relation)
+  File "/var/lib/juju/agents/unit-router1-0/charm/src/relations/remote_databag.py", line 37, in __init__
+    super().__init__(interface.fetch_relation_data()[relation.id])
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1346, in fetch_relation_data
+    data[relation.id] = self._fetch_specific_relation_data(relation, fields)
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1833, in _fetch_specific_relation_data
+    return self._fetch_relation_data_with_secrets(
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1246, in _fetch_relation_data_with_secrets
+    result, normal_fields = self._process_secret_fields(
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1190, in _process_secret_fields
+    if group_result := operation(relation, group, secret_fields, *args, **kwargs):
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1123, in _get_group_secret_contents
+    if (secret := self._get_relation_secret(relation.id, group)) and (
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 508, in wrapper
+    return f(self, *args, **kwargs)
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1825, in _get_relation_secret
+    return self.secrets.get(label)
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 812, in get
+    if secret.meta:
+  File "/var/lib/juju/agents/unit-router1-0/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 642, in meta
+    self._secret_meta = self._model.get_secret(label=self.label)
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 276, in get_secret
+    content = self._backend.secret_get(id=id, label=label)
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 3311, in secret_get
+    result = self._run('secret-get', *args, return_output=True, use_json=True)
+  File "/var/lib/juju/agents/unit-router1-0/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2957, in _run
+    raise ModelError(e.stderr) from e
+ops.model.ModelError: ERROR cannot ensure service account "unit-router1-0": rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+
+unit-router2-1: 01:34:49 ERROR unit.router2/1.juju-log backend-database:35: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 235, in raise_for_status
+    resp.raise_for_status()
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/httpx/_models.py", line 761, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Server error '500 Internal Server Error' for url 'https://10.152.183.1/apis/apps/v1/namespaces/testing/statefulsets/router2'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router2-1/charm/src/charm.py", line 448, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router2-1/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 3141, in _on_relation_changed_event
+    getattr(self.on, "database_created").emit(
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router2-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router2-1/charm/src/abstract_charm.py", line 364, in reconcile
+    if not self._upgrade.in_progress and isinstance(
+  File "/var/lib/juju/agents/unit-router2-1/charm/src/charm.py", line 110, in _upgrade
+    return kubernetes_upgrade.Upgrade(self)
+  File "/var/lib/juju/agents/unit-router2-1/charm/src/kubernetes_upgrade.py", line 74, in __init__
+    partition.get(app_name=charm_.app.name)
+  File "/var/lib/juju/agents/unit-router2-1/charm/src/kubernetes_upgrade.py", line 55, in get
+    lightkube.Client()
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/lightkube/core/client.py", line 230, in get
+    return self._client.request("get", res=res, name=name, namespace=namespace)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 311, in request
+    return self.handle_response(method, resp, br)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 251, in handle_response
+    self.raise_for_status(resp)
+  File "/var/lib/juju/agents/unit-router2-1/charm/venv/lib/python3.10/site-packages/lightkube/core/generic_client.py", line 237, in raise_for_status
+    raise transform_exception(e)
+lightkube.core.exceptions.ApiError: rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+unit-router6-2: 01:34:49 ERROR unit.router6/2.juju-log backend-database:43: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2955, in _run
+    result = subprocess.run(args, **kwargs)  # type: ignore
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '('/var/lib/juju/tools/unit-router6-2/secret-get', 'secret://a0bcc732-5014-4e91-8136-5c73c1ecc522/d1d000q48uvs7bd3eg20', '--label', 'backend-database.43.user.secret', '--format=json')' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router6-2/charm/src/charm.py", line 448, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router6-2/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 3131, in _on_relation_changed_event
+    self.relation_data._register_secrets_to_relation(event.relation, diff.added)
+  File "/var/lib/juju/agents/unit-router6-2/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1759, in _register_secrets_to_relation
+    self._register_secret_to_relation(relation.name, relation.id, secret_uri, group)
+  File "/var/lib/juju/agents/unit-router6-2/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 1744, in _register_secret_to_relation
+    CachedSecret(self._model, self.component, label, secret_id).meta
+  File "/var/lib/juju/agents/unit-router6-2/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 649, in meta
+    self._secret_meta = self._model.get_secret(id=self._secret_uri, label=self.label)
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/model.py", line 276, in get_secret
+    content = self._backend.secret_get(id=id, label=label)
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/model.py", line 3311, in secret_get
+    result = self._run('secret-get', *args, return_output=True, use_json=True)
+  File "/var/lib/juju/agents/unit-router6-2/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2957, in _run
+    raise ModelError(e.stderr) from e
+ops.model.ModelError: ERROR rpc error: code = Unavailable desc = error reading from server: read unix @->/var/snap/microk8s/8155/var/kubernetes/backend/kine.sock:12379: read: connection reset by peer
+
+unit-router3-2: 01:34:50 ERROR juju.worker.uniter.operation hook "mysql-router-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-router3-2: 01:34:50 ERROR juju.worker.uniter pebble poll failed for container "mysql-router": failed to send pebble-ready event: hook failed
+unit-router6-2: 01:34:50 ERROR juju.worker.uniter.operation hook "backend-database-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-router3-1: 01:34:50 ERROR juju.worker.uniter.operation hook "mysql-router-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-router3-1: 01:34:50 ERROR juju.worker.uniter pebble poll failed for container "mysql-router": failed to send pebble-ready event: hook failed
+unit-router2-1: 01:34:50 ERROR juju.worker.uniter.operation hook "backend-database-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-router1-0: 01:34:50 ERROR juju.worker.uniter.operation hook "upgrade-version-a-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-router0-0: 01:34:50 ERROR juju.worker.uniter.operation hook "upgrade-version-a-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
