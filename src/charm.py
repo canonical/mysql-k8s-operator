@@ -325,7 +325,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """
         container = self.unit.get_container(CONTAINER_NAME)
         if container.can_connect():
-            return super().unit_initialized()
+            return super().unit_initialized(raise_exceptions)
         else:
             return False
 
