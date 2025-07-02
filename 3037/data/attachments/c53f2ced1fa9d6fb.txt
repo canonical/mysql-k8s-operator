@@ -1,0 +1,39 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.7    unsupported  01:33:33Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.41-0ubuntu0.22.04.1  error        3  mysql-k8s       8.0/edge     257  10.152.183.219  no       hook failed: "database-peers-relation-changed"
+mysql-test-app  0.0.2                    waiting      1  mysql-test-app  latest/edge   73  10.152.183.244  no       
+
+Unit               Workload     Agent  Address     Ports  Message
+mysql-k8s/0*       error        idle   10.1.32.75         hook failed: "database-peers-relation-changed"
+mysql-k8s/1        waiting      idle   10.1.32.77         waiting to join the cluster
+mysql-k8s/2        maintenance  idle   10.1.32.76         joining the cluster
+mysql-test-app/0*  waiting      idle   10.1.32.78         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:30:50 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 01:30:50 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:30:51 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:30:51 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 01:30:51 ERROR unit.mysql-k8s/0.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 01:30:51 ERROR unit.mysql-k8s/0.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:30:53 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:30:53 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:30:56 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:30:56 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 01:30:56 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 01:30:56 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:30:57 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:30:57 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 01:30:57 ERROR unit.mysql-k8s/0.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 01:30:57 ERROR unit.mysql-k8s/0.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 01:31:00 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 01:31:00 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 01:31:01 ERROR unit.mysql-k8s/0.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 01:31:01 ERROR unit.mysql-k8s/0.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
