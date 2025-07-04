@@ -133,7 +133,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 88
+LIBPATCH = 89
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -795,6 +795,11 @@ class MySQLCharmBase(CharmBase, ABC):
         rw_endpoints = set()
 
         for k, v in repl_topology.items():
+            # When a replica instance is catching up with the primary instance,
+            # the custom label assigned by the operator code has not yet been applied.
+            if v["status"] == MySQLMemberState.RECOVERING:
+                continue
+
             address = f"{self.get_unit_address(unit_labels[k], relation_name)}:3306"
 
             if v["status"] != MySQLMemberState.ONLINE:
