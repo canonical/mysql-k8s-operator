@@ -25,7 +25,7 @@ This feature is available for Charmed MySQL K8s revision 146+ only.
 Enabling tracing with Tempo requires that you:
 - Have deployed a Charmed MySQL K8s application
   - See [How to manage units](https://discourse.charmhub.io/t/charmed-mysql-k8s-how-to-manage-units/9659)
-- Have deployed a 'cos-lite' bundle from the `latest/edge` track in a Kubernetes environment
+- Have deployed a 'cos-lite' bundle in a Kubernetes environment
   - See [Getting started on MicroK8s](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
 
 ---
@@ -81,10 +81,10 @@ juju consume k8s:admin/cos.tempo
 
 <a href="#heading--consume"><h2 id="heading--consume"> Consume interfaces </h2></a>
 
-First, deploy [Grafana Agent K8s](https://charmhub.io/grafana-agent-k8s) from the `latest/edge` channel:
+First, deploy [Grafana Agent K8s](https://charmhub.io/grafana-agent-k8s) from the `1/stable` channel:
 
 ```shell
-juju deploy grafana-agent-k8s --channel latest/edge
+juju deploy grafana-agent-k8s --channel 1/stable
 ``` 
 
 Then, integrate Grafana Agent K8s with the consumed interface from the previous section:
@@ -109,7 +109,7 @@ SAAS   Status  Store       URL
 tempo  active  k8s         admin/cos.tempo
 
 App                Version                  Status  Scale  Charm              Channel      Rev  Address         Exposed  Message
-grafana-agent-k8s  0.40.4                   active      1  grafana-agent-k8s  latest/edge   93  10.152.183.63   no       grafana-dashboards-provider: off, logging-consumer: off, send-remote-write: off
+grafana-agent-k8s  0.40.4                   active      1  grafana-agent-k8s  1/stable     115  10.152.183.63   no       grafana-dashboards-provider: off, logging-consumer: off, send-remote-write: off
 mysql-k8s          8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s                         0  10.152.183.135  no       Primary
 
 Unit                  Workload  Agent      Address       Ports  Message
