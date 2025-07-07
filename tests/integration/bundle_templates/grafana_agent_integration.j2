@@ -13,4 +13,7 @@ applications:
     channel: 1/stable
     scale: 1
 relations:
-  - [mysql-k8s:metrics-endpoint, grafana-agent-k8s:metrics-endpoint]
+  - - grafana-agent-k8s:logging-provider
+    - mysql-k8s:logging
+  - - grafana-agent-k8s:metrics-endpoint
+    - mysql-k8s:metrics-endpoint
