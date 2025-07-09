@@ -122,12 +122,7 @@ mysql> select Host,User,account_locked from mysql.user where User like 'mysql_ro
 > juju relate mysql-k8s myclientapp
 ```
 
-<a name="extra-user-roles"></a>
-### Extra user roles
 
-When an application charm requests a new user through the relation/integration it can specify that the user should have the `admin` role in the `extra-user-roles` field. The `admin` role enables the new user to read and write to all databases (for the `mysql` system database it can only read data) and also to create and delete non-system databases.
-
-**Note**: `extra-user-roles` is supported by modern interface `mysql_client` only and missing for legacy `mysql` interface. Read more about the supported charm interfaces [here](/t/10249).
 
 
 <a name="admin-port"></a>

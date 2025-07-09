@@ -6,16 +6,17 @@ To learn more about the different release tracks and channels, see the [Juju doc
 
 To see all releases and commits, check the [Charmed MySQL K8s Releases page on GitHub](https://github.com/canonical/mysql-k8s-operator/releases).
 
-| Release | MySQL version | Juju version | [TLS encryption](/t/9655)* | [COS monitoring](/t/9981) | [Minor version upgrades](/t/11752) | [Cross-regional async replication](/t/13458) |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [240], [241] | 8.0.41 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] |
-| [210], [211] | 8.0.39 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] |
-| [180], [181] | 8.0.37 | `3.4.3+` | ![check] | ![check] | ![check] | ![check] |
-| [153] | 8.0.36 | `3.4.3+` | ![check] | ![check] | ![check] | ![check] |
-| [127] | 8.0.35 | `3.1.6+` |  | ![check] | ![check] |  |
-| [113] | 8.0.34 | `3.1.6+` |  | ![check] | ![check] |  |
-| [99] | 8.0.34 | `3.1.6+` |  | ![check] | ![check] |  |
-| [75] | 8.0.32 | `2.9.32+` |  | ![check] | ![check] |  |
+| Release | MySQL version | Juju version | [TLS encryption](/t/9655)* | [COS monitoring](/t/9981) | [Minor version upgrades](/t/11752) | [Cross-regional async replication](/t/13458) | [Point-in-time recovery](/t/9963)
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| [254], [255] | 8.0.41 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] | ![check] |
+| [240], [241] | 8.0.41 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] | |
+| [210], [211] | 8.0.39 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] | |
+| [180], [181] | 8.0.37 | `3.4.3+` | ![check] | ![check] | ![check] | ![check] | |
+| [153] | 8.0.36 | `3.4.3+` | ![check] | ![check] | ![check] | ![check] | |
+| [127] | 8.0.35 | `3.1.6+` |  | ![check] | ![check] |  | |
+| [113] | 8.0.34 | `3.1.6+` |  | ![check] | ![check] |  | |
+| [99] | 8.0.34 | `3.1.6+` |  | ![check] | ![check] |  | |
+| [75] | 8.0.32 | `2.9.32+` |  | ![check] | ![check] |  | |
 
 \* **TLS encryption**: Support for **`v2` or higher** of the [`tls-certificates` interface](https://charmhub.io/tls-certificates-interface/libraries/tls_certificates). This means that you can integrate with [modern TLS charms](https://charmhub.io/topics/security-with-x-509-certificates).
 
@@ -29,14 +30,24 @@ Several [revisions](https://juju.is/docs/sdk/revision) are released simultaneous
 > 
 > See: [`juju set-constraints`](https://juju.is/docs/juju/juju-set-constraints), [`juju info`](https://juju.is/docs/juju/juju-info) 
 
-### Release 210-211
+### Release 254-255
+
+| Revision | amd64 | arm64 | Ubuntu 22.04 LTS
+|:--------:|:-----:|:-----:|:-----:|
+|[254]  || ![check]  | ![check]  |
+|[255] |   ![check]| |  ![check] |
+
+[details=Older releases]
+
+### Release 240-241
 
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
 |[240]  |![check] | | ![check]  |
 |[241] |  | ![check]| ![check] |
 
-[details=Older releases]
+### Release 210-211
+
 | Revision | amd64 | arm64 | Ubuntu 22.04 LTS
 |:--------:|:-----:|:-----:|:-----:|
 |[210]  |![check] | | ![check]  |
@@ -81,6 +92,8 @@ Several [revisions](https://juju.is/docs/sdk/revision) are released simultaneous
 [/details]
 
 <!-- LINKS -->
+[255]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev255
+[254]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev255
 [240]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev240
 [241]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev240
 [210]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev210
