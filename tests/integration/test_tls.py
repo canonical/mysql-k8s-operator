@@ -16,7 +16,6 @@ from .helpers import (
     app_name,
     fetch_credentials,
     get_tls_ca,
-    get_unit_address,
     is_connection_possible,
     scale_application,
     unit_file_md5,
@@ -102,8 +101,7 @@ async def test_connection_before_tls(ops_test: OpsTest) -> None:
     # Before relating to TLS charm both encrypted and unencrypted connection should be possible
     logger.info("Asserting connections before relation")
     for unit in all_units:
-        unit_ip = await get_unit_address(ops_test, unit.name)
-        config["host"] = unit_ip
+        config["host"] = unit.get_public_address()
 
         assert is_connection_possible(
             config, **{"ssl_disabled": False}
@@ -138,8 +136,7 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     # After relating to only encrypted connection should be possible
     logger.info("Asserting connections after relation")
     for unit in all_units:
-        unit_ip = await get_unit_address(ops_test, unit.name)
-        config["host"] = unit_ip
+        config["host"] = unit.get_public_address()
         assert is_connection_possible(
             config, **{"ssl_disabled": False}
         ), f"❌ Encrypted connection not possible to unit {unit.name} with enabled TLS"
@@ -191,8 +188,7 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
     # Asserting only encrypted connection should be possible
     logger.info("Asserting connections after relation")
     for unit in all_units:
-        unit_ip = await get_unit_address(ops_test, unit.name)
-        config["host"] = unit_ip
+        config["host"] = unit.get_public_address()
         assert is_connection_possible(
             config, **{"ssl_disabled": False}
         ), f"❌ Encrypted connection not possible to unit {unit.name} with enabled TLS"
@@ -218,8 +214,7 @@ async def test_disable_tls(ops_test: OpsTest) -> None:
 
     # After relation removal both encrypted and unencrypted connection should be possible
     for unit in all_units:
-        unit_ip = await get_unit_address(ops_test, unit.name)
-        config["host"] = unit_ip
+        config["host"] = unit.get_public_address()
         assert is_connection_possible(
             config, **{"ssl_disabled": False}
         ), f"❌ Encrypted connection not possible to unit {unit.name} after relation removal"

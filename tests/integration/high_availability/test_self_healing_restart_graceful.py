@@ -8,7 +8,6 @@ from pytest_operator.plugin import OpsTest
 from ..helpers import (
     execute_queries_on_unit,
     get_primary_unit,
-    get_unit_address,
     start_mysqld_service,
     stop_mysqld_service,
 )
@@ -40,7 +39,7 @@ async def test_cluster_manual_rejoin(
     mysql_units = ops_test.model.applications[mysql_app_name].units
 
     primary_unit = await get_primary_unit(ops_test, mysql_units[0], mysql_app_name)
-    primary_unit_ip = await get_unit_address(ops_test, primary_unit.name)
+    primary_address = await primary_unit.get_public_address()
 
     queries = [
         "SET PERSIST group_replication_autorejoin_tries=0",
@@ -48,7 +47,7 @@ async def test_cluster_manual_rejoin(
 
     # Disable automatic re-join procedure
     execute_queries_on_unit(
-        unit_address=primary_unit_ip,
+        unit_address=primary_address,
         username=credentials["username"],
         password=credentials["password"],
         queries=queries,

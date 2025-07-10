@@ -9,7 +9,6 @@ from tenacity import Retrying, stop_after_delay, wait_fixed
 from ..helpers import (
     execute_queries_on_unit,
     get_primary_unit,
-    get_unit_address,
     scale_application,
 )
 from .high_availability_helpers import (
@@ -62,7 +61,7 @@ async def test_scaling_without_data_loss(
     for attempt in Retrying(stop=stop_after_delay(10), wait=wait_fixed(2)):
         with attempt:
             for unit in ops_test.model.applications[mysql_application_name].units:
-                unit_address = await get_unit_address(ops_test, unit.name)
+                unit_address = await unit.get_public_address()
 
                 output = execute_queries_on_unit(
                     unit_address,
@@ -90,7 +89,7 @@ async def test_scaling_without_data_loss(
 
     # ensure data written before scale down is persisted
     for unit in ops_test.model.applications[mysql_application_name].units:
-        unit_address = await get_unit_address(ops_test, unit.name)
+        unit_address = await unit.get_public_address()
 
         output = execute_queries_on_unit(
             unit_address,

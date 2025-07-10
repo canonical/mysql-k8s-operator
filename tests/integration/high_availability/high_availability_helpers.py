@@ -26,7 +26,6 @@ from ..helpers import (
     generate_random_string,
     get_cluster_status,
     get_primary_unit,
-    get_unit_address,
     is_relation_joined,
     scale_application,
 )
@@ -44,17 +43,14 @@ TIMEOUT = 15 * 60
 logger = logging.getLogger(__name__)
 
 
-async def get_max_written_value_in_database(
-    ops_test: OpsTest, unit: Unit, credentials: dict
-) -> int:
+async def get_max_written_value_in_database(unit: Unit, credentials: dict) -> int:
     """Retrieve the max written value in the MySQL database.
 
     Args:
-        ops_test: The ops test framework
         unit: The MySQL unit on which to execute queries on
         credentials: The credentials to use to connect to the MySQL database
     """
-    unit_address = await get_unit_address(ops_test, unit.name)
+    unit_address = await unit.get_public_address()
 
     select_max_written_value_sql = [f"SELECT MAX(number) FROM `{DATABASE_NAME}`.`{TABLE_NAME}`;"]
 
@@ -388,10 +384,9 @@ async def insert_data_into_mysql_and_validate_replication(
         mysql_units = ops_test.model.applications[mysql_application_name].units
 
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
+    primary_address = await primary.get_public_address()
 
     # insert some data into the new primary and ensure that the writes get replicated
-    primary_address = await get_unit_address(ops_test, primary.name)
-
     value = generate_random_string(255)
     insert_value_sql = [
         f"CREATE DATABASE IF NOT EXISTS `{database_name}`",
@@ -415,7 +410,7 @@ async def insert_data_into_mysql_and_validate_replication(
         for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
             with attempt:
                 for unit in mysql_units:
-                    unit_address = await get_unit_address(ops_test, unit.name)
+                    unit_address = await unit.get_public_address()
 
                     output = execute_queries_on_unit(
                         unit_address,
@@ -448,7 +443,7 @@ async def clean_up_database_and_table(
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
 
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
-    primary_address = await get_unit_address(ops_test, primary.name)
+    primary_address = await primary.get_public_address()
 
     clean_up_database_and_table_sql = [
         f"DROP TABLE IF EXISTS `{database_name}`.`{table_name}`",
@@ -482,21 +477,16 @@ async def ensure_all_units_continuous_writes_incrementing(
         mysql_units = ops_test.model.applications[mysql_application_name].units
 
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
-
     assert primary, "Primary unit not found"
 
-    last_max_written_value = await get_max_written_value_in_database(
-        ops_test, primary, credentials
-    )
+    last_max_written_value = await get_max_written_value_in_database(primary, credentials)
 
     async with ops_test.fast_forward(fast_interval="15s"):
         for unit in mysql_units:
             for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
                 with attempt:
                     # ensure the max written value is incrementing (continuous writes is active)
-                    max_written_value = await get_max_written_value_in_database(
-                        ops_test, unit, credentials
-                    )
+                    max_written_value = await get_max_written_value_in_database(unit, credentials)
                     logger.info(f"{max_written_value=} on unit {unit.name}")
                     assert (
                         max_written_value > last_max_written_value
