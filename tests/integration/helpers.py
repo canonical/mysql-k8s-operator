@@ -472,13 +472,10 @@ async def start_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
     )
 
 
-async def retrieve_database_variable_value(
-    ops_test: OpsTest, unit: Unit, variable_name: str
-) -> str:
+async def retrieve_database_variable_value(unit: Unit, variable_name: str) -> str:
     """Retrieve a database variable value as a string.
 
     Args:
-        ops_test: The ops test framework instance
         unit: The unit to retrieve the variable
         variable_name: The name of the variable to retrieve
     Returns:

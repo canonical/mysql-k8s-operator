@@ -43,13 +43,10 @@ TIMEOUT = 15 * 60
 logger = logging.getLogger(__name__)
 
 
-async def get_max_written_value_in_database(
-    ops_test: OpsTest, unit: Unit, credentials: dict
-) -> int:
+async def get_max_written_value_in_database(unit: Unit, credentials: dict) -> int:
     """Retrieve the max written value in the MySQL database.
 
     Args:
-        ops_test: The ops test framework
         unit: The MySQL unit on which to execute queries on
         credentials: The credentials to use to connect to the MySQL database
     """
@@ -480,21 +477,16 @@ async def ensure_all_units_continuous_writes_incrementing(
         mysql_units = ops_test.model.applications[mysql_application_name].units
 
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
-
     assert primary, "Primary unit not found"
 
-    last_max_written_value = await get_max_written_value_in_database(
-        ops_test, primary, credentials
-    )
+    last_max_written_value = await get_max_written_value_in_database(primary, credentials)
 
     async with ops_test.fast_forward(fast_interval="15s"):
         for unit in mysql_units:
             for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
                 with attempt:
                     # ensure the max written value is incrementing (continuous writes is active)
-                    max_written_value = await get_max_written_value_in_database(
-                        ops_test, unit, credentials
-                    )
+                    max_written_value = await get_max_written_value_in_database(unit, credentials)
                     logger.info(f"{max_written_value=} on unit {unit.name}")
                     assert (
                         max_written_value > last_max_written_value

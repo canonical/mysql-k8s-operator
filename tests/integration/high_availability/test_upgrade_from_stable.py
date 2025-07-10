@@ -76,7 +76,7 @@ async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
 
     logger.info("Assert slow shutdown is enabled")
     for unit in mysql_units:
-        value = await retrieve_database_variable_value(ops_test, unit, "innodb_fast_shutdown")
+        value = await retrieve_database_variable_value(unit, "innodb_fast_shutdown")
         assert value == 0, f"innodb_fast_shutdown not 0 at {unit.name}"
 
     primary_unit = await get_primary_unit(ops_test, leader_unit, MYSQL_APP_NAME)
