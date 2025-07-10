@@ -20,7 +20,6 @@ from ..helpers import (
     execute_queries_on_unit,
     get_cluster_status,
     get_leader_unit,
-    get_unit_address,
 )
 from .high_availability_helpers import (
     DATABASE_NAME,
@@ -404,9 +403,12 @@ async def get_max_written_value(first_model: Model, second_model: Model) -> list
 
     logger.info("Querying max value on all units")
     for unit in first_model_units + second_model_units:
-        address = await get_unit_address(None, unit.name, unit.model)
+        address = await unit.get_public_address()
         values = execute_queries_on_unit(
-            address, credentials["username"], credentials["password"], select_max_written_value_sql
+            address,
+            credentials["username"],
+            credentials["password"],
+            select_max_written_value_sql,
         )
         results.append(values[0])
 

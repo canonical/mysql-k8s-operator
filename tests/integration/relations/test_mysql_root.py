@@ -15,7 +15,6 @@ from .. import markers
 from ..helpers import (
     execute_queries_on_unit,
     get_server_config_credentials,
-    get_unit_address,
     is_relation_joined,
 )
 from ..juju_ import juju_major_version
@@ -190,7 +189,7 @@ async def test_osm_pol_operations(ops_test: OpsTest) -> None:
         async for attempt in AsyncRetrying(stop=stop_after_attempt(30), wait=wait_fixed(30)):
             with attempt:
                 for unit in ops_test.model.applications[APP_NAME].units:
-                    unit_address = await get_unit_address(ops_test, unit.name)
+                    unit_address = await unit.get_public_address()
 
                     # test that the `keystone` and `pol` databases exist
                     output = execute_queries_on_unit(

@@ -41,25 +41,6 @@ def generate_random_string(length: int) -> str:
     return "".join([secrets.choice(choices) for i in range(length)])
 
 
-async def get_unit_address(
-    ops_test: OpsTest, unit_name: str, model: Optional[Model] = None
-) -> str:
-    """Get unit IP address.
-
-    Args:
-        ops_test: The ops test framework instance
-        unit_name: The name of the unit
-        model: (Optional) model to use instead of ops_test.model
-
-    Returns:
-        IP address of the unit
-    """
-    if model is None:
-        model = ops_test.model
-    status = await model.get_status()
-    return status["applications"][unit_name.split("/")[0]].units[unit_name]["address"]
-
-
 async def get_cluster_status(unit: Unit, cluster_set=False) -> Dict:
     """Get the cluster status by running the get-cluster-status action.
 
@@ -503,13 +484,15 @@ async def retrieve_database_variable_value(
     Returns:
         The variable value (str)
     """
-    unit_ip = await get_unit_address(ops_test, unit.name)
-
+    unit_address = await unit.get_public_address()
     server_config_creds = await get_server_config_credentials(unit)
     queries = [f"SELECT @@{variable_name};"]
 
     output = execute_queries_on_unit(
-        unit_ip, server_config_creds["username"], server_config_creds["password"], queries
+        unit_address,
+        server_config_creds["username"],
+        server_config_creds["password"],
+        queries,
     )
 
     return output[0]

@@ -21,7 +21,6 @@ from .helpers import (
     get_cluster_status,
     get_primary_unit,
     get_server_config_credentials,
-    get_unit_address,
     retrieve_database_variable_value,
     rotate_credentials,
     scale_application,
@@ -73,7 +72,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
         for unit in ops_test.model.applications[APP_NAME].units:
             assert unit.workload_status == "active"
 
-            unit_address = await get_unit_address(ops_test, unit.name)
+            unit_address = await unit.get_public_address()
             output = execute_queries_on_unit(
                 unit_address,
                 server_config_credentials["username"],
@@ -90,12 +89,8 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
     random_unit = ops_test.model.applications[APP_NAME].units[0]
     server_config_credentials = await get_server_config_credentials(random_unit)
 
-    primary_unit = await get_primary_unit(
-        ops_test,
-        random_unit,
-        APP_NAME,
-    )
-    primary_unit_address = await get_unit_address(ops_test, primary_unit.name)
+    primary_unit = await get_primary_unit(ops_test, random_unit, APP_NAME)
+    primary_unit_address = await primary_unit.get_public_address()
 
     random_chars = generate_random_string(40)
     create_records_sql = [
@@ -122,7 +117,7 @@ async def test_consistent_data_replication_across_cluster(ops_test: OpsTest) -> 
             with attempt:
                 # Confirm that the values are available on all units
                 for unit in ops_test.model.applications[APP_NAME].units:
-                    unit_address = await get_unit_address(ops_test, unit.name)
+                    unit_address = await unit.get_public_address()
 
                     output = execute_queries_on_unit(
                         unit_address,
@@ -314,7 +309,7 @@ async def test_exporter_endpoints(ops_test: OpsTest) -> None:
     for unit in application.units:
         await start_mysqld_exporter(ops_test, unit)
 
-        unit_address = await get_unit_address(ops_test, unit.name)
+        unit_address = await unit.get_public_address()
         mysql_exporter_url = f"http://{unit_address}:9104/metrics"
 
         resp = http.request("GET", mysql_exporter_url)

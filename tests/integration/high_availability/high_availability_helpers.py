@@ -26,7 +26,6 @@ from ..helpers import (
     generate_random_string,
     get_cluster_status,
     get_primary_unit,
-    get_unit_address,
     is_relation_joined,
     scale_application,
 )
@@ -54,7 +53,7 @@ async def get_max_written_value_in_database(
         unit: The MySQL unit on which to execute queries on
         credentials: The credentials to use to connect to the MySQL database
     """
-    unit_address = await get_unit_address(ops_test, unit.name)
+    unit_address = await unit.get_public_address()
 
     select_max_written_value_sql = [f"SELECT MAX(number) FROM `{DATABASE_NAME}`.`{TABLE_NAME}`;"]
 
@@ -388,10 +387,9 @@ async def insert_data_into_mysql_and_validate_replication(
         mysql_units = ops_test.model.applications[mysql_application_name].units
 
     primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
+    primary_address = await primary.get_public_address()
 
     # insert some data into the new primary and ensure that the writes get replicated
-    primary_address = await get_unit_address(ops_test, primary.name)
-
     value = generate_random_string(255)
     insert_value_sql = [
         f"CREATE DATABASE IF NOT EXISTS `{database_name}`",
@@ -415,7 +413,7 @@ async def insert_data_into_mysql_and_validate_replication(
         for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
             with attempt:
                 for unit in mysql_units:
-                    unit_address = await get_unit_address(ops_test, unit.name)
+                    unit_address = await unit.get_public_address()
 
                     output = execute_queries_on_unit(
                         unit_address,
@@ -448,7 +446,7 @@ async def clean_up_database_and_table(
     mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
 
     primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
-    primary_address = await get_unit_address(ops_test, primary.name)
+    primary_address = await primary.get_public_address()
 
     clean_up_database_and_table_sql = [
         f"DROP TABLE IF EXISTS `{database_name}`.`{table_name}`",

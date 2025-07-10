@@ -10,7 +10,6 @@ from . import juju_
 from .helpers import (
     execute_queries_on_unit,
     get_primary_unit,
-    get_unit_address,
     rotate_credentials,
 )
 from .high_availability.high_availability_helpers import (
@@ -111,14 +110,14 @@ async def pitr_operations(
 ) -> None:
     first_mysql_unit = ops_test.model.units[f"{MYSQL_APPLICATION_NAME}/0"]
     assert first_mysql_unit
-    first_mysql_ip = await get_unit_address(ops_test, first_mysql_unit.name)
+    first_mysql_ip = await first_mysql_unit.get_public_address()
     primary_unit = await get_primary_unit(ops_test, first_mysql_unit, MYSQL_APPLICATION_NAME)
     non_primary_units = [
         unit
         for unit in ops_test.model.applications[MYSQL_APPLICATION_NAME].units
         if unit.name != primary_unit.name
     ]
-    primary_ip = await get_unit_address(ops_test, primary_unit.name)
+    primary_ip = await primary_unit.get_public_address()
 
     credentials = {"username": SERVER_CONFIG_USER, "password": SERVER_CONFIG_PASSWORD}
 
