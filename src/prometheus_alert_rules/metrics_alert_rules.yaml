@@ -89,3 +89,41 @@ groups:
             MySQL restarted less than one minute ago. 
             If the restart was unplanned or frequent, check Loki logs (e.g. `error.log`). 
             LABELS = {{ $labels }}.
+
+      # Basic Cluster Health
+      - alert: MySQLClusterUnitOffline
+        expr: mysql_perf_schema_replication_group_member_info{member_state="OFFLINE"} > 0
+        for: 5m
+        labels:
+          severity: Warning
+        annotations:
+          summary: MySQL cluster reports one node as offline.
+          description: |
+            The MySQL member is marked offline in the cluster, although the process might still be running.
+            If this is unexptected, please check the logs.
+            LABELS = {{ $labels }}.
+
+      - alert: MySQLClusterNoPrimary
+        expr: absent(mysql_perf_schema_replication_group_member_info{member_role="PRIMARY"}) or mysql_perf_schema_replication_group_member_info{member_role="PRIMARY"} == 0
+        for: 0m
+        labels:
+          severity: Critical
+        annotations:
+          summary: MySQL cluster reports no primaries
+          description: |
+            MySQL has no primaries. The cluster will likely be in a Read-Only state.
+            Please check the cluster health, the logs and investigate.
+            LABELS = {{ $labels }}.
+
+      # Alert after 15 minutes, as a change in primaries can sometimes result in this metric reporting two
+      - alert: MySQLClusterTooManyPrimaries
+        expr: mysql_perf_schema_replication_group_member_info{member_role="PRIMARY"} > 1
+        for: 15m
+        labels:
+          severity: Critical
+        annotations:
+          summary: MySQL cluster reports more than one primary.
+          description: |
+            MySQL reports more than one primary. This is can indicate a split-brain situation. 
+            Please refer to the troubleshooting docs.
+            LABELS = {{ $labels }}.
