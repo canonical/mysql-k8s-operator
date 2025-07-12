@@ -1,0 +1,132 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.8    unsupported  02:02:51Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.70   no       Last written value=905
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.52   no       Last written value=794
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.130  no       Last written value=832
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.179  no       Last written value=825
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.249  no       Last written value=846
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.86   no       Last written value=749
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.192  no       Last written value=826
+mysql    8.0.41-0ubuntu0.22.04.1  active           3  mysql-k8s                        0  10.152.183.247  no       
+router0  8.0.41-0ubuntu0.22.04.1  active           3  mysql-router-k8s  8.0/edge     753  10.152.183.107  no       
+router1  8.0.41-0ubuntu0.22.04.1  active           3  mysql-router-k8s  8.0/edge     753  10.152.183.164  no       
+router2  8.0.41-0ubuntu0.22.04.1  active           3  mysql-router-k8s  8.0/edge     753  10.152.183.216  no       
+router3  8.0.41-0ubuntu0.22.04.1  maintenance      3  mysql-router-k8s  8.0/edge     753  10.152.183.172  no       Waiting for K8s service connectivity
+router4  8.0.41-0ubuntu0.22.04.1  active           3  mysql-router-k8s  8.0/edge     753  10.152.183.135  no       
+router5  8.0.41-0ubuntu0.22.04.1  active           3  mysql-router-k8s  8.0/edge     753  10.152.183.205  no       
+router6  8.0.41-0ubuntu0.22.04.1  active           3  mysql-router-k8s  8.0/edge     753  10.152.183.190  no       
+
+Unit        Workload  Agent  Address       Ports  Message
+app0/0*     active    idle   10.1.169.138         Last written value=905
+app1/0*     active    idle   10.1.169.139         Last written value=794
+app2/0*     active    idle   10.1.169.141         Last written value=832
+app3/0*     active    idle   10.1.169.143         Last written value=825
+app4/0*     active    idle   10.1.169.145         Last written value=846
+app5/0*     active    idle   10.1.169.147         Last written value=749
+app6/0*     active    idle   10.1.169.149         Last written value=826
+mysql/0*    active    idle   10.1.169.137         Primary
+mysql/1     active    idle   10.1.169.164         
+mysql/2     active    idle   10.1.169.165         
+router0/0*  active    idle   10.1.169.140         
+router0/1   active    idle   10.1.169.153         
+router0/2   active    idle   10.1.169.152         
+router1/0*  active    idle   10.1.169.142         
+router1/1   active    idle   10.1.169.155         
+router1/2   active    idle   10.1.169.154         
+router2/0*  active    idle   10.1.169.144         
+router2/1   active    idle   10.1.169.158         
+router2/2   active    idle   10.1.169.156         
+router3/0*  active    idle   10.1.169.146         
+router3/1   waiting   idle   10.1.169.167         
+router3/2   active    idle   10.1.169.166         
+router4/0*  active    idle   10.1.169.148         
+router4/1   active    idle   10.1.169.169         
+router4/2   active    idle   10.1.169.168         
+router5/0*  active    idle   10.1.169.150         
+router5/1   active    idle   10.1.169.163         
+router5/2   active    idle   10.1.169.160         
+router6/0*  active    idle   10.1.169.151         
+router6/1   active    idle   10.1.169.161         
+router6/2   active    idle   10.1.169.162         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router4-1: 01:36:51 ERROR unit.router4/1.juju-log backend-database:39: Unable to connect to MySQL Router
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/charm.py", line 293, in wait_until_mysql_router_ready
+    for attempt in tenacity.Retrying(
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 443, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 376, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 418, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 185, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/charm.py", line 306, in wait_until_mysql_router_ready
+    assert s.connect_ex(("localhost", port)) == 0
+AssertionError
+unit-router4-1: 01:36:51 ERROR unit.router4/1.juju-log backend-database:39: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/charm.py", line 454, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/data_platform_libs/v0/data_interfaces.py", line 3141, in _on_relation_changed_event
+    getattr(self.on, "database_created").emit(
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/abstract_charm.py", line 355, in reconcile
+    workload_.reconcile(
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/workload.py", line 408, in reconcile
+    self._enable_router(event=event, tls=tls, unit_name=unit_name)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/workload.py", line 350, in _enable_router
+    self._charm.wait_until_mysql_router_ready(event=event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/charm.py", line 293, in wait_until_mysql_router_ready
+    for attempt in tenacity.Retrying(
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 443, in __iter__
+    do = self.iter(retry_state=retry_state)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 376, in iter
+    result = action(retry_state)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 418, in exc_check
+    raise retry_exc.reraise()
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 185, in reraise
+    raise self.last_attempt.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/charm.py", line 306, in wait_until_mysql_router_ready
+    assert s.connect_ex(("localhost", port)) == 0
+AssertionError
+unit-router4-1: 01:36:52 ERROR juju.worker.uniter.operation hook "backend-database-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
