@@ -1,0 +1,28 @@
+[32mINFO    [0m integration.test_tls:test_tls.py:211 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.8    unsupported  01:32:41Z
+
+App                       Version                  Status   Scale  Charm                     Channel        Rev  Address         Exposed  Message
+mysql-k8s                 8.0.41-0ubuntu0.22.04.1  waiting      3  mysql-k8s                                  0  10.152.183.184  no       installing agent
+self-signed-certificates                           active       1  self-signed-certificates  latest/stable  264  10.152.183.76   no       
+
+Unit                         Workload     Agent  Address      Ports  Message
+mysql-k8s/0*                 maintenance  idle   10.1.63.203         Starting mysqld
+mysql-k8s/1                  active       idle   10.1.63.204         
+mysql-k8s/2                  maintenance  idle   10.1.63.205         Starting mysqld
+self-signed-certificates/0*  active       idle   10.1.63.206         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:31:35 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:31:41 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:31:41 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:31:43 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:31:44 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:31:46 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:32:16 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "8055c1d6-4ea0-47dd-841a-2872a8c7ca0f:r#3#self-signed-certificates": settings 8055c1d6-4ea0-47dd-841a-2872a8c7ca0f:r#3#self-signed-certificates not found (not found)
+unit-mysql-k8s-2: 01:32:16 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: relation scope id "8055c1d6-4ea0-47dd-841a-2872a8c7ca0f:r#3#self-signed-certificates": settings 8055c1d6-4ea0-47dd-841a-2872a8c7ca0f:r#3#self-signed-certificates not found (not found)
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
