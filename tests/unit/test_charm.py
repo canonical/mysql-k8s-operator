@@ -147,7 +147,9 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.initialize_juju_units_operations_table")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.0")
     @patch("mysql_k8s_helpers.MySQL.wait_until_mysql_connection")
-    @patch("mysql_k8s_helpers.MySQL.configure_mysql_users")
+    @patch("mysql_k8s_helpers.MySQL.configure_mysql_router_roles")
+    @patch("mysql_k8s_helpers.MySQL.configure_mysql_system_roles")
+    @patch("mysql_k8s_helpers.MySQL.configure_mysql_system_users")
     @patch("mysql_k8s_helpers.MySQL.configure_instance")
     @patch("mysql_k8s_helpers.MySQL.create_cluster")
     @patch("mysql_k8s_helpers.MySQL.initialise_mysqld")
@@ -173,7 +175,9 @@ class TestCharm(unittest.TestCase):
         _fix_data_dir,
         _create_cluster,
         _configure_instance,
-        _configure_mysql_users,
+        _configure_mysql_router_roles,
+        _configure_mysql_system_roles,
+        _configure_mysql_system_users,
         _wait_until_mysql_connection,
         _get_mysql_version,
         _initialize_juju_units_operations_table,

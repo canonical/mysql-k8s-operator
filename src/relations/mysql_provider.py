@@ -9,11 +9,13 @@ import typing
 
 from charms.data_platform_libs.v0.data_interfaces import DatabaseProvides, DatabaseRequestedEvent
 from charms.mysql.v0.mysql import (
-    MySQLCreateApplicationDatabaseAndScopedUserError,
+    LEGACY_ROLE_ROUTER,
+    MODERN_ROLE_ROUTER,
+    MySQLCreateApplicationDatabaseError,
+    MySQLCreateApplicationScopedUserError,
     MySQLDeleteUserError,
     MySQLDeleteUsersForRelationError,
     MySQLGetMySQLVersionError,
-    MySQLGrantPrivilegesToUserError,
     MySQLRemoveRouterFromMetadataError,
 )
 from ops.charm import PebbleReadyEvent, RelationBrokenEvent, RelationDepartedEvent
@@ -107,15 +109,16 @@ class MySQLProvider(Object):
 
         # get base relation data
         relation_id = event.relation.id
+        app_name = event.app.name
         db_name = event.database
+
         extra_user_roles = []
         if event.extra_user_roles:
             extra_user_roles = event.extra_user_roles.split(",")
+
         # user name is derived from the relation id
         db_user = self._get_username(relation_id)
         db_pass = self._get_or_set_password(event.relation)
-
-        remote_app = event.app.name
 
         try:
             # make sure pods are labeled before adding service
@@ -132,25 +135,19 @@ class MySQLProvider(Object):
             # wait for endpoints to be ready
             self.charm.k8s_helpers.wait_service_ready((primary_endpoint, 3306))
 
-            if "mysqlrouter" in extra_user_roles:
-                self.charm._mysql.create_application_database_and_scoped_user(
-                    db_name,
-                    db_user,
-                    db_pass,
-                    "%",
-                    # MySQL Router charm does not need a new database
-                    create_database=False,
-                )
-                self.charm._mysql.grant_privileges_to_user(
-                    db_user, "%", ["ALL PRIVILEGES"], with_grant_option=True
-                )
-            else:
-                # TODO:
-                # add setup of tls, tls_ca and status
-                # add extra roles parsing from relation data
-                self.charm._mysql.create_application_database_and_scoped_user(
-                    db_name, db_user, db_pass, "%"
-                )
+            if not any([
+                LEGACY_ROLE_ROUTER in extra_user_roles,
+                MODERN_ROLE_ROUTER in extra_user_roles,
+            ]):
+                self.charm._mysql.create_database(db_name)
+
+            self.charm._mysql.create_scoped_user(
+                db_name,
+                db_user,
+                db_pass,
+                "%",
+                extra_roles=extra_user_roles,
+            )
 
             # Set relation data
             self.database.set_endpoints(relation_id, f"{primary_endpoint}:3306")
@@ -159,11 +156,12 @@ class MySQLProvider(Object):
             self.database.set_version(relation_id, db_version)
             self.database.set_database(relation_id, db_name)
 
-            logger.info(f"Created user for app {remote_app}")
+            logger.info(f"Created user for app {app_name}")
+            self.charm.unit.status = ActiveStatus()
         except (
-            MySQLCreateApplicationDatabaseAndScopedUserError,
+            MySQLCreateApplicationDatabaseError,
+            MySQLCreateApplicationScopedUserError,
             MySQLGetMySQLVersionError,
-            MySQLGrantPrivilegesToUserError,
         ) as e:
             logger.exception("Failed to set up database relation", exc_info=e)
             self.charm.unit.status = BlockedStatus("Failed to create scoped user")
