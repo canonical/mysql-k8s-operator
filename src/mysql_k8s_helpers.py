@@ -449,7 +449,7 @@ class MySQL(MySQLBase):
         if unit_address in members_in_cluster:
             raise MySQLWaitUntilUnitRemovedFromClusterError("Remove member still in cluster")
 
-    def create_database(self, database_name: str) -> None:
+    def create_database_legacy(self, database_name: str) -> None:
         """Creates a database.
 
         Args:
@@ -474,7 +474,9 @@ class MySQL(MySQLBase):
             logger.exception(f"Failed to create database {database_name}", exc_info=e)
             raise MySQLCreateDatabaseError(e.message) from None
 
-    def create_user(self, username: str, password: str, label: str, hostname: str = "%") -> None:
+    def create_user_legacy(
+        self, username: str, password: str, label: str, hostname: str = "%"
+    ) -> None:
         """Creates a new user.
 
         Args:
