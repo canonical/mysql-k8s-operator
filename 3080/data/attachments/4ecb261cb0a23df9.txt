@@ -1,0 +1,7 @@
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:179 Injecting failure
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:83 Build charm with failure injected
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:187 Reverting failure
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:86 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:91 Wait for upgrade to start
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:96 Get first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_rollback_incompat:test_upgrade_rollback_incompat.py:101 Wait for upgrade to fail on upgrading unit
