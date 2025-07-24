@@ -1,0 +1,43 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.8    unsupported  01:44:02Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.127  no       Last written value=250
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.191  no       Last written value=228
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.75   no       Last written value=114
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.215  no       Last written value=227
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.81   no       Last written value=246
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.222  no       Last written value=211
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   73  10.152.183.30   no       Last written value=229
+mysql    8.0.41-0ubuntu0.22.04.1  active           1  mysql-k8s                        0  10.152.183.33   no       
+router0  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     767  10.152.183.19   no       Waiting for K8s service connectivity
+router1  8.0.41-0ubuntu0.22.04.1  active           1  mysql-router-k8s  8.0/edge     767  10.152.183.34   no       
+router2  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     767  10.152.183.235  no       Waiting for K8s service connectivity
+router3  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     767  10.152.183.139  no       Waiting for K8s service connectivity
+router4  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     767  10.152.183.210  no       Waiting for K8s service connectivity
+router5  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     767  10.152.183.153  no       Waiting for K8s service connectivity
+router6  8.0.41-0ubuntu0.22.04.1  maintenance      1  mysql-router-k8s  8.0/edge     767  10.152.183.77   no       Waiting for K8s service connectivity
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.98.10         Last written value=250
+app1/0*     active    idle   10.1.98.11         Last written value=228
+app2/0*     active    idle   10.1.98.13         Last written value=114
+app3/0*     active    idle   10.1.98.15         Last written value=227
+app4/0*     active    idle   10.1.98.17         Last written value=246
+app5/0*     active    idle   10.1.98.18         Last written value=211
+app6/0*     active    idle   10.1.98.21         Last written value=229
+mysql/0*    active    idle   10.1.98.9          Primary
+router0/0*  active    idle   10.1.98.12         
+router1/0*  active    idle   10.1.98.14         
+router2/0*  active    idle   10.1.98.16         
+router3/0*  active    idle   10.1.98.19         
+router4/0*  active    idle   10.1.98.20         
+router5/0*  active    idle   10.1.98.22         
+router6/0*  active    idle   10.1.98.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
