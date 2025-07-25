@@ -53,3 +53,6 @@ async def test_amd_charm_on_arm_host(ops_test: OpsTest) -> None:
         status="error",
         raise_on_error=False,
     )
+
+
+# TODO: add s390x test
