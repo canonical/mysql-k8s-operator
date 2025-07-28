@@ -1,0 +1,49 @@
+[32mINFO    [0m integration.conftest:conftest.py:30 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:98 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:101 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:112 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.122:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.122:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.122:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:125 Wait for upgrade to complete
+[32mINFO    [0m integration.high_availability.test_upgrade_from_stable:test_upgrade_from_stable.py:131 Ensure continuous_writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=31112 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=31120 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=31129 on unit mysql-k8s/2
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.8    unsupported  01:39:52Z
+
+App        Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s  8.0.42-0ubuntu0.22.04.2  active      3  mysql-k8s                      0  10.152.183.216  no       
+test-app   0.0.2                    active      1  mysql-test-app  latest/edge   73  10.152.183.94   no       Last written value=9206
+
+Unit          Workload  Agent  Address     Ports  Message
+mysql-k8s/0   active    idle   10.1.98.17         
+mysql-k8s/1*  active    idle   10.1.98.16         
+mysql-k8s/2   active    idle   10.1.98.15         
+test-app/0*   active    idle   10.1.98.8          Last written value=9206
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:30:56 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 01:30:56 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:30:59 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:30:59 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 01:31:01 ERROR unit.mysql-k8s/2.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 01:31:01 ERROR unit.mysql-k8s/2.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:31:02 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:31:02 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 01:31:06 ERROR unit.mysql-k8s/2.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 01:31:06 ERROR unit.mysql-k8s/2.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:31:08 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:31:08 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 01:31:10 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 01:31:10 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 01:31:12 ERROR unit.mysql-k8s/2.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 01:31:12 ERROR unit.mysql-k8s/2.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 01:31:12 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 01:31:12 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
