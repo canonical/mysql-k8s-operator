@@ -7,3 +7,4 @@ artifacts:
   - allure-results
 systems:
   - -ubuntu-24.04-arm
+  - -self-hosted-linux-s390x-noble-edge

@@ -90,11 +90,27 @@ backends:
       AWS_SECRET_KEY: '$(HOST: echo $AWS_SECRET_KEY)'
       GCP_ACCESS_KEY: '$(HOST: echo $GCP_ACCESS_KEY)'
       GCP_SECRET_KEY: '$(HOST: echo $GCP_SECRET_KEY)'
+      DOCKERHUB_MIRROR: '$(HOST: echo $DOCKERHUB_MIRROR)'
     systems:
       - ubuntu-24.04:
           username: runner
       - ubuntu-24.04-arm:
           username: runner
+          variants:
+            - -juju29
+      - self-hosted-linux-s390x-noble-edge:
+          username: ubuntu
+          environment:
+            # Several python packages (e.g. cryptography, bcrypt) do not have s390x builds on PyPI,
+            # so they must be built from source. pkg-config & rust toolchain needed
+            # (These packages are being built when installing poetry or integration test Python
+            # dependencies)
+            CONCIERGE_EXTRA_DEBS: pipx,pkg-config,rustup
+            # s390x only available on edge risk of microk8s snap
+            # IS-hosted GitHub runners do not work with the strictly confined microk8s snap:
+            # https://github.com/canonical/microk8s/issues/5082
+            # https://chat.canonical.com/canonical/pl/i6yydsx5ifrepp56khq5fq5dke
+            CONCIERGE_MICROK8S_CHANNEL: latest/edge
           variants:
             - -juju29
 
@@ -113,10 +129,42 @@ prepare: |
   snap refresh --hold
   chown -R root:root "$SPREAD_PATH"
   cd "$SPREAD_PATH"
-  snap install --classic concierge
+  # Install via snap after https://github.com/canonical/concierge/pull/81 released
+  go install github.com/canonical/concierge@latest
+  
+  if [[ -n "$DOCKERHUB_MIRROR" ]]
+  then
+    # Running on IS-hosted runner; configure microk8s to use Docker Hub mirror
+    # Run before concierge prepare because of https://github.com/canonical/concierge/issues/75
 
-  # Install charmcraft & pipx (on lxd-vm backend)
-  concierge prepare --trace
+    snap install microk8s --channel "$CONCIERGE_MICROK8S_CHANNEL" --classic
+  
+    # Wait for microk8s to populate iptables
+    # https://chat.canonical.com/canonical/pl/jo5cg6wqjjrudqd5ybj6hhttee
+    microk8s status --wait-ready
+
+    tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml << EOF
+    server = "$DOCKERHUB_MIRROR"
+    [host."${DOCKERHUB_MIRROR#'https://'}"]
+    capabilities = ["pull", "resolve"]
+  EOF
+    microk8s stop
+    microk8s start
+  fi
+
+  # Install charmcraft & pipx on lxd-vm backend and install pipx on IS-hosted runners
+  ~/go/bin/concierge prepare --trace
+
+  microk8s config | juju add-k8s my-k8s --client
+  juju bootstrap my-k8s concierge-microk8s
+  juju add-model testing
+
+  if [[ $SPREAD_SYSTEM == *"s390x"* ]]
+  then
+    rustup set profile minimal
+    # TODO add renovate comment for rust version
+    rustup default 1.88.0
+  fi
 
   pipx install tox poetry
 prepare-each: |
@@ -128,7 +176,7 @@ prepare-each: |
     poetry add --lock --group integration juju@^2
   fi
   # `concierge prepare` needs to be run for each spread job in case Juju version changed
-  concierge prepare --trace
+  ~/go/bin/concierge prepare --trace
 
   # Unable to set constraint on all models because of Juju bug:
   # https://bugs.launchpad.net/juju/+bug/2065050
