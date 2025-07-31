@@ -55,7 +55,7 @@ async def test_amd_charm_on_arm_host(ops_test: OpsTest) -> None:
     )
 
 
-@markers.arm64_only
+@markers.s390x_only
 async def test_amd_charm_on_s390x_host(ops_test: OpsTest) -> None:
     """Tries deploying an amd64 charm on s390x host."""
     charm = "./mysql-k8s_ubuntu@22.04-amd64.charm"
