@@ -1,0 +1,25 @@
+[32mINFO    [0m integration.conftest:conftest.py:30 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:198 Syncing credentials
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:214 Restoring backup_id='2025-07-31T01:49:38Z'
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:219 Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:233 Inserting value after restore
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:241 Ensuring that pre-backup and post-restore values exist in the database
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:252 Scaling mysql application to 3 units
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 3 units, current : 1)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/2 [executing] maintenance: Initialising mysqld
+  mysql-k8s/1 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/2 [idle] maintenance: joining the cluster
+  mysql-k8s/1 [executing] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/2 [executing] active: 
+  mysql-k8s/1 [idle] active: 
+[32mINFO    [0m integration.test_backup_gcp:test_backup_gcp.py:260 Ensuring inserted values before backup and after restore exist on all units
