@@ -8,7 +8,11 @@ import logging
 import typing
 
 from charms.mysql.v0.mysql import MySQLCheckUserExistenceError, MySQLDeleteUsersForUnitError
-from ops.charm import RelationBrokenEvent, RelationCreatedEvent
+from ops.charm import (
+    LeaderElectedEvent,
+    RelationBrokenEvent,
+    RelationCreatedEvent,
+)
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus
 
@@ -85,14 +89,21 @@ class MySQLRootRelation(Object):
             self.charm.config.mysql_root_interface_database or f"database-{event_relation_id}",
         )
 
-    def _on_leader_elected(self, _) -> None:
+    def _on_leader_elected(self, event: LeaderElectedEvent) -> None:
         """Handle the leader elected event.
 
         Retrieves relation data from the peer relation databag and copies
         the relation data into the new leader unit's databag.
         """
-        # Skip if the charm is not past the setup phase (config-changed event not executed yet)
-        if not self.charm._is_peer_data_set:
+        # Wait until on-config-changed event is executed (for root password to have been set)
+        # and for the member to be initialized and online
+        if (
+            not self.charm._is_peer_data_set
+            or not self.charm.unit_initialized()
+            or not self.charm.unit_peer_data.get("member-state") == "online"
+        ):
+            logger.info("Unit not ready to execute `mysql` leader elected. Deferring")
+            event.defer()
             return
 
         relation_data = json.loads(
