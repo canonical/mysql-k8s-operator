@@ -1,0 +1,46 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.8    unsupported  02:00:55Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.175  no       Last written value=224
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.24   no       Last written value=254
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.183  no       Last written value=228
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.72   no       Last written value=225
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.51   no       Last written value=118
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.213  no       Last written value=95
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.190  no       Last written value=244
+mysql    8.0.42-0ubuntu0.22.04.2  active           1  mysql-k8s                        0  10.152.183.173  no       
+router0  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     769  10.152.183.84   no       Waiting for K8s service connectivity
+router1  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     769  10.152.183.159  no       Waiting for K8s service connectivity
+router2  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     769  10.152.183.60   no       Waiting for K8s service connectivity
+router3  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     769  10.152.183.90   no       Waiting for K8s service connectivity
+router4  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     769  10.152.183.215  no       Waiting for K8s service connectivity
+router5  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     769  10.152.183.92   no       Waiting for K8s service connectivity
+router6  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     769  10.152.183.237  no       Waiting for K8s service connectivity
+
+Unit        Workload  Agent  Address       Ports  Message
+app0/0*     active    idle   10.1.112.202         Last written value=224
+app1/0*     active    idle   10.1.112.204         Last written value=254
+app2/0*     active    idle   10.1.112.205         Last written value=228
+app3/0*     active    idle   10.1.112.207         Last written value=225
+app4/0*     active    idle   10.1.112.209         Last written value=118
+app5/0*     active    idle   10.1.112.211         Last written value=95
+app6/0*     active    idle   10.1.112.213         Last written value=244
+mysql/0*    active    idle   10.1.112.201         Primary
+router0/0*  active    idle   10.1.112.203         
+router1/0*  active    idle   10.1.112.206         
+router2/0*  active    idle   10.1.112.208         
+router3/0*  active    idle   10.1.112.210         
+router4/0*  active    idle   10.1.112.212         
+router5/0*  active    idle   10.1.112.214         
+router6/0*  active    idle   10.1.112.215         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router6-0: 01:48:22 ERROR juju.worker.dependency "dead-flag" manifold worker returned unexpected error: connection is shut down
+unit-router6-0: 01:48:22 ERROR juju.worker.dependency "not-dead-flag" manifold worker returned unexpected error: connection is shut down
+unit-router6-0: 01:48:22 ERROR juju.worker.dependency "migration-inactive-flag" manifold worker returned unexpected error: connection is shut down
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
