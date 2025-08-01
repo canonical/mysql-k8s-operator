@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2021 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import asyncio
@@ -11,14 +11,14 @@ import yaml
 from pytest_operator.plugin import OpsTest
 from tenacity import AsyncRetrying, RetryError, stop_after_attempt, wait_fixed
 
-from .. import markers
-from ..helpers import (
+from . import markers
+from .helpers import (
     execute_queries_on_unit,
     get_server_config_credentials,
     get_unit_address,
     is_relation_joined,
 )
-from ..juju_ import juju_major_version
+from .juju_ import juju_major_version
 
 logger = logging.getLogger(__name__)
 
