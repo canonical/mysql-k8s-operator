@@ -32,8 +32,8 @@ TLS_SETUP_SLEEP_TIME = 30
 
 if juju_.has_secrets:
     tls_app_name = "self-signed-certificates"
-    if architecture.architecture == "arm64":
-        tls_channel = "latest/edge"
+    if architecture.architecture == "s390x":
+        tls_channel = "1/edge"
     else:
         tls_channel = "latest/stable"
     tls_config = {"ca-common-name": "Test CA"}
