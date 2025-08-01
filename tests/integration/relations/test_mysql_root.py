@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2022 Canonical Ltd.
+# Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import asyncio
@@ -10,27 +10,30 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
-from .. import markers
-from ..helpers import get_relation_data, is_relation_broken, is_relation_joined
+from ..helpers import is_relation_joined
 
 logger = logging.getLogger(__name__)
 
 DB_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
 DATABASE_APP_NAME = DB_METADATA["name"]
-DATABASE_ENDPOINT = "database"
+DATABASE_ENDPOINT = "mysql-root"
 APPLICATION_APP_NAME = "mysql-test-app"
-APPLICATION_ENDPOINT = "database"
-
-APPS = [DATABASE_APP_NAME, APPLICATION_APP_NAME]
+APPLICATION_ENDPOINT = "mysql"
 
 
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
 async def test_build_and_deploy(ops_test: OpsTest, charm):
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
-    config = {"cluster-name": "test_cluster", "profile": "testing"}
-    resources = {"mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"]}
+    config = {
+        "profile": "testing",
+        "mysql-root-interface-user": "test-user",
+        "mysql-root-interface-database": "continuous_writes_database",
+    }
+    resources = {
+        "mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"],
+    }
 
     await asyncio.gather(
         ops_test.model.deploy(
@@ -71,6 +74,7 @@ async def test_relation_creation_eager(ops_test: OpsTest):
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[DATABASE_APP_NAME].units) == 3
         )
+
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[APPLICATION_APP_NAME].units) == 2
         )
@@ -88,51 +92,5 @@ async def test_relation_creation_eager(ops_test: OpsTest):
                 status="waiting",
                 raise_on_blocked=True,
                 timeout=1000,
-            ),
-        )
-
-
-@pytest.mark.abort_on_fail
-@markers.only_without_juju_secrets
-async def test_relation_creation_databag(ops_test: OpsTest):
-    """Relate charms and wait for the expected changes in status."""
-    async with ops_test.fast_forward("60s"):
-        await ops_test.model.wait_for_idle(apps=APPS, status="active")
-
-    relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
-    assert {"password", "username"} <= set(relation_data[0]["application-data"])
-
-
-@pytest.mark.abort_on_fail
-@markers.only_with_juju_secrets
-async def test_relation_creation(ops_test: OpsTest):
-    """Relate charms and wait for the expected changes in status."""
-    async with ops_test.fast_forward("60s"):
-        await ops_test.model.wait_for_idle(apps=APPS, status="active")
-
-    relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
-    assert not {"password", "username"} <= set(relation_data[0]["application-data"])
-    assert "secret-user" in relation_data[0]["application-data"]
-
-
-@pytest.mark.abort_on_fail
-async def test_relation_broken(ops_test: OpsTest):
-    """Remove relation and wait for the expected changes in status."""
-    await ops_test.model.applications[DATABASE_APP_NAME].remove_relation(
-        f"{APPLICATION_APP_NAME}:{APPLICATION_ENDPOINT}",
-        f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
-    )
-
-    await ops_test.model.block_until(
-        lambda: is_relation_broken(ops_test, APPLICATION_ENDPOINT, DATABASE_ENDPOINT) == True  # noqa: E712
-    )
-
-    async with ops_test.fast_forward("60s"):
-        await asyncio.gather(
-            ops_test.model.wait_for_idle(
-                apps=[DATABASE_APP_NAME], status="active", raise_on_blocked=True
-            ),
-            ops_test.model.wait_for_idle(
-                apps=[APPLICATION_APP_NAME], status="waiting", raise_on_blocked=True
             ),
         )
