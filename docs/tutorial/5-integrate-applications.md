@@ -2,7 +2,7 @@
 
 [Integrations](https://juju.is/docs/sdk/integration), known as "relations" in Juju 2.9, are the easiest way to create a user for a Charmed MySQL application. 
 
-Integrations automatically create a username, password, and database for the desired user/application. As mentioned in the [earlier section about accessing MySQL](/), it is better practice to connect to MySQL via a specific user instead of the `root` user.
+Integrations automatically create a username, password, and database for the desired user/application. It is better practice to connect to MySQL via a specific user instead of the `root` user.
 
 In this section, you will learn how to integrate your Charmed MySQL with another application (charmed or not) via the Data Integrator charm. 
 
@@ -127,7 +127,7 @@ To remove the integration, run the following command:
 juju remove-relation mysql-k8s data-integrator
 ```
 
-Try to connect to the same MySQL you just used in the previous section ([Access the related database](#access-the-related-database)):
+Try to connect to the same MySQL you just used in the previous section ([Access the integrated database](#access-the-integrated-database)):
 ```shell
 mysql -h 10.1.84.74 -u relation-3 -p7VRfmGjfUI1pVUPsfbMwmHFm -e "show databases;"
 ```

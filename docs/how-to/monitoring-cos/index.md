@@ -1,5 +1,4 @@
-
-# Monitoring-Cos
+# Monitoring (COS)
 
 ```{toctree}
 :titlesonly:
@@ -8,5 +7,4 @@
 :hidden:
 
 *
-*/index
 ```

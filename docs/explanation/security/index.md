@@ -1,4 +1,3 @@
-
 # Security hardening guide
 
 This document provides an overview of security features and guidance for hardening the security of [Charmed MySQL K8s](https://charmhub.io/mysql-k8s) deployments, including setting up and managing a secure environment.
@@ -24,7 +23,7 @@ Charmed MySQL K8s can be deployed on top of several Kubernetes distributions. Th
 ### Juju 
 
 Juju is the component responsible for orchestrating the entire lifecycle, from deployment to Day 2 operations. For more information on Juju security hardening, see the
-[Juju security page](/) and the [How to harden your deployment](https://juju.is/docs/juju/harden-your-deployment) guide.
+[Juju security page](https://discourse.charmhub.io/t/juju-security/15684) and the [How to harden your deployment](https://juju.is/docs/juju/harden-your-deployment) guide.
 
 #### Cloud credentials
 
@@ -90,3 +89,9 @@ The Audit log plugin is enabled by default and produces login/logout logs. See t
 
 For details on the cryptography used by Charmed MySQL K8s, see the [Cryptography](https://discourse.charmhub.io/t/charmed-mysql-k8s-explanations-cryptography/16783) explanation page.
 
+```{toctree}
+:titlesonly:
+:maxdepth: 2  
+
+cryptography
+```

@@ -1,10 +1,3 @@
-
-
-
-```{caution}
-:construction: This page is under construction! More details for each section coming soon.
-```
-
 # How to contribute
 
 Charmed MySQL K8s is an open-source project that warmly welcomes community contributions, suggestions, fixes and constructive feedback.

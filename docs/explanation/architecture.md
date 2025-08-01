@@ -10,7 +10,7 @@ Pebble is a lightweight, API-driven process supervisor that is responsible for c
 
 Pebble `services` are configured through [layers](https://github.com/canonical/pebble#layer-specification), and the following containers represent each one a layer forming the effective Pebble configuration, or `pebble plan`:
 
-1. a [charm]() container runs Juju operator code: `juju ssh mysql-k8s/0 bash`
+1. a charm container runs Juju operator code: `juju ssh mysql-k8s/0 bash`
 1. a [mysql](https://www.mysql.com/) (workload) container runs the MySQL application along with other services (like monitoring metrics exporters, etc): `juju ssh --container mysql mysql-k8s/0 bash`
 
 As a result, if you run a `kubectl get pods` on a namespace named for the Juju model you’ve deployed the "Charmed MySQL K8s" charm into, you’ll see something like the following:
@@ -24,28 +24,29 @@ This shows there are 2 containers in the pod: `charm` and `workload` mentioned a
 
 And if you run `kubectl describe pod mysql-k8s-0`, all the containers will have as Command `/charm/bin/pebble`. That’s because Pebble is responsible for the processes startup as explained above.
 
-<a name="hld"></a>
 ## HLD (High Level Design)
 
-The "Charmed MySQL K8s" (`workload` container) based on `mysql-image` resource defined in the [charm metadata.yaml](https://github.com/canonical/mysql-k8s-operator/blob/main/metadata.yaml). It is an official Canonical "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock)" [OCI/ROCK](https://ubuntu.com/server/docs/rock-images/introduction) image, which is recursively based on Canonical SNAP “[charmed-mysql](https://snapcraft.io/charmed-mysql)” (read more about the SNAP details [here](/)).
+The "Charmed MySQL K8s" (`workload` container) based on `mysql-image` resource defined in the [charm metadata.yaml](https://github.com/canonical/mysql-k8s-operator/blob/main/metadata.yaml). It is an official Canonical "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock)" [OCI/ROCK](https://ubuntu.com/server/docs/rock-images/introduction) image, which is recursively based on Canonical SNAP “[charmed-mysql](https://snapcraft.io/charmed-mysql)” (read more about the SNAP details [in the VM charm](https://canonical-charmed-mysql.readthedocs-hosted.com/explanation/architecture)).
 
 [Charmcraft](https://juju.is/docs/sdk/install-charmcraft) uploads an image as a [charm resource](https://charmhub.io/mysql-k8s/resources/mysql-image) to [Charmhub](https://charmhub.io/mysql-k8s) during the [publishing](https://github.com/canonical/mysql-k8s-operator/blob/main/.github/workflows/release.yaml#L40-L53), as described in the [Juju SDK How-to guides](https://juju.is/docs/sdk/publishing).
 
 The charm supports Juju deploymed to all Kubernetes environments: [MicroK8s](https://microk8s.io/), [Charmed Kubernetes](https://ubuntu.com/kubernetes/charmed-k8s), [GKE](https://charmhub.io/mysql-k8s/docs/h-deploy-gke), [Amazon EKS](https://aws.amazon.com/eks/), ...
 
-The OCI/ROCK ships the following components:
+The OCI/ROCK ships the following components based on the [`charmed-mysql` snap](https://canonical-charmed-mysql.readthedocs-hosted.com/explanation/architecture):
 
-* MySQL Community Edition (based on SNAP "[charmed-mysql](/)") 
-* MySQL Router (based on SNAP "[charmed-mysql](/)") 
-* MySQL Shell (based on SNAP "[charmed-mysql](/)") 
-* Percona XtraBackup (based on SNAP "[charmed-mysql](/)") 
-* Prometheus MySQLd Exporter (based on SNAP "[charmed-mysql](/)") 
-* Prometheus MySQL Router Exporter (based on SNAP "[charmed-mysql](/)") 
-* Prometheus Grafana dashboards and Loki alert rules are part of the charm revision and missing in SNAP.
+* MySQL Community Edition
+* MySQL Router
+* MySQL Shell
+* Percona XtraBackup
+* Prometheus MySQLd Exporter
+* Prometheus MySQL Router Exporter
+
+**Prometheus Grafana dashboards and Loki alert rules** are part of the charm revision, but missing in the snap.
 
 SNAP-based ROCK images guaranties the same components versions and functionality between VM and K8s charm flavors.
 
-Pebble runs layers of all the currently enabled services, e.g. monitoring, backups, etc: 
+Pebble runs layers of all the currently enabled services, e.g. monitoring, backups, etc:
+
 ```shell
 > juju ssh --container mysql mysql-k8s/0 /charm/bin/pebble plan
 services:
@@ -88,7 +89,6 @@ The ROCK "charmed-mysql" also ships list of tools used by charm:
 The `mysql` and `mysqlsh` are well known and popular tools to manage MySQL.
 The `xtrabackup (xbcloud+xbstream)` used for [MySQL Backups](/how-to/back-up-and-restore/create-a-backup) only to store backups on S3 compatible storage.
 
-<a name="integrations"></a>
 ## Integrations
 
 ### MySQL Router
@@ -123,7 +123,6 @@ Loki is an open-source fully-featured logging system. This charms is shipped wit
 
 Prometheus is an open-source systems monitoring and alerting toolkit with a dimensional data model, flexible query language, efficient time series database and modern alerting approach. This charm is shipped with a Prometheus exporters, alerts and support for integrating with the [Prometheus Operator](https://charmhub.io/prometheus-k8s) to automatically scrape the targets. Please follow [COS Monitoring](/how-to/monitoring-cos/enable-monitoring) setup.
 
-<a name="lld"></a>
 ## LLD (Low Level Design)
 
 Please check the charm state machines displayed on [workflow diagrams](/explanation/flowcharts). The low-level logic is mostly common for both VM and K8s charm flavors.

@@ -2,7 +2,7 @@
 
 [Click to navigate the mermaid diagram on GitHub](https://github.com/canonical/mysql-k8s-operator/blob/main/docs/explanation/e-flowcharts.md).
 
-```mermaid
+```{mermaid}
 flowchart TD
     id101([leader_elected]) --> id102[generate\npassword/configs]
     id102 --> id103[store peer databag]

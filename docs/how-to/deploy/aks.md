@@ -184,7 +184,7 @@ List all services and then delete those that have an associated EXTERNAL-IP valu
 kubectl get svc --all-namespaces
 kubectl delete svc <service-name> 
 ```
-Next, delete the AKS resources (source: [Deleting an all Azure VMs]((https://learn.microsoft.com/en-us/cli/azure/delete-azure-resources-at-scale#delete-all-azure-resources-of-a-type) )) 
+Next, delete the AKS resources (source: [Deleting an all Azure VMs](https://learn.microsoft.com/en-us/cli/azure/delete-azure-resources-at-scale) )
 ```shell
 az aks delete -g aks -n ${JUJU_NAME}
 ```

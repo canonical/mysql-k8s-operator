@@ -1,7 +1,4 @@
-
-
-
-# Interfaces/endpoints
+# Interfaces and endpoints
 
 Charmed MySQL K8s supports modern `mysql_client` and legacy `mysql` interfaces (in a backward compatible mode).
 

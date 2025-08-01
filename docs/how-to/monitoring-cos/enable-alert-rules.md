@@ -1,6 +1,3 @@
-
-
-
 # How to enable COS Alert Rules
 
 This guide will show how to set up [Pushover](https://pushover.net/) to receive alert notifications from the COS Alert Manager with [Awesome Alert Rules](https://samber.github.io/awesome-prometheus-alerts/).
@@ -15,7 +12,7 @@ Charmed MySQL K8s ships a pre-configured and pre-enabled [list of Awesome Alert 
 For information about accessing and managing COS Alert Rules, refer to the [COS documentation](https://charmhub.io/cos-lite).
 
 ## Prerequisites
-* A deployed [Charmed MySQL K8s operator]
+* A deployed Charmed MySQL K8s operator
 * A deployed [`cos-lite` bundle in a Kubernetes environment](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
 * Fully configured [COS Monitoring]
 
@@ -74,8 +71,7 @@ The similar way as above, COS alerts can be send to the long [list of supported 
 Do you have questions? [Contact us]!
 
 <!-- Links -->
-[Contact us]: /t/11868
-[Charmed MySQL K8s operator]: /t/11869
-[COS Monitoring]: /t/9981
-[list of Awesome Alert Rules]: /t/15838
+[Contact us]: /reference/contacts
+[COS Monitoring]: /how-to/monitoring-cos/enable-monitoring
+[list of Awesome Alert Rules]: /reference/alert-rules
 

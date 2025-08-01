@@ -1,4 +1,3 @@
-
 # Deploy in an offline or air-gapped environment
 
 An air-gapped environment refers to a system that does not have access to the public internet.
@@ -22,7 +21,7 @@ Canonical does not prescribe how you should set up your specific air-gapped envi
 1. [Export](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#export-packages)
 2. [Transfer](https://en.wikipedia.org/wiki/Air_gap_(networking))
 3. [Import](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#import-packages)
-4. [Deploy](/) 
+4. Deploy 
 
 ## Air-gapped day-to-day example
 
@@ -97,7 +96,8 @@ sudo snap-store-proxy push-charm-bundle /var/snap/snap-store-proxy/common/charms
 
 For the manual OCI import, please follow [the official CharmHub guide](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#import-packages).
 
-**5.** [Deploy and enjoy Juju charms the usual way](/):
+**5.** Deploy and operate Juju charms normally:
+
 ```shell
 juju deploy mysql-k8s --trust
 ```

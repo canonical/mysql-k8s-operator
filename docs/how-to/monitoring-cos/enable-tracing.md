@@ -1,25 +1,16 @@
-
-
-
-```{note}
-**Note**: All commands are written for `juju >= v3.1`
-
-If you're using `juju 2.9`, check the [`juju 3.0` Release Notes](https://juju.is/docs/juju/roadmap#juju-3-0-0---22-oct-2022).
-```
-
-# Enable Tracing
+# Enable tracing
 
 This guide contains the steps to enable tracing with [Grafana Tempo](https://grafana.com/docs/tempo/latest/) for your MySQL K8s application. 
 
 To summarize:
-* [Deploy the Tempo charms and their dependencies in a COS K8s environment](#deploy)
-* [Offer interfaces for cross-model integrations](#offer)
-* [Consume and integrate cross-model integrations](#consume)
-* [View MySQL K8s traces on Grafana](#view)
+* [Deploy the Tempo charms and their dependencies in a COS K8s environment](#deploy-tempo)
+* [Offer interfaces for cross-model integrations](#offer-interfaces)
+* [Consume and integrate cross-model integrations](#consume-interfaces)
+* [View MySQL K8s traces on Grafana](#view-traces)
 
 
 ```{caution}
-**Warning:** This is feature is in development. It is **not recommended** for production environments. 
+This is feature is in development. It is **not recommended** for production environments. 
 
 This feature is available for Charmed MySQL K8s revision 146+ only.
 ```

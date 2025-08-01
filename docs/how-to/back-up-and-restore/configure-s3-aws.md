@@ -1,15 +1,6 @@
-
-
-
-```{note}
-**Note**: All commands are written for `juju >= v.3.0`
-
-If you are using an earlier version, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#juju-3-0-0---22-oct-2022).
-```
-
 # Configure S3 for AWS
 
-Charmed MySQL K8s backup can be stored on any S3 compatible storage. The S3 access and configurations are managed with the [s3-integrator charm](https://charmhub.io/s3-integrator). Deploy and configure the s3-integrator charm for **[AWS S3](https://aws.amazon.com/s3/)** (click [here](/) to backup on Ceph via RadosGW):
+Charmed MySQL K8s backup can be stored on any S3 compatible storage. The S3 access and configurations are managed with the [s3-integrator charm](https://charmhub.io/s3-integrator). Deploy and configure the s3-integrator charm for **[AWS S3](https://aws.amazon.com/s3/)** (click [here](/how-to/back-up-and-restore/configure-s3-radosgw) to backup on Ceph via RadosGW):
 ```shell
 juju deploy s3-integrator
 juju run s3-integrator/leader sync-s3-credentials access-key=<access-key-here> secret-key=<secret-key-here>

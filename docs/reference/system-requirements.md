@@ -44,9 +44,9 @@ The charm is based on the [charmed-mysql ROCK OCI](https://github.com/canonical/
   * [Contact us](/reference/contacts) if you are interested in IPv6!
 
 <!-- LINKS -->
-[153]: /t/14072
-[99]: /t/11880
-[75]: /t/11879
+[153]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev153
+[99]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev99
+[75]: https://github.com/canonical/mysql-k8s-operator/releases/tag/rev75
 
 <!-- BADGES -->
 [2.9 LTS]: https://img.shields.io/badge/2.9_LTS-%23E95420?label=Juju

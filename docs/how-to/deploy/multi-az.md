@@ -64,7 +64,7 @@ gke-default-pool-d196956a-zm6h     zone=us-east4-a         Ready
 ```
 ## Deploy MySQL with anti-affinity rules
 
-Juju provides the support for affinity/anti-affinity rules using **constraints**. Read more about it in this [forum post](/).
+Juju provides the support for affinity/anti-affinity rules using **constraints**. Read more about it in this [forum post](https://discourse.charmhub.io/t/4091).
 
 The command below demonstrates how to deploy Charmed MySQL K8s with Juju constraints that create a pod anti-affinity rule:
 
@@ -184,7 +184,7 @@ kubectl get pods -n mymodel -o wide
 
 In case we lose (cordon) all nodes in AZ, the pod will stay pending as K8s scheduler cannot find the proper node.
 Let's simulate it:
-```shell
+```text
 kubectl drain  --ignore-daemonsets --delete-emptydir-data  gke-default-pool-b33634ac-phjx
 kubectl drain  --ignore-daemonsets --delete-emptydir-data  gke-default-pool-b33634ac-w2jv
 
@@ -200,7 +200,7 @@ kubectl get nodes --show-labels | awk 'NR == 1 {next} {print $1,$2,$6}' | awk -F
 > gke-default-pool-d196956a-zm6h     zone=us-east4-a         Ready
 ```
 
-```shell
+```text
 kubectl get pods -n mymodel
 
 > NAME                       READY   STATUS    RESTARTS   AGE

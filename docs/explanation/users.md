@@ -42,7 +42,8 @@ mysql> select Host,User,account_locked from mysql.user;
 Please use [data-integrator](https://charmhub.io/mysql-k8s/docs/t-integrations) charm to generate/manage/remove an external credentials.
 
 It is allowed to rotate passwords for *internal* users using action 'set-password'
-```shell
+
+```text
 > juju show-action mysql-k8s set-password
 Change the system user's password, which is used by charm. It is for internal charm users and SHOULD NOT be used by applications.
 
@@ -58,7 +59,7 @@ username:
 
 For example, to generate a new random password for *internal* user:
 
-```shell
+```text
 > juju run-action --wait mysql-k8s/leader set-password username=clusteradmin
   ...
   results: {}

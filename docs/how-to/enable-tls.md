@@ -1,24 +1,15 @@
-
-
-
+# How to enable encryption
 
 <!-- Update and move to explanation
 MySQL will enable encrypted connections by default with self generated certificates. Though also by default, connecting clients can disable encryption by setting the connection ssl-mode as disabled.
 When related with the `tls-certificates-operator` the charmed operator for MySQL will require that every client connection (new and running connections) use encryption, rendering an error when attempting to establish an unencrypted connection.--->
 
-```{note}
-**Note**: All commands are written for `juju >= v.3.1`
-
-If you're using `juju 2.9`, check the [`juju 3.0` Release Notes](https://juju.is/docs/juju/roadmap#juju-3-0-0---22-oct-2022).
-```
-
-# How to enable encryption
 This guide will show how to enable TLS using the [`self-signed-certificates` operator](https://github.com/canonical/self-signed-certificates-operator) as an example.
 
 ```{caution}
 **[Self-signed certificates](https://en.wikipedia.org/wiki/Self-signed_certificate) are not recommended for a production environment.**
 
-Check [this guide](/) for an overview of the TLS certificates charms available. 
+Check [this guide](https://discourse.charmhub.io/t/11664) for an overview of the TLS certificates charms available. 
 ```
 
 ---

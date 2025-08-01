@@ -5,7 +5,7 @@ Charmed MySQL K8s can be integrated with any charmed application that supports i
 
 ## Check supported interfaces
 
-First, we recommend that you check [the supported interfaces](/explanation/interfaces-endpoints) of the current charm. You have the option to use modern (preferred) or legacy interfaces. 
+First, we recommend that you check [the supported interfaces](/explanation/interfaces-and-endpoints) of the current charm. You have the option to use modern (preferred) or legacy interfaces. 
 
 Most existing charms currently use [ops-lib-pgsql](https://github.com/canonical/ops-lib-pgsql) interface (legacy). 
 > See also: [MySQL K8s legacy charm explanation](/explanation/legacy-charm)

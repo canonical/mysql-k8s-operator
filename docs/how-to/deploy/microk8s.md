@@ -1,11 +1,8 @@
-
 # Deploy on MicroK8s
 
 This guide assumes you have a running Juju and MicroK8s environment. 
 
 For a detailed walkthrough of setting up an environment and deploying the charm on MicroK8s, refer to the [Tutorial](/tutorial/index).
-
---- 
 
 [Bootstrap](https://juju.is/docs/juju/juju-bootstrap) a juju controller and create a [model](https://juju.is/docs/juju/juju-add-model) if you haven't already:
 ```shell

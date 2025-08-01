@@ -39,8 +39,14 @@ Additional context about key concepts behind the MySQL K8s charm.
 
 ```{toctree}
 :titlesonly:
-:maxdepth: 2
-:glob:
+:maxdepth: 2  
 
-*
+Architecture <architecture>
+Interfaces and endpoints <interfaces-and-endpoints>
+Juju <juju>
+Legacy charm<legacy-charm>
+Users <users>
+Logs <logs/index>
+Security <security/index>
+Charm events<flowcharts>
 ```

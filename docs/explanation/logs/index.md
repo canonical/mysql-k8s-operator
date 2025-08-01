@@ -143,7 +143,7 @@ We use a custom event in juju to execute the FLUSH statement in order to avoid s
 <!-- LINKS -->
 
 [COS integration]: /how-to/monitoring-cos/enable-monitoring
-[Audit Logs explanation]: //explanation/logs/audit-logs
+[Audit Logs explanation]: /explanation/logs/audit-logs
 
 
 ```{toctree}

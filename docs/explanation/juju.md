@@ -47,7 +47,7 @@ This section is based on the [OpenStack guide.](https://docs.openstack.org/charm
 ```
 
 ## Juju  upgrades
-Newly released charm revisions might require a new [Juju version](/). This is usually because the new revision requires new Juju features, e.g. [Juju secrets](https://juju.is/docs/juju/secret).
+Newly released charm revisions might require a new Juju version. This is usually because the new revision requires new Juju features, e.g. [Juju secrets](https://juju.is/docs/juju/secret).
 
 Information about Juju requirements will be clearly indicated in the charm's [release notes](/reference/releases) and in the repository's [metadata.yaml](https://github.com/canonical/mysql-operator/blob/14c06ff88c4e564cd6d098aa213bd03e78e84b52/metadata.yaml#L72-L80) file.
 

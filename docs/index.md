@@ -15,7 +15,7 @@ This is a **Kubernetes** operator. To deploy on IAAS/VM, see [Charmed MySQL VM](
 | | |
 |--|--|
 |  [Tutorials](/tutorial/index)</br>  Get started - a hands-on introduction to using Charmed MySQL operator for new users </br> |  [How-to guides](/how-to/scale-replicas) </br> Step-by-step guides covering key operations and common tasks |
-| [Reference](https://charmhub.io/mysql-k8s/actions) </br> Technical information - specifications, APIs, architecture | [Explanation](/explanation/interfaces-endpoints) </br> Concepts - discussion and clarification of key topics  |
+| [Reference](https://charmhub.io/mysql-k8s/actions) </br> Technical information - specifications, APIs, architecture | [Explanation](/explanation/interfaces-and-endpoints) </br> Concepts - discussion and clarification of key topics  |
 
 ## Project and community
 

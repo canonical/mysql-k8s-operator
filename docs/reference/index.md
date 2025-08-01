@@ -1,6 +1,3 @@
-
-
-
 # Reference
 
 Technical specifications, APIs, release notes, and other reference material for fast lookup.
@@ -33,5 +30,4 @@ In the tabs at the top of this charm's [CharmHub page](https://charmhub.io/mysql
 :hidden:
 
 *
-*/index
 ```

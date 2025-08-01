@@ -1,4 +1,3 @@
-
 # How to deploy on Canonical Kubernetes
 
 [Canonical Kubernetes](https://ubuntu.com/kubernetes) is a Kubernetes service built on Ubuntu and optimized for most major public clouds. 

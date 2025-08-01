@@ -1,23 +1,14 @@
-
-
-
-```{note}
-**Note**: All commands are written for `juju >= v.3.0`
-
-If you are using an earlier version, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#juju-3-0-0---22-oct-2022).
-```
-
 # How to migrate a cluster
 
 This is a guide on how to restore a backup that was made from a different cluster, (i.e. cluster migration via restore).
 
-To perform a basic restore please reference the [Restore How-To](/).
+To perform a basic restore please reference [](/how-to/back-up-and-restore/restore-a-backup).
 
 ## Prerequisites
 Restoring a backup from a previous cluster to a current cluster requires that you:
 - Have a single unit Charmed MySQL deployed and running
 - Access to S3 storage
-- [Have configured settings for S3 storage](/)
+- [Have configured settings for S3 storage](/how-to/back-up-and-restore/configure-s3-aws.md)
 - Have the backups from the previous cluster in your S3-storage
 - Have the passwords from your previous cluster
 

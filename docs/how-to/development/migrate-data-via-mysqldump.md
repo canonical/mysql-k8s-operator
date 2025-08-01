@@ -1,12 +1,3 @@
-
-
-
-```{note}
-**Note**: All commands are written for `juju >= v.3.0`
-
-For more information, check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#juju-3-0-0---22-oct-2022).
-```
-
 # Migrate database data via `mysqldump`
 
 This document describes database **data** migration only!
@@ -163,7 +154,7 @@ diff "${OLD_DB_DUMP}" "${NEW_DB_DUMP}"
 
 The difference between two SQL backup files should be limited to server versions, IP addresses, timestamps and other non data related information. Example of difference:
 
-```python
+```text
 < -- Host: 10.1.45.226    Database: katib
 ---
 > -- Host: 10.1.46.40    Database: katib

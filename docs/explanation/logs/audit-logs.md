@@ -14,7 +14,7 @@ The following is a sample of the audit logs, with format json with login/logout 
 
 The logs are stored in the `/var/log/mysql` directory of the mysql container, and it's rotated
 every minute to the `/var/log/mysql/archive_audit` directory.
-It's recommended to integrate the charm with [COS](/), from where the logs can be easily persisted and queried using Loki/Grafana.
+It's recommended to integrate the charm with [COS](/how-to/monitoring-cos/enable-monitoring), from where the logs can be easily persisted and queried using Loki/Grafana.
 
 ## Configurations
 

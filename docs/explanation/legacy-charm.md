@@ -1,8 +1,8 @@
-## Charm types "legacy" vs "modern"
+# Charm types "legacy" vs "modern"
 
 Historically, there were  [several](https://juju.is/docs/sdk/charm-taxonomy#charm-types-by-generation) operators/charms to provide MySQL/MariaDB functionality: "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)". All of them are named "legacy" charms.
 
-This "Charmed MySQL" operator is a modern "[Charmed Operator SDK](https://juju.is/docs/sdk)"-based charm to replace all legacy operators [providing](/) all juju-interfaces of legacy charms.
+This "Charmed MySQL" operator is a modern "[Charmed Operator SDK](https://juju.is/docs/sdk)"-based charm to replace all legacy operators [interfaces/endpoints](/explanation/interfaces-and-endpoints) of legacy charms.
 
 The legacy charm provided endpoints `mysql` and `mysql-root` (for the interface `mysql`). The modern charm provides old endpoints as well + new endpoint `database` (for the interface `mysql_client`). Read more detail about the available endpoints/interfaces for [VM](https://charmhub.io/mysql/docs/e-interfaces) and [K8s](https://charmhub.io/mysql-k8s/docs/e-interfaces) charms.
 

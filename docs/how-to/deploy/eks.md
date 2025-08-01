@@ -1,14 +1,8 @@
-```{note}
-**Note**: All commands are written for `juju >= v.3.0`
-
-If you are using an earlier version,  check the [Juju 3.0 Release Notes](https://juju.is/docs/juju/roadmap#juju-3-0-0---22-oct-2022).
-```
-
 # How to deploy on EKS
 
 [Amazon Elastic Kubernetes Service](https://aws.amazon.com/eks/) (EKS) is a popular, fully automated Kubernetes service. To access the EKS Web interface, go to [console.aws.amazon.com/eks/home](https://console.aws.amazon.com/eks/home).
 
-# Install EKS and Juju tooling
+## Install EKS and Juju tooling
 
 Install [Juju](https://juju.is/docs/juju/install-juju) and the [`kubectl` CLI tools](https://kubernetes.io/docs/tasks/tools/) via snap:
 ```shell
@@ -195,7 +189,7 @@ List all services and then delete those that have an associated EXTERNAL-IP valu
 kubectl get svc --all-namespaces
 kubectl delete svc <service-name> 
 ```
-Next, delete the EKS cluster  (source: [Deleting an Amazon EKS cluster]((https://docs.aws.amazon.com/eks/latest/userguide/delete-cluster.html) )) 
+Next, delete the EKS cluster  (source: [Deleting an Amazon EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/delete-cluster.html)) 
 ```shell
 eksctl get cluster -A
 eksctl delete cluster <cluster_name> --region eu-west-3 --force --disable-nodegroup-eviction

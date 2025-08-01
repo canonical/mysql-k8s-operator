@@ -1,6 +1,3 @@
-
-
-
 # Upgrade
 
 This section contains documentation about performing upgrades (and rollbacks) on:
@@ -35,5 +32,4 @@ See: [How to upgrade Juju](/how-to/upgrade/upgrade-juju)
 :hidden:
 
 *
-*/index
 ```
