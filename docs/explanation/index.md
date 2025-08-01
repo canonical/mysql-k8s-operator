@@ -39,7 +39,7 @@ Mermaid diagrams of charm events and hooks.
 
 ```{toctree}
 :titlesonly:
-:maxdepth:2
+:maxdepth: 2
 
 Charm flowcharts <flowcharts>
 ```
