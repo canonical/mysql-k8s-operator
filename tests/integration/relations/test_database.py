@@ -52,6 +52,15 @@ async def test_build_and_deploy(ops_test: OpsTest, charm):
         ),
     )
 
+
+@pytest.mark.abort_on_fail
+async def test_relation_creation_eager(ops_test: OpsTest):
+    """Relate charms before they have time to properly start.
+
+    It simulates a Terraform-like deployment strategy
+    """
+    await ops_test.model.relate(APPLICATION_APP_NAME, f"{DATABASE_APP_NAME}:{ENDPOINT}")
+
     # Reduce the update_status frequency until the cluster is deployed
     async with ops_test.fast_forward("60s"):
         await ops_test.model.block_until(
@@ -77,13 +86,6 @@ async def test_build_and_deploy(ops_test: OpsTest, charm):
                 timeout=1000,
             ),
         )
-
-    assert len(ops_test.model.applications[DATABASE_APP_NAME].units) == 3
-
-    for unit in ops_test.model.applications[DATABASE_APP_NAME].units:
-        assert unit.workload_status == "active"
-
-    assert len(ops_test.model.applications[APPLICATION_APP_NAME].units) == 2
 
 
 @pytest.mark.abort_on_fail

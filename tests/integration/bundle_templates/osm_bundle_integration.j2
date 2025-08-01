@@ -1,0 +1,49 @@
+bundle: kubernetes
+name: testing
+applications:
+  mysql-k8s:
+    charm: {{ mysql_charm_path }}
+    series: jammy
+    trust: true
+    scale: 1
+    resources:
+      mysql-image: {{ mysql_image_source }}
+    config:
+      mysql-root-interface-user: keystone
+      mysql-root-interface-database: keystone
+      profile: testing
+  osm-keystone:
+    charm: osm-keystone
+    channel: latest/beta
+    series: jammy
+    trust: true
+    scale: 1
+    resources:
+      keystone-image: opensourcemano/keystone:testing-daily
+  osm-pol:
+    charm: osm-pol
+    channel: latest/beta
+    series: jammy
+    trust: true
+    scale: 1
+    resources:
+      image: opensourcemano/pol:testing-daily
+  kafka:
+    charm: kafka-k8s
+    channel: latest/stable
+    series: focal
+    trust: true
+    scale: 1
+  zookeeper:
+    charm: zookeeper-k8s
+    channel: latest/stable
+    series: focal
+    trust: true
+    scale: 1
+  mongodb:
+    charm: mongodb-k8s
+    channel: 5/edge
+    revision: 36   # sticking to revision that support both juju 2.9.x and 3.x
+    series: jammy
+    trust: true
+    scale: 1

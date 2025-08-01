@@ -3,19 +3,19 @@
 # See LICENSE file for licensing details.
 
 import logging
-import pathlib
 import tempfile
+from pathlib import Path
 
-import jinja2
 import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
 from . import markers
+from .helpers import render_bundle_yaml
 
 logger = logging.getLogger(__name__)
 
-METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
+METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 IMAGE_SOURCE = METADATA["resources"]["mysql-image"]["upstream-source"]
 TIMEOUT = 10 * 60
 
@@ -23,22 +23,19 @@ TIMEOUT = 10 * 60
 # TODO: remove after https://github.com/canonical/grafana-agent-k8s-operator/issues/309 fixed
 @markers.amd64_only
 @pytest.mark.abort_on_fail
-async def test_deploy_bundle_with_cos_integrations(ops_test: OpsTest, charm) -> None:
-    """Test COS integrations formed before mysql is allocated and deployed."""
-    bundle_template = jinja2.Template(
-        pathlib.Path(
-            "./tests/integration/bundle_templates/grafana_agent_integration.j2"
-        ).read_text()
-    )
-    rendered_bundle = bundle_template.render(
-        mysql_charm_path=str(pathlib.Path(charm).absolute()), mysql_image_source=IMAGE_SOURCE
+async def test_deploy_and_relate_cos_bundle(ops_test: OpsTest, charm) -> None:
+    """Test the deployment and relation with COS bundle."""
+    rendered_bundle = render_bundle_yaml(
+        "cos_bundle_integration.j2",
+        mysql_charm_path=str(Path(charm).absolute()),
+        mysql_image_source=IMAGE_SOURCE,
     )
 
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".yaml") as rendered_bundle_file:
         rendered_bundle_file.write(rendered_bundle)
         rendered_bundle_file.flush()
 
-        logger.info("Deploying grafana_agent_integration bundle")
+        logger.info("Deploying COS integration bundle")
         await ops_test.model.deploy(f"local:{rendered_bundle_file.name}", trust=True)
 
     logger.info("Waiting until mysql-k8s becomes active")

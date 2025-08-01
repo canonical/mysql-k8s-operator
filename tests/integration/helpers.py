@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 from typing import Dict, List, Optional
 
+import jinja2
 import yaml
 from juju.model import Model
 from juju.unit import Unit
@@ -786,3 +787,11 @@ async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str)
     )
 
     assert return_code == 0
+
+
+def render_bundle_yaml(template_name: str, **kwargs) -> str:
+    """Renders the specific template contents given a set of keyword arguments."""
+    template_path = pathlib.Path("tests", "integration", "bundle_templates", template_name)
+    template_text = template_path.read_text()
+
+    return jinja2.Template(template_text).render(**kwargs)
