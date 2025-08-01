@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 host_ip = socket.gethostbyname(socket.gethostname())
 
 S3_INTEGRATOR = "s3-integrator"
+S3_INTEGRATOR_CHANNEL = "1/edge"  # Use edge for s390x
 TIMEOUT = 10 * 60
 CLUSTER_ADMIN_PASSWORD = "clusteradminpassword"
 SERVER_CONFIG_PASSWORD = "serverconfigpassword"
@@ -102,7 +103,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
 
     logger.info("Deploying s3-integrator")
 
-    await ops_test.model.deploy(S3_INTEGRATOR, channel="stable", base="ubuntu@22.04")
+    await ops_test.model.deploy(S3_INTEGRATOR, channel=S3_INTEGRATOR_CHANNEL, base="ubuntu@22.04")
     await ops_test.model.relate(mysql_application_name, S3_INTEGRATOR)
 
     await ops_test.model.wait_for_idle(

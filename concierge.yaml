@@ -4,7 +4,7 @@ juju:
 providers:
   microk8s:
     enable: true
-    bootstrap: true
+    bootstrap: false
     addons:
       - dns
       - hostpath-storage

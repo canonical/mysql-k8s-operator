@@ -42,7 +42,9 @@ jobs:
               _, runner, task, variant = job.split(":")
               # Example: "test_charm.py"
               task = task.removeprefix("tests/spread/")
-              if runner.endswith("-arm"):
+              if "s390x" in runner:
+                  architecture = "s390x"
+              elif runner.endswith("-arm"):
                   architecture = "arm64"
               else:
                   architecture = "amd64"
@@ -86,8 +88,9 @@ jobs:
     runs-on: ${{ matrix.job.runner }}
     timeout-minutes: 217  # Sum of steps `timeout-minutes` + 5
     steps:
-      - name: Free up disk space
+      - name: (GitHub hosted) Free up disk space
         timeout-minutes: 1
+        if: ${{ !contains(matrix.job.runner, 'self-hosted') }}
         run: |
           printf '\nDisk usage before cleanup\n'
           df --human-readable
@@ -95,6 +98,10 @@ jobs:
           rm -r /opt/hostedtoolcache/
           printf '\nDisk usage after cleanup\n'
           df --human-readable
+      - name: (IS hosted) Disk usage
+        timeout-minutes: 1
+        if: ${{ contains(matrix.job.runner, 'self-hosted') }}
+        run: df --human-readable
       - name: Checkout
         timeout-minutes: 3
         uses: actions/checkout@v4
