@@ -149,8 +149,7 @@ We use a custom event in juju to execute the FLUSH statement in order to avoid s
 ```{toctree}
 :titlesonly:
 :maxdepth: 2
-:glob:
 :hidden:
 
-*
+Audit logs <audit-logs>
 ```

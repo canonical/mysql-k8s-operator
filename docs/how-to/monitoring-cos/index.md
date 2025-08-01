@@ -3,8 +3,8 @@
 ```{toctree}
 :titlesonly:
 :maxdepth: 2
-:glob:
-:hidden:
 
-*
+Enable monitoring <enable-monitoring>
+Enable alert rules <enable-alert-rules>
+Enable tracing <enable-tracing>
 ```

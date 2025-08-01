@@ -1,52 +1,46 @@
 # Explanation
 
-Additional context about key concepts behind the MySQL K8s charm.
+Additional context about key concepts behind the MySQL charm.
 
 ## Core concepts and design
-* [Architecture]
-* [Interfaces and endpoints]
-* [Juju]
-* [Legacy charm]
-
-## Operational concepts
-* [Users]
-* [Logs]
-  * [Audit logs]
-
-## Security and hardening
-* [Security hardening guide][Security]
-  * [Cryptography]
-
-## Development
-* [Charm event flowcharts][Flowcharts]
-
-<!-- Links -->
-
-[Architecture]: /explanation/architecture
-[Interfaces and endpoints]: /explanation/interfaces-and-endpoints
-[Juju]: /explanation/juju
-[Legacy charm]: /explanation/legacy-charm
-
-[Users]: /explanation/users
-[Logs]: /explanation/logs/index
-[Audit logs]: /explanation/logs/audit-logs
-
-[Security]: /explanation/security/index
-[Cryptography]: /explanation/security/cryptography
-
-[Flowcharts]: /explanation/flowcharts
-
 
 ```{toctree}
 :titlesonly:
-:maxdepth: 2  
+:maxdepth: 2
 
 Architecture <architecture>
 Interfaces and endpoints <interfaces-and-endpoints>
 Juju <juju>
-Legacy charm<legacy-charm>
+Legacy charm <legacy-charm>
+```
+
+## Operational concepts
+
+```{toctree}
+:titlesonly:
+:maxdepth: 2
+
 Users <users>
 Logs <logs/index>
-Security <security/index>
-Charm events<flowcharts>
 ```
+
+## Security and hardening
+
+```{toctree}
+:titlesonly:
+:maxdepth: 2
+
+Security <security/index>
+```
+
+## Development
+
+Mermaid diagrams of charm events and hooks.
+
+```{toctree}
+:titlesonly:
+:maxdepth:2
+
+Charm flowcharts <flowcharts>
+```
+

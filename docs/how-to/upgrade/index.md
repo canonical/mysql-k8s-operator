@@ -24,12 +24,12 @@ New revisions of the charm may require that you do a major or minor Juju upgrade
 
 See: [How to upgrade Juju](/how-to/upgrade/upgrade-juju)
 
-
 ```{toctree}
 :titlesonly:
 :maxdepth: 2
-:glob:
 :hidden:
 
-*
+Upgrade Juju <upgrade-juju>
+Perform a minor rollback <perform-a-minor-rollback>
+Perform a minor upgrade <perform-a-minor-upgrade>
 ```

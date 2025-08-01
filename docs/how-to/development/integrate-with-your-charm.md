@@ -22,7 +22,7 @@ Refer to [mysql-test-app](https://github.com/canonical/mysql-test-app) as a prac
 
 ## Troubleshooting and testing
 * To learn the basics of charm debugging, start with [Juju | How to debug a charm](https://juju.is/docs/sdk/debug-a-charm)
-* To troubleshoot Charmed MySQL, see the [Troubleshooting](/how-to/development/troubleshooting) page.
+* To troubleshoot Charmed MySQL, see the [Troubleshooting](/reference/troubleshooting) page.
 * To test the charm, check the [Testing](/reference/software-testing) reference
 
 ## FAQ
