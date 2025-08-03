@@ -1,0 +1,445 @@
+[32mINFO    [0m integration.high_availability.test_async_replication:test_async_replication.py:67 Destroying second model
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.8    unsupported  02:01:51Z
+
+App  Version                  Status       Scale  Charm      Channel  Rev  Address         Exposed  Message
+db1  8.0.42-0ubuntu0.22.04.2  maintenance      3  mysql-k8s             0  10.152.183.106  no       Unable to get member state
+
+Unit    Workload     Agent  Address       Ports  Message
+db1/0   waiting      idle   10.1.112.206         waiting to get cluster primary from peers
+db1/1*  maintenance  idle   10.1.112.204         Unable to get member state
+db1/2   waiting      idle   10.1.112.205         waiting to get cluster primary from peers
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-db1-1: 01:52:44 ERROR unit.db1/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 769, in _run_mysqlcli_script
+    process = self.container.exec(command, timeout=timeout, stdin=password)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (exec 11: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2025-08-03T01:52:44Z ERROR exec 11: timeout waiting for websocket connections: context deadline exceeded
+-----
+unit-db1-1: 01:52:44 ERROR unit.db1/1.juju-log Failed to install plugin='audit_log'
+unit-db1-1: 01:52:44 ERROR unit.db1/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 118, in recv
+    bytes_ = _recv()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 97, in _recv
+    return sock.recv(bufsize)
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2890, in exec
+    control_ws = self._connect_websocket(task_id, 'control')
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2978, in _connect_websocket
+    ws.connect(url, socket=sock)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_core.py", line 261, in connect
+    self.handshake_response = handshake(self.sock, url, *addrs, **options)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 65, in handshake
+    status, resp = _get_resp_headers(sock)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_handshake.py", line 141, in _get_resp_headers
+    status, resp_headers, status_message = read_headers(sock)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_http.py", line 351, in read_headers
+    line = recv_line(sock)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 140, in recv_line
+    c = recv(sock, 1)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/websocket/_socket.py", line 120, in recv
+    raise WebSocketTimeoutException("Connection timed out")
+websocket._exceptions.WebSocketTimeoutException: Connection timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 769, in _run_mysqlcli_script
+    process = self.container.exec(command, timeout=timeout, stdin=password)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/model.py", line 2872, in exec
+    return self._pebble.exec(
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 2899, in exec
+    raise ChangeError(change.err, change) from e
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (exec 11: timeout waiting for websocket connections: context deadline exceeded)
+----- Logs from task 0 -----
+2025-08-03T01:52:44Z ERROR exec 11: timeout waiting for websocket connections: context deadline exceeded
+-----
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1195, in install_plugins
+    self._run_mysqlcli_script(
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 781, in _run_mysqlcli_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 1102, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 829, in _on_mysql_pebble_ready
+    self._configure_instance(container)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 732, in _configure_instance
+    self._mysql.install_plugins(["audit_log"])
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1202, in install_plugins
+    raise MySQLPluginInstallError
+charms.mysql.v0.mysql.MySQLPluginInstallError
+unit-db1-1: 01:52:44 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-db1-1: 01:52:44 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-db1-1: 01:52:47 ERROR unit.db1/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 724, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('lima', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('db1-1.db1-endpoints.testing.svc.cluster.local.', 'label', 'db1-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'db1-1.db1-endpoints.testing.svc.cluster.local.:3306\'.\n\nValidating instance configuration at db1-1.db1-endpoints.testing.svc.cluster.local.:33062...\n\nThis instance reports its own address as \x1b[1mdb1-1.db1-endpoints.testing.svc.cluster.local.:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.create_cluster: Instance check fa' [truncated]
+unit-db1-1: 01:52:47 ERROR unit.db1/1.juju-log Failed to create cluster on instance: db1-1.db1-endpoints.testing.svc.cluster.local.
+unit-db1-1: 01:52:47 ERROR unit.db1/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 724, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('lima', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('db1-1.db1-endpoints.testing.svc.cluster.local.', 'label', 'db1-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'db1-1.db1-endpoints.testing.svc.cluster.local.:3306\'.\n\nValidating instance configuration at db1-1.db1-endpoints.testing.svc.cluster.local.:33062...\n\nThis instance reports its own address as \x1b[1mdb1-1.db1-endpoints.testing.svc.cluster.local.:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.create_cluster: Instance check fa' [truncated]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1578, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 732, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 1102, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 815, in _on_mysql_pebble_ready
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 615, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1586, in create_cluster
+    raise MySQLCreateClusterError
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-db1-1: 01:52:47 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-db1-1: 01:52:47 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-db1-1: 01:52:58 ERROR unit.db1/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 724, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('lima', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('db1-1.db1-endpoints.testing.svc.cluster.local.', 'label', 'db1-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'db1-1.db1-endpoints.testing.svc.cluster.local.:3306\'.\n\nValidating instance configuration at db1-1.db1-endpoints.testing.svc.cluster.local.:33062...\n\nThis instance reports its own address as \x1b[1mdb1-1.db1-endpoints.testing.svc.cluster.local.:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.create_cluster: Instance check fa' [truncated]
+unit-db1-1: 01:52:58 ERROR unit.db1/1.juju-log Failed to create cluster on instance: db1-1.db1-endpoints.testing.svc.cluster.local.
+unit-db1-1: 01:52:58 ERROR unit.db1/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 724, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('lima', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('db1-1.db1-endpoints.testing.svc.cluster.local.', 'label', 'db1-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'db1-1.db1-endpoints.testing.svc.cluster.local.:3306\'.\n\nValidating instance configuration at db1-1.db1-endpoints.testing.svc.cluster.local.:33062...\n\nThis instance reports its own address as \x1b[1mdb1-1.db1-endpoints.testing.svc.cluster.local.:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.create_cluster: Instance check fa' [truncated]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1578, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 732, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 1102, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 815, in _on_mysql_pebble_ready
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 615, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1586, in create_cluster
+    raise MySQLCreateClusterError
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-db1-1: 01:52:58 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-db1-1: 01:52:58 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-db1-1: 01:53:01 ERROR unit.db1/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 724, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('lima', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('db1-1.db1-endpoints.testing.svc.cluster.local.', 'label', 'db1-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'db1-1.db1-endpoints.testing.svc.cluster.local.:3306\'.\n\nValidating instance configuration at db1-1.db1-endpoints.testing.svc.cluster.local.:33062...\n\nThis instance reports its own address as \x1b[1mdb1-1.db1-endpoints.testing.svc.cluster.local.:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.create_cluster: Instance check fa' [truncated]
+unit-db1-1: 01:53:01 ERROR unit.db1/1.juju-log Failed to create cluster on instance: db1-1.db1-endpoints.testing.svc.cluster.local.
+unit-db1-1: 01:53:01 ERROR unit.db1/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 724, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('lima', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('db1-1.db1-endpoints.testing.svc.cluster.local.', 'label', 'db1-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'db1-1.db1-endpoints.testing.svc.cluster.local.:3306\'.\n\nValidating instance configuration at db1-1.db1-endpoints.testing.svc.cluster.local.:33062...\n\nThis instance reports its own address as \x1b[1mdb1-1.db1-endpoints.testing.svc.cluster.local.:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.create_cluster: Instance check fa' [truncated]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1578, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 732, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 1102, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 815, in _on_mysql_pebble_ready
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 615, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1586, in create_cluster
+    raise MySQLCreateClusterError
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-db1-1: 01:53:02 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-db1-1: 01:53:02 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-db1-1: 01:53:07 ERROR unit.db1/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 724, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('lima', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('db1-1.db1-endpoints.testing.svc.cluster.local.', 'label', 'db1-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'db1-1.db1-endpoints.testing.svc.cluster.local.:3306\'.\n\nValidating instance configuration at db1-1.db1-endpoints.testing.svc.cluster.local.:33062...\n\nThis instance reports its own address as \x1b[1mdb1-1.db1-endpoints.testing.svc.cluster.local.:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.create_cluster: Instance check fa' [truncated]
+unit-db1-1: 01:53:07 ERROR unit.db1/1.juju-log Failed to create cluster on instance: db1-1.db1-endpoints.testing.svc.cluster.local.
+unit-db1-1: 01:53:07 ERROR unit.db1/1.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 724, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('lima', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('db1-1.db1-endpoints.testing.svc.cluster.local.', 'label', 'db1-1')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@db1-1.db1-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| Variable                               | Current Value | Required Value | Note                                             |+----------------------------------------+---------------+----------------+--------------------------------------------------+\n| binlog_transaction_dependency_tracking | COMMIT_ORDER  | WRITESET       | Update the server variable                       || server_id                              | 1             | <unique ID>    | Update read-only variable and restart the server |", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nA new InnoDB Cluster will be created on instance \'db1-1.db1-endpoints.testing.svc.cluster.local.:3306\'.\n\nValidating instance configuration at db1-1.db1-endpoints.testing.svc.cluster.local.:33062...\n\nThis instance reports its own address as \x1b[1mdb1-1.db1-endpoints.testing.svc.cluster.local.:3306\x1b[0m\n\n\x1b[36mNOTE: \x1b[0mSome configuration options need to be fixed:\n\n\n\n+----------------------------------------+---------------+----------------+--------------------------------------------------+\n\nSome variables need to be changed, but cannot be done dynamically on the server.\n\x1b[36mNOTE: \x1b[0mPlease use the dba.configure_instance() command to repair these issues.\n\n\x1b[31mERROR: \x1b[0mInstance must be configured and validated with dba.check_instance_configuration() and dba.configure_instance() before it can be used in an InnoDB cluster.\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.create_cluster: Instance check fa' [truncated]
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1578, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 732, in _run_mysqlsh_script
+    raise MySQLClientError
+charms.mysql.v0.mysql.MySQLClientError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 1102, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/charm.py", line 815, in _on_mysql_pebble_ready
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 615, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-db1-1/charm/lib/charms/mysql/v0/mysql.py", line 1586, in create_cluster
+    raise MySQLCreateClusterError
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-db1-1: 01:53:08 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-db1-1: 01:53:08 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+unit-db1-1: 01:57:54 ERROR unit.db1/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-db1-1: 01:57:54 ERROR unit.db1/1.juju-log Failed to get member state: mysqld daemon is down
+unit-db1-1: 01:58:04 ERROR unit.db1/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-db1-1: 01:58:04 ERROR unit.db1/1.juju-log Failed to get member state: mysqld daemon is down
+unit-db1-1: 01:58:14 ERROR unit.db1/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-db1-1: 01:58:14 ERROR unit.db1/1.juju-log Failed to get member state: mysqld daemon is down
+unit-db1-1: 01:58:14 ERROR unit.db1/1.juju-log Error getting member state while checking if cluster is blocked
+unit-db1-1: 01:58:14 ERROR unit.db1/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-db1-1: 01:58:14 ERROR unit.db1/1.juju-log Failed to get member state: mysqld daemon is down
+unit-db1-1: 01:58:24 ERROR unit.db1/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-db1-1: 01:58:24 ERROR unit.db1/1.juju-log Failed to get member state: mysqld daemon is down
+unit-db1-1: 01:58:35 ERROR unit.db1/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-db1-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-db1-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr="Enter password: ERROR 1045 (28000): Access denied for user 'clusteradmin'@'localhost' (using password: YES)\n"
+unit-db1-1: 01:58:35 ERROR unit.db1/1.juju-log Failed to get member state: mysqld daemon is down
+unit-db1-1: 01:58:35 ERROR unit.db1/1.juju-log Error getting member state while checking if cluster is blocked
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
