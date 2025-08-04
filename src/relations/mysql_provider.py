@@ -20,7 +20,7 @@ from ops.charm import PebbleReadyEvent, RelationBrokenEvent, RelationDepartedEve
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus
 
-from constants import CONTAINER_NAME, CONTAINER_RESTARTS, DB_RELATION_NAME, PASSWORD_LENGTH, PEER
+from constants import CONTAINER_NAME, CONTAINER_RESTARTS, DB_RELATION_NAME, PASSWORD_LENGTH
 from k8s_helpers import KubernetesClientError
 from utils import dotappend, generate_random_password
 
@@ -49,7 +49,6 @@ class MySQLProvider(Object):
             self._on_database_provides_relation_departed,
         )
 
-        self.framework.observe(self.charm.on[PEER].relation_changed, self._configure_endpoints)
         self.framework.observe(self.charm.on.leader_elected, self._configure_endpoints)
         self.framework.observe(self.charm.on.mysql_pebble_ready, self._on_mysql_pebble_ready)
         self.framework.observe(self.charm.on.update_status, self._on_update_status)
