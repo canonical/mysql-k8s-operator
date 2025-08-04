@@ -228,16 +228,17 @@ sitemap_show_lastmod = True
 
 linkcheck_ignore = [
     "http://127.0.0.1:8000",
-    "https://github.com/canonical/ACME/*"
+    "https://github.com/canonical/ACME/*",
+    "https://matrix.to/*",
+    "https://portal.azure.com/#browse/Microsoft.Compute/VirtualMachines"
     ]
-
 
 # A regex list of URLs where anchors are ignored by 'make linkcheck'
 
 linkcheck_anchors_ignore_for_url = [r"https://github\.com/.*"]
 
 # give linkcheck multiple tries on failure
-# linkcheck_timeout = 30
+linkcheck_timeout = 30
 linkcheck_retries = 3
 
 ########################

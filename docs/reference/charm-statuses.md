@@ -1,10 +1,10 @@
 # Charm statuses
 
 ```{caution}
-This is a work-in-progress article. Do NOT use it in production! Contact [Canonical Data Platform team](https://chat.charmhub.io/charmhub/channels/data-platform) if you are interested in the topic.
+This is a work-in-progress article. Do NOT use it in production! Contact [Canonical Data Platform team](/reference/contacts) if you are interested in the topic.
 ```
 
-The charm follows [standard Juju applications statuses](https://juju.is/docs/olm/status-values#application-status). Here you can find the expected end-users reaction on different statuses:
+The charm follows [standard Juju applications statuses](https://documentation.ubuntu.com/juju/3.6/reference/status/#application-status). Here you can find the expected end-users reaction on different statuses:
 
 | Juju Status | Message | Expectations | Actions |
 |-------|-------|-------|-------|

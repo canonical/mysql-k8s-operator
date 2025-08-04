@@ -7,9 +7,9 @@ This document describes database **data** migration only!
 The list of MariaDB/MySQL **legacy VM charms**:
 
 * [OSM MarkiaDB K8s](https://charmhub.io/charmed-osm-mariadb-k8s)
-* <s>[MariaDB](https://charmhub.io/mariadb)</s> (machine charm, use [separate manual](https://charmhub.io/mysql/docs/h-develop-mysqldump))
-* <s>[Percona Cluster](https://charmhub.io/percona-cluster)</s> (machine charm, use [separate manual](https://charmhub.io/mysql/docs/h-develop-mysqldump))
-* <s>[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)</s> (machine charm, use [separate manual](https://charmhub.io/mysql/docs/h-develop-mysqldump))
+* <s>[MariaDB](https://charmhub.io/mariadb)</s> (for the machine charm, see the [MySQL VM documentation](https://charmhub.io/mysql/docs/h-migrate-mysqldump))
+* <s>[Percona Cluster](https://charmhub.io/percona-cluster)</s> (for the machine charm, see the [MySQL VM documentation](https://charmhub.io/mysql/docs/h-migrate-mysqldump))
+* <s>[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)</s> (for the machine charm, see the [MySQL VM documentation](https://charmhub.io/mysql/docs/h-migrate-mysqldump))
 
 The minor difference in commands necessary for each of the legacy charm, but the general logic is common:
 
@@ -48,7 +48,7 @@ Still, this manual can be used to copy data between different installations of t
 - `mysql-client` on client machine (install by running `sudo apt install mysql-client`).
 
 ```{caution}
-Most legacy database charms support old Ubuntu series only, while Juju 3.x does [NOT support](https://discourse.charmhub.io/t/roadmap-releases/5064#juju-3-0-0---22-oct-2022) Ubuntu Bionic.
+Most legacy database charms support old Ubuntu series only, while Juju 3.x does [NOT support](https://documentation.ubuntu.com/juju/3.6/reference/juju/juju-roadmap-and-releases/#juju-3-0-0-22-oct-2022) Ubuntu Bionic.
 
 It is recommended to use the latest stable revision of the charm on Ubuntu Jammy and Juju 3.x
 ```
@@ -204,6 +204,3 @@ juju remove-application --destroy-storage < mydb | charmed-osm-mariadb-k8s >
 ## Links
 
 Database data migration is also possible using [`mydumper`](/how-to/development/migrate-data-via-mydumper).
-
-> :tipping_hand_man: This manual based on [Kubeflow DB migration guide](https://github.com/canonical/bundle-kubeflow/blob/main/docs/db-migration-guide.md).
-

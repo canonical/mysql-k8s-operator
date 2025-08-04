@@ -2,7 +2,7 @@
 
 This page provides high-level overviews of the dependencies and features that are supported by each revision in every stable release.
 
-To learn more about the different release tracks and channels, see the [Juju documentation about channels](https://juju.is/docs/juju/channel#risk).
+To learn more about the different release tracks and channels, see the [Juju documentation about channels](https://documentation.ubuntu.com/juju/3.6/reference/charm/#risk).
 
 To see all releases and commits, check the [Charmed MySQL K8s Releases page on GitHub](https://github.com/canonical/mysql-k8s-operator/releases).
 
@@ -24,7 +24,7 @@ To see all releases and commits, check the [Charmed MySQL K8s Releases page on G
 For more details about each feature/interface, refer to the documentation linked in the column headers.
 
 ## Architecture and base
-Several [revisions](https://juju.is/docs/sdk/revision) are released simultaneously for different [bases/series](https://juju.is/docs/juju/base) using the same charm code. In other words, one release contains multiple revisions.
+Several [revisions](https://documentation.ubuntu.com/juju/3.6/reference/charm/#charm-revision) are released simultaneously for different [bases/series](https://juju.is/docs/juju/base) using the same charm code. In other words, one release contains multiple revisions.
 
 > If you do not specify a revision on deploy time, Juju will automatically choose the revision that matches your base and architecture. 
 > 

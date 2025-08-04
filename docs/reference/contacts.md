@@ -5,10 +5,10 @@
 
 Charmed MySQL K8s is an open source project that warmly welcomes community contributions, suggestions, fixes, and constructive feedback.
 * Raise software issues or feature requests on [**GitHub**](https://github.com/canonical/mysql-k8s-operator/issues/new/choose)
-* Report security issues through [**Launchpad**](https://wiki.ubuntu.com/DebuggingSecurity#How%20to%20File)
+* Report security issues through [**Launchpad**](https://launchpad.net/)
 * Contact the Canonical Data Platform team through our [Matrix](https://matrix.to/#/#charmhub-data-platform:ubuntu.com) channel.
 ```{note}
-Our legacy [Mattermost](https://chat.charmhub.io/charmhub/channels/data-platform) channel is read-only until January 31, 2025.
+Our legacy [Mattermost](/reference/contacts) channel is read-only until January 31, 2025.
 ```
 
 

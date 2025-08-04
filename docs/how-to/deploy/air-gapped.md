@@ -9,18 +9,18 @@ Canonical does not prescribe how you should set up your specific air-gapped envi
 
 * A K8s cluster is running.
 * DNS is configured to the local nameservers.
-* [Juju is configured](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#configure-juju) to use local air-gapped services.
+* [Juju is configured](https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub/#configure-juju) to use local air-gapped services.
 * The [`store-admin`](https://snapcraft.io/store-admin) tool is installed and configured.
-* [Air-gapped CharmHub](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/) is installed and running.
+* [Air-gapped CharmHub](https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub) is installed and running.
 * Local APT and LXD Images caches are reachable.
 * An air-gapped container registry (such as [Artifactory](https://jfrog.com/artifactory/)) is reachable from the K8s cluster over HTTPS
   *  **Note**: Secure (HTTPS) OCI access is important, otherwise Juju won’t work!
 
 ## Air-gapped concept summary
 
-1. [Export](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#export-packages)
+1. [Export](https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub/#export-packages)
 2. [Transfer](https://en.wikipedia.org/wiki/Air_gap_(networking))
-3. [Import](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#import-packages)
+3. [Import](https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub/#import-packages)
 4. Deploy 
 
 ## Air-gapped day-to-day example
@@ -28,7 +28,7 @@ Canonical does not prescribe how you should set up your specific air-gapped envi
 **1.** Exporting K8s Charms and OCI Resources are currently independent processes.
 > Several improvements are planned:  [#1](https://warthogs.atlassian.net/browse/PF-5369), [#2](https://warthogs.atlassian.net/browse/PF-5185)
 
-**1.1.** Charm. The necessary charm(s) can be exported as bundle OR independently (charm-by-charm). The special store-admin tool is designed to simplify the process. At the moment exporting of Charms and OCI resources are separated, but in the future the `store-admin export` [could](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#export-charms) export all necessary OCI resource(s)) from official CharmHub.
+**1.1.** Charm. The necessary charm(s) can be exported as bundle OR independently (charm-by-charm). The special store-admin tool is designed to simplify the process. At the moment exporting of Charms and OCI resources are separated, but in the future the `store-admin export` [could](https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub/#export-charms) export all necessary OCI resource(s)) from official CharmHub.
 
 At the moment, the store-admin exports (and includes into the blob) all the OCI resources metadata only:
 ```shell
@@ -75,7 +75,7 @@ Successfully exported charm bundle mysql-k8s-bundle: /home/ubuntu/snap/store-adm
 
 [/details]
 
-**1.2.** OCI: for the manual OCI export, please follow [the official CharmHub guide](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#export-oci-images).
+**1.2.** OCI: for the manual OCI export, please follow [the official CharmHub guide](https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub/#export-oci-images).
 
 **2.** Transfer the binary blobs using the way of your choice into Air-gapped environment.
 
@@ -90,11 +90,11 @@ cp /media/usb/mysql-k8s-bundle-20241006T231254.tar.gz /var/snap/snap-store-proxy
 ```shell
 sudo snap-store-proxy push-charm-bundle /var/snap/snap-store-proxy/common/charms-to-push/mysql-k8s-bundle-20241006T231254.tar.gz
 ```
-> **Note**: when [re-importing](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#import-packages) charms or importing other revisions, make sure to provide the `--push-channel-map`.
+> **Note**: when [re-importing](https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub/#import-packages) charms or importing other revisions, make sure to provide the `--push-channel-map`.
 
 **4.** Upload the charm OCI into local Air-gapped OCI registry.
 
-For the manual OCI import, please follow [the official CharmHub guide](https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/#import-packages).
+For the manual OCI import, please follow [the official CharmHub guide](https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub/#import-packages).
 
 **5.** Deploy and operate Juju charms normally:
 
@@ -107,7 +107,7 @@ juju deploy mysql-k8s --trust
 
 * https://docs.ubuntu.com/snap-store-proxy/en/airgap
 * https://documentation.ubuntu.com/snap-store-proxy/
-* https://documentation.ubuntu.com/snap-store-proxy/en/airgap-charmhub/
+* https://documentation.ubuntu.com/enterprise-store/main/how-to/airgap-charmhub
 * https://ubuntu.com/kubernetes/docs/install-offline
-* https://charmed-kubeflow.io/docs/install-in-airgapped-environment
+* https://documentation.ubuntu.com/charmed-kubeflow/how-to/install/install-air-gapped/
 

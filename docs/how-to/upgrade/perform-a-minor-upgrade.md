@@ -27,7 +27,7 @@ It is recommended to deploy your application in conjunction with [Charmed MySQL 
 3. [**Prepare**](#step-3-prepare) the Charmed MySQL K8s application for the in-place upgrade.
 4. [**Upgrade**](#step-4-upgrade). Once started, only one unit in a cluster will be upgraded. In case of failure, the rollback is simple: remove newly added pod (via [step 2](#step-2-scale-up-optional)).
 5. [**Resume** upgrade](#step-5-resume). If the new pod is OK after the refresh, the upgrade can be resumed for all other units in the cluster. All units in a cluster will be executed sequentially from the largest ordinal number to the lowest.
-6. Consider a [**rollback**](#step-6-rollback-optional) in case of disaster. Please inform and include us in your case scenario troubleshooting to trace the source of the issue and prevent it in the future. [Contact us](https://chat.charmhub.io/charmhub/channels/data-platform)!
+6. Consider a [**rollback**](#step-6-rollback-optional) in case of disaster. Please inform and include us in your case scenario troubleshooting to trace the source of the issue and prevent it in the future. [Contact us](/reference/contacts)!
 7. [**Scale-back** (optional)](#step-7-scale-back). Remove no longer necessary K8s pod created in step 2 (if any).
 8. [Post-upgrade **check**](#step-8-check). Make sure all units are in a healthy state.
 

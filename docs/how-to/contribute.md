@@ -6,7 +6,7 @@ This page explains the processes and practices recommended for contributing to t
 
 ## Submit a bug or issue 
 * Report software issues or feature requests through [**GitHub**](https://github.com/canonical/mysql-k8s-operator/issues)
-* Report security issues through [**Launchpad**](https://wiki.ubuntu.com/DebuggingSecurity#How%20to%20File)
+* Report security issues through [**Launchpad**](https://launchpad.net/)
 
 ## Contribute to the code
 

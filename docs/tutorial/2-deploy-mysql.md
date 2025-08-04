@@ -30,7 +30,7 @@ mysql-k8s/0*  active    idle   10.1.84.74         Unit is ready: Mode: RW
 ```
 > To exit the screen with `juju status --watch 1s`, enter `Ctrl+C`.
 
-You can also watch juju logs with the [`juju debug-log`](https://juju.is/docs/juju/juju-debug-log) command. More info on logging in the [juju logs documentation](https://juju.is/docs/olm/juju-logs).
+You can also watch juju logs with the [`juju debug-log`](https://juju.is/docs/juju/juju-debug-log) command. More info on logging in the [juju logs documentation](https://documentation.ubuntu.com/juju/3.6/reference/log/#log).
 
 ## Access MySQL
 ```{caution}

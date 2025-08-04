@@ -26,7 +26,7 @@ And if you run `kubectl describe pod mysql-k8s-0`, all the containers will have 
 
 ## HLD (High Level Design)
 
-The "Charmed MySQL K8s" (`workload` container) based on `mysql-image` resource defined in the [charm metadata.yaml](https://github.com/canonical/mysql-k8s-operator/blob/main/metadata.yaml). It is an official Canonical "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock)" [OCI/ROCK](https://ubuntu.com/server/docs/rock-images/introduction) image, which is recursively based on Canonical SNAP “[charmed-mysql](https://snapcraft.io/charmed-mysql)” (read more about the SNAP details [in the VM charm](https://canonical-charmed-mysql.readthedocs-hosted.com/explanation/architecture)).
+The "Charmed MySQL K8s" (`workload` container) based on `mysql-image` resource defined in the [charm metadata.yaml](https://github.com/canonical/mysql-k8s-operator/blob/main/metadata.yaml). It is an official Canonical "[charmed-mysql](https://github.com/canonical/charmed-mysql-rock)" [OCI/ROCK](https://documentation.ubuntu.com/server/explanation/virtualisation/about-rock-images/) image, which is recursively based on Canonical SNAP “[charmed-mysql](https://snapcraft.io/charmed-mysql)” (read more about the SNAP details [in the VM charm](https://canonical-charmed-mysql.readthedocs-hosted.com/explanation/architecture)).
 
 [Charmcraft](https://juju.is/docs/sdk/install-charmcraft) uploads an image as a [charm resource](https://charmhub.io/mysql-k8s/resources/mysql-image) to [Charmhub](https://charmhub.io/mysql-k8s) during the [publishing](https://github.com/canonical/mysql-k8s-operator/blob/main/.github/workflows/release.yaml#L40-L53), as described in the [Juju SDK How-to guides](https://juju.is/docs/sdk/publishing).
 
@@ -135,10 +135,10 @@ Accordingly to the [Juju SDK](https://juju.is/docs/sdk/event): “an event is a 
 
 For this charm, the following events are observed:
 
-1. [`mysql_pebble_ready`](https://juju.is/docs/sdk/container-name-pebble-ready-event): informs charm about the availability of the ROCK "charmed-mysql"-based `workload` K8s container. Also performs basic preparations to bootstrap the cluster on the first leader (or join the already configured cluster). 
-2. [`leader-elected`](https://juju.is/docs/sdk/leader-elected-event): generate all the secrets to bootstrap the cluster.
-5. [`config_changed`](https://juju.is/docs/sdk/config-changed-event): usually fired in response to a configuration change using the GUI or CLI. Create and set default cluster and cluster-set names in the peer relation databag (on the leader only).
-6. [`update-status`](https://juju.is/docs/sdk/update-status-event): Takes care of workload health checks.
+1. [`mysql_pebble_ready`](https://documentation.ubuntu.com/juju/3.6/reference/hook/#container-pebble-ready): informs charm about the availability of the ROCK "charmed-mysql"-based `workload` K8s container. Also performs basic preparations to bootstrap the cluster on the first leader (or join the already configured cluster). 
+2. [`leader-elected`](https://documentation.ubuntu.com/juju/3.6/reference/hook/#leader-elected): generate all the secrets to bootstrap the cluster.
+5. [`config_changed`](https://documentation.ubuntu.com/juju/3.6/reference/hook/#config-changed): usually fired in response to a configuration change using the GUI or CLI. Create and set default cluster and cluster-set names in the peer relation databag (on the leader only).
+6. [`update-status`](https://documentation.ubuntu.com/juju/3.6/reference/hook/#update-status): Takes care of workload health checks.
 <!--- 7. database_storage_detaching: TODO: ops? event?
 8. TODO: any other events? relation_joined/changed/created/broken
 --->
@@ -147,11 +147,11 @@ For this charm, the following events are observed:
 
 The "[src/charm.py](https://github.com/canonical/mysql-k8s-operator/blob/main/src/charm.py)" is the default entry point for a charm and has the [MySQLCharmBase](https://github.com/canonical/mysql-k8s-operator/blob/main/lib/charms/mysql/v0/mysql.py) Python class which inherits from CharmBase.
 
-CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms). See more information in [Charm](https://juju.is/docs/sdk/constructs#charm).
+`CharmBase` is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms). See more information in the [Ops documentation for `CharmBase`](https://ops.readthedocs.io/en/latest/reference/ops.html#ops.CharmBase).
 
 The `__init__` method guarantees that the charm observes all events relevant to its operation and handles them.
 
-The VM and K8s charm flavors shares the codebase via [charm libraries](https://juju.is/docs/sdk/libraries) in [lib/charms/mysql/v0/](https://github.com/canonical/mysql-operator/blob/main/lib/charms/mysql/v0/) (of VM flavor of the charm!):
+The VM and K8s charm flavors shares the codebase via charm libraries in [lib/charms/mysql/v0/](https://github.com/canonical/mysql-operator/blob/main/lib/charms/mysql/v0/) (of VM flavor of the charm!):
 ```
 charmcraft list-lib mysql
 Library name    API    Patch                                                                                                                                                                                                                          

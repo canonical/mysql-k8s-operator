@@ -10,7 +10,7 @@ This charm provides modern ['mysql_client'](https://github.com/canonical/charm-r
 
 ### Modern `mysql_client` interface (`database` endpoint):
 
-Adding a relation is accomplished with `juju relate` (or `juju integrate` for Juju 3.x) via endpoint `database`. Read more about [Juju relations (integrations)](https://juju.is/docs/olm/relations). Example:
+Adding a relation is accomplished with `juju relate` (or `juju integrate` for Juju 3.x) via endpoint `database`. Read more about [Juju relations (integrations)](https://documentation.ubuntu.com/juju/3.6/reference/relation/). Example:
 
 ```shell
 # Deploy Charmed MySQL cluster with 3 nodes
@@ -39,7 +39,7 @@ Find all details about default and extra DB user roles in “[Charm Users explan
 
 ### Legacy `mysql` interface (`mysql` and `mysql-root` endpoints):
 
-This charm supports legacy interface `mysql` (endpoint `mysql` and `mysql-root`). It was a popular interface used by some legacy charms (e.g. "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)"), often in [cross-model relations](https://juju.is/docs/olm/cross-model-integration):
+This charm supports legacy interface `mysql` (endpoint `mysql` and `mysql-root`). It was a popular interface used by some legacy charms (e.g. "[MariaDB](https://charmhub.io/mariadb)", "[OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s)", "[Percona Cluster](https://charmhub.io/percona-cluster)" and "[Mysql Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)"), often in [cross-model relations](https://documentation.ubuntu.com/juju/3.6/reference/relation/#cross-model):
 
 ```shell
 juju deploy mysql-k8s --trust --channel 8.0

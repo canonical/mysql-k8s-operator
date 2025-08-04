@@ -9,7 +9,7 @@ The following are the minimum software and hardware requirements to run Charmed 
 
 ### Juju
 
-The charm supports several Juju releases from [2.9 LTS](https://juju.is/docs/juju/roadmap#juju-juju-29) onwards. The table below shows which minor versions of each major Juju release are supported by the stable Charmhub releases of MySQL K8s. 
+The charm supports several Juju releases from [2.9 LTS](https://documentation.ubuntu.com/juju/3.6/reference/juju/juju-roadmap-and-releases/#juju-3-3) onwards. The table below shows which minor versions of each major Juju release are supported by the stable Charmhub releases of MySQL K8s. 
 
 | Juju major release | Supported minor versions | Compatible charm revisions |Comment |
 |:--------|:-----|:-----|:-----|

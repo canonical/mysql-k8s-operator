@@ -26,7 +26,7 @@ In the context of this guide, the pertinent changes are shown here:
 |`run`|`exec`|
 |`run-action --wait`|`run`|
 
-See the [Juju 3.0 release notes](https://juju.is/docs/juju/roadmap#juju-3-0-0---22-oct-2022) for the comprehensive list of changes.
+See the [Juju 3.0 release notes](https://documentation.ubuntu.com/juju/3.6/reference/juju/juju-roadmap-and-releases/#juju-3-0-0-22-oct-2022) for the comprehensive list of changes.
 
 The response is to therefore substitute the documented command with the equivalent 2.9.x command. For example:
 

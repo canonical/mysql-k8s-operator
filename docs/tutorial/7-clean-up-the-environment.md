@@ -31,6 +31,6 @@ multipass delete --purge my-vm
 - Check out our Charmed offerings of [PostgreSQL K8s](https://charmhub.io/postgresql-k8s?channel=14) and [Kafka K8s](https://charmhub.io/kafka-k8s?channel=edge).
 - Read about [High Availability Best Practices](https://canonical.com/blog/database-high-availability)
 - [Report](https://github.com/canonical/mysql-k8s-operator/issues) any problems you encountered.
-- [Give us your feedback](https://chat.charmhub.io/charmhub/channels/data-platform).
+- [Give us your feedback](/reference/contacts).
 - [Contribute to the code base](https://github.com/canonical/mysql-k8s-operator)
 

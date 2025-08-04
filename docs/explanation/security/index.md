@@ -16,14 +16,14 @@ Charmed MySQL K8s can be deployed on top of several Kubernetes distributions. Th
 | Cloud              | Security guides                                                                                                                                                                                                                                                                                                                                   |
 |--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Charmed Kubernetes | [Security in Charmed Kubernetes](https://ubuntu.com/kubernetes/docs/security)                                                                                                                                                                                                                                                                    |
-| AWS EKS            | [Best Practices for Security, Identity and Compliance](https://aws.amazon.com/architecture/security-identity-compliance), [AWS security credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html#access-keys-and-secret-access-keys), [Security in EKS](https://docs.aws.amazon.com/eks/latest/userguide/security.html) | 
+| AWS EKS            | [Best Practices for Security, Identity and Compliance](https://aws.amazon.com/architecture/security-identity-compliance), [AWS security credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html), [Security in EKS](https://docs.aws.amazon.com/eks/latest/userguide/security.html) | 
 | Azure              | [Azure security best practices and patterns](https://learn.microsoft.com/en-us/azure/security/fundamentals/best-practices-and-patterns), [Managed identities for Azure resource](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/), [Security in AKS](https://learn.microsoft.com/en-us/azure/aks/concepts-security)                                                      |
 | GCP GKE              |  [Google security overview](https://cloud.google.com/kubernetes-engine/docs/concepts/security-overview), [Harden your cluster's security](https://cloud.google.com/kubernetes-engine/docs/concepts/security-overview)                                                    |
 
 ### Juju 
 
 Juju is the component responsible for orchestrating the entire lifecycle, from deployment to Day 2 operations. For more information on Juju security hardening, see the
-[Juju security page](https://discourse.charmhub.io/t/juju-security/15684) and the [How to harden your deployment](https://juju.is/docs/juju/harden-your-deployment) guide.
+[Juju security page](https://documentation.ubuntu.com/juju/latest/explanation/juju-security/index.html) and the [How to harden your deployment](https://documentation.ubuntu.com/juju/3.6/howto/manage-your-deployment/#harden-your-deployment) guide.
 
 #### Cloud credentials
 
@@ -63,7 +63,7 @@ Charmed MySQL K8s and Charmed MySQL Router K8s run on top of the same rock (OCI-
 
 [Charmed MySQL K8s operator](https://github.com/canonical/mysql-k8s-operator) and [Charmed MySQL Router K8s operator](https://github.com/canonical/mysql-router-k8s-operator) install pinned versions of the rock to provide reproducible and secure environments. New versions (revisions) of charmed operators can be released to update the operator's code, workloads, or both. It is important to refresh the charm regularly to make sure the workload is as secure as possible.
 
-For more information on upgrading Charmed MySQL K8s, see the [How to upgrade MySQL](https://canonical.com/data/docs/mysql/k8s/h-upgrade) and [How to upgrade MySQL Router](https://charmhub.io/mysql-router-k8s/docs/h-upgrade-intro) guides, as well as the [Release notes](https://canonical.com/data/docs/mysql/k8s/r-releases).
+For more information on upgrading Charmed MySQL K8s, see the [How to upgrade MySQL](/how-to/upgrade/index) and [How to upgrade MySQL Router](https://charmhub.io/mysql-router-k8s/docs/h-upgrade) guides, as well as the [Releases](/reference/releases).
 
 ### Encryption
 

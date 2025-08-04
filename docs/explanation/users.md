@@ -15,7 +15,7 @@ The operator uses the following internal DB users:
 * `clusteradmin` - the user to manage replication in the MySQL InnoDB ClusterSet.
 * `serverconfig` - the user that operates MySQL instances.
 * `monitoring` - the user for [COS integration](https://charmhub.io/mysql/docs/h-enable-monitoring).
-* `backups` - the user to [perform/list/restore backups](https://charmhub.io/mysql/docs/h-create-and-list-backups).
+* `backups` - the user to [perform/list/restore backups](/how-to/back-up-and-restore/create-a-backup).
 * `mysql_innodb_cluster_#######` - the [internal recovery users](https://dev.mysql.com/doc/mysql-shell/8.0/en/innodb-cluster-user-accounts.html#mysql-innodb-cluster-users-created) which enable connections between the servers in the cluster. Dedicated user created for each Juju unit/InnoDB Cluster member.
 * `mysql_innodb_cs_#######` - the internal recovery user which enable connections between MySQl InnoDB Clusters in ClusterSet. One user is created for entire MySQL ClusterSet.
 
@@ -39,7 +39,7 @@ mysql> select Host,User,account_locked from mysql.user;
 10 rows in set (0.00 sec)
 ```
 **Note**: it is forbidden to use/manage described above users! They are dedicated to the operators logic!
-Please use [data-integrator](https://charmhub.io/mysql-k8s/docs/t-integrations) charm to generate/manage/remove an external credentials.
+Please use [data-integrator](https://charmhub.io/data-integrator) charm to generate/manage/remove an external credentials.
 
 It is allowed to rotate passwords for *internal* users using action 'set-password'
 

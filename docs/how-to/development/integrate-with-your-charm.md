@@ -15,7 +15,7 @@ Most existing charms currently use [ops-lib-pgsql](https://github.com/canonical/
 ## Integrate your charm with MySQL
 
 > See also: 
-> * [Juju documentation | Integration](https://juju.is/docs/juju/integration)
+> * [Juju documentation | Integration](https://documentation.ubuntu.com/juju/3.6/reference/relation/)
 > * [Juju documentation | Integrate your charm with PostgreSQL](https://juju.is/docs/sdk/integrate-your-charm-with-postgresql)
 
 Refer to [mysql-test-app](https://github.com/canonical/mysql-test-app) as a practical example of implementing data-platform-libs interfaces to integrate a charm with Charmed MySQL K8s.

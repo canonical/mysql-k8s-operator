@@ -1,6 +1,6 @@
 # Integrate with other applications
 
-[Integrations](https://juju.is/docs/sdk/integration), known as "relations" in Juju 2.9, are the easiest way to create a user for a Charmed MySQL application. 
+[Integrations](https://documentation.ubuntu.com/juju/3.6/reference/relation/), known as "relations" in Juju 2.9, are the easiest way to create a user for a Charmed MySQL application. 
 
 Integrations automatically create a username, password, and database for the desired user/application. It is better practice to connect to MySQL via a specific user instead of the `root` user.
 
