@@ -104,14 +104,14 @@ class TestMySQL(unittest.TestCase):
         self.assertTrue(not self.mysql.wait_until_mysql_connection(check_port=False))
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_create_database(self, _run_mysqlsh_script):
-        """Test successful execution of create_database."""
+    def test_create_database_legacy(self, _run_mysqlsh_script):
+        """Test successful execution of create_database_legacy."""
         _expected_create_database_commands = (
             "shell.connect_to_primary()",
             'session.run_sql("CREATE DATABASE IF NOT EXISTS `test_database`;")',
         )
 
-        self.mysql.create_database("test_database")
+        self.mysql.create_database_legacy("test_database")
 
         _run_mysqlsh_script.assert_called_once_with(
             "\n".join(_expected_create_database_commands),
@@ -121,23 +121,23 @@ class TestMySQL(unittest.TestCase):
         )
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_create_database_exception(self, _run_mysqlsh_script):
-        """Test exception while executing create_database."""
+    def test_create_database_legacy_exception(self, _run_mysqlsh_script):
+        """Test exception while executing create_database_legacy."""
         _run_mysqlsh_script.side_effect = MySQLClientError("Error creating database")
 
         with self.assertRaises(MySQLCreateDatabaseError):
-            self.mysql.create_database("test_database")
+            self.mysql.create_database_legacy("test_database")
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_create_user(self, _run_mysqlsh_script):
-        """Test successful execution of create_user."""
+    def test_create_user_legacy(self, _run_mysqlsh_script):
+        """Test successful execution of create_user_legacy."""
         _escaped_attributes = json.dumps({"label": "test_label"}).replace('"', r"\"")
         _expected_create_user_commands = (
             "shell.connect_to_primary()",
             f"session.run_sql(\"CREATE USER `test_user`@`%` IDENTIFIED BY 'test_password' ATTRIBUTE '{_escaped_attributes}';\")",
         )
 
-        self.mysql.create_user("test_user", "test_password", "test_label")
+        self.mysql.create_user_legacy("test_user", "test_password", "test_label")
 
         _run_mysqlsh_script.assert_called_once_with(
             "\n".join(_expected_create_user_commands),
@@ -147,12 +147,12 @@ class TestMySQL(unittest.TestCase):
         )
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_create_user_exception(self, _run_mysqlsh_script):
-        """Test exception while executing create_user."""
+    def test_create_user_legacy_exception(self, _run_mysqlsh_script):
+        """Test exception while executing create_user_legacy."""
         _run_mysqlsh_script.side_effect = MySQLClientError("Error creating user")
 
         with self.assertRaises(MySQLCreateUserError):
-            self.mysql.create_user("test_user", "test_password", "test_label")
+            self.mysql.create_user_legacy("test_user", "test_password", "test_label")
 
     @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
     def test_escalate_user_privileges(self, _run_mysqlsh_script):
