@@ -135,10 +135,10 @@ Accordingly to the [Juju SDK](https://juju.is/docs/sdk/event): “an event is a 
 
 For this charm, the following events are observed:
 
-1. [mysql_pebble_ready](https://juju.is/docs/sdk/container-name-pebble-ready-event): informs charm about the availability of the ROCK "charmed-mysql"-based `workload` K8s container. Also performs basic preparations to bootstrap the cluster on the first leader (or join the already configured cluster). 
-2. [leader-elected](https://juju.is/docs/sdk/leader-elected-event): generate all the secrets to bootstrap the cluster.
-5. [config_changed](https://juju.is/docs/sdk/config-changed-event): usually fired in response to a configuration change using the GUI or CLI. Create and set default cluster and cluster-set names in the peer relation databag (on the leader only).
-6. [update-status](https://juju.is/docs/sdk/update-status-event): Takes care of workload health checks.
+1. [`mysql_pebble_ready`](https://juju.is/docs/sdk/container-name-pebble-ready-event): informs charm about the availability of the ROCK "charmed-mysql"-based `workload` K8s container. Also performs basic preparations to bootstrap the cluster on the first leader (or join the already configured cluster). 
+2. [`leader-elected`](https://juju.is/docs/sdk/leader-elected-event): generate all the secrets to bootstrap the cluster.
+5. [`config_changed`](https://juju.is/docs/sdk/config-changed-event): usually fired in response to a configuration change using the GUI or CLI. Create and set default cluster and cluster-set names in the peer relation databag (on the leader only).
+6. [`update-status`](https://juju.is/docs/sdk/update-status-event): Takes care of workload health checks.
 <!--- 7. database_storage_detaching: TODO: ops? event?
 8. TODO: any other events? relation_joined/changed/created/broken
 --->

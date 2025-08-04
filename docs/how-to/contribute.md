@@ -16,7 +16,7 @@ If you would like to chat with us about your use-cases or proposed implementatio
 
 ### Tips for a good contribution
 
-* Familliarize yourself with the [Charmed Operator Framework](https://juju.is/docs/sdk) library.
+* Familiarize yourself with the [Charmed Operator Framework](https://juju.is/docs/sdk) library.
 * All contributions require review before being merged. Code review typically examines
   * Code quality
   * Test coverage

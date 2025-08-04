@@ -1,6 +1,3 @@
-
-
-
 # Charm statuses
 
 ```{caution}
@@ -21,13 +18,13 @@ The charm follows [standard Juju applications statuses](https://juju.is/docs/olm
 | **blocked** | Failed to install and configure MySQL | TODO |  |
 | **blocked** | Failed to initialize MySQL users | TODO | |
 | **blocked** | Failed to configure instance for InnoDB | TODO | |
-| **blocked** | Failed to create custom mysqld config | TODO | |
+| **blocked** | Failed to create custom `mysqld` config | TODO | |
 | **blocked** | Failed to connect to MySQL exporter | TODO | |
 | **blocked** | Failed to create the InnoDB cluster | TODO | |
 | **blocked** | Failed to initialize juju units operations table | TODO | |
 | **blocked** | failed to recover cluster. | TODO | |
 | **blocked** | Failed to remove relation user | TODO | |
-| **blocked** | Failed to initialize shared_db relation | Try to remove and add relations. Report as an issue (with debug logs) if reproducible | |
+| **blocked** | Failed to initialize `shared_db` relation | Try to remove and add relations. Report as an issue (with debug logs) if reproducible | |
 | **blocked** | Failed to create app user or scoped database | TODO | |
 | **blocked** | Failed to delete users for departing unit | TODO | |
 | **blocked** | Failed to set TLS configuration | Problems with TLS certifications generation| Remove and add relations with TLS operator. Report as an issue (with debug logs) if reproducible |
@@ -38,7 +35,7 @@ The charm follows [standard Juju applications statuses](https://juju.is/docs/olm
 | **blocked** | Failed to re-configure instance for InnoDB | TODO | |
 | **blocked** | Failed to purge data dir | TODO | |
 | **blocked** | Failed to reset root password | TODO | |
-| **blocked** | Failed to create custom mysqld config | TODO | |
+| **blocked** | Failed to create custom `mysqld` config | TODO | |
 | **error** | any | An unhanded internal error happened | Read the message hint. Execute `juju resolve <error_unit/0>` after addressing the root of the error state |
 | **terminated** | any | The unit is gone and will be cleaned by Juju soon | No actions possible |
 | **unknown** | any | Juju doesn't know the charm app/unit status. Possible reason: K8s charm termination in progress. | Manual investigation required if status is permanent |
