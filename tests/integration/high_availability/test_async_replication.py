@@ -242,6 +242,7 @@ async def test_standby_promotion(
     await juju_.run_action(
         leader_unit,
         "promote-to-primary",
+        **{"scope": "cluster"},
     )
 
     results = await get_max_written_value(first_model, second_model)
@@ -274,7 +275,7 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
     await juju_.run_action(
         leader_unit,
         "promote-to-primary",
-        **{"--wait": "5m", "force": True},
+        **{"--wait": "5m", "force": True, "scope": "cluster"},
     )
 
     cluster_set_status = await get_cluster_status(leader_unit, cluster_set=True)

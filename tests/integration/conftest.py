@@ -5,6 +5,7 @@ import logging
 import os
 import uuid
 
+import jubilant
 import pytest
 from pytest_operator.plugin import OpsTest
 
@@ -63,3 +64,25 @@ def cloud_configs_gcp() -> tuple[dict[str, str], dict[str, str]]:
         "secret-key": os.environ["GCP_SECRET_KEY"],
     }
     return configs, credentials
+
+
+@pytest.fixture(scope="module")
+def juju(request: pytest.FixtureRequest):
+    """Pytest fixture that wraps :meth:`jubilant.with_model`.
+
+    This adds command line parameter ``--keep-models`` (see help for details).
+    """
+    model = request.config.getoption("--model")
+    keep_models = bool(request.config.getoption("--keep-models"))
+
+    if model:
+        juju = jubilant.Juju(model=model)  # type: ignore
+        yield juju
+        log = juju.debug_log(limit=1000)
+    else:
+        with jubilant.temp_model(keep=keep_models) as juju:
+            yield juju
+            log = juju.debug_log(limit=1000)
+
+    if request.session.testsfailed:
+        print(log, end="")
