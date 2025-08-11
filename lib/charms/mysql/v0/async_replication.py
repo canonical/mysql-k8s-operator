@@ -30,7 +30,6 @@ from ops import (
 )
 from ops.framework import Object
 from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
-from typing_extensions import Optional
 
 from constants import (
     BACKUPS_PASSWORD_KEY,
@@ -54,7 +53,7 @@ logger = logging.getLogger(__name__)
 # The unique Charmhub library identifier, never change it
 LIBID = "4de21f1a022c4e2c87ac8e672ec16f6a"
 LIBAPI = 0
-LIBPATCH = 8
+LIBPATCH = 9
 
 RELATION_OFFER = "replication-offer"
 RELATION_CONSUMER = "replication"
@@ -126,21 +125,21 @@ class MySQLAsyncReplication(Object):
         return self._charm.app_peer_data["cluster-set-domain-name"]
 
     @property
-    def relation(self) -> Optional[Relation]:
+    def relation(self) -> Relation | None:
         """Relation."""
         return self.model.get_relation(RELATION_OFFER) or self.model.get_relation(
             RELATION_CONSUMER
         )
 
     @property
-    def relation_data(self) -> Optional[RelationDataContent]:
+    def relation_data(self) -> RelationDataContent | None:
         """Relation data."""
         if not self.relation:
             return
         return self.relation.data[self.model.app]
 
     @property
-    def remote_relation_data(self) -> Optional[RelationDataContent]:
+    def remote_relation_data(self) -> RelationDataContent | None:
         """Remote relation data."""
         if not self.relation or not self.relation.app:
             return
@@ -362,7 +361,7 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
         self.framework.observe(self._charm.on.secret_changed, self._on_secret_change)
 
     @property
-    def state(self) -> Optional[States]:
+    def state(self) -> States | None:
         """State of the relation, on primary side."""
         if not self.relation:
             return States.UNINITIALIZED
@@ -413,7 +412,7 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
         return True
 
     @property
-    def secret(self) -> Optional[Secret]:
+    def secret(self) -> Secret | None:
         """Return the async replication secret."""
         if not self.relation:
             return
@@ -642,7 +641,7 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
         self.framework.observe(self._charm.on.secret_changed, self._on_secret_change)
 
     @property
-    def state(self) -> Optional[States]:
+    def state(self) -> States | None:
         """State of the relation, on consumer side."""
         if not self.relation:
             return None
@@ -719,7 +718,7 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
         secret = self._obtain_secret()
         return secret.peek_content()
 
-    def _get_endpoint(self) -> Optional[str]:
+    def _get_endpoint(self) -> str | None:
         """Get endpoint to be used by the primary cluster.
 
         This is the address in which the unit must be reachable from the primary cluster.

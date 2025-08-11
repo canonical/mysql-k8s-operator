@@ -81,12 +81,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Tuple,
-    Union,
     get_args,
 )
 
@@ -133,7 +128,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 90
+LIBPATCH = 91
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -614,7 +609,6 @@ class MySQLCharmBase(CharmBase, ABC):
             except MySQLForceQuorumFromInstanceError:
                 logger.exception("Failed to force quorum from instance")
                 event.fail("Failed to force quorum from instance. See logs for more information.")
-                return
         else:
             # Switchover
             logger.info("Setting unit as cluster primary")
@@ -623,12 +617,14 @@ class MySQLCharmBase(CharmBase, ABC):
             except MySQLSetClusterPrimaryError:
                 logger.exception("Failed to set cluster primary")
                 event.fail("Failed to change cluster primary. See logs for more information.")
-                return
 
         # Use peer relation to trigger endpoint update
         # refer to mysql_provider.py
         self.unit_peer_data.update({"topology-change-timestamp": str(int(time.time()))})
-        event.set_results({"success": True})
+        event.set_results({
+            "success": True,
+            "message": "Unit is already primary",
+        })
 
     def _recreate_cluster(self, event: ActionEvent) -> None:
         """Action used to recreate the cluster, for special cases."""
@@ -703,7 +699,7 @@ class MySQLCharmBase(CharmBase, ABC):
         })
 
     @property
-    def peers(self) -> Optional[ops.model.Relation]:
+    def peers(self) -> ops.model.Relation | None:
         """Retrieve the peer relation."""
         return self.model.get_relation(PEER)
 
@@ -727,7 +723,7 @@ class MySQLCharmBase(CharmBase, ABC):
         return False
 
     @property
-    def only_one_cluster_node_thats_uninitialized(self) -> Optional[bool]:
+    def only_one_cluster_node_thats_uninitialized(self) -> bool | None:
         """Check if only a single cluster node exists across all units."""
         if not self.app_peer_data.get("cluster-name"):
             return None
@@ -766,7 +762,7 @@ class MySQLCharmBase(CharmBase, ABC):
         )
 
     @property
-    def app_peer_data(self) -> Union[ops.RelationDataContent, dict]:
+    def app_peer_data(self) -> ops.RelationDataContent | dict:
         """Application peer relation data object."""
         if self.peers is None:
             return {}
@@ -774,7 +770,7 @@ class MySQLCharmBase(CharmBase, ABC):
         return self.peers.data[self.app]
 
     @property
-    def unit_peer_data(self) -> Union[ops.RelationDataContent, dict]:
+    def unit_peer_data(self) -> ops.RelationDataContent | dict:
         """Unit peer relation data object."""
         if self.peers is None:
             return {}
@@ -859,7 +855,7 @@ class MySQLCharmBase(CharmBase, ABC):
         elif scope == UNIT_SCOPE:
             return self.peer_relation_unit
 
-    def get_cluster_endpoints(self, relation_name: str) -> Tuple[str, str, str]:
+    def get_cluster_endpoints(self, relation_name: str) -> tuple[str, str, str]:
         """Return (rw, ro, offline) endpoints tuple names or IPs."""
         repl_topology = self._mysql.get_cluster_topology()
         repl_cluster = self._mysql.is_cluster_replica()
@@ -899,7 +895,7 @@ class MySQLCharmBase(CharmBase, ABC):
         self,
         scope: Scopes,
         key: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get secret from the secret storage.
 
         Retrieve secret from juju secrets backend if secret exists there.
@@ -922,7 +918,7 @@ class MySQLCharmBase(CharmBase, ABC):
                 )
         return value
 
-    def set_secret(self, scope: Scopes, key: str, value: Optional[str]) -> None:
+    def set_secret(self, scope: Scopes, key: str, value: str | None) -> None:
         """Set a secret in the secret storage."""
         if scope not in get_args(Scopes):
             raise MySQLSecretError(f"Invalid secret {scope=}")
@@ -1051,7 +1047,7 @@ class MySQLBase(ABC):
             self.backups_password,
         ]
 
-    def instance_def(self, user: str, host: Optional[str] = None) -> str:
+    def instance_def(self, user: str, host: str | None = None) -> str:
         """Return instance definition used on mysqlsh.
 
         Args:
@@ -1076,8 +1072,8 @@ class MySQLBase(ABC):
         audit_log_enabled: bool,
         audit_log_strategy: str,
         audit_log_policy: str,
-        memory_limit: Optional[int] = None,
-        experimental_max_connections: Optional[int] = None,
+        memory_limit: int | None = None,
+        experimental_max_connections: int | None = None,
         binlog_retention_days: int,
         snap_common: str = "",
     ) -> tuple[str, dict]:
@@ -1397,7 +1393,7 @@ class MySQLBase(ABC):
         password: str,
         hostname: str,
         *,
-        unit_name: Optional[str] = None,
+        unit_name: str | None = None,
         create_database: bool = True,
     ) -> None:
         """Create an application database and a user scoped to the created database."""
@@ -1564,7 +1560,7 @@ class MySQLBase(ABC):
         variable: str,
         value: str,
         persist: bool = False,
-        instance_address: Optional[str] = None,
+        instance_address: str | None = None,
     ) -> None:
         """Set a dynamic variable value for the instance."""
         # escape variable values when needed
@@ -1689,8 +1685,8 @@ class MySQLBase(ABC):
         endpoint: str,
         replica_cluster_name: str,
         instance_label: str,
-        donor: Optional[str] = None,
-        method: Optional[str] = "auto",
+        donor: str | None = None,
+        method: str | None = "auto",
     ) -> None:
         """Create a replica cluster from the primary cluster."""
         options = {
@@ -1803,7 +1799,7 @@ class MySQLBase(ABC):
             logger.error("Failed to resume writes on primary cluster")
             raise MySQLFencingWritesError
 
-    def is_cluster_writes_fenced(self) -> Optional[bool]:
+    def is_cluster_writes_fenced(self) -> bool | None:
         """Check if the cluster is fenced against writes."""
         status = self.get_cluster_status()
         if not status:
@@ -1811,7 +1807,7 @@ class MySQLBase(ABC):
 
         return status["defaultreplicaset"]["status"] == MySQLClusterState.FENCED
 
-    def is_cluster_in_cluster_set(self, cluster_name: str) -> Optional[bool]:
+    def is_cluster_in_cluster_set(self, cluster_name: str) -> bool | None:
         """Check if a cluster is in the cluster set."""
         cs_status = self.get_cluster_set_status(extended=0)
 
@@ -1820,7 +1816,7 @@ class MySQLBase(ABC):
 
         return cluster_name in cs_status["clusters"]
 
-    def cluster_metadata_exists(self, from_instance: Optional[str] = None) -> bool:
+    def cluster_metadata_exists(self, from_instance: str | None = None) -> bool:
         """Check if this cluster metadata exists on database.
 
         Use mysqlsh when querying clusters from remote instances. However, use
@@ -1953,8 +1949,8 @@ class MySQLBase(ABC):
         *,
         instance_address: str,
         instance_unit_label: str,
-        from_instance: Optional[str] = None,
-        lock_instance: Optional[str] = None,
+        from_instance: str | None = None,
+        lock_instance: str | None = None,
         method: str = "auto",
     ) -> None:
         """Add an instance to the InnoDB cluster."""
@@ -2083,7 +2079,7 @@ class MySQLBase(ABC):
         except MySQLClientError:
             logger.error("Failed to drop group replication metadata schema")
 
-    def are_locks_acquired(self, from_instance: Optional[str] = None) -> bool:
+    def are_locks_acquired(self, from_instance: str | None = None) -> bool:
         """Report if any topology change is being executed."""
         commands = (
             "result = session.run_sql(\"SELECT COUNT(*) FROM mysql.juju_units_operations WHERE status='in-progress';\")",
@@ -2107,7 +2103,7 @@ class MySQLBase(ABC):
 
     def rescan_cluster(
         self,
-        from_instance: Optional[str] = None,
+        from_instance: str | None = None,
         remove_instances: bool = False,
         add_instances: bool = False,
     ) -> None:
@@ -2200,8 +2196,8 @@ class MySQLBase(ABC):
         retry=retry_if_exception_type(TimeoutError),
     )
     def get_cluster_status(
-        self, from_instance: Optional[str] = None, extended: Optional[bool] = False
-    ) -> Optional[dict]:
+        self, from_instance: str | None = None, extended: bool | None = False
+    ) -> dict | None:
         """Get the cluster status dictionary."""
         options = {"extended": extended}
         status_commands = (
@@ -2223,8 +2219,8 @@ class MySQLBase(ABC):
             logger.error(f"Failed to get cluster status for {self.cluster_name}")
 
     def get_cluster_set_status(
-        self, extended: Optional[int] = 1, from_instance: Optional[str] = None
-    ) -> Optional[dict]:
+        self, from_instance: str | None = None, extended: int | None = 1
+    ) -> dict | None:
         """Get the cluster-set status dictionary."""
         options = {"extended": extended}
         status_commands = (
@@ -2253,7 +2249,7 @@ class MySQLBase(ABC):
             return set()
         return set(status["clusters"])
 
-    def get_replica_cluster_status(self, replica_cluster_name: Optional[str] = None) -> str:
+    def get_replica_cluster_status(self, replica_cluster_name: str | None = None) -> str:
         """Get the replica cluster status."""
         if not replica_cluster_name:
             replica_cluster_name = self.cluster_name
@@ -2278,8 +2274,8 @@ class MySQLBase(ABC):
 
     def get_cluster_node_count(
         self,
-        from_instance: Optional[str] = None,
-        node_status: Optional[MySQLMemberState] = None,
+        from_instance: str | None = None,
+        node_status: MySQLMemberState | None = None,
     ) -> int:
         """Retrieve current count of cluster nodes, optionally filtered by status."""
         if not node_status:
@@ -2312,7 +2308,7 @@ class MySQLBase(ABC):
         return int(matches.group(1)) if matches else 0
 
     def execute_remove_instance(
-        self, connect_instance: Optional[str] = None, force: bool = False
+        self, connect_instance: str | None = None, force: bool = False
     ) -> None:
         """Execute the remove_instance() script with mysqlsh.
 
@@ -2345,8 +2341,8 @@ class MySQLBase(ABC):
     def remove_instance(  # noqa: C901
         self,
         unit_label: str,
-        lock_instance: Optional[str] = None,
-        auto_dissolve: Optional[bool] = True,
+        lock_instance: str | None = None,
+        auto_dissolve: bool | None = True,
     ) -> None:
         """Remove instance from the cluster.
 
@@ -2516,7 +2512,7 @@ class MySQLBase(ABC):
             else:
                 logger.debug(f"{lock_name=} released for {unit_label=}")
 
-    def _get_cluster_member_addresses(self, exclude_unit_labels: List = []) -> Tuple[List, bool]:
+    def _get_cluster_member_addresses(self, exclude_unit_labels: list) -> tuple[list, bool]:
         """Get the addresses of the cluster's members."""
         logger.debug(f"Getting cluster member addresses, excluding units {exclude_unit_labels}")
 
@@ -2548,8 +2544,8 @@ class MySQLBase(ABC):
         return (member_addresses, "<MEMBER_ADDRESSES>" in output)
 
     def get_cluster_primary_address(
-        self, connect_instance_address: Optional[str] = None
-    ) -> Optional[str]:
+        self, connect_instance_address: str | None = None
+    ) -> str | None:
         """Get the cluster primary's address."""
         logger.debug("Getting cluster primary member's address")
 
@@ -2577,8 +2573,8 @@ class MySQLBase(ABC):
         return matches.group(1)
 
     def get_cluster_set_global_primary_address(
-        self, connect_instance_address: Optional[str] = None
-    ) -> Optional[str]:
+        self, connect_instance_address: str | None = None
+    ) -> str | None:
         """Get the cluster set global primary's address."""
         logger.debug("Getting cluster set global primary member's address")
 
@@ -2610,7 +2606,7 @@ class MySQLBase(ABC):
 
         return address
 
-    def get_cluster_topology(self) -> Optional[dict]:
+    def get_cluster_topology(self) -> dict | None:
         """Get the cluster topology."""
         status = self.get_cluster_status()
         if not status:
@@ -2618,7 +2614,7 @@ class MySQLBase(ABC):
 
         return status["defaultreplicaset"]["topology"]
 
-    def get_primary_label(self) -> Optional[str]:
+    def get_primary_label(self) -> str | None:
         """Get the label of the cluster's primary."""
         topology = self.get_cluster_topology()
         if not topology:
@@ -2653,7 +2649,7 @@ class MySQLBase(ABC):
             logger.error("Failed to set cluster primary")
             raise MySQLSetClusterPrimaryError(e.message)
 
-    def verify_server_upgradable(self, instance: Optional[str] = None) -> None:
+    def verify_server_upgradable(self, instance: str | None = None) -> None:
         """Wrapper for API check_for_server_upgrade."""
         # use cluster admin user to enforce standard port usage
         check_command = [
@@ -2689,7 +2685,7 @@ class MySQLBase(ABC):
         except MySQLClientError:
             raise MySQLServerNotUpgradableError("Failed to check for server upgrade")
 
-    def get_mysql_version(self) -> Optional[str]:
+    def get_mysql_version(self) -> str | None:
         """Get the running mysqld version."""
         logger.debug("Getting InnoDB version")
 
@@ -2763,7 +2759,7 @@ class MySQLBase(ABC):
             raise MySQLCheckUserExistenceError
 
     @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_fixed(GET_MEMBER_STATE_TIME))
-    def get_member_state(self) -> Tuple[str, str]:
+    def get_member_state(self) -> tuple[str, str]:
         """Get member status (MEMBER_STATE, MEMBER_ROLE) in the cluster."""
         member_state_query = (
             "SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid"
@@ -2831,17 +2827,17 @@ class MySQLBase(ABC):
 
         return int(completed_matches.group(1)) < int(estimated_matches.group(1))
 
-    def is_cluster_replica(self, from_instance: Optional[str] = None) -> Optional[bool]:
+    def is_cluster_replica(self, from_instance: str | None = None) -> bool | None:
         """Check if this cluster is a replica in a cluster set."""
-        cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
+        cs_status = self.get_cluster_set_status(from_instance=from_instance, extended=0)
         if not cs_status:
             return
 
         return cs_status["clusters"][self.cluster_name.lower()]["clusterrole"] == "replica"
 
-    def get_cluster_set_name(self, from_instance: Optional[str] = None) -> Optional[str]:
+    def get_cluster_set_name(self, from_instance: str | None = None) -> str | None:
         """Get cluster set name."""
-        cs_status = self.get_cluster_set_status(extended=0, from_instance=from_instance)
+        cs_status = self.get_cluster_set_status(from_instance=from_instance, extended=0)
         if not cs_status:
             return None
 
@@ -2887,8 +2883,7 @@ class MySQLBase(ABC):
         """
         force_quorum_command = (
             f"cluster = dba.get_cluster('{self.cluster_name}')",
-            f"cluster.force_quorum_using_partition_of('{self.server_config_user}:"
-            f"{self.server_config_password}@{self.instance_def(self.server_config_user)}')",
+            "cluster.force_quorum_using_partition_of()",
         )
 
         try:
@@ -2994,7 +2989,7 @@ class MySQLBase(ABC):
 
     def get_innodb_buffer_pool_parameters(
         self, available_memory: int
-    ) -> Tuple[int, Optional[int], Optional[int]]:
+    ) -> tuple[int, int | None, int | None]:
         """Calculate innodb buffer pool parameters for the instance."""
         # Reference: based off xtradb-cluster-operator
         # https://github.com/percona/percona-xtradb-cluster-operator/blob/main/pkg/pxc/app/config/autotune.go#L31-L54
@@ -3058,16 +3053,16 @@ class MySQLBase(ABC):
     def execute_backup_commands(
         self,
         s3_path: str,
-        s3_parameters: Dict[str, str],
+        s3_parameters: dict[str, str],
         xtrabackup_location: str,
         xbcloud_location: str,
         xtrabackup_plugin_dir: str,
         mysqld_socket_file: str,
         tmp_base_directory: str,
         defaults_config_file: str,
-        user: Optional[str] = None,
-        group: Optional[str] = None,
-    ) -> Tuple[str, str]:
+        user: str | None = None,
+        group: str | None = None,
+    ) -> tuple[str, str]:
         """Executes commands to create a backup with the given args."""
         nproc_command = ["nproc"]
         make_temp_dir_command = f"mktemp --directory {tmp_base_directory}/xtra_backup_XXXX".split()
@@ -3143,8 +3138,8 @@ class MySQLBase(ABC):
     def delete_temp_backup_directory(
         self,
         tmp_base_directory: str,
-        user: Optional[str] = None,
-        group: Optional[str] = None,
+        user: str | None = None,
+        group: str | None = None,
     ) -> None:
         """Delete the temp backup directory."""
         delete_temp_dir_command = f"find {tmp_base_directory} -wholename {tmp_base_directory}/xtra_backup_* -delete".split()
@@ -3169,13 +3164,13 @@ class MySQLBase(ABC):
     def retrieve_backup_with_xbcloud(
         self,
         backup_id: str,
-        s3_parameters: Dict[str, str],
+        s3_parameters: dict[str, str],
         temp_restore_directory: str,
         xbcloud_location: str,
         xbstream_location: str,
-        user: Optional[str] = None,
-        group: Optional[str] = None,
-    ) -> Tuple[str, str, str]:
+        user: str | None = None,
+        group: str | None = None,
+    ) -> tuple[str, str, str]:
         """Retrieve the specified backup from S3."""
         nproc_command = ["nproc"]
         make_temp_dir_command = (
@@ -3240,9 +3235,9 @@ class MySQLBase(ABC):
         backup_location: str,
         xtrabackup_location: str,
         xtrabackup_plugin_dir: str,
-        user: Optional[str] = None,
-        group: Optional[str] = None,
-    ) -> Tuple[str, str]:
+        user: str | None = None,
+        group: str | None = None,
+    ) -> tuple[str, str]:
         """Prepare the backup in the provided dir for restore."""
         try:
             innodb_buffer_pool_size, _, _ = self.get_innodb_buffer_pool_parameters(
@@ -3281,8 +3276,8 @@ class MySQLBase(ABC):
     def empty_data_files(
         self,
         mysql_data_directory: str,
-        user: Optional[str] = None,
-        group: Optional[str] = None,
+        user: str | None = None,
+        group: str | None = None,
     ) -> None:
         """Empty the mysql data directory in preparation of backup restore."""
         empty_data_files_command = [
@@ -3318,9 +3313,9 @@ class MySQLBase(ABC):
         defaults_config_file: str,
         mysql_data_directory: str,
         xtrabackup_plugin_directory: str,
-        user: Optional[str] = None,
-        group: Optional[str] = None,
-    ) -> Tuple[str, str]:
+        user: str | None = None,
+        group: str | None = None,
+    ) -> tuple[str, str]:
         """Restore the provided prepared backup."""
         restore_backup_command = [
             xtrabackup_location,
@@ -3354,11 +3349,11 @@ class MySQLBase(ABC):
         host: str,
         mysql_user: str,
         password: str,
-        s3_parameters: Dict[str, str],
+        s3_parameters: dict[str, str],
         restore_to_time: str,
         user: str | None = None,
         group: str | None = None,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Run point-in-time-recovery using binary logs from the S3 repository.
 
         Args:
@@ -3405,8 +3400,8 @@ class MySQLBase(ABC):
     def delete_temp_restore_directory(
         self,
         temp_restore_directory: str,
-        user: Optional[str] = None,
-        group: Optional[str] = None,
+        user: str | None = None,
+        group: str | None = None,
     ) -> None:
         """Delete the temp restore directory from the mysql data directory."""
         logger.info(f"Deleting temp restore directory in {temp_restore_directory}")
@@ -3434,13 +3429,13 @@ class MySQLBase(ABC):
     @abstractmethod
     def _execute_commands(
         self,
-        commands: List[str],
+        commands: list[str],
         bash: bool = False,
-        user: Optional[str] = None,
-        group: Optional[str] = None,
-        env_extra: Dict = {},
-        stream_output: Optional[str] = None,
-    ) -> Tuple[str, str]:
+        user: str | None = None,
+        group: str | None = None,
+        env_extra: dict = {},
+        stream_output: str | None = None,
+    ) -> tuple[str, str]:
         """Execute commands on the server where MySQL is running."""
         raise NotImplementedError
 
@@ -3539,7 +3534,7 @@ class MySQLBase(ABC):
                 logger.error("Failed to connect to MySQL with mysqlcli with default root user")
                 return False
 
-    def get_pid_of_port_3306(self) -> Optional[str]:
+    def get_pid_of_port_3306(self) -> str | None:
         """Retrieves the PID of the process that is bound to port 3306."""
         get_pid_command = ["fuser", "3306/tcp"]
 
@@ -3549,7 +3544,7 @@ class MySQLBase(ABC):
         except MySQLExecError:
             return None
 
-    def flush_mysql_logs(self, logs_type: Union[MySQLTextLogs, list[MySQLTextLogs]]) -> None:
+    def flush_mysql_logs(self, logs_type: MySQLTextLogs | list[MySQLTextLogs]) -> None:
         """Flushes the specified logs_type logs."""
         flush_logs_commands = [
             'session.run_sql("SET sql_log_bin = 0")',
@@ -3605,7 +3600,7 @@ class MySQLBase(ABC):
             "sys",
         }
 
-    def strip_off_passwords(self, input_string: Optional[str]) -> str:
+    def strip_off_passwords(self, input_string: str | None) -> str:
         """Strips off passwords from the input string."""
         if not input_string:
             return ""
@@ -3705,7 +3700,7 @@ class MySQLBase(ABC):
         user: str,
         host: str,
         password: str,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         exception_as_warning: bool = False,
     ) -> str:
         """Execute a MySQL shell script.
@@ -3728,10 +3723,10 @@ class MySQLBase(ABC):
     @abstractmethod
     def _run_mysqlcli_script(
         self,
-        script: Union[Tuple[Any, ...], List[Any]],
+        script: tuple[Any, ...] | list[Any],
         user: str = "root",
-        password: Optional[str] = None,
-        timeout: Optional[int] = None,
+        password: str | None = None,
+        timeout: int | None = None,
         exception_as_warning: bool = False,
         log_errors: bool = False,
     ) -> list:
