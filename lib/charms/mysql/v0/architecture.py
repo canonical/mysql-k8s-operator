@@ -81,8 +81,10 @@ def is_wrong_architecture() -> bool:
         manifest_archs.extend(base_archs)
 
     hardware_arch = platform.machine()
-    if ("amd64" in manifest_archs and hardware_arch == "x86_64") or (
-        "arm64" in manifest_archs and hardware_arch == "aarch64"
+    if (
+        ("amd64" in manifest_archs and hardware_arch == "x86_64")
+        or ("arm64" in manifest_archs and hardware_arch == "aarch64")
+        or ("s390x" in manifest_archs and hardware_arch == "s390x")
     ):
         logger.debug("Charm architecture matches")
         return False

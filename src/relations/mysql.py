@@ -212,7 +212,7 @@ class MySQLRelation(Object):
         if (
             not self.charm._is_peer_data_set
             or not self.charm.unit_initialized()
-            or self.charm.unit_peer_data.get("member-state") != "online"
+            or not self.charm.unit_peer_data.get("member-state") == "online"
         ):
             logger.info("Unit not ready to execute `mysql` relation created. Deferring")
             event.defer()
