@@ -1,0 +1,183 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:57 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+  mysql-k8s/2 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] maintenance: installing charm software
+  mysql-k8s/1 [idle] maintenance: installing charm software
+  mysql-k8s/2 [idle] maintenance: installing charm software
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [executing] active: Primary
+  mysql-k8s/2 [idle] maintenance: joining the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: joining the cluster
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [executing] active: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:60 Deploying mysql-test-app
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/mysql-test-app-82
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:63 Relating mysql-k8s with mysql-test-app
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: Primary
+  mysql-k8s/2 [idle] active: 
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m integration.conftest:conftest.py:30 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_self_healing_process_frozen:test_self_healing_process_frozen.py:40 Ensuring that all units continuous writes incrementing
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=22 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=55 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=55 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=87 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=87 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=120 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_self_healing_process_frozen:test_self_healing_process_frozen.py:51 Sending SIGSTOP to unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.test_self_healing_process_frozen:test_self_healing_process_frozen.py:74 Waiting for new primary to be elected
+[32mINFO    [0m integration.high_availability.test_self_healing_process_frozen:test_self_healing_process_frozen.py:88 Ensuring all remaining units continuous writes incrementing
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=349 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=382 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=382 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=414 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_self_healing_process_frozen:test_self_healing_process_frozen.py:97 Sending SIGCONT to mysql-k8s/1
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/1 [executing] maintenance: Unable to get member state
+  mysql-k8s/2 [executing] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] maintenance: recovering
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] maintenance: recovering
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m integration.high_availability.test_self_healing_process_frozen:test_self_healing_process_frozen.py:140 Ensuring that there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing_process_frozen:test_self_healing_process_frozen.py:145 Ensure all units continuous writes incrementing
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=758 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=790 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=790 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=823 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=823 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=856 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.8    unsupported  01:43:53Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.42-0ubuntu0.22.04.2  active      3  mysql-k8s                      0  10.152.183.31   no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   82  10.152.183.183  no       Last written value=812
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0        active    idle   10.1.52.203         Primary
+mysql-k8s/1*       active    idle   10.1.52.205         
+mysql-k8s/2        active    idle   10.1.52.204         
+mysql-test-app/0*  active    idle   10.1.52.206         Last written value=812
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:37:30 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1766, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1727, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (timed out after 10s: context deadline exceeded)
+----- Logs from task 0 -----
+2025-08-12T01:37:30Z ERROR timed out after 10s: context deadline exceeded
+-----
+unit-mysql-k8s-1: 01:37:30 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:37:51 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1766, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1727, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (timed out after 10s: context deadline exceeded)
+----- Logs from task 0 -----
+2025-08-12T01:37:51Z ERROR timed out after 10s: context deadline exceeded
+-----
+unit-mysql-k8s-1: 01:37:51 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:11 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1766, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1727, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (timed out after 10s: context deadline exceeded)
+----- Logs from task 0 -----
+2025-08-12T01:38:11Z ERROR timed out after 10s: context deadline exceeded
+-----
+unit-mysql-k8s-1: 01:38:11 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:11 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+unit-mysql-k8s-1: 01:38:21 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1766, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1727, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (timed out after 10s: context deadline exceeded)
+----- Logs from task 0 -----
+2025-08-12T01:38:21Z ERROR timed out after 10s: context deadline exceeded
+-----
+unit-mysql-k8s-1: 01:38:21 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:38:41 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1766, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1727, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (timed out after 10s: context deadline exceeded)
+----- Logs from task 0 -----
+2025-08-12T01:38:41Z ERROR timed out after 10s: context deadline exceeded
+-----
+unit-mysql-k8s-1: 01:38:41 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:39:01 ERROR unit.mysql-k8s/1.juju-log Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 773, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1766, in wait_output
+    exit_code: int = self._wait()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1727, in _wait
+    raise ChangeError(change.err, change)
+ops.pebble.ChangeError: cannot perform the following tasks:
+- Execute command "/usr/bin/mysql" (timed out after 10s: context deadline exceeded)
+----- Logs from task 0 -----
+2025-08-12T01:39:01Z ERROR timed out after 10s: context deadline exceeded
+-----
+unit-mysql-k8s-1: 01:39:01 ERROR unit.mysql-k8s/1.juju-log Failed to get member state: mysqld daemon is down
+unit-mysql-k8s-1: 01:39:01 ERROR unit.mysql-k8s/1.juju-log Error getting member state while checking if cluster is blocked
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
