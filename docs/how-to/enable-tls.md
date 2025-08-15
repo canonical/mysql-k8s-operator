@@ -1,10 +1,10 @@
-# How to enable encryption
+# How to enable TLS encryption
 
 <!-- Update and move to explanation
 MySQL will enable encrypted connections by default with self generated certificates. Though also by default, connecting clients can disable encryption by setting the connection ssl-mode as disabled.
 When related with the `tls-certificates-operator` the charmed operator for MySQL will require that every client connection (new and running connections) use encryption, rendering an error when attempting to establish an unencrypted connection.--->
 
-This guide will show how to enable TLS using the [`self-signed-certificates` operator](https://github.com/canonical/self-signed-certificates-operator) as an example.
+This guide describes how to enable TLS using the [`self-signed-certificates` operator](https://github.com/canonical/self-signed-certificates-operator) as an example.
 
 ```{caution}
 **[Self-signed certificates](https://en.wikipedia.org/wiki/Self-signed_certificate) are not recommended for a production environment.**
@@ -12,7 +12,6 @@ This guide will show how to enable TLS using the [`self-signed-certificates` ope
 Check [this guide](https://discourse.charmhub.io/t/11664) for an overview of the TLS certificates charms available. 
 ```
 
----
 ## Enable TLS
 
 First, deploy the TLS charm:

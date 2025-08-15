@@ -1,5 +1,4 @@
-
-# Deploy Async replication
+# Deploy async replication
 
 The following table shows the source and target controller/model combinations that are currently supported:
 
@@ -24,30 +23,33 @@ juju deploy mysql-k8s db2 --trust --channel=8.0/edge --config profile=testing --
 ```
 
 ```{note}
-**Note**: Remove profile configuration for production deployments. For more information, see our documentation about [Profiles](https://charmhub.io/mysql-k8s/docs/r-profiles).
+Remove profile configuration for production deployments. For more information, see our documentation about [Profiles](https://charmhub.io/mysql-k8s/docs/r-profiles).
 ```
 
 ## Offer
 
-
 Offer asynchronous replication on the Primary cluster (Rome):
+
 ```shell
 juju switch rome
 juju offer db1:replication-offer replication-offer
 ```
 
 (Optional) Offer asynchronous replication on StandBy cluster (Lisbon), for the future:
+
 ```shell
 juju switch lisbon
 juju offer db2:replication-offer replication-offer
 ``` 
 
 ## Consume
+
 ```{caution}
 [Juju unit scaling](/how-to/scale-replicas) is not expected to work during the asynchronous replication setup (between `integrate replication-offer` and `create-replication` calls).
 ```
 
 Consume asynchronous replication on planned `StandBy` cluster (Lisbon):
+
 ```shell
 juju switch lisbon
 juju consume rome.replication-offer
@@ -64,6 +66,7 @@ juju run db1/leader create-replication
 ```
 
 (Optional) Consume asynchronous replication on the current `Primary` (Rome), for the future:
+
 ```shell
 juju switch rome
 juju consume lisbon.replication-offer
@@ -72,6 +75,7 @@ juju consume lisbon.replication-offer
 ## Status
 
 Run the `get-cluster-status` action with the `cluster-set=True`flag: 
+
 ```shell
 juju run -m rome db1/0 get-cluster-status cluster-set=True
 ```
@@ -96,7 +100,9 @@ success: "True"
 ```
 
 ## Scaling
+
 The two clusters works independently, this means that it's possible to independently scaling in/out each cluster without much hassle, e.g.:
+
 ```shell
 juju scale-application db1 3 -m rome
 

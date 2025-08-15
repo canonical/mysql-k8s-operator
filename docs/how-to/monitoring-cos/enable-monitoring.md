@@ -1,17 +1,26 @@
 # How to enable monitoring (COS)
 
+This guide will show you how to deploy and configure the [COS Lite bundle](https://charmhub.io/cos-lite) to monitor your deployment with Grafana.
+
 ## Prerequisites
-* [Have a Charmed MySQL K8s deployed](/tutorial/index)
-* [Deploy `cos-lite` bundle in a Kubernetes environment](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
+
+* `cos-lite` bundle deployed in a Kubernetes environment
+  * See the [COS Microk8s tutorial](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
+
+---
 
 ## Offer interfaces via the COS controller
+
 Switch to COS K8s environment and offer COS interfaces to be cross-model related with Charmed MySQL K8s model.
 
-To switch to the Kubernetes controller, for the cos model, run
+To switch to the Kubernetes controller for the COS model, run
+
 ```shell
 juju switch <k8s_cos_controller>:<cos_model_name>
 ```
+
 To offer the COS interfaces, run
+
 ```shell
 juju offer grafana:grafana-dashboard
 juju offer loki:logging
@@ -19,18 +28,23 @@ juju offer prometheus:receive-remote-write
 ```
 
 ## Consume offers via the MySQL model
+
 Next, we will switch to Charmed MySQL K8s model, find offers and consume them.
 
 We are on the Kubernetes controller for the COS model. To switch to the MySQL model, run
+
 ```shell
 juju switch <k8s_db_controller>:<mysql_model_name>
 ```
-To find offers, run the following command (make sure not to miss the ":" at the end!):
+
+To find offers, run the following command (make sure not to miss the colon `:` at the end!):
+
 ```shell
 juju find-offers <k8s_cos_controller>:
 ```
 
-A similar output should appear, if `k8s` is the k8s controller name and `cos` the model where `cos-lite` has been deployed:
+A similar output should appear, where `k8s` is the k8s controller name and `cos` the model where `cos-lite` has been deployed:
+
 ```shell
 Store  URL                    Access  Interfaces
 k8s    admin/cos:grafana      admin   grafana:grafana-dashboard
@@ -40,6 +54,7 @@ k8s    admin/cos.prometheus   admin   prometheus:receive-remote-write
 ```
 
 Consume offers to be reachable in the current model:
+
 ```shell
 juju consume k8s:admin/cos.grafana
 juju consume k8s:admin/cos.loki
@@ -47,11 +62,15 @@ juju consume k8s:admin/cos.prometheus
 ```
 
 ## Deploy and integrate Grafana
+
 First, deploy [grafana-agent-k8s](https://charmhub.io/grafana-agent-k8s):
+
 ```shell
 juju deploy grafana-agent-k8s --trust
 ```
+
 Then, integrate (relate) it with Charmed MySQL K8s:
+
 ```shell
 juju relate grafana-agent-k8s grafana
 juju relate grafana-agent-k8s loki
@@ -59,6 +78,7 @@ juju relate grafana-agent-k8s prometheus
 ```
 
 Finally, integrate (relate) `grafana-agent-k8s` with consumed COS offers:
+
 ```shell
 juju relate grafana-agent-k8s mysql-k8s:grafana-dashboard
 juju relate grafana-agent-k8s mysql-k8s:logging
@@ -67,8 +87,10 @@ juju relate grafana-agent-k8s mysql-k8s:metrics-endpoint
 
 After this is complete, Grafana will show the new dashboards: `MySQL Exporter` and allows access for Charmed MySQL logs on Loki.
 
-### Sample outputs
-The example of `juju status` on Charmed MySQL K8s model:
+### Example `juju status` outputs
+
+````{dropdown} Charmed MySQL K8s model
+
 ```shell
 Model  Controller   Cloud/Region        Version  SLA          Timestamp
 mysql  charmed-dev  microk8s/localhost  3.1.6    unsupported  02:20:09+02:00
@@ -85,7 +107,10 @@ Unit          Workload  Agent  Address      Ports  Message
 mysql-k8s/0*  active    idle   10.1.84.116         Primary
 ```
 
-The example of `juju status` on COS K8s model:
+````
+
+````{dropdown} COS K8s model
+
 ```shell
 Model  Controller   Cloud/Region        Version  SLA          Timestamp
 cos    charmed-dev  microk8s/localhost  3.1.6    unsupported  02:20:11+02:00
@@ -112,12 +137,17 @@ loki        loki         loki-k8s        60   1/1        logging               l
 prometheus  prometheus   prometheus-k8s  103  1/1        receive-remote-write  prometheus_scrape        requirer
 ```
 
-### Connect Grafana web interface
-To connect Grafana web interface, follow the COS section "[Browse dashboards](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)":
+````
+
+## Connect to the Grafana web interface
+
+To connect the Grafana web interface, follow the [Browse dashboards](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)" section of the COS MicroK8s tutorial:
+
 ```shell
 juju run grafana/leader get-admin-password --model <k8s_controller>:<cos_model_name>
 ```
----
+
+## Full example of COS integration
 
 [![asciicast](https://asciinema.org/a/580608.svg)](https://asciinema.org/a/580608)
 

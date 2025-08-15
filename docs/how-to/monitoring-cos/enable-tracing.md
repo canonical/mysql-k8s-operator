@@ -2,25 +2,17 @@
 
 This guide contains the steps to enable tracing with [Grafana Tempo](https://grafana.com/docs/tempo/latest/) for your MySQL K8s application. 
 
-To summarize:
-* [Deploy the Tempo charms and their dependencies in a COS K8s environment](#deploy-tempo)
-* [Offer interfaces for cross-model integrations](#offer-interfaces)
-* [Consume and integrate cross-model integrations](#consume-interfaces)
-* [View MySQL K8s traces on Grafana](#view-traces)
-
-
 ```{caution}
 This is feature is in development. It is **not recommended** for production environments. 
-
-This feature is available for Charmed MySQL K8s revision 146+ only.
 ```
 
 ## Prerequisites
-Enabling tracing with Tempo requires that you:
-- Have deployed a Charmed MySQL K8s application
-  - See [How to manage units](https://discourse.charmhub.io/t/charmed-mysql-k8s-how-to-manage-units/9659)
-- Have deployed a 'cos-lite' bundle in a Kubernetes environment
-  - See [Getting started on MicroK8s](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
+
+* Charmed MySQL K8s revision 146 or higher 
+  * See [](/how-to/upgrade/index)
+* `cos-lite` bundle deployed in a Kubernetes environment
+  * See the [COS Microk8s tutorial](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
+
 
 ---
 
@@ -32,7 +24,9 @@ First, switch to the Kubernetes controller where the COS model is deployed:
 juju switch <k8s_controller_name>:<cos_model_name>
 ```
 
-Then, deploy the dependencies of Tempo following [this tutorial](https://discourse.charmhub.io/t/tutorial-deploy-tempo-ha-on-top-of-cos-lite/15489). In particular, we would want to:
+Then, deploy the dependencies of Tempo following [this tutorial](https://discourse.charmhub.io/t/tutorial-deploy-tempo-ha-on-top-of-cos-lite/15489). 
+
+To summarize:
 - Deploy the MinIO charm
 - Deploy the s3 integrator charm
 - Add a bucket in MinIO using a python script
@@ -58,7 +52,7 @@ juju switch <k8s_controller_name>:<mysql_model_name>
 
 juju find-offers <k8s_controller_name>:  
 ```
-> :exclamation: Do not miss the "`:`" in the command above.
+> Do not miss the "`:`" in the command above!
 
 Below is a sample output where `k8s` is the K8s controller name and `cos` is the model where `cos-lite` and `tempo-k8s` are deployed:
 
@@ -121,16 +115,19 @@ tempo:tracing                       grafana-agent-k8s:tracing  tracing          
 ```
 
 ```{note}
-**Note:** All traces are exported to Tempo using HTTP. Support for sending traces via HTTPS is an upcoming feature.
+All traces are exported to Tempo using HTTP. Support for sending traces via HTTPS is an upcoming feature.
 ```
 
 ## View traces
 
-After this is complete, the Tempo traces will be accessible from Grafana under the `Explore` section with `tempo-k8s` as the data source. You will be able to select `mysql-k8s` as the `Service Name` under the `Search` tab to view traces belonging to Charmed MySQL.
+The Tempo traces will be accessible from Grafana under the `Explore` section with `tempo-k8s` as the data source. You will be able to select `mysql-k8s` as the `Service Name` under the `Search` tab to view traces belonging to Charmed MySQL.
 
-Below is a screenshot demonstrating a Charmed MySQL trace:
+<details><summary>Screenshot of a Charmed MySQL K8s trace
+</summary>
 
-![Example MySQL K8s trace with Grafana Tempo|690x382](upload://g5fWq9uz5UM2XXQFTPdeLLSeQHA.jpeg)
+![MySQL K8s trace with Grafana Tempo](mysql-k8s-trace.jpeg)
+</details>
+
 
 Feel free to read through the [Tempo HA documentation](https://discourse.charmhub.io/t/charmed-tempo-ha/15531) at your leisure to explore its deployment and its integrations.
 

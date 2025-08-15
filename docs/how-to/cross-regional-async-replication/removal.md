@@ -1,20 +1,19 @@
+# Removal
 
-# Removal of Async replication
+## Pre-requisites
 
-## Pre-requisits
-
-Make sure both `Rome` and `Lisbon` Clusters are deployed using the [Async Deployment manual](/how-to/cross-regional-async-replication/deploy)!
+Make sure both `Rome` and `Lisbon` clusters are deployed following the [async deployment guide](/how-to/cross-regional-async-replication/deploy).
 
 ## Detach Cluster from ClusterSet
 
-> **Note**: It is important to [switchover](/how-to/cross-regional-async-replication/switchover-failover) the `Primary` Cluster before detaching it from ClusterSet!
+```{important} 
+It is important to [switchover](/how-to/cross-regional-async-replication/switchover-failover) the `Primary` cluster before detaching it from ClusterSet!
+```
 
 Assuming the `Lisbon` is a current `Primary` and we want to detach `Rome` (for removal or reuse):
 
 ```shell
-
 juju remove-relation replication-offer db2:replication
-
 ```
 
 The command above will move cluster `Rome` into the detached state `blocked` keeping all the data in place.
@@ -28,25 +27,18 @@ From this points, there are three options, as described in the following section
 At this stage, the detached/blocked cluster `Rome` can re-join the previous ClusterSet by restoring async integration/relation:
 
 ```shell
-
 juju switch rome
-
 juju integrate replication-offer db1:replication
-
 juju switch lisbon
-
 juju run db2/leader create-replication
-
 ```
 
-## Removing detached cluster
+## Remove detached cluster
 
 Remove no-longer necessary Cluster `Rome` (and destroy storage if Rome data is no longer necessary):
 
 ```shell
-
 juju remove-application db1 # --destroy-storage
-
 ```
 
 ## New ClusterSet from detached Cluster
@@ -54,8 +46,6 @@ juju remove-application db1 # --destroy-storage
 Convert `Rome` to the new Cluster/ClusterSet keeping the current data in use:
 
 ```shell
-
 juju run -m rome db1/leader recreate-cluster
-
 ```
 

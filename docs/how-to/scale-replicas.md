@@ -1,4 +1,4 @@
-# How to scale units
+# How to scale replicas (units)
 
 Replication in MySQL is the process of creating copies of the stored data. This provides redundancy, which means the application can provide self-healing capabilities in case one replica fails. In this context, each replica is equivalent to one juju unit.
 
@@ -10,15 +10,19 @@ To deploy MySQL K8s with multiple replicas, specify the number of desired units 
 ```shell
 juju deploy mysql-k8s --channel 8.0 --trust -n <number_of_replicas>
 ```
-> It is recommended to use an odd number to prevent a [split-brain](https://en.wikipedia.org/wiki/Split-brain_(computing)) scenario.
 
-### Primary vs. leader unit 
+```{tip}
+It is recommended to use an odd number to prevent a [split-brain](https://en.wikipedia.org/wiki/Split-brain_(computing)) scenario.
+```
 
-The MySQL primary server unit may or may not be the same as the [juju leader unit](https://juju.is/docs/juju/leader).
+### Primary vs. leader unit
+
+The MySQL primary server unit is not always the same as the [juju leader unit](https://juju.is/docs/juju/leader).
 
 The juju leader unit is the represented in `juju status` by an asterisk (*) next to its name. 
 
 To retrieve the juju unit that corresponds to the MySQL K8s primary, use the action `get-primary` on any of the units running ` mysql-k8s`:
+
 ```shell
 juju run mysql-k8s/leader get-primary
 ```
@@ -40,7 +44,7 @@ Both scaling-up and scaling-down operations are performed using `juju scale-appl
 juju scale-application mysql-k8s <total number of units>
 ```
 
-```{warning}
+```{attention}
 Do not remove the last unit, it will destroy your data!
 ```
 
