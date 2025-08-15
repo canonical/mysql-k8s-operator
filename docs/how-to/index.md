@@ -21,6 +21,7 @@ Deploy <deploy/index>
 
 Integrate with another application <integrate-with-another-application>
 Scale replicas <scale-replicas>
+Manage passwords <manage-passwords>
 Enable TLS <enable-tls>
 External network access <external-network-access>
 ```
