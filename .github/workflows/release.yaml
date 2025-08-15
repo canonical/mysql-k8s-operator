@@ -10,7 +10,6 @@ on:
       - 'docs/**'
       - '.github/renovate.json5'
       - '.github/workflows/check_libs.yaml'
-      - '.github/workflows/sync_docs.yaml'
 
 jobs:
   lib-check:

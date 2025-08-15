@@ -230,7 +230,9 @@ linkcheck_ignore = [
     "http://127.0.0.1:8000",
     "https://github.com/canonical/ACME/*",
     "https://matrix.to/*",
-    "https://portal.azure.com/#browse/Microsoft.Compute/VirtualMachines"
+    "https://portal.azure.com/*",
+    "https://dev.mysql.com/*",
+    "https://www.mysql.com/*"
     ]
 
 # A regex list of URLs where anchors are ignored by 'make linkcheck'
