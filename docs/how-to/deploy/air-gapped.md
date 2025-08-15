@@ -1,7 +1,7 @@
 # Deploy in an offline or air-gapped environment
 
 An air-gapped environment refers to a system that does not have access to the public internet.
-This guide goes through the special configuration steps for installing Charmed PostgreSQL k8s in an air-gapped environment.
+This guide goes through the special configuration steps for installing Charmed MySQL k8s in an air-gapped environment.
 
 ## Requirements
 

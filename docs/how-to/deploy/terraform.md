@@ -93,7 +93,7 @@ Continue to operate the charm as usual from here or apply further Terraform chan
 
 ## Clean up
 
-To keep the house clean, remove the newly deployed Charmed PostgreSQL by running
+To keep the house clean, remove the newly deployed Charmed MySQL K8s by running
 ```shell
 terraform destroy -var "juju_model_name=my-model"
 ```
