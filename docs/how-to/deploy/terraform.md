@@ -12,7 +12,7 @@ For an in-depth introduction to the Juju Terraform Provider, read [this Discours
 
 ## Install Terraform tooling
 
-This guide assumes Juju is installed and you have a K8s controller already bootstrapped. For more information, check the [Set up the environment](/tutorial/1-set-up-the-environment) tutorial page.
+This guide assumes Juju is installed and you have a K8s controller already bootstrapped. For more information, check the [Charmed MySQL K8s tutorial](/tutorial/index).
 
 Let's install Terraform Provider and example modules:
 ```shell

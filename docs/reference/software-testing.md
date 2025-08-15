@@ -1,6 +1,3 @@
-
-
-
 # Charm Testing reference
 
 There are [a lot of test types](https://en.wikipedia.org/wiki/Software_testing) available and most of them are well applicable for Charmed MySQL K8s. Here is a list prepared by Canonical:
@@ -11,15 +8,14 @@ There are [a lot of test types](https://en.wikipedia.org/wiki/Software_testing) 
 * System test
 * Performance test
 
-**:information_source: Note:** below examples are written for Juju 3.x, but Juju 2.9 is [supported](/reference/system-requirements) as well.<br/>Please adopt the `juju run ...` commands as `juju run-action ... --wait` for Juju 2.9.
-
 ## Smoke test
 
-[u]Complexity[/u]: trivial<br/>
-[u]Speed[/u]: fast<br/>
-[u]Goal[/u]: ensure basic functionality works over short amount of time.
+Complexity: trivial<br/>
+Speed: fast<br/>
+Goal: ensure basic functionality works over short amount of time.
 
-[Setup an Juju 3.x environment](/tutorial/1-set-up-the-environment), deploy DB with test application and start "continuous write" test:
+Create a Juju model for testing, deploy a database with a test application and start the "continuous write" test:
+
 ```shell
 juju add-model smoke-test
 
@@ -39,12 +35,12 @@ watch -n1 -x juju ssh --container mysql mysql-k8s/leader "mysql -h 127.0.0.1 -ur
 
 # Watch the counter is growing!
 ```
-[u]Expected results[/u]:
+Expected results:
 
 * mysql-test-app continuously inserts records in database `continuous_writes_database` table `data`.
 * the counters (amount of records in table) are growing on all cluster members
 
-[u]Hints[/u]:
+Hints:
 ```shell
 # Stop "continuous write" test
 juju run mysql-test-app/leader stop-continuous-writes

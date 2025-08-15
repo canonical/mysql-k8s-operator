@@ -44,7 +44,7 @@ juju offer db2:replication-offer replication-offer
 
 ## Consume
 ```{caution}
-**Warning**: [Juju unit scaling](/tutorial/3-scale-replicas) is not expected to work during the asynchronous replication setup (between `integrate replication-offer` and `create-replication` calls).
+[Juju unit scaling](/how-to/scale-replicas) is not expected to work during the asynchronous replication setup (between `integrate replication-offer` and `create-replication` calls).
 ```
 
 Consume asynchronous replication on planned `StandBy` cluster (Lisbon):

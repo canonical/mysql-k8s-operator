@@ -159,7 +159,7 @@ username: root
 Continue troubleshooting your DB/SQL related issues from here.<br/>
 > :warning: **WARNING**: please do NOT manage users, credentials, databases, schema directly to avoid a split bran situation with the operator and/or related (integrated) applications.
 
-It is NOT recommended to restart services directly as it might create a split brain situation with operator internal state. If you see the problem with a unit, consider to [scale-down and re-scale-up](/tutorial/3-scale-replicas) to recover the cluster state.
+It is NOT recommended to restart services directly as it might create a split brain situation with operator internal state. If you see the problem with a unit, consider to [scale-down and re-scale-up](/how-to/scale-replicas) to recover the cluster state.
 
 As a last resort, [contact us](/reference/contacts) If you cannot determinate the source of your issue.
 Also, feel free to improve this document!

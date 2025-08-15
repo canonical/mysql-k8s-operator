@@ -65,6 +65,3 @@ mysql-k8s   8.0.37-0ubuntu0.22.04.3  active      1  mysql-k8s       8.0/stable  
 Unit           Workload  Agent  Address    Ports  Message
 mysql-k8s/0*   active    idle   10.1.0.11         Primary
 ```
-
->**Next steps:** Learn [how to scale your application](/tutorial/3-scale-replicas), [relate with other applications](/tutorial/5-integrate-applications) and [more](/tutorial/index)!
-
