@@ -1,9 +1,10 @@
 # Alert rules
 
-This page contains a markdown version of the alert rules described in the `mysql-k8s-operator` repository.  The following file(s) are the source of truth:
-* [`prometheus_alert_rules/metrics_alert_rules.yaml`](https://github.com/canonical/mysql-k8s-operator/blob/main/src/prometheus_alert_rules/metrics_alert_rules.yaml)
+This page contains a markdown version of the alert rules described in the `mysql-k8s operator` repository. 
 
-> This documentation describes the latest alert rule expressions. See the YAML file(s) on listed above if you require an older version.
+See the source of truth on GitHub for the latest information, or an older version:
+
+[`prometheus_alert_rules/metrics_alert_rules.yaml`](https://github.com/canonical/mysql-k8s-operator/blob/main/src/prometheus_alert_rules/metrics_alert_rules.yaml)
 
 ## MySQLExporterK8s
 

@@ -24,7 +24,10 @@ If you would like to chat with us about your use-cases or proposed implementatio
 
 ## Contribute to the documentation
 
-There are several ways to contribute to the documentation:
-* Writing a comment on Discourse
-* Submitting an [issue](https://github.com/canonical/mysql-k8s-operator/issues) on GitHub with the `documentation` label
+We strongly rely on community feedback to improve our documentation, and would love to hear from you. 
+
+There are a few ways to do this:
+* Use the "Give feedback" button at the top of the page, or open an [issue](https://github.com/canonical/mysql-k8s-operator/issues) on GitHub directly.
+* Post a new topic in the [Charmhub Discourse forum](https://discourse.charmhub.io/tags/c/charm/41/mysql) - make sure to use the `mysql` tag. 
+* Reach out via our [Matrix channel](https://matrix.to/#/#charmhub-data-platform:ubuntu.com)
 

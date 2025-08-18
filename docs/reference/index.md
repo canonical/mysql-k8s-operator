@@ -13,7 +13,7 @@ Plugins/extensions <plugins-extensions>
 Alert rules <alert-rules>
 Charm statuses <charm-statuses>
 Software testing <software-testing>
-Troubleshooting <troubleshooting>
+Troubleshooting <troubleshooting/index>
 Contacts <contacts>
 ```
 
