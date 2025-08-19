@@ -3,7 +3,6 @@
 
 import logging
 import subprocess
-from time import sleep
 from typing import Optional
 
 import pytest
@@ -12,6 +11,8 @@ from jubilant import Juju, all_active
 from ..markers import juju3
 
 CHARM_NAME = "mysql-k8s"
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @juju3
@@ -61,11 +62,21 @@ def test_cluster_failover_after_majority_loss(juju: Juju, highly_available_clust
     logging.info(f"Unit selected for promotion: {unit_to_promote}")
 
     logging.info("Simulate quorum loss")
-    kill_pods(juju, [non_primary_units.pop(), primary_unit])
+    units_to_kill = [non_primary_units.pop(), primary_unit]
+    kill_pods(juju, units_to_kill)
 
-    logging.info("Waiting to allow pod reschedule to take place")
-    sleep(60)
+    juju.model_config({"update-status-hook-interval": "45s"})
+    logging.info("Waiting to settle in error state")
+    juju.wait(
+        lambda status: status.apps[app_name].units[unit_to_promote].workload_status.current
+        == "active"
+        and status.apps[app_name].units[units_to_kill[0]].workload_status.message == "offline"
+        and status.apps[app_name].units[units_to_kill[1]].workload_status.message == "offline",
+        timeout=60 * 15,
+        delay=15,
+    )
 
+    logging.info("Attempting to promote a unit to primary after quorum loss...")
     failover_task = juju.run(
         unit_to_promote,
         "promote-to-primary",
