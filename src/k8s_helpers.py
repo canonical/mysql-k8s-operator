@@ -28,6 +28,11 @@ if typing.TYPE_CHECKING:
     from charm import MySQLOperatorCharm
 
 
+def k8s_domain() -> str:
+    """Return the Kubernetes domain."""
+    return socket.getfqdn("kubernetes.default").split(".svc.")[-1]
+
+
 class KubernetesClientError(Exception):
     """Exception raised when client can't execute."""
 
