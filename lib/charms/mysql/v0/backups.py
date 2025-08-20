@@ -50,7 +50,6 @@ import logging
 import pathlib
 import re
 import typing
-from typing import Dict, List, Optional, Tuple
 
 from charms.data_platform_libs.v0.s3 import (
     CredentialsChangedEvent,
@@ -88,17 +87,16 @@ from charms.mysql.v0.s3_helpers import (
     list_backups_in_s3_path,
     upload_content_to_s3,
 )
-from ops.charm import ActionEvent
-from ops.framework import Object
-from ops.jujuversion import JujuVersion
-from ops.model import BlockedStatus, MaintenanceStatus
-
 from constants import (
     MYSQL_DATA_DIR,
     PEER,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
+from ops.charm import ActionEvent
+from ops.framework import Object
+from ops.jujuversion import JujuVersion
+from ops.model import BlockedStatus, MaintenanceStatus
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +111,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 14
+LIBPATCH = 16
 
 ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE = "S3 repository claimed by another cluster"
 MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
@@ -150,7 +148,7 @@ class MySQLBackups(Object):
         """Returns whether a relation with the s3-integrator exists."""
         return bool(self.model.get_relation(S3_INTEGRATOR_RELATION_NAME))
 
-    def _retrieve_s3_parameters(self) -> Tuple[Dict[str, str], List[str]]:
+    def _retrieve_s3_parameters(self) -> tuple[dict[str, str], list[str]]:
         """Retrieve S3 parameters from the S3 integrator relation.
 
         Returns: tuple of (s3_parameters, missing_required_parameters)
@@ -196,7 +194,7 @@ class MySQLBackups(Object):
         stdout: str,
         stderr: str,
         log_filename: str,
-        s3_parameters: Dict[str, str],
+        s3_parameters: dict[str, str],
     ) -> bool:
         """Upload logs to S3 at the specified location.
 
@@ -219,7 +217,7 @@ class MySQLBackups(Object):
     # ------------------ List Backups ------------------
 
     @staticmethod
-    def _format_backups_list(backup_list: List[Tuple[str, str]]) -> str:
+    def _format_backups_list(backup_list: list[tuple[str, str]]) -> str:
         """Formats the provided list of backups as a table."""
         backups = [f"{'backup-id':<21} | {'backup-type':<12} | backup-status"]
 
@@ -250,9 +248,7 @@ class MySQLBackups(Object):
             event.set_results({"backups": self._format_backups_list(backups)})
         except Exception as e:
             error_message = (
-                getattr(e, "message")
-                if hasattr(e, "message")
-                else "Failed to retrieve backup ids from S3"
+                e.message if hasattr(e, "message") else "Failed to retrieve backup ids from S3"
             )
             logger.error(error_message)
             event.fail(error_message)
@@ -313,7 +309,7 @@ class MySQLBackups(Object):
             f"Model Name: {self.model.name}\n"
             f"Application Name: {self.model.app.name}\n"
             f"Unit Name: {self.charm.unit.name}\n"
-            f"Juju Version: {str(juju_version)}\n"
+            f"Juju Version: {juju_version!s}\n"
         )
 
         if not upload_content_to_s3(metadata, f"{backup_path}.metadata", s3_parameters):
@@ -359,7 +355,7 @@ class MySQLBackups(Object):
         })
         self.charm._on_update_status(None)
 
-    def _can_unit_perform_backup(self) -> Tuple[bool, Optional[str]]:
+    def _can_unit_perform_backup(self) -> tuple[bool, str | None]:
         """Validates whether this unit can perform a backup.
 
         Returns: tuple of (success, error_message)
@@ -390,7 +386,7 @@ class MySQLBackups(Object):
 
         return True, None
 
-    def _pre_backup(self) -> Tuple[bool, Optional[str]]:
+    def _pre_backup(self) -> tuple[bool, str | None]:
         """Runs operations required before performing a backup.
 
         Returns: tuple of (success, error_message)
@@ -415,7 +411,7 @@ class MySQLBackups(Object):
 
         return True, None
 
-    def _backup(self, backup_path: str, s3_parameters: Dict) -> Tuple[bool, Optional[str]]:
+    def _backup(self, backup_path: str, s3_parameters: dict) -> tuple[bool, str | None]:
         """Runs the backup operations.
 
         Args:
@@ -450,7 +446,7 @@ class MySQLBackups(Object):
 
         return True, None
 
-    def _post_backup(self) -> Tuple[bool, Optional[str]]:
+    def _post_backup(self) -> tuple[bool, str | None]:
         """Runs operations required after performing a backup.
 
         Returns: tuple of (success, error_message)
@@ -613,7 +609,7 @@ class MySQLBackups(Object):
         # update status as soon as possible
         self.charm._on_update_status(None)
 
-    def _pre_restore(self) -> Tuple[bool, str]:
+    def _pre_restore(self) -> tuple[bool, str]:
         """Perform operations that need to be done before performing a restore.
 
         Returns: tuple of (success, error_message)
@@ -635,7 +631,7 @@ class MySQLBackups(Object):
 
         return True, ""
 
-    def _restore(self, backup_id: str, s3_parameters: Dict[str, str]) -> Tuple[bool, bool, str]:
+    def _restore(self, backup_id: str, s3_parameters: dict[str, str]) -> tuple[bool, bool, str]:
         """Run the restore operations.
 
         Args:
@@ -687,7 +683,7 @@ class MySQLBackups(Object):
 
         return True, True, ""
 
-    def _clean_data_dir_and_start_mysqld(self) -> Tuple[bool, str]:
+    def _clean_data_dir_and_start_mysqld(self) -> tuple[bool, str]:
         """Run idempotent operations run after restoring a backup.
 
         Returns tuple of (success, error_message)
@@ -711,8 +707,8 @@ class MySQLBackups(Object):
         return True, ""
 
     def _pitr_restore(
-        self, restore_to_time: str, s3_parameters: Dict[str, str]
-    ) -> Tuple[bool, str]:
+        self, restore_to_time: str, s3_parameters: dict[str, str]
+    ) -> tuple[bool, str]:
         try:
             logger.info("Restoring point-in-time-recovery")
             stdout, stderr = self.charm._mysql.restore_pitr(
@@ -728,7 +724,7 @@ class MySQLBackups(Object):
             return False, f"Failed to restore point-in-time-recovery to the {restore_to_time}"
         return True, ""
 
-    def _post_restore(self) -> Tuple[bool, str]:
+    def _post_restore(self) -> tuple[bool, str]:
         """Run operations required after restoring a backup.
 
         Returns: tuple of (success, error_message)
@@ -836,7 +832,7 @@ class MySQLBackups(Object):
                 "Exception is occurred when trying to stop binlogs collecting after S3 relation depart. It may be a leader departure"
             )
 
-    def get_binlogs_collector_config(self) -> Dict[str, str]:
+    def get_binlogs_collector_config(self) -> dict[str, str]:
         """Return binlogs collector service config file.
 
         Returns: dict of binlogs collector service config

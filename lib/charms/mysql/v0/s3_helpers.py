@@ -21,7 +21,6 @@ import tempfile
 import time
 from contextlib import nullcontext
 from io import BytesIO
-from typing import Dict, List, Tuple
 
 import boto3
 import botocore
@@ -37,7 +36,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 11
+LIBPATCH = 13
 
 S3_GROUP_REPLICATION_ID_FILE = "group_replication_id.txt"
 
@@ -69,7 +68,7 @@ def _construct_endpoint(s3_parameters: dict) -> str:
     return endpoint
 
 
-def _get_bucket(s3_parameters: Dict) -> boto3.resources.base.ServiceResource:
+def _get_bucket(s3_parameters: dict) -> boto3.resources.base.ServiceResource:
     """Get an S3 bucket resource.
 
     Args:
@@ -102,7 +101,7 @@ def _get_bucket(s3_parameters: Dict) -> boto3.resources.base.ServiceResource:
     return s3.Bucket(s3_parameters["bucket"])
 
 
-def upload_content_to_s3(content: str, content_path: str, s3_parameters: Dict) -> bool:
+def upload_content_to_s3(content: str, content_path: str, s3_parameters: dict) -> bool:
     """Uploads the provided contents to the provided S3 bucket.
 
     Args:
@@ -174,8 +173,8 @@ def _read_content_from_s3(content_path: str, s3_parameters: dict) -> str | None:
 
 
 def _compile_backups_from_file_ids(
-    metadata_ids: List[str], md5_ids: List[str], log_ids: List[str]
-) -> List[Tuple[str, str]]:
+    metadata_ids: list[str], md5_ids: list[str], log_ids: list[str]
+) -> list[tuple[str, str]]:
     """Helper function that compiles tuples of (backup_id, status) from file ids."""
     backups = []
     for backup_id in metadata_ids:
@@ -190,7 +189,7 @@ def _compile_backups_from_file_ids(
     return backups
 
 
-def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # noqa: C901
+def list_backups_in_s3_path(s3_parameters: dict) -> list[tuple[str, str]]:
     """Retrieve subdirectories in an S3 path.
 
     Args:
@@ -254,7 +253,7 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # no
             # set a more meaningful error message.
             if e.response["Error"]["Code"] == "NoSuchBucket":
                 message = f"Bucket {s3_parameters['bucket']} does not exist"
-                setattr(e, "message", message)
+                e.message = message
                 raise
         except (KeyError, AttributeError):
             pass
@@ -265,7 +264,7 @@ def list_backups_in_s3_path(s3_parameters: Dict) -> List[Tuple[str, str]]:  # no
         raise
 
 
-def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str]) -> bool:
+def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: dict[str, str]) -> bool:
     """Checks the existence of a provided S3 path by fetching the object.
 
     Args:
@@ -300,7 +299,7 @@ def fetch_and_check_existence_of_s3_path(path: str, s3_parameters: Dict[str, str
 
 
 def ensure_s3_compatible_group_replication_id(
-    group_replication_id: str, s3_parameters: Dict[str, str]
+    group_replication_id: str, s3_parameters: dict[str, str]
 ) -> bool:
     """Checks if group replication id is equal to the one in the provided S3 repository.
 

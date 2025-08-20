@@ -462,7 +462,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     instance_label
                     in self._mysql.get_cluster_status(from_instance=cluster_primary)[
                         "defaultreplicaset"
-                    ]["topology"].keys()
+                    ]["topology"]
                 ):
                     self._mysql.execute_remove_instance(
                         connect_instance=cluster_primary, force=True
@@ -594,7 +594,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.unit_peer_data.setdefault("member-role", "unknown")
         self.unit_peer_data.setdefault("member-state", "waiting")
 
-    def _on_config_changed(self, _: EventBase) -> None:  # noqa: C901
+    def _on_config_changed(self, _: EventBase) -> None:
         """Handle the config changed event."""
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
@@ -624,20 +624,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_config_dict = self._write_mysqld_configuration()
         changed_config = compare_dictionaries(previous_config_dict, new_config_dict)
 
-        if self.mysql_config.keys_requires_restart(changed_config):
-            # there are static configurations in changed keys
-
-            if self._mysql.is_mysqld_running():
-                logger.info("Configuration change requires restart")
-                if "loose-audit_log_format" in changed_config:
-                    # plugins are manipulated running daemon
-                    if self.config.plugin_audit_enabled:
-                        self._mysql.install_plugins(["audit_log"])
-                    else:
-                        self._mysql.uninstall_plugins(["audit_log"])
-                # restart the service
-                self.on[f"{self.restart.name}"].acquire_lock.emit()
-                return
+        if (
+            self.mysql_config.keys_requires_restart(changed_config)
+            and self._mysql.is_mysqld_running()
+        ):
+            logger.info("Configuration change requires restart")
+            if "loose-audit_log_format" in changed_config:
+                # plugins are manipulated running daemon
+                if self.config.plugin_audit_enabled:
+                    self._mysql.install_plugins(["audit_log"])
+                else:
+                    self._mysql.uninstall_plugins(["audit_log"])
+            # restart the service
+            self.on[f"{self.restart.name}"].acquire_lock.emit()
+            return
 
         if dynamic_config := self.mysql_config.filter_static_keys(changed_config):
             # if only dynamic config changed, apply it
@@ -852,7 +852,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             MySQLUnableToGetMemberStateError,
             MySQLNoMemberStateError,
             MySQLInitializeJujuOperationsTableError,
-            MySQLCreateClusterError,
         ):
             logger.exception("Failed to initialize primary")
             raise
@@ -926,8 +925,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                         self.unit.status = ActiveStatus(self.active_status_message)
                     else:
                         self.unit.status = BlockedStatus("failed to recover cluster.")
-                finally:
-                    return True
+                return True
 
             if self._mysql.is_cluster_auto_rejoin_ongoing():
                 logger.info("Cluster auto-rejoin attempts are still ongoing.")

@@ -15,9 +15,9 @@ def dispatch(unit: str, charm_directory: str):
 
     juju_run = shutil.which("juju-run")
     juju_exec = shutil.which("juju-exec")
-    command = juju_exec or juju_run
+    command = juju_exec or juju_run or ""
 
-    subprocess.run(
+    subprocess.run(  # noqa: S603
         [
             command,
             "-u",

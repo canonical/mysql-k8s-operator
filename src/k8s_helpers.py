@@ -92,7 +92,7 @@ class KubernetesHelpers:
                     return
                 else:
                     logger.exception("Kubernetes service creation failed: %s", e)
-                raise KubernetesClientError
+                raise KubernetesClientError from e
 
     def delete_endpoint_services(self, roles: List[str]) -> None:
         """Delete kubernetes service for endpoints.
@@ -146,7 +146,7 @@ class KubernetesHelpers:
                 logger.error("Kubernetes pod label creation failed: `juju trust` needed")
             else:
                 logger.exception("Kubernetes pod label creation failed: %s", e)
-            raise KubernetesClientError
+            raise KubernetesClientError from e
 
     def get_resources_limits(self, container_name: str) -> Dict:
         """Return resources limits for a given container.
@@ -161,16 +161,16 @@ class KubernetesHelpers:
                 if container.name == container_name:
                     return container.resources.limits or {}
             return {}
-        except ApiError:
-            raise KubernetesClientError
+        except ApiError as e:
+            raise KubernetesClientError from e
 
     def _get_node_name_for_pod(self) -> str:
         """Return the node name for a given pod."""
         try:
             pod = self.client.get(Pod, name=self.pod_name, namespace=self.namespace)
             return pod.spec.nodeName
-        except ApiError:
-            raise KubernetesClientError
+        except ApiError as e:
+            raise KubernetesClientError from e
 
     def get_node_allocable_memory(self) -> int:
         """Return the allocable memory in bytes for a given node.
@@ -183,8 +183,8 @@ class KubernetesHelpers:
                 Node, name=self._get_node_name_for_pod(), namespace=self.namespace
             )
             return any_memory_to_bytes(node.status.allocatable["memory"])
-        except ApiError:
-            raise KubernetesClientError
+        except ApiError as e:
+            raise KubernetesClientError from e
 
     @retry(stop=stop_after_attempt(60), wait=wait_fixed(1), reraise=True)
     def wait_service_ready(self, service_endpoint: Tuple[str, int]) -> None:
@@ -221,4 +221,4 @@ class KubernetesHelpers:
                 logger.error("Kubernetes statefulset patch failed: `juju trust` needed")
             else:
                 logger.exception("Kubernetes statefulset patch failed")
-            raise KubernetesClientError
+            raise KubernetesClientError from None

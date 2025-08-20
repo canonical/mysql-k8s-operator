@@ -59,7 +59,7 @@ class LogRotateManager(Object):
 
         # Use Popen instead of run as the log rotate dispatcher is a long running
         # process that shouldn't block the event handler
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # noqa: S603
             [
                 "/usr/bin/python3",
                 "scripts/log_rotate_dispatcher.py",

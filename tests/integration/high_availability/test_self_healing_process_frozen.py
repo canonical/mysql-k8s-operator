@@ -33,9 +33,9 @@ async def test_freeze_db_process(
     assert mysql_application_name, "mysql application name is not set"
 
     # ensure all units in the cluster are online
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application is not fully online"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application is not fully online"
+    )
 
     logger.info("Ensuring that all units continuous writes incrementing")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
@@ -76,9 +76,9 @@ async def test_freeze_db_process(
     # retring as it may take time for the cluster to recognize that the primary process is stopped
     for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
         with attempt:
-            assert await ensure_n_online_mysql_members(
-                ops_test, 2, remaining_online_units
-            ), "The deployed mysql application does not have two online nodes"
+            assert await ensure_n_online_mysql_members(ops_test, 2, remaining_online_units), (
+                "The deployed mysql application does not have two online nodes"
+            )
 
             new_primary = await get_primary_unit(
                 ops_test, remaining_online_units[0], mysql_application_name
@@ -112,9 +112,9 @@ async def test_freeze_db_process(
     mysql_process_stat_after_sigcont = await get_process_stat(
         ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
     )
-    assert (
-        "T" not in mysql_process_stat_after_sigcont
-    ), "mysql process is not started after sigcont"
+    assert "T" not in mysql_process_stat_after_sigcont, (
+        "mysql process is not started after sigcont"
+    )
     assert (
         "R" in mysql_process_stat_after_sigcont
         or "S" in mysql_process_stat_after_sigcont
@@ -124,9 +124,9 @@ async def test_freeze_db_process(
     new_mysql_pid = await get_process_pid(
         ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
     )
-    assert (
-        new_mysql_pid == mysql_pid
-    ), "mysql process id is not the same as it was before process was stopped"
+    assert new_mysql_pid == mysql_pid, (
+        "mysql process id is not the same as it was before process was stopped"
+    )
 
     # wait for possible recovery of the old primary
     async with ops_test.fast_forward("60s"):
@@ -138,9 +138,9 @@ async def test_freeze_db_process(
         )
 
     logger.info("Ensuring that there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3, remaining_online_units
-    ), "The deployed mysql application does not have three online nodes"
+    assert await ensure_n_online_mysql_members(ops_test, 3, remaining_online_units), (
+        "The deployed mysql application does not have three online nodes"
+    )
 
     logger.info("Ensure all units continuous writes incrementing")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
