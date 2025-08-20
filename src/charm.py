@@ -442,7 +442,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
                 # add random delay to mitigate collisions when multiple units are joining
                 # due the difference between the time we test for locks and acquire them
-                sleep(random.uniform(0, 1.5))
+                # Not used for cryptographic purpose
+                sleep(random.uniform(0, 1.5))  # noqa: S311
 
                 if self._mysql.are_locks_acquired(from_instance=lock_instance or cluster_primary):
                     self.unit.status = WaitingStatus("waiting to join the cluster")
