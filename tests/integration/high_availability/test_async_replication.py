@@ -275,7 +275,7 @@ async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Mod
     await juju_.run_action(
         leader_unit,
         "promote-to-primary",
-        **{"--wait": "5m", "force": True, "scope": "cluster"},
+        **{"--wait": "5m", "scope": "cluster", "force": True},
     )
 
     cluster_set_status = await get_cluster_status(leader_unit, cluster_set=True)
