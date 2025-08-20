@@ -1,0 +1,51 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  02:08:29Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.125  no       Last written value=252
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.60   no       Last written value=269
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.159  no       Last written value=124
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.227  no       Last written value=288
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.246  no       Last written value=229
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.251  no       
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.51   no       Last written value=278
+mysql    8.0.42-0ubuntu0.22.04.2  active           1  mysql-k8s                        0  10.152.183.20   no       
+router0  8.0.42-0ubuntu0.22.04.2  active           1  mysql-router-k8s  8.0/edge     771  10.152.183.128  no       
+router1  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.121  no       Waiting for K8s service connectivity
+router2  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.92   no       Waiting for K8s service connectivity
+router3  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.173  no       Waiting for K8s service connectivity
+router4  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.42   no       Waiting for K8s service connectivity
+router5  8.0.42-0ubuntu0.22.04.2  active           1  mysql-router-k8s  8.0/edge     771  10.152.183.205  no       
+router6  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.249  no       Waiting for K8s service connectivity
+
+Unit        Workload  Agent  Address       Ports  Message
+app0/0*     active    idle   10.1.130.138         Last written value=252
+app1/0*     active    idle   10.1.130.139         Last written value=269
+app2/0*     active    idle   10.1.130.141         Last written value=124
+app3/0*     active    idle   10.1.130.143         Last written value=288
+app4/0*     active    idle   10.1.130.145         Last written value=229
+app5/0*     active    idle   10.1.130.146         
+app6/0*     active    idle   10.1.130.149         Last written value=278
+mysql/0*    active    idle   10.1.130.137         Primary
+router0/0*  active    idle   10.1.130.140         
+router1/0*  active    idle   10.1.130.142         
+router2/0*  active    idle   10.1.130.144         
+router3/0*  active    idle   10.1.130.147         
+router4/0*  active    idle   10.1.130.148         
+router5/0*  active    idle   10.1.130.150         
+router6/0*  active    idle   10.1.130.151         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router5-2: 02:00:23 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c1f436] "unit-router5-2" cannot open api: unable to connect to API: dial tcp 10.152.183.120:17070: connect: connection refused
+unit-router5-1: 02:00:23 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c1f436] "unit-router5-1" cannot open api: unable to connect to API: dial tcp 10.152.183.120:17070: connect: connection refused
+unit-router5-2: 02:00:27 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c1f436] "unit-router5-2" cannot open api: unable to connect to API: dial tcp 10.152.183.120:17070: connect: connection refused
+unit-router5-1: 02:00:27 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c1f436] "unit-router5-1" cannot open api: unable to connect to API: dial tcp 10.152.183.120:17070: connect: connection refused
+unit-router5-2: 02:00:31 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c1f436] "unit-router5-2" cannot open api: unable to connect to API: dial tcp 10.152.183.120:17070: connect: connection refused
+unit-router5-1: 02:00:32 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c1f436] "unit-router5-1" cannot open api: unable to connect to API: dial tcp 10.152.183.120:17070: connect: connection refused
+unit-router5-2: 02:00:36 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c1f436] "unit-router5-2" cannot open api: unable to connect to API: dial tcp 10.152.183.120:17070: connect: connection refused
+unit-router5-1: 02:00:38 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c1f436] "unit-router5-1" cannot open api: unable to connect to API: dial tcp 10.152.183.120:17070: connect: connection refused
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
