@@ -56,7 +56,7 @@ def any_memory_to_bytes(mem_str) -> int:
         memory, unit = split_mem(mem_str)
         unit = unit.upper()
         if unit not in units:
-            raise ValueError(f"Invalid memory definition in '{mem_str}'")
+            raise ValueError(f"Invalid memory definition in '{mem_str}'") from None
 
         num = int(memory)
         return int(num * units[unit])
@@ -67,7 +67,7 @@ def compare_dictionaries(dict1: dict, dict2: dict) -> set:
     different_keys = set()
 
     # exiting keys with different values
-    for key in dict1.keys():
+    for key in dict1:
         if key in dict2 and dict1[key] != dict2[key]:
             different_keys.add(key)
 

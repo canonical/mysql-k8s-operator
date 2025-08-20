@@ -87,17 +87,16 @@ from charms.mysql.v0.s3_helpers import (
     list_backups_in_s3_path,
     upload_content_to_s3,
 )
-from ops.charm import ActionEvent
-from ops.framework import Object
-from ops.jujuversion import JujuVersion
-from ops.model import BlockedStatus, MaintenanceStatus
-
 from constants import (
     MYSQL_DATA_DIR,
     PEER,
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
+from ops.charm import ActionEvent
+from ops.framework import Object
+from ops.jujuversion import JujuVersion
+from ops.model import BlockedStatus, MaintenanceStatus
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +111,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 15
+LIBPATCH = 16
 
 ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE = "S3 repository claimed by another cluster"
 MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
@@ -249,9 +248,7 @@ class MySQLBackups(Object):
             event.set_results({"backups": self._format_backups_list(backups)})
         except Exception as e:
             error_message = (
-                getattr(e, "message")
-                if hasattr(e, "message")
-                else "Failed to retrieve backup ids from S3"
+                e.message if hasattr(e, "message") else "Failed to retrieve backup ids from S3"
             )
             logger.error(error_message)
             event.fail(error_message)
@@ -312,7 +309,7 @@ class MySQLBackups(Object):
             f"Model Name: {self.model.name}\n"
             f"Application Name: {self.model.app.name}\n"
             f"Unit Name: {self.charm.unit.name}\n"
-            f"Juju Version: {str(juju_version)}\n"
+            f"Juju Version: {juju_version!s}\n"
         )
 
         if not upload_content_to_s3(metadata, f"{backup_path}.metadata", s3_parameters):

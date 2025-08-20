@@ -100,7 +100,7 @@ class MySQLRootRelation(Object):
         if (
             not self.charm._is_peer_data_set
             or not self.charm.unit_initialized()
-            or not self.charm.unit_peer_data.get("member-state") == "online"
+            or self.charm.unit_peer_data.get("member-state") != "online"
         ):
             logger.info("Unit not ready to execute `mysql` leader elected. Deferring")
             event.defer()
@@ -139,18 +139,19 @@ class MySQLRootRelation(Object):
         ):
             return
 
-        if isinstance(self.charm.unit.status, ActiveStatus) and self.model.relations.get(
-            LEGACY_MYSQL_ROOT
+        active_and_related = isinstance(
+            self.charm.unit.status, ActiveStatus
+        ) and self.model.relations.get(LEGACY_MYSQL_ROOT)
+
+        if active_and_related and (
+            self.charm.config.mysql_root_interface_database
+            != self.charm.app_peer_data[MYSQL_ROOT_RELATION_DATABASE_KEY]
+            or self.charm.config.mysql_root_interface_user
+            != self.charm.app_peer_data[MYSQL_ROOT_RELATION_USER_KEY]
         ):
-            if (
-                self.charm.config.mysql_root_interface_database
-                != self.charm.app_peer_data[MYSQL_ROOT_RELATION_DATABASE_KEY]
-                or self.charm.config.mysql_root_interface_user
-                != self.charm.app_peer_data[MYSQL_ROOT_RELATION_USER_KEY]
-            ):
-                self.charm.app.status = BlockedStatus(
-                    "Remove and re-relate `mysql` relations in order to change config"
-                )
+            self.charm.app.status = BlockedStatus(
+                "Remove and re-relate `mysql` relations in order to change config"
+            )
 
     def _on_mysql_root_relation_created(self, event: RelationCreatedEvent) -> None:
         """Handle the legacy 'mysql-root' relation created event.
@@ -200,7 +201,8 @@ class MySQLRootRelation(Object):
 
         try:
             root_password = self.charm.get_secret("app", ROOT_PASSWORD_KEY)
-            assert root_password, "Root password not set"
+            if not root_password:
+                raise MySQLCreateUserError("MySQL root password not found in peer secrets")
             self.charm._mysql.create_database(database)
             self.charm._mysql.create_user(username, password, "mysql-root-legacy-relation")
             if not self.charm._mysql.does_mysql_user_exist("root", "%"):

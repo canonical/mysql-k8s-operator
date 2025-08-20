@@ -33,9 +33,9 @@ async def test_network_cut_affecting_an_instance(
     assert mysql_application_name, "mysql application name is not set"
 
     logger.info("Ensuring that there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application does not have three online nodes"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application does not have three online nodes"
+    )
 
     logger.info("Ensuring that all instances have incrementing continuous writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
@@ -58,11 +58,13 @@ async def test_network_cut_affecting_an_instance(
 
     cluster_status = await get_cluster_status(remaining_units[0])
 
-    isolated_primary_status, isolated_primary_memberrole = [
-        (member["status"], member["memberrole"])
-        for label, member in cluster_status["defaultreplicaset"]["topology"].items()
-        if label == primary.name.replace("/", "-")
-    ][0]
+    isolated_primary_status, isolated_primary_memberrole = next(
+        iter([
+            (member["status"], member["memberrole"])
+            for label, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if label == primary.name.replace("/", "-")
+        ])
+    )
     assert isolated_primary_status == "(missing)"
     assert isolated_primary_memberrole == "secondary"
 
@@ -93,18 +95,20 @@ async def test_network_cut_affecting_an_instance(
     new_cluster_status = await get_cluster_status(mysql_units[0])
 
     logger.info("Ensure isolated instance is now secondary")
-    isolated_primary_status, isolated_primary_memberrole = [
-        (member["status"], member["memberrole"])
-        for label, member in new_cluster_status["defaultreplicaset"]["topology"].items()
-        if label == primary.name.replace("/", "-")
-    ][0]
+    isolated_primary_status, isolated_primary_memberrole = next(
+        iter([
+            (member["status"], member["memberrole"])
+            for label, member in new_cluster_status["defaultreplicaset"]["topology"].items()
+            if label == primary.name.replace("/", "-")
+        ])
+    )
     assert isolated_primary_status == "online"
     assert isolated_primary_memberrole == "secondary"
 
     logger.info("Ensure there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application does not have three online nodes"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application does not have three online nodes"
+    )
 
     logger.info("Ensure all units have incrementing continuous writes")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)

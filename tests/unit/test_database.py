@@ -88,7 +88,7 @@ class TestDatabase(unittest.TestCase):
             self.database_relation_id, self.harness.charm.app
         )
         database_relation = self.charm.model.get_relation(DB_RELATION_NAME)
-        app_unit = list(database_relation.units)[0]
+        app_unit = next(iter(database_relation.units))
 
         self.assertEqual(database_relation_databag, {})
         self.assertEqual(database_relation.data.get(app_unit), {})

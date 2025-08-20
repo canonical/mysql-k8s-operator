@@ -14,6 +14,19 @@ from charms.mysql.v0.mysql import (
     MySQLPromoteClusterToPrimaryError,
     MySQLRejoinClusterError,
 )
+from constants import (
+    BACKUPS_PASSWORD_KEY,
+    BACKUPS_USERNAME,
+    CLUSTER_ADMIN_PASSWORD_KEY,
+    CLUSTER_ADMIN_USERNAME,
+    MONITORING_PASSWORD_KEY,
+    MONITORING_USERNAME,
+    PEER,
+    ROOT_PASSWORD_KEY,
+    ROOT_USERNAME,
+    SERVER_CONFIG_PASSWORD_KEY,
+    SERVER_CONFIG_USERNAME,
+)
 from ops import (
     ActionEvent,
     ActiveStatus,
@@ -31,20 +44,6 @@ from ops import (
 from ops.framework import Object
 from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
 
-from constants import (
-    BACKUPS_PASSWORD_KEY,
-    BACKUPS_USERNAME,
-    CLUSTER_ADMIN_PASSWORD_KEY,
-    CLUSTER_ADMIN_USERNAME,
-    MONITORING_PASSWORD_KEY,
-    MONITORING_USERNAME,
-    PEER,
-    ROOT_PASSWORD_KEY,
-    ROOT_USERNAME,
-    SERVER_CONFIG_PASSWORD_KEY,
-    SERVER_CONFIG_USERNAME,
-)
-
 if typing.TYPE_CHECKING:
     from charm import MySQLOperatorCharm
 
@@ -53,7 +52,7 @@ logger = logging.getLogger(__name__)
 # The unique Charmhub library identifier, never change it
 LIBID = "4de21f1a022c4e2c87ac8e672ec16f6a"
 LIBAPI = 0
-LIBPATCH = 9
+LIBPATCH = 10
 
 RELATION_OFFER = "replication-offer"
 RELATION_CONSUMER = "replication"
@@ -407,9 +406,7 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
             # transitional state between relation created and setup_action
             return False
 
-        if self.state not in [States.READY, States.UNINITIALIZED]:
-            return False
-        return True
+        return self.state in [States.READY, States.UNINITIALIZED]
 
     @property
     def secret(self) -> Secret | None:
@@ -430,7 +427,7 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
 
     def _on_create_replication(self, event: ActionEvent):
         """Promote the offer side to primary on initial setup."""
-        if not self._charm.app_peer_data.get("async-ready") == "true":
+        if self._charm.app_peer_data.get("async-ready") != "true":
             event.fail("Relation created but not ready")
             return
 
@@ -491,10 +488,8 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
         ):
             # Test for a broken relation on the primary side
             logger.error(
-                (
-                    "Cannot setup async relation with primary cluster in blocked/read-only state\n"
-                    "Remove the relation."
-                )
+                "Cannot setup async relation with primary cluster in blocked/read-only state\n"
+                "Remove the relation."
             )
             message = f"Cluster is in a blocked state. Remove {RELATION_OFFER} relation"
             self._charm.unit.status = BlockedStatus(message)
@@ -503,10 +498,8 @@ class MySQLAsyncReplicationOffer(MySQLAsyncReplication):
         if not self.model.get_relation(RELATION_OFFER):
             # safeguard against a deferred event a previous relation.
             logger.error(
-                (
-                    "Relation created running against removed relation.\n"
-                    f"Remove {RELATION_OFFER} relation and retry."
-                )
+                "Relation created running against removed relation.\n"
+                f"Remove {RELATION_OFFER} relation and retry."
             )
             self._charm.unit.status = BlockedStatus(f"Remove {RELATION_OFFER} relation and retry")
             return
@@ -887,7 +880,7 @@ class MySQLAsyncReplicationConsumer(MySQLAsyncReplication):
         # set waiting state to inhibit auto recovery, only when not already set
         if self._charm.unit.is_leader():
             return
-        if not self._charm.unit_peer_data.get("member-state") == "waiting":
+        if self._charm.unit_peer_data.get("member-state") != "waiting":
             self._charm.unit_peer_data["member-state"] = "waiting"
             self._charm.unit.status = WaitingStatus("waiting replica cluster be configured")
 

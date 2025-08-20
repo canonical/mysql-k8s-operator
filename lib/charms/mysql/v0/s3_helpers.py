@@ -36,7 +36,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 12
+LIBPATCH = 13
 
 S3_GROUP_REPLICATION_ID_FILE = "group_replication_id.txt"
 
@@ -189,7 +189,7 @@ def _compile_backups_from_file_ids(
     return backups
 
 
-def list_backups_in_s3_path(s3_parameters: dict) -> list[tuple[str, str]]:  # noqa: C901
+def list_backups_in_s3_path(s3_parameters: dict) -> list[tuple[str, str]]:
     """Retrieve subdirectories in an S3 path.
 
     Args:
@@ -253,7 +253,7 @@ def list_backups_in_s3_path(s3_parameters: dict) -> list[tuple[str, str]]:  # no
             # set a more meaningful error message.
             if e.response["Error"]["Code"] == "NoSuchBucket":
                 message = f"Bucket {s3_parameters['bucket']} does not exist"
-                setattr(e, "message", message)
+                e.message = message
                 raise
         except (KeyError, AttributeError):
             pass
