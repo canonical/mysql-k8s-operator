@@ -27,6 +27,8 @@ pydantic = "^1.10"
 # tls_certificates lib uses a feature only available in cryptography >=42.0.5
 cryptography = ">=42.0.5"
 jsonschema = "*"
+# newer version of rpds-py, used by jsonschema, is failing to build with rust 1.83
+rpds-py = "^0.24.0"
 # loki_k8s/v0/loki_push_api.py and prometheus_k8s/v0/prometheus_scrape.py
 cosl = ">=0.0.50"
 # tempo_coordinator_k8s/v0/charm_tracing.py
