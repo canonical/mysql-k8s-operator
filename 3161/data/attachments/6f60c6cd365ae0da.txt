@@ -1,0 +1,180 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  02:12:19Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.234  no       Last written value=336
+app1     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.93   no       Last written value=142
+app2     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.230  no       Last written value=128
+app3     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.65   no       Last written value=227
+app4     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.187  no       Last written value=233
+app5     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.252  no       Last written value=127
+app6     0.0.2                    active           1  mysql-test-app    latest/edge   82  10.152.183.235  no       Last written value=283
+mysql    8.0.42-0ubuntu0.22.04.2  active           1  mysql-k8s                        0  10.152.183.46   no       
+router0  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.199  no       Waiting for K8s service connectivity
+router1  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.125  no       Waiting for K8s service connectivity
+router2  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.216  no       Waiting for K8s service connectivity
+router3  8.0.42-0ubuntu0.22.04.2  active           1  mysql-router-k8s  8.0/edge     771  10.152.183.202  no       
+router4  8.0.42-0ubuntu0.22.04.2  active           1  mysql-router-k8s  8.0/edge     771  10.152.183.111  no       
+router5  8.0.42-0ubuntu0.22.04.2  maintenance      1  mysql-router-k8s  8.0/edge     771  10.152.183.217  no       Waiting for K8s service connectivity
+router6  8.0.42-0ubuntu0.22.04.2  active           1  mysql-router-k8s  8.0/edge     771  10.152.183.137  no       
+
+Unit        Workload  Agent  Address    Ports  Message
+app0/0*     active    idle   10.1.7.10         Last written value=336
+app1/0*     active    idle   10.1.7.11         Last written value=142
+app2/0*     active    idle   10.1.7.13         Last written value=128
+app3/0*     active    idle   10.1.7.15         Last written value=227
+app4/0*     active    idle   10.1.7.17         Last written value=233
+app5/0*     active    idle   10.1.7.19         Last written value=127
+app6/0*     active    idle   10.1.7.21         Last written value=283
+mysql/0*    active    idle   10.1.7.9          Primary
+router0/0*  active    idle   10.1.7.12         
+router1/0*  active    idle   10.1.7.14         
+router2/0*  active    idle   10.1.7.16         
+router3/0*  active    idle   10.1.7.18         
+router4/0*  active    idle   10.1.7.20         
+router5/0*  active    idle   10.1.7.22         
+router6/0*  active    idle   10.1.7.23         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router4-2: 02:03:11 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-2" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-2: 02:03:15 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-2" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-1: 02:03:16 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-1" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-1: 02:03:20 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-1" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-2: 02:03:21 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-2" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-1: 02:03:26 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-1" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-2: 02:03:27 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-2" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-1: 02:03:33 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-1" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-2: 02:03:35 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-2" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-1: 02:03:41 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-1" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-2: 02:03:45 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-2" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-1: 02:03:51 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-1" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-2: 02:03:51 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: preparing operation "install ch:amd64/mysql-router-k8s-771" for router5/2: failed to download charm "ch:amd64/mysql-router-k8s-771" from API server: unable to get object charms/mysql-router-k8s-2f6809cc on bucket model-c7885bb1-f08b-480a-824f-58d736f64b44 using S3 client: operation error S3: GetObject, exceeded maximum number of attempts, 10, https response error StatusCode: 0, RequestID: , HostID: , request send failed, Get "https://10.152.183.134:17070/model-c7885bb1-f08b-480a-824f-58d736f64b44/charms/mysql-router-k8s-2f6809cc?x-id=GetObject": dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-1: 02:03:55 ERROR juju.worker.dependency "uniter" manifold worker returned unexpected error: preparing operation "install ch:amd64/mysql-router-k8s-771" for router5/1: failed to download charm "ch:amd64/mysql-router-k8s-771" from API server: unable to get object charms/mysql-router-k8s-2f6809cc on bucket model-c7885bb1-f08b-480a-824f-58d736f64b44 using S3 client: operation error S3: GetObject, exceeded maximum number of attempts, 10, https response error StatusCode: 0, RequestID: , HostID: , request send failed, Get "https://10.152.183.134:17070/model-c7885bb1-f08b-480a-824f-58d736f64b44/charms/mysql-router-k8s-2f6809cc?x-id=GetObject": dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-2: 02:03:55 ERROR juju.worker.dependency "api-caller" manifold worker returned unexpected error: [c7885b] "unit-router4-2" cannot open api: unable to connect to API: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-1: 02:05:18 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-2: 02:05:18 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-0: 02:05:19 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router4-0: 02:05:19 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-2: 02:05:20 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-1: 02:05:20 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-0: 02:05:20 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-1: 02:05:20 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-1: 02:05:20 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router0-2: 02:05:21 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-2: 02:05:21 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-0: 02:05:21 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-1: 02:05:22 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-0: 02:05:22 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-1: 02:05:22 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-2: 02:05:22 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-2: 02:05:22 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-1: 02:05:22 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-2: 02:05:22 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-1: 02:05:23 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-0: 02:05:23 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-0: 02:05:23 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-2: 02:05:23 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router0-1: 02:05:23 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app5-0: 02:05:23 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-1: 02:05:23 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-1: 02:05:23 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router0-2: 02:05:24 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-1: 02:05:25 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-0: 02:05:25 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router3-2: 02:05:25 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-2: 02:05:25 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-2: 02:05:25 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-1: 02:05:25 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-0: 02:05:25 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-2: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-1: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-2: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-0: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-1: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router0-1: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-2: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-0: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-app5-0: 02:05:26 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-1: 02:05:27 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router0-2: 02:05:27 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router3-1: 02:05:27 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-2: 02:05:28 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-1: 02:05:28 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-1: 02:05:29 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-2: 02:05:29 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-2: 02:05:29 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router3-0: 02:05:33 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-0: 02:05:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-1: 02:06:41 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router0-1: 02:06:42 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-2: 02:06:42 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-1: 02:06:43 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-2: 02:06:47 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-1: 02:06:48 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-2: 02:06:54 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app0-0: 02:07:10 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app3-0: 02:08:29 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router0-0: 02:08:44 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router1-2: 02:08:45 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-1: 02:08:46 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router0-2: 02:08:46 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router1-1: 02:08:46 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router1-0: 02:08:46 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app1-0: 02:08:47 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-1: 02:08:47 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app2-0: 02:08:47 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-0: 02:08:47 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-0: 02:08:48 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router4-0: 02:08:48 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-0: 02:08:48 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app4-0: 02:08:49 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app5-0: 02:08:58 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app6-0: 02:09:00 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router1-0: 02:10:28 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: write tcp 10.1.7.14:42748->10.152.183.134:17070: write: connection reset by peer: write tcp 10.1.7.14:42748->10.152.183.134:17070: write: connection reset by peer
+unit-router5-0: 02:10:28 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: write tcp 10.1.7.22:52896->10.152.183.134:17070: write: connection reset by peer: write tcp 10.1.7.22:52896->10.152.183.134:17070: write: connection reset by peer
+unit-router4-0: 02:10:29 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-0: 02:10:29 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-0: 02:10:29 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router1-0: 02:10:31 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-0: 02:10:32 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-0: 02:10:32 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-0: 02:10:32 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-0: 02:10:32 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-0: 02:10:35 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-0: 02:10:35 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-0: 02:10:35 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-0: 02:10:36 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-0: 02:10:36 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-0: 02:10:39 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-0: 02:10:39 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-0: 02:10:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-0: 02:10:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-0: 02:10:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-0: 02:10:44 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-0: 02:10:45 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-0: 02:10:45 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-0: 02:10:45 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-0: 02:10:45 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-0: 02:10:49 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-0: 02:10:51 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-2: 02:10:51 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-0: 02:10:52 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-0: 02:10:52 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-0: 02:10:52 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-1: 02:10:53 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-2: 02:10:55 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-1: 02:10:56 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router1-0: 02:10:57 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-2: 02:10:58 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router4-0: 02:10:58 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-1: 02:10:59 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router2-0: 02:11:00 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router6-0: 02:11:00 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-router5-0: 02:11:00 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-2: 02:11:02 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+unit-mysql-1: 02:11:03 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.134:17070: connect: connection refused
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
