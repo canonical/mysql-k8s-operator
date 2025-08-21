@@ -48,7 +48,7 @@ Check the legacy interface implementation limitations in [](/explanation/legacy-
 
 ### Legacy `mysql` interface (`mysql` and `mysql-root` endpoints)
 
-This charm supports legacy interface `mysql` (endpoint `mysql` and `mysql-root`). This was a popular interface used by some legacy charms (e.g. [MariaDB](https://charmhub.io/mariadb), [OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s), [Percona Cluster](https://charmhub.io/percona-cluster) and [MySQL Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)), often in [cross-model relations](https://documentation.ubuntu.com/juju/3.6/reference/relation/#cross-model):
+This charm supports legacy interface `mysql` (endpoint `mysql` and `mysql-root`). This was a popular interface used by some legacy charms (e.g. [MariaDB](https://charmhub.io/mariadb), [OSM MariaDB](https://charmhub.io/charmed-osm-mariadb-k8s), [Percona Cluster](https://charmhub.io/percona-cluster) and [MySQL Innodb Cluster](https://charmhub.io/mysql-innodb-cluster)), often in [cross-model relations](https://documentation.ubuntu.com/juju/3.6/reference/relation/#cross-model-relation):
 
 ```shell
 juju deploy mysql-k8s --trust --channel 8.0
