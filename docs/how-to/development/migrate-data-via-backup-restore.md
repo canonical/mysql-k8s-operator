@@ -21,7 +21,7 @@ The approach described below is a general recommendation, but we **cannot guaran
 And, as always, try it out in a test environment before migrating in production!
 
 * Retrieve root/admin level credentials from legacy charm.
-  * Example: [](mysqldump-obtain-legacy-credentials)
+  * Example: [](mysqldump-obtain-existing-database-credentials)
 * Install [Percona XtraBackup](https://www.percona.com/software/mysql-database/percona-xtrabackup) inside the old charm OR remotely.
   * Ensure the version is compatible with xtrabackup in `Charmed MySQL` revision you are going to deploy. See [installation examples](https://docs.percona.com/percona-xtrabackup/8.0/installation.html).
   * You can also use the [`charmed-mysql` snap](https://snapcraft.io/charmed-mysql) or [rock](https://github.com/canonical/charmed-mysql-rock) directly. For more details, see [](/explanation/architecture).

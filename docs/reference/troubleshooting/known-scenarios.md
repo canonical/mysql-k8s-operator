@@ -2,7 +2,7 @@
 
 This page lists specific operational issues that we know about, and how to solve them.
 
-[Contact us](reference/contacts) or [contribute](how-to/contribute) if there is a scenario you'd like to suggest, or add yourself.
+[Contact us](/reference/contacts) or [contribute](/how-to/contribute) if there is a scenario you'd like to suggest, or add yourself.
 
 ## One offline unit and other units as secondaries
 

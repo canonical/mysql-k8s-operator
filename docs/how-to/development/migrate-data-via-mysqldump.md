@@ -52,7 +52,7 @@ Always perform the migration in a test environment before performing it in produ
 
 - Client machine with access to deployed legacy charm
 - Juju 2.9 or later
-  - See the [Juju explanation](explanation/juju) for more details
+  - See the [Juju explanation](/explanation/juju) for more details
 - Enough storage in the cluster to support backup/restore of the databases
 - `mysql-client` on client machine (install by running `sudo apt install mysql-client`)
 
@@ -62,6 +62,7 @@ Most legacy database charms support old Ubuntu series only, while [Juju 3.x does
 It is recommended to use the latest stable revision of the charm on Ubuntu Jammy and Juju 3.x
 ```
 
+(mysqldump-obtain-existing-database-credentials)=
 ## Obtain existing database credentials
 
 Set `DB_APP` to the name of the desired unit: 
