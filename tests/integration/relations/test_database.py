@@ -16,21 +16,20 @@ from ..helpers import get_relation_data, is_relation_broken, is_relation_joined
 logger = logging.getLogger(__name__)
 
 DB_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-DATABASE_APP_NAME = DB_METADATA["name"]
-CLUSTER_NAME = "test_cluster"
 
+DATABASE_APP_NAME = DB_METADATA["name"]
+DATABASE_ENDPOINT = "database"
 APPLICATION_APP_NAME = "mysql-test-app"
+APPLICATION_ENDPOINT = "database"
 
 APPS = [DATABASE_APP_NAME, APPLICATION_APP_NAME]
-
-ENDPOINT = "database"
 
 
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
 async def test_build_and_deploy(ops_test: OpsTest, charm):
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
-    config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
+    config = {"cluster-name": "test_cluster", "profile": "testing"}
     resources = {"mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     await asyncio.gather(
@@ -52,12 +51,26 @@ async def test_build_and_deploy(ops_test: OpsTest, charm):
         ),
     )
 
+
+@pytest.mark.abort_on_fail
+async def test_relation_creation_eager(ops_test: OpsTest):
+    """Relate charms before they have time to properly start.
+
+    It simulates a Terraform-like deployment strategy
+    """
+    await ops_test.model.relate(
+        f"{APPLICATION_APP_NAME}:{APPLICATION_ENDPOINT}",
+        f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
+    )
+    await ops_test.model.block_until(
+        lambda: is_relation_joined(ops_test, APPLICATION_ENDPOINT, DATABASE_ENDPOINT) == True  # noqa: E712
+    )
+
     # Reduce the update_status frequency until the cluster is deployed
     async with ops_test.fast_forward("60s"):
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[DATABASE_APP_NAME].units) == 3
         )
-
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[APPLICATION_APP_NAME].units) == 2
         )
@@ -78,26 +91,14 @@ async def test_build_and_deploy(ops_test: OpsTest, charm):
             ),
         )
 
-    assert len(ops_test.model.applications[DATABASE_APP_NAME].units) == 3
-
-    for unit in ops_test.model.applications[DATABASE_APP_NAME].units:
-        assert unit.workload_status == "active"
-
-    assert len(ops_test.model.applications[APPLICATION_APP_NAME].units) == 2
-
 
 @pytest.mark.abort_on_fail
 @markers.only_without_juju_secrets
 async def test_relation_creation_databag(ops_test: OpsTest):
     """Relate charms and wait for the expected changes in status."""
-    await ops_test.model.relate(APPLICATION_APP_NAME, f"{DATABASE_APP_NAME}:{ENDPOINT}")
-
     async with ops_test.fast_forward("60s"):
-        await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, ENDPOINT, ENDPOINT) == True  # noqa: E712
-        )
-
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
+
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
     assert {"password", "username"} <= set(relation_data[0]["application-data"])
 
@@ -106,14 +107,9 @@ async def test_relation_creation_databag(ops_test: OpsTest):
 @markers.only_with_juju_secrets
 async def test_relation_creation(ops_test: OpsTest):
     """Relate charms and wait for the expected changes in status."""
-    await ops_test.model.relate(APPLICATION_APP_NAME, f"{DATABASE_APP_NAME}:{ENDPOINT}")
-
     async with ops_test.fast_forward("60s"):
-        await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, ENDPOINT, ENDPOINT) == True  # noqa: E712
-        )
-
         await ops_test.model.wait_for_idle(apps=APPS, status="active")
+
     relation_data = await get_relation_data(ops_test, APPLICATION_APP_NAME, "database")
     assert not {"password", "username"} <= set(relation_data[0]["application-data"])
     assert "secret-user" in relation_data[0]["application-data"]
@@ -123,11 +119,12 @@ async def test_relation_creation(ops_test: OpsTest):
 async def test_relation_broken(ops_test: OpsTest):
     """Remove relation and wait for the expected changes in status."""
     await ops_test.model.applications[DATABASE_APP_NAME].remove_relation(
-        f"{APPLICATION_APP_NAME}:{ENDPOINT}", f"{DATABASE_APP_NAME}:{ENDPOINT}"
+        f"{APPLICATION_APP_NAME}:{APPLICATION_ENDPOINT}",
+        f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
     )
 
     await ops_test.model.block_until(
-        lambda: is_relation_broken(ops_test, ENDPOINT, ENDPOINT) == True  # noqa: E712
+        lambda: is_relation_broken(ops_test, APPLICATION_ENDPOINT, DATABASE_ENDPOINT) == True  # noqa: E712
     )
 
     async with ops_test.fast_forward("60s"):
