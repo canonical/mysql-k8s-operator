@@ -6,6 +6,7 @@ import logging
 import pathlib
 import shutil
 import zipfile
+from contextlib import suppress
 from pathlib import Path
 from time import sleep
 from typing import Union
@@ -118,14 +119,13 @@ async def test_upgrade_from_edge(ops_test: OpsTest, charm, continuous_writes, cr
     logger.info("Resume upgrade")
     while get_sts_partition(ops_test, MYSQL_APP_NAME) == 2:
         # resume action sometime fails in CI, no clear reason
-        try:
-            await juju_.run_action(leader_unit, "resume-upgrade")
-        except AssertionError:
+
+        with suppress(AssertionError):
             # ignore action return error as it is expected when
             # the leader unit is the next one to be upgraded
             # due it being immediately rolled when the partition
             # is patched in the statefulset
-            pass
+            await juju_.run_action(leader_unit, "resume-upgrade")
 
     logger.info("Wait for upgrade to complete")
     await ops_test.model.block_until(
@@ -215,7 +215,7 @@ async def inject_dependency_fault(
 ) -> None:
     """Inject a dependency fault into the mysql charm."""
     # Open dependency.json and load current charm version
-    with open("src/dependency.json", "r") as dependency_file:
+    with open("src/dependency.json") as dependency_file:
         current_charm_version = json.load(dependency_file)["charm"]["version"]
 
     # query running dependency to overwrite with incompatible version

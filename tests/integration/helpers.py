@@ -120,9 +120,9 @@ async def get_relation_data(
     data = yaml.safe_load(raw_data)
     # Filter the data based on the relation name.
     relation_data = [v for v in data[unit_name]["relation-info"] if v["endpoint"] == relation_name]
-    assert (
-        relation_data
-    ), f"no relation data could be grabbed on relation with endpoint {relation_name}"
+    assert relation_data, (
+        f"no relation data could be grabbed on relation with endpoint {relation_name}"
+    )
 
     return relation_data
 
@@ -144,11 +144,13 @@ async def get_primary_unit(
     """
     cluster_status = await get_cluster_status(unit)
 
-    primary_label = [
-        label
-        for label, member in cluster_status["defaultreplicaset"]["topology"].items()
-        if member["mode"] == "r/w"
-    ][0]
+    primary_label = next(
+        iter([
+            label
+            for label, member in cluster_status["defaultreplicaset"]["topology"].items()
+            if member["mode"] == "r/w"
+        ])
+    )
     primary_name = "/".join(primary_label.rsplit("-", 1))
 
     for unit in ops_test.model.applications[app_name].units:
@@ -207,7 +209,7 @@ async def get_server_config_credentials(unit: Unit) -> Dict:
     return await juju_.run_action(unit, "get-password", username=SERVER_CONFIG_USERNAME)
 
 
-async def fetch_credentials(unit: Unit, username: str = None) -> Dict:
+async def fetch_credentials(unit: Unit, username: str = "") -> Dict:
     """Helper to run an action to fetch credentials.
 
     Args:
@@ -217,13 +219,13 @@ async def fetch_credentials(unit: Unit, username: str = None) -> Dict:
     Returns:
         A dictionary with the server config username and password
     """
-    if username is None:
+    if not username:
         return await juju_.run_action(unit, "get-password")
     else:
         return await juju_.run_action(unit, "get-password", username=username)
 
 
-async def rotate_credentials(unit: Unit, username: str = None, password: str = None) -> Dict:
+async def rotate_credentials(unit: Unit, username: str = "", password: str = "") -> Dict:
     """Helper to run an action to rotate credentials.
 
     Args:
@@ -234,9 +236,9 @@ async def rotate_credentials(unit: Unit, username: str = None, password: str = N
     Returns:
         A dictionary with the action result
     """
-    if username is None:
+    if not username:
         return await juju_.run_action(unit, "set-password")
-    elif password is None:
+    elif not password:
         return await juju_.run_action(unit, "set-password", username=username)
     else:
         return await juju_.run_action(unit, "set-password", username=username, password=password)
@@ -408,9 +410,9 @@ async def get_process_pid(
     if return_code == 1:
         return None
 
-    assert (
-        return_code == 0
-    ), f"Failed getting pid, unit={unit_name}, container={container_name}, process={process}"
+    assert return_code == 0, (
+        f"Failed getting pid, unit={unit_name}, container={container_name}, process={process}"
+    )
 
     stripped_pid = pid.strip()
     if not stripped_pid:
@@ -660,7 +662,7 @@ async def ls_in_unit(
     unit_name: str,
     directory: str,
     container_name: str = CONTAINER_NAME,
-    exclude_files: list[str] = [],
+    exclude_files: list[str] = [],  # noqa: B006
 ) -> list[str]:
     """Returns the output of ls -la in unit.
 
@@ -718,7 +720,7 @@ async def stop_running_log_rotate_dispatcher(ops_test: OpsTest, unit_name: str):
                 ):
                     raise Exception
     except RetryError:
-        raise Exception("Failed to stop the log_rotate_dispatcher process")
+        raise Exception("Failed to stop the log_rotate_dispatcher process") from None
 
 
 async def stop_running_flush_mysql_job(
@@ -750,7 +752,7 @@ async def stop_running_flush_mysql_job(
                 if await get_process_pid(ops_test, unit_name, container_name, "logrotate"):
                     raise Exception
     except RetryError:
-        raise Exception("Failed to stop the flush_mysql_logs logrotate process.")
+        raise Exception("Failed to stop the flush_mysql_logs logrotate process.") from None
 
 
 async def dispatch_custom_event_for_logrotate(ops_test: OpsTest, unit_name: str) -> None:

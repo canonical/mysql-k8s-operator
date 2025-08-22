@@ -24,7 +24,6 @@ import logging
 import re
 import socket
 import typing
-from typing import List, Optional, Tuple
 
 import ops
 from charms.mysql.v0.mysql import MySQLKillSessionError, MySQLTLSSetupError
@@ -35,10 +34,6 @@ from charms.tls_certificates_interface.v2.tls_certificates import (
     generate_csr,
     generate_private_key,
 )
-from ops.charm import ActionEvent
-from ops.framework import Object
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
-
 from constants import (
     MYSQL_DATA_DIR,
     TLS_RELATION,
@@ -46,12 +41,15 @@ from constants import (
     TLS_SSL_CERT_FILE,
     TLS_SSL_KEY_FILE,
 )
+from ops.charm import ActionEvent
+from ops.framework import Object
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 
 logger = logging.getLogger(__name__)
 
 LIBID = "eb73947deedd4380a3a90d527e0878eb"
 LIBAPI = 0
-LIBPATCH = 8
+LIBPATCH = 10
 
 SCOPE = "unit"
 
@@ -187,12 +185,9 @@ class MySQLTLS(Object):
     # =======================
     #  Helpers
     # =======================
-    def _request_certificate(self, param: Optional[str]):
+    def _request_certificate(self, param: str | None):
         """Request a certificate to TLS Certificates Operator."""
-        if param is None:
-            key = generate_private_key()
-        else:
-            key = self._parse_tls_file(param)
+        key = generate_private_key() if param is None else self._parse_tls_file(param)
 
         csr = generate_csr(
             private_key=key,
@@ -220,7 +215,7 @@ class MySQLTLS(Object):
             ).encode("utf-8")
         return base64.b64decode(raw_content)
 
-    def _get_sans(self) -> List[str]:
+    def _get_sans(self) -> list[str]:
         """Create a list of DNS names for a unit.
 
         Returns:
@@ -233,7 +228,7 @@ class MySQLTLS(Object):
             str(self.charm.model.get_binding(self.charm.peers).network.bind_address),
         ]
 
-    def get_tls_content(self) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    def get_tls_content(self) -> tuple[str | None, str | None, str | None]:
         """Retrieve TLS content.
 
         Return TLS files as required by mysql.

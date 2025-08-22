@@ -34,9 +34,9 @@ async def test_kill_db_process(
 
     logger.info("Waiting until 3 mysql instances are online")
     # ensure all units in the cluster are online
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application is not fully online"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application is not fully online"
+    )
 
     logger.info("Ensuring all units have continuous writes incrementing")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
@@ -61,22 +61,22 @@ async def test_kill_db_process(
     time.sleep(10)
 
     logger.info("Waiting until 3 mysql instances are online")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The mysql application is not fully online after sending SIGKILL to primary"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The mysql application is not fully online after sending SIGKILL to primary"
+    )
 
     # ensure that the mysqld process got restarted and has a new process id
     new_mysql_pid = await get_process_pid(
         ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
     )
-    assert (
-        mysql_pid != new_mysql_pid
-    ), "The mysql process id is the same after sending it a SIGKILL"
+    assert mysql_pid != new_mysql_pid, (
+        "The mysql process id is the same after sending it a SIGKILL"
+    )
 
     new_primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
-    assert (
-        primary.name != new_primary.name
-    ), "The mysql primary has not been reelected after sending a SIGKILL"
+    assert primary.name != new_primary.name, (
+        "The mysql primary has not been reelected after sending a SIGKILL"
+    )
 
     logger.info("Ensuring all units have continuous writes incrementing")
     # ensure continuous writes still incrementing for all units

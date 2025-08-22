@@ -32,17 +32,11 @@ TLS_SETUP_SLEEP_TIME = 30
 
 if juju_.has_secrets:
     tls_app_name = "self-signed-certificates"
-    if architecture.architecture == "arm64":
-        tls_channel = "latest/edge"
-    else:
-        tls_channel = "latest/stable"
+    tls_channel = "latest/edge" if architecture.architecture == "arm64" else "latest/stable"
     tls_config = {"ca-common-name": "Test CA"}
 else:
     tls_app_name = "tls-certificates-operator"
-    if architecture.architecture == "arm64":
-        tls_channel = "legacy/edge"
-    else:
-        tls_channel = "legacy/stable"
+    tls_channel = "legacy/edge" if architecture.architecture == "arm64" else "legacy/stable"
     tls_config = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
 
 
@@ -105,13 +99,13 @@ async def test_connection_before_tls(ops_test: OpsTest) -> None:
         unit_ip = await get_unit_address(ops_test, unit.name)
         config["host"] = unit_ip
 
-        assert is_connection_possible(
-            config, **{"ssl_disabled": False}
-        ), f"❌ Encrypted connection not possible to unit {unit.name} with disabled TLS"
+        assert is_connection_possible(config, **{"ssl_disabled": False}), (
+            f"❌ Encrypted connection not possible to unit {unit.name} with disabled TLS"
+        )
 
-        assert is_connection_possible(
-            config, **{"ssl_disabled": True}
-        ), f"❌ Unencrypted connection not possible to unit {unit.name} with disabled TLS"
+        assert is_connection_possible(config, **{"ssl_disabled": True}), (
+            f"❌ Unencrypted connection not possible to unit {unit.name} with disabled TLS"
+        )
 
 
 @pytest.mark.abort_on_fail
@@ -140,13 +134,13 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     for unit in all_units:
         unit_ip = await get_unit_address(ops_test, unit.name)
         config["host"] = unit_ip
-        assert is_connection_possible(
-            config, **{"ssl_disabled": False}
-        ), f"❌ Encrypted connection not possible to unit {unit.name} with enabled TLS"
+        assert is_connection_possible(config, **{"ssl_disabled": False}), (
+            f"❌ Encrypted connection not possible to unit {unit.name} with enabled TLS"
+        )
 
-        assert not is_connection_possible(
-            config, **{"ssl_disabled": True}
-        ), f"❌ Unencrypted connection possible to unit {unit.name} with enabled TLS"
+        assert not is_connection_possible(config, **{"ssl_disabled": True}), (
+            f"❌ Unencrypted connection possible to unit {unit.name} with enabled TLS"
+        )
 
     # test for ca presence in a given unit
     logger.info("Assert TLS file exists")
@@ -184,22 +178,22 @@ async def test_rotate_tls_key(ops_test: OpsTest) -> None:
             ops_test, unit.name, f"/var/lib/mysql/{TLS_SSL_CERT_FILE}"
         )
 
-        assert (
-            new_cert_md5 != original_tls[unit.name]["cert"]
-        ), f"cert for {unit.name} was not updated."
+        assert new_cert_md5 != original_tls[unit.name]["cert"], (
+            f"cert for {unit.name} was not updated."
+        )
 
     # Asserting only encrypted connection should be possible
     logger.info("Asserting connections after relation")
     for unit in all_units:
         unit_ip = await get_unit_address(ops_test, unit.name)
         config["host"] = unit_ip
-        assert is_connection_possible(
-            config, **{"ssl_disabled": False}
-        ), f"❌ Encrypted connection not possible to unit {unit.name} with enabled TLS"
+        assert is_connection_possible(config, **{"ssl_disabled": False}), (
+            f"❌ Encrypted connection not possible to unit {unit.name} with enabled TLS"
+        )
 
-        assert not is_connection_possible(
-            config, **{"ssl_disabled": True}
-        ), f"❌ Unencrypted connection possible to unit {unit.name} with enabled TLS"
+        assert not is_connection_possible(config, **{"ssl_disabled": True}), (
+            f"❌ Unencrypted connection possible to unit {unit.name} with enabled TLS"
+        )
 
 
 @pytest.mark.abort_on_fail
@@ -220,10 +214,10 @@ async def test_disable_tls(ops_test: OpsTest) -> None:
     for unit in all_units:
         unit_ip = await get_unit_address(ops_test, unit.name)
         config["host"] = unit_ip
-        assert is_connection_possible(
-            config, **{"ssl_disabled": False}
-        ), f"❌ Encrypted connection not possible to unit {unit.name} after relation removal"
+        assert is_connection_possible(config, **{"ssl_disabled": False}), (
+            f"❌ Encrypted connection not possible to unit {unit.name} after relation removal"
+        )
 
-        assert is_connection_possible(
-            config, **{"ssl_disabled": True}
-        ), f"❌ Unencrypted connection not possible to unit {unit.name} after relation removal"
+        assert is_connection_possible(config, **{"ssl_disabled": True}), (
+            f"❌ Unencrypted connection not possible to unit {unit.name} after relation removal"
+        )
