@@ -319,6 +319,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         return text_logs
 
+    def update_endpoints(self) -> None:
+        """Temp placeholder."""
+        pass
+
     def unit_initialized(self, raise_exceptions: bool = False) -> bool:
         """Return whether a unit is started.
 
