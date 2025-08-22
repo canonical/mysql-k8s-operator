@@ -92,7 +92,7 @@ from constants import (
     TRACING_PROTOCOL,
     TRACING_RELATION_NAME,
 )
-from k8s_helpers import KubernetesHelpers
+from k8s_helpers import KubernetesHelpers, k8s_domain
 from log_rotate_manager import LogRotateManager
 from mysql_k8s_helpers import MySQL, MySQLInitialiseMySQLDError
 from relations.mysql import MySQLRelation
@@ -354,23 +354,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         Translate juju unit name to resolvable hostname.
         """
         unit_hostname = self.get_unit_hostname(unit.name)
-        unit_dns_domain = getfqdn(self.get_unit_hostname(unit.name))
-
-        # When fully propagated, DNS domain name should contain unit hostname.
-        # For example:
-        # Hostname: mysql-k8s-0.mysql-k8s-endpoints
-        # Fully propagated: mysql-k8s-0.mysql-k8s-endpoints.dev.svc.cluster.local
-        # Not propagated yet: 10-1-142-191.mysql-k8s.dev.svc.cluster.local
-        if unit_hostname not in unit_dns_domain:
-            logger.warning(
-                "get_unit_address: unit DNS domain name is not fully propagated yet, trying again"
-            )
-            raise RuntimeError("unit DNS domain name is not fully propagated yet")
-        if unit_dns_domain == unit_hostname:
-            logger.warning("Can't get fully qualified domain name for unit. IS DNS not ready?")
-            raise RuntimeError("Can't get unit fqdn")
-
-        return dotappend(unit_dns_domain)
+        return dotappend(f"{unit_hostname}.{self.model.name}.svc.{k8s_domain()}")
 
     def is_unit_busy(self) -> bool:
         """Returns whether the unit is busy."""
