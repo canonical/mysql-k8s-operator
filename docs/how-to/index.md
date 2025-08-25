@@ -24,6 +24,7 @@ Scale replicas <scale-replicas>
 Manage passwords <manage-passwords>
 Enable TLS <enable-tls>
 External network access <external-network-access>
+Primary switchover <primary-switchover>
 ```
 
 ## Back up and restore
@@ -80,3 +81,4 @@ Development <development/index>
 
 Contribute <contribute>
 ```
+
