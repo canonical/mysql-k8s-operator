@@ -1,0 +1,25 @@
+[32mINFO    [0m integration.test_saturate_max_connections:test_saturate_max_connections.py:71 Running action to get app connection data
+[32mINFO    [0m integration.test_saturate_max_connections:test_saturate_max_connections.py:80 Creating 10 connections
+[32mINFO    [0m mysql.connector:__init__.py:149 package: mysql.connector.plugins
+[32mINFO    [0m mysql.connector:__init__.py:150 plugin_name: caching_sha2_password
+[32mINFO    [0m mysql.connector:__init__.py:154 AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+[32mINFO    [0m integration.test_saturate_max_connections:test_saturate_max_connections.py:84 Ensure all connections are established
+[32mINFO    [0m integration.test_saturate_max_connections:test_saturate_max_connections.py:90 Ensure no more client connections are possible
+[32mINFO    [0m integration.test_saturate_max_connections:test_saturate_max_connections.py:96 Get cluster status while connections are saturated
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  01:34:55Z
+
+App    Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+app    0.0.2                    active      1  mysql-test-app  latest/edge   82  10.152.183.142  no       
+mysql  8.0.42-0ubuntu0.22.04.2  active      1  mysql-k8s                      0  10.152.183.61   no       
+
+Unit      Workload  Agent  Address    Ports  Message
+app/0*    active    idle   10.1.7.10         
+mysql/0*  active    idle   10.1.7.9          Primary
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
