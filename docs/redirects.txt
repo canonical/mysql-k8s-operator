@@ -65,7 +65,7 @@ h-migrate-mysqldump/ how-to/development/migrate-data-via-mysqldump
 h-migrate-mydumper/ how-to/development/migrate-data-via-mydumper
 h-migrate-backup-restore/ how-to/development/migrate-data-via-backup-restore
 
-h-troubleshooting/ reference/troubleshooting
+h-troubleshooting/ reference/troubleshooting/
 h-contribute/ how-to/contribute
 
 # Reference
