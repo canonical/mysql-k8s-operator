@@ -42,6 +42,7 @@ from charms.mysql.v0.mysql import (
     MySQLLockAcquisitionError,
     MySQLNoMemberStateError,
     MySQLRebootFromCompleteOutageError,
+    MySQLRejoinInstanceToClusterError,
     MySQLServiceNotRunningError,
     MySQLSetClusterPrimaryError,
     MySQLUnableToGetMemberStateError,
@@ -317,10 +318,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             text_logs.append("audit")
 
         return text_logs
-
-    def update_endpoints(self) -> None:
-        """Temp placeholder."""
-        pass
 
     def unit_initialized(self, raise_exceptions: bool = False) -> bool:
         """Return whether a unit is started.
@@ -948,7 +945,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         It is supposed to be called when the MySQL 8.0.21+ auto-rejoin attempts have been exhausted,
         on an OFFLINE replica that still belongs to the cluster
         """
-        if not self._mysql.is_instance_in_cluster(self.unit_label):
+        if not self._mysql.instance_belongs_to_cluster(self.unit_label):
             logger.warning("Instance does not belong to the cluster. Cannot perform manual rejoin")
             return
 
@@ -957,14 +954,37 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.warning("Instance does not have ONLINE peers. Cannot perform manual rejoin")
             return
 
+        # add random delay to mitigate collisions when multiple units are rejoining
+        # due the difference between the time we test for locks and acquire them
+        # Not used for cryptographic purpose
+        sleep(random.uniform(0, 1.5))  # noqa: S311
+
+        if self._mysql.are_locks_acquired(from_instance=cluster_primary):
+            logger.info("waiting: cluster lock is held")
+            return
+        try:
+            self._mysql.rejoin_instance_to_cluster(
+                unit_address=self.unit_address,
+                unit_label=self.unit_label,
+                from_instance=cluster_primary,
+            )
+        except MySQLRejoinInstanceToClusterError:
+            logger.warning("Can't rejoin instance to cluster. Falling back to remove and add.")
+
         self._mysql.remove_instance(
             unit_label=self.unit_label,
+            auto_dissolve=False,
         )
         self._mysql.add_instance_to_cluster(
             instance_address=self.unit_address,
             instance_unit_label=self.unit_label,
             from_instance=cluster_primary,
         )
+
+    def update_endpoints(self) -> None:
+        """Update the endpoints for the database relation."""
+        self.database_relation._configure_endpoints(None)
+        self._on_update_status(None)
 
     def _is_cluster_blocked(self) -> bool:
         """Performs cluster state checks for the update-status handler.
@@ -1031,6 +1051,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return
 
         if not primary_address:
+            logger.error("Cluster has no primary. Check cluster status on online units.")
+            self.app.status = MaintenanceStatus("Cluster has no primary.")
             return
 
         if "s3-block-message" in self.app_peer_data:

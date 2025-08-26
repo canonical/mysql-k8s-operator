@@ -10,7 +10,7 @@ See [](/reference/troubleshooting/known-scenarios.md) for specific operational i
 
 ## Check status
 
-The first troubleshooting step is to run `juju status` and check the statuses and messages of all applications and units. 
+The first troubleshooting step is to run `juju status` and check the statuses and messages of all applications and units.
 
 See [](/reference/charm-statuses) for additional recommendations based on status.
 
@@ -47,7 +47,7 @@ See [Juju logs documentation](https://juju.is/docs/juju/log) to learn more about
 
 Check the operator [architecture](/explanation/architecture) first to be familiar with the `charm` and `workload` containers.
 
-Make sure both containers are `Running` and `Ready` to continue troubleshooting inside the charm. 
+Make sure both containers are `Running` and `Ready` to continue troubleshooting inside the charm.
 
 To describe the running pod, use the following command (where `0` is a Juju unit id):
 
@@ -99,6 +99,7 @@ To enter the `workload` container, run:
 ```shell
 juju ssh --container mysql mysql-k8s/0 bash
 ```
+
 You can check the list of running processes and Pebble plan:
 
 ```shell
@@ -114,7 +115,7 @@ mysql         70  0.0  0.0   2888  1884 ?        S    21:14   0:00 /bin/sh /usr/
 mysql        366  2.4  7.2 26711784 2394252 ?    Sl   21:14   0:10 /usr/sbin/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib/mysql/plugin --log-error=/var/log/mysql/error.log --pid-file=mysql-k8s-0.pid
 ```
 
-The list of running Pebble services will dependson whether the charm is integrated with [COS](/how-to/monitoring-cos/enable-monitoring) and/or has [backup](/how-to/back-up-and-restore/create-a-backup) functionality. 
+The list of running Pebble services will dependson whether the charm is integrated with [COS](/how-to/monitoring-cos/enable-monitoring) and/or has [backup](/how-to/back-up-and-restore/create-a-backup) functionality.
 
 The Pebble and its service `mysqld_safe` must always be enabled and currently running (the Linux processes `pebble`, `mysqld_safe` and `mysqld`).
 
@@ -159,7 +160,7 @@ Continue troubleshooting your database/SQL related issues from here.
 
 [Contact us](/reference/contacts) if you cannot determinate the source of your issue, or if you'd like to help us improve this document.
 
-## Installing extra software:
+## Installing extra software
 
 **We do not recommend installing any additionally software** as it may affect the stability and produce anomalies which is hard to troubleshoot and fix.
 
@@ -178,4 +179,5 @@ root@mysql-k8s-0:/#
 :titlesonly:
 
 Known scenarios <known-scenarios>
+Recovering from quorum loss <recover-from-quorum-loss>
 ```
