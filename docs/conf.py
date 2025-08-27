@@ -216,7 +216,7 @@ sitemap_show_lastmod = True
 
 # redirects = {}
 
-# rediraffe_redirects = "redirects.txt"
+rediraffe_redirects = "redirects.txt"
 
 ###########################
 # Link checker exceptions #
@@ -283,6 +283,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_sitemap",
     "sphinxcontrib.mermaid",
+    "sphinxext.rediraffe"
 ]
 
 # Excludes files or directories from processing

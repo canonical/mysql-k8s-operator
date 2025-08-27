@@ -1,3 +1,7 @@
+---
+relatedlinks: "[Charmhub](https://charmhub.io/mysql-k8s)"
+---
+
 # Charmed MySQL K8s documentation
 
 Charmed MySQL K8s is an open-source software operator that deploys and operates [MySQL Community Edition](https://www.mysql.com/products/community/) relational databases on Kubernetes via [Juju](https://juju.is/). 
