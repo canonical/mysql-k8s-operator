@@ -1,0 +1,79 @@
+[1m[31mERROR   [0m asyncio:base_events.py:1821 Task exception was never retrieved
+future: <Task finished name='Task-5260' coro=<Connection._connect.<locals>._try_endpoint() done, defined at /root/spread_project/.tox/integration/lib/python3.12/site-packages/juju/client/connection.py:724> exception=OSError(9, 'Bad file descriptor')>
+Traceback (most recent call last):
+  File "/root/spread_project/.tox/integration/lib/python3.12/site-packages/juju/client/connection.py", line 729, in _try_endpoint
+    return await self._open(endpoint, cacert)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/spread_project/.tox/integration/lib/python3.12/site-packages/juju/client/connection.py", line 330, in _open
+    await websockets.connect(
+  File "/root/spread_project/.tox/integration/lib/python3.12/site-packages/websockets/asyncio/client.py", line 442, in __await_impl__
+    self.connection = await self.create_connection()
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/spread_project/.tox/integration/lib/python3.12/site-packages/websockets/asyncio/client.py", line 368, in create_connection
+    _, connection = await loop.create_connection(factory, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 1149, in create_connection
+    transport, protocol = await self._create_connection_transport(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 1167, in _create_connection_transport
+    sock.setblocking(False)
+OSError: [Errno 9] Bad file descriptor
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  01:57:08Z
+
+App      Version                  Status       Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active         0/1  mysql-test-app    latest/edge   82  10.152.183.93   no       
+app1     0.0.2                    active         0/1  mysql-test-app    latest/edge   82  10.152.183.166  no       
+app2     0.0.2                    active         0/1  mysql-test-app    latest/edge   82  10.152.183.26   no       
+app3     0.0.2                    active         0/1  mysql-test-app    latest/edge   82  10.152.183.62   no       
+app4     0.0.2                    active         0/1  mysql-test-app    latest/edge   82  10.152.183.204  no       
+app5     0.0.2                    active         0/1  mysql-test-app    latest/edge   82  10.152.183.126  no       
+app6     0.0.2                    active         0/1  mysql-test-app    latest/edge   82  10.152.183.242  no       
+mysql                             waiting        0/3  mysql-k8s                        0  10.152.183.92   no       installing agent
+router0  8.0.42-0ubuntu0.22.04.2  waiting        0/3  mysql-router-k8s  8.0/edge     771  10.152.183.158  no       installing agent
+router1  8.0.42-0ubuntu0.22.04.2  waiting        0/3  mysql-router-k8s  8.0/edge     771  10.152.183.194  no       installing agent
+router2  8.0.42-0ubuntu0.22.04.2  waiting        0/3  mysql-router-k8s  8.0/edge     771  10.152.183.20   no       installing agent
+router3  8.0.42-0ubuntu0.22.04.2  waiting        0/3  mysql-router-k8s  8.0/edge     771  10.152.183.252  no       installing agent
+router4                           waiting        0/3  mysql-router-k8s  8.0/edge     771  10.152.183.217  no       installing agent
+router5  8.0.42-0ubuntu0.22.04.2  waiting        0/3  mysql-router-k8s  8.0/edge     771  10.152.183.31   no       installing agent
+router6  8.0.42-0ubuntu0.22.04.2  maintenance    0/3  mysql-router-k8s  8.0/edge     771  10.152.183.220  no       Waiting for K8s service connectivity
+
+Unit        Workload  Agent  Address    Ports  Message
+app0/0*     unknown   lost   10.1.7.10         agent lost, see 'juju show-status-log app0/0'
+app1/0*     unknown   lost   10.1.7.11         agent lost, see 'juju show-status-log app1/0'
+app2/0*     unknown   lost   10.1.7.13         agent lost, see 'juju show-status-log app2/0'
+app3/0*     unknown   lost   10.1.7.15         agent lost, see 'juju show-status-log app3/0'
+app4/0*     unknown   lost   10.1.7.17         agent lost, see 'juju show-status-log app4/0'
+app5/0*     unknown   lost   10.1.7.19         agent lost, see 'juju show-status-log app5/0'
+app6/0*     unknown   lost   10.1.7.21         agent lost, see 'juju show-status-log app6/0'
+mysql/0*    unknown   lost   10.1.7.9          agent lost, see 'juju show-status-log mysql/0'
+mysql/1     unknown   lost   10.1.7.38         agent lost, see 'juju show-status-log mysql/1'
+mysql/2     unknown   lost   10.1.7.39         agent lost, see 'juju show-status-log mysql/2'
+router0/0*  unknown   lost   10.1.7.12         agent lost, see 'juju show-status-log router0/0'
+router0/1   unknown   lost   10.1.7.31         agent lost, see 'juju show-status-log router0/1'
+router0/2   unknown   lost   10.1.7.24         agent lost, see 'juju show-status-log router0/2'
+router1/0*  unknown   lost   10.1.7.14         agent lost, see 'juju show-status-log router1/0'
+router1/1   unknown   lost   10.1.7.27         agent lost, see 'juju show-status-log router1/1'
+router1/2   unknown   lost   10.1.7.25         agent lost, see 'juju show-status-log router1/2'
+router2/0*  unknown   lost   10.1.7.16         agent lost, see 'juju show-status-log router2/0'
+router2/1   unknown   lost   10.1.7.30         agent lost, see 'juju show-status-log router2/1'
+router2/2   unknown   lost   10.1.7.29         agent lost, see 'juju show-status-log router2/2'
+router3/0*  unknown   lost   10.1.7.18         agent lost, see 'juju show-status-log router3/0'
+router3/1   unknown   lost   10.1.7.33         agent lost, see 'juju show-status-log router3/1'
+router3/2   unknown   lost   10.1.7.32         agent lost, see 'juju show-status-log router3/2'
+router4/0*  unknown   lost   10.1.7.20         agent lost, see 'juju show-status-log router4/0'
+router4/1   unknown   lost   10.1.7.40         agent lost, see 'juju show-status-log router4/1'
+router4/2   unknown   lost   10.1.7.41         agent lost, see 'juju show-status-log router4/2'
+router5/0*  unknown   lost   10.1.7.22         agent lost, see 'juju show-status-log router5/0'
+router5/1   unknown   lost   10.1.7.36         agent lost, see 'juju show-status-log router5/1'
+router5/2   unknown   lost   10.1.7.37         agent lost, see 'juju show-status-log router5/2'
+router6/0*  unknown   lost   10.1.7.23         agent lost, see 'juju show-status-log router6/0'
+router6/1   unknown   lost   10.1.7.35         agent lost, see 'juju show-status-log router6/1'
+router6/2   unknown   lost   10.1.7.34         agent lost, see 'juju show-status-log router6/2'
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
