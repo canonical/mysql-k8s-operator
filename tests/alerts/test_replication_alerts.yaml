@@ -1,0 +1,161 @@
+rule_files:
+  - ../../src/prometheus_alert_rules/replication_rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  - name: MySQLClusterUnitOffline fires after 5m of OFFLINE=1
+    interval: 1m
+    input_series:
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db1",member_state="OFFLINE",member_role="SECONDARY"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      - alertname: MySQLClusterUnitOffline
+        eval_time: 5m
+        exp_alerts:
+          - exp_labels:
+              alertname: MySQLClusterUnitOffline
+              severity: warning
+              instance: db1
+              member_state: OFFLINE
+              member_role: SECONDARY
+            exp_annotations:
+              summary: MySQL cluster member db1 is offline
+              description: |
+                The MySQL member is marked offline in the cluster, although the process might still be running.
+                If this is unexptected, please check the logs.
+                LABELS = map[__name__:mysql_perf_schema_replication_group_member_info instance:db1 member_role:SECONDARY member_state:OFFLINE].
+
+  - name: MySQLClusterUnitOffline does not fire when OFFLINE=0
+    interval: 1m
+    input_series:
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db2",member_state="OFFLINE",member_role="SECONDARY"}'
+        values: '0 0 0 0 0 0'
+    alert_rule_test:
+      - alertname: MySQLClusterUnitOffline
+        eval_time: 6m
+        exp_alerts: []
+
+  - name: MySQLClusterNoPrimary fires immediately when there is no PRIMARY
+    interval: 1m
+    input_series:
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db1",member_state="ONLINE",member_role="SECONDARY"}'
+        values: '1 1'
+    alert_rule_test:
+      - alertname: MySQLClusterNoPrimary
+        eval_time: 0m
+        exp_alerts:
+          - exp_labels:
+              alertname: MySQLClusterNoPrimary
+              severity: critical
+              member_role: PRIMARY
+            exp_annotations:
+              summary: MySQL cluster reports no primariy
+              description: |
+                MySQL has no primaries. The cluster will likely be in a Read-Only state.
+                Please check the cluster health, the logs and investigate.
+                LABELS = map[member_role:PRIMARY].
+
+  - name: MySQLClusterTooManyPrimaries fires after 15m when PRIMARY count > 1
+    interval: 1m
+    input_series:
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db1",member_state="ONLINE",member_role="PRIMARY"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db2",member_state="ONLINE",member_role="PRIMARY"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - alertname: MySQLClusterTooManyPrimaries
+        eval_time: 15m
+        exp_alerts:
+          - exp_labels:
+              alertname: MySQLClusterTooManyPrimaries
+              severity: critical
+            exp_annotations:
+              summary: MySQL cluster reports more than one primary.
+              description: |
+                MySQL reports more than one primary. This is can indicate a split-brain situation.
+                Please refer to the troubleshooting docs.
+                LABELS = map[].
+
+  - name: MySQLNoReplication fires after 15m if there are no SECONDARY
+    interval: 1m
+    input_series:
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db1",member_state="ONLINE",member_role="PRIMARY"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - alertname: MySQLNoReplication
+        eval_time: 15m
+        exp_alerts:
+          - exp_labels:
+              alertname: MySQLNoReplication
+              severity: warning
+              member_role: SECONDARY
+            exp_annotations:
+              summary: MySQL cluster has no secondaries.
+              description: |
+                The MySQL cluster has no secondaries. This means that the cluster is not redundant and a failure of the primary will lead to downtime.
+                Please check the cluster health, the logs and investigate.
+                LABELS = map[member_role:SECONDARY].
+
+  - name: MySQLGroupReplicationReduced fires when ONLINE count drops below prior 6h max
+    interval: 5m
+    input_series:
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db1",member_state="ONLINE",member_role="SECONDARY"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db2",member_state="ONLINE",member_role="SECONDARY"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+      - series: 'mysql_perf_schema_replication_group_member_info{instance="db3",member_state="ONLINE",member_role="PRIMARY"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - alertname: MySQLGroupReplicationReduced
+        eval_time: 5h
+        exp_alerts:
+          - exp_labels:
+              alertname: MySQLGroupReplicationReduced
+              severity: warning
+            exp_annotations:
+              summary: MySQL cluster's Group Replication size reduced
+              description: |
+                The number of ONLINE members in the MySQL Group Replication cluster has reduced compared to the maximum observed in the last 6 hours.
+                Please check the cluster health, the logs and investigate.
+                LABELS = map[].
+
+  - name: MySQLGroupReplicationConflicts fires when rate>0 for 5m
+    interval: 1m
+    input_series:
+      - series: 'mysql_perf_schema_conflicts_detected{instance="db1"}'
+        values: '0 1 2 3 4 5 6 7 8 9 10'
+    alert_rule_test:
+      - alertname: MySQLGroupReplicationConflicts
+        eval_time: 10m
+        exp_alerts:
+          - exp_labels:
+              alertname: MySQLGroupReplicationConflicts
+              severity: warning
+              instance: db1
+            exp_annotations:
+              summary: MySQL cluster reports Group Replication conflicts
+              description: |
+                Conflicts indicate concurrent writes to the same rows/keys across members.
+                Please check the cluster health, the logs and investigate.
+                LABELS = map[instance:db1].
+
+  - name: MySQLGroupReplicationQueueSizeHigh fires when queue size >100 for 5m
+    interval: 1m
+    input_series:
+      - series: 'mysql_perf_schema_transactions_in_queue{instance="db2"}'
+        values: '0 0 0 120 120 120 120 120 120'
+    alert_rule_test:
+      - alertname: MySQLGroupReplicationQueueSizeHigh
+        eval_time: 8m
+        exp_alerts:
+          - exp_labels:
+              alertname: MySQLGroupReplicationQueueSizeHigh
+              severity: warning
+              instance: db2
+            exp_annotations:
+              summary: MySQL cluster reports high Group Replication queue size
+              description: |
+                A high number of transactions in the Group Replication queue might indicate network issues or overloaded nodes.
+                Please check the cluster health, the logs and investigate.
+                LABELS = map[__name__:mysql_perf_schema_transactions_in_queue instance:db2].
