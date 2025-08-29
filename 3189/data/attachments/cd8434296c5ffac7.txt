@@ -1,0 +1,36 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/mongodb-k8s-36
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/focal/kafka-k8s-5
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/osm-pol-337
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/focal/zookeeper-k8s-10
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mongodb/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mongodb/0 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] maintenance: Initialising mysqld
+  mongodb/0 [idle] unknown: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mongodb/0 [idle] unknown: 
+[32mINFO    [0m integration.test_osm_integration_bundle:test_osm_integration_bundle.py:128 Relate kafka and zookeeper
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m integration.test_osm_integration_bundle:test_osm_integration_bundle.py:140 Relate keystone and mysql
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  osm-keystone/0 [executing] blocked: mysql relation is missing
+[32mINFO    [0m integration.test_osm_integration_bundle:test_osm_integration_bundle.py:153 Relate osm-pol and mongo
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m integration.test_osm_integration_bundle:test_osm_integration_bundle.py:159 Relate osm-pol and kafka
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m integration.test_osm_integration_bundle:test_osm_integration_bundle.py:165 Relate osm-pol and mysql
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
