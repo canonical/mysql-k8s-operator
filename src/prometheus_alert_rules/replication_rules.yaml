@@ -10,16 +10,16 @@ groups:
           summary: MySQL cluster member {{ $labels.instance }} is offline
           description: |
             The MySQL member is marked offline in the cluster, although the process might still be running.
-            If this is unexptected, please check the logs.
+            If this is unexpected, please check the logs.
             LABELS = {{ $labels }}.
 
       - alert: MySQLClusterNoPrimary
-        expr: absent(mysql_perf_schema_replication_group_member_info{member_role="PRIMARY"})
+        expr: absent(mysql_perf_schema_replication_group_member_info{member_role="PRIMARY",member_state="ONLINE"})
         for: 0m
         labels:
           severity: critical
         annotations:
-          summary: MySQL cluster reports no primariy
+          summary: MySQL cluster reports no primary
           description: |
             MySQL has no primaries. The cluster will likely be in a Read-Only state.
             Please check the cluster health, the logs and investigate.
@@ -33,7 +33,7 @@ groups:
         annotations:
           summary: MySQL cluster reports more than one primary.
           description: |
-            MySQL reports more than one primary. This is can indicate a split-brain situation.
+            MySQL reports more than one primary. This can indicate a split-brain situation.
             Please refer to the troubleshooting docs.
             LABELS = {{ $labels }}.
 
@@ -56,7 +56,7 @@ groups:
           max_over_time(
             count(mysql_perf_schema_replication_group_member_info{member_state="ONLINE"} == 1)[6h:]
           )
-        for: 15m
+        for: 5m
         labels:
           severity: warning
         annotations:

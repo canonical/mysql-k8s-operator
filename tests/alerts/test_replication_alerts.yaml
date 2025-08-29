@@ -23,7 +23,7 @@ tests:
               summary: MySQL cluster member db1 is offline
               description: |
                 The MySQL member is marked offline in the cluster, although the process might still be running.
-                If this is unexptected, please check the logs.
+                If this is unexpected, please check the logs.
                 LABELS = map[__name__:mysql_perf_schema_replication_group_member_info instance:db1 member_role:SECONDARY member_state:OFFLINE].
 
   - name: MySQLClusterUnitOffline does not fire when OFFLINE=0
@@ -50,7 +50,7 @@ tests:
               severity: critical
               member_role: PRIMARY
             exp_annotations:
-              summary: MySQL cluster reports no primariy
+              summary: MySQL cluster reports no primary
               description: |
                 MySQL has no primaries. The cluster will likely be in a Read-Only state.
                 Please check the cluster health, the logs and investigate.
@@ -73,7 +73,7 @@ tests:
             exp_annotations:
               summary: MySQL cluster reports more than one primary.
               description: |
-                MySQL reports more than one primary. This is can indicate a split-brain situation.
+                MySQL reports more than one primary. This can indicate a split-brain situation.
                 Please refer to the troubleshooting docs.
                 LABELS = map[].
 
