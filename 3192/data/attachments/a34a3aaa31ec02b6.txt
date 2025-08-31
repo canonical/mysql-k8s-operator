@@ -1,0 +1,55 @@
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m integration.conftest:conftest.py:31 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:142 Get leader unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:146 Run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:152 Inject dependency fault
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:157 Refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:160 Get first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:164 Wait for upgrade to fail on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:170 Ensure continuous_writes while in failure state on remaining units
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=5436 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=5442 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:176 Re-run pre-upgrade-check action
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:179 Re-refresh the charm
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:182 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:187 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.224:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.224:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.224:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:200 Wait for application to recover
+[32mINFO    [0m integration.high_availability.test_upgrade:test_upgrade.py:206 Ensure continuous_writes after rollback procedure
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=17203 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=17203 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=17420 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=17427 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=17435 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  01:42:28Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.42-0ubuntu0.22.04.2  active      3  mysql-k8s                      2  10.152.183.161  no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   82  10.152.183.249  no       Last written value=17212
+
+Unit               Workload  Agent  Address       Ports  Message
+mysql-k8s/0        active    idle   10.1.248.149         
+mysql-k8s/1*       active    idle   10.1.248.148         Primary
+mysql-k8s/2        active    idle   10.1.248.147         
+mysql-test-app/0*  active    idle   10.1.248.136         Last written value=17212
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:32:12 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 01:32:12 ERROR unit.mysql-k8s/0.juju-log database-peers:2: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:32:13 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:32:13 ERROR unit.mysql-k8s/1.juju-log database-peers:2: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 01:38:58 ERROR unit.mysql-k8s/2.juju-log charms.data_platform_libs.v0.upgrade.VersionError - {'message': 'Versions incompatible, charm 1 can not be upgraded to 999.999.999', 'cause': 'Upgrades only supported for specific versions, charm versions satisfying requirement >1', 'resolution': ''}
+unit-mysql-k8s-2: 01:38:58 CRITICAL unit.mysql-k8s/2.juju-log Upgrade failed, follow the instructions below to rollback:
+  1 - Run `juju run mysql-k8s/leader pre-upgrade-check` to configure rollback
+  2 - Run `juju refresh --revision <previous-revision> mysql-k8s` to initiate the rollback
+  3 - Run `juju run mysql-k8s/leader resume-upgrade` to resume the rollback
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
