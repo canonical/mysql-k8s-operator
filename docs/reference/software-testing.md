@@ -41,13 +41,13 @@ juju run mysql-test-app/leader get-inserted-data
 # Start "continuous write" test:
 juju run mysql-test-app/leader start-continuous-writes
 export password=$(juju run mysql-k8s/leader get-password username=root | yq '.. | select(. | has("password")).password')
-watch -n1 -x juju ssh --container mysql mysql-k8s/leader "mysql -h 127.0.0.1 -uroot -p${password} -e \"select count(*) from continuous_writes_database.data\""
+watch -n1 -x juju ssh --container mysql mysql-k8s/leader "mysql -h 127.0.0.1 -uroot -p${password} -e \"select count(*) from continuous_writes.data\""
 
 # Watch the counter is growing!
 ```
 Expected results:
 
-* mysql-test-app continuously inserts records in database `continuous_writes_database` table `data`.
+* mysql-test-app continuously inserts records in database `continuous_writes` table `data`.
 * the counters (amount of records in table) are growing on all cluster members
 
 Hints:

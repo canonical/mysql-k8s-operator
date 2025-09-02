@@ -9,7 +9,8 @@ import typing
 
 from charms.mysql.v0.mysql import (
     MySQLCheckUserExistenceError,
-    MySQLCreateApplicationDatabaseAndScopedUserError,
+    MySQLCreateApplicationDatabaseError,
+    MySQLCreateApplicationScopedUserError,
     MySQLDeleteUsersForUnitError,
 )
 from ops.charm import RelationBrokenEvent, RelationChangedEvent, RelationCreatedEvent
@@ -246,14 +247,18 @@ class MySQLRelation(Object):
 
         try:
             logger.info("Creating application database and scoped user")
-            self.charm._mysql.create_application_database_and_scoped_user(
+            self.charm._mysql.create_database(database)
+            self.charm._mysql.create_scoped_user(
                 database,
                 username,
                 password,
                 "%",
                 unit_name="mysql-legacy-relation",
             )
-        except MySQLCreateApplicationDatabaseAndScopedUserError:
+        except (
+            MySQLCreateApplicationDatabaseError,
+            MySQLCreateApplicationScopedUserError,
+        ):
             self.charm.unit.status = BlockedStatus(
                 "Failed to create application database and scoped user"
             )

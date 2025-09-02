@@ -34,8 +34,10 @@ from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
     MySQLCharmBase,
     MySQLConfigureInstanceError,
+    MySQLConfigureMySQLRolesError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLCreateClusterSetError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMySQLVersionError,
     MySQLInitializeJujuOperationsTableError,
@@ -373,6 +375,25 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """Returns whether the unit is busy."""
         return self._is_cluster_blocked()
 
+    def _create_cluster(self) -> None:
+        juju_version = ops.JujuVersion.from_environ()
+
+        try:
+            # Create the cluster when is the leader unit
+            logger.info(f"Creating cluster {self.app_peer_data['cluster-name']}")
+            self.create_cluster()
+            self.unit.set_ports(3306, 33060) if juju_version.supports_open_port_on_k8s else None
+            self.unit.status = ops.ActiveStatus(self.active_status_message)
+        except (
+            MySQLCreateClusterError,
+            MySQLCreateClusterSetError,
+            MySQLInitializeJujuOperationsTableError,
+            MySQLNoMemberStateError,
+            MySQLUnableToGetMemberStateError,
+        ):
+            logger.exception("Failed to initialize primary")
+            raise
+
     def _get_primary_from_online_peer(self) -> Optional[str]:
         """Get the primary address from an online peer."""
         for unit in self.peers.units:
@@ -679,17 +700,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             "cluster-set-domain-name", self.config.cluster_set_name or f"cluster-set-{common_hash}"
         )
 
-    def _open_ports(self) -> None:
-        """Open ports if supported.
-
-        Used if `juju expose` ran on application
-        """
-        if ops.JujuVersion.from_environ().supports_open_port_on_k8s:
-            try:
-                self.unit.set_ports(3306, 33060)
-            except ops.ModelError:
-                logger.exception("failed to open port")
-
     def _write_mysqld_configuration(self) -> dict:
         """Write the mysqld configuration to the file."""
         memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
@@ -727,7 +737,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             logger.info("Configuring initialized mysqld")
             # Configure all base users and revoke privileges from the root users
-            self._mysql.configure_mysql_users()
+            self._mysql.configure_mysql_router_roles()
+            self._mysql.configure_mysql_system_roles()
+            self._mysql.configure_mysql_system_users()
 
             if self.config.plugin_audit_enabled:
                 # Enable the audit plugin
@@ -739,6 +751,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         except (
             MySQLInitialiseMySQLDError,
             MySQLServiceNotRunningError,
+            MySQLConfigureMySQLRolesError,
             MySQLConfigureMySQLUsersError,
             MySQLConfigureInstanceError,
             ChangeError,
@@ -759,8 +772,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 container.restart(MYSQLD_EXPORTER_SERVICE)
             else:
                 container.start(MYSQLD_EXPORTER_SERVICE)
-
-        self._open_ports()
 
         try:
             # Set workload version
@@ -842,22 +853,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self.join_unit_to_cluster()
             return
 
-        try:
-            # Create the cluster when is the leader unit
-            logger.info(f"Creating cluster {self.app_peer_data['cluster-name']}")
-            self.unit.status = MaintenanceStatus("Creating cluster")
-            self.create_cluster()
-            self.unit.status = ops.ActiveStatus(self.active_status_message)
-
-        except (
-            MySQLCreateClusterError,
-            MySQLUnableToGetMemberStateError,
-            MySQLNoMemberStateError,
-            MySQLInitializeJujuOperationsTableError,
-        ):
-            logger.exception("Failed to initialize primary")
-            raise
-
+        self._create_cluster()
         self._mysql.reconcile_binlogs_collection(force_restart=True)
 
     def _handle_potential_cluster_crash_scenario(self) -> bool:  # noqa: C901
