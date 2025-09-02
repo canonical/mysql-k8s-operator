@@ -51,11 +51,14 @@ provides:
     interface: mysql
   metrics-endpoint:
     interface: prometheus_scrape
+    optional: true
   grafana-dashboard:
     interface: grafana_dashboard
+    optional: true
   replication-offer:
     interface: mysql_async
     limit: 1
+    optional: true
 
 requires:
   certificates:
