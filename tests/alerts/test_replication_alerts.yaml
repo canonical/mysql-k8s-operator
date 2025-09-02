@@ -49,12 +49,13 @@ tests:
               alertname: MySQLClusterNoPrimary
               severity: critical
               member_role: PRIMARY
+              member_state: ONLINE
             exp_annotations:
               summary: MySQL cluster reports no primary
               description: |
                 MySQL has no primaries. The cluster will likely be in a Read-Only state.
                 Please check the cluster health, the logs and investigate.
-                LABELS = map[member_role:PRIMARY].
+                LABELS = map[member_role:PRIMARY member_state:ONLINE].
 
   - name: MySQLClusterTooManyPrimaries fires after 15m when PRIMARY count > 1
     interval: 1m
