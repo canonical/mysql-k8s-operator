@@ -68,7 +68,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
 async def test_charmed_read_role(ops_test: OpsTest):
     """Test the charmed_read predefined role."""
     await ops_test.model.applications[f"{INTEGRATOR_APP_NAME}1"].set_config({
-        "database-name": "charmed_read_database",
+        "database-name": "charmed_read_db",
         "extra-user-roles": "charmed_read",
     })
     await ops_test.model.add_relation(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
@@ -87,8 +87,8 @@ async def test_charmed_read_role(ops_test: OpsTest):
         server_config_credentials["username"],
         server_config_credentials["password"],
         [
-            "CREATE TABLE charmed_read_database.test_table (`id` SERIAL PRIMARY KEY, `data` TEXT)",
-            "INSERT INTO charmed_read_database.test_table (`data`) VALUES ('test_data_1'), ('test_data_2')",
+            "CREATE TABLE charmed_read_db.test_table (`id` SERIAL PRIMARY KEY, `data` TEXT)",
+            "INSERT INTO charmed_read_db.test_table (`data`) VALUES ('test_data_1'), ('test_data_2')",
         ],
         commit=True,
     )
@@ -102,14 +102,14 @@ async def test_charmed_read_role(ops_test: OpsTest):
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
-            "SELECT `data` FROM charmed_read_database.test_table",
+            "SELECT `data` FROM charmed_read_db.test_table",
         ],
         commit=True,
     )
     assert sorted(rows) == sorted([
         "test_data_1",
         "test_data_2",
-    ]), "Unexpected data in charmed_read_database with charmed_read role"
+    ]), "Unexpected data in charmed_read_db with charmed_read role"
 
     logger.info("Checking that the charmed_read role cannot write into an existing table")
     with pytest.raises(ProgrammingError):
@@ -118,7 +118,7 @@ async def test_charmed_read_role(ops_test: OpsTest):
             results["mysql"]["username"],
             results["mysql"]["password"],
             [
-                "INSERT INTO charmed_read_database.test_table (`data`) VALUES ('test_data_3')",
+                "INSERT INTO charmed_read_db.test_table (`data`) VALUES ('test_data_3')",
             ],
             commit=True,
         )
@@ -130,7 +130,7 @@ async def test_charmed_read_role(ops_test: OpsTest):
             results["mysql"]["username"],
             results["mysql"]["password"],
             [
-                "CREATE TABLE charmed_read_database.new_table (`id` SERIAL PRIMARY KEY, `data` TEXT)",
+                "CREATE TABLE charmed_read_db.new_table (`id` SERIAL PRIMARY KEY, `data` TEXT)",
             ],
             commit=True,
         )
@@ -149,7 +149,7 @@ async def test_charmed_read_role(ops_test: OpsTest):
 async def test_charmed_dml_role(ops_test: OpsTest):
     """Test the charmed_dml role."""
     await ops_test.model.applications[f"{INTEGRATOR_APP_NAME}1"].set_config({
-        "database-name": "charmed_dml_database",
+        "database-name": "charmed_dml_db",
         "extra-user-roles": "",
     })
     await ops_test.model.add_relation(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
@@ -181,16 +181,16 @@ async def test_charmed_dml_role(ops_test: OpsTest):
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
-            "CREATE TABLE charmed_dml_database.test_table (`id` SERIAL PRIMARY KEY, `data` TEXT)",
-            "INSERT INTO charmed_dml_database.test_table (`data`) VALUES ('test_data_1'), ('test_data_2')",
-            "SELECT `data` FROM charmed_dml_database.test_table",
+            "CREATE TABLE charmed_dml_db.test_table (`id` SERIAL PRIMARY KEY, `data` TEXT)",
+            "INSERT INTO charmed_dml_db.test_table (`data`) VALUES ('test_data_1'), ('test_data_2')",
+            "SELECT `data` FROM charmed_dml_db.test_table",
         ],
         commit=True,
     )
     assert sorted(rows) == sorted([
         "test_data_1",
         "test_data_2",
-    ]), "Unexpected data in charmed_dml_database with charmed_dml role"
+    ]), "Unexpected data in charmed_dml_db with charmed_dml role"
 
     data_integrator_2_unit = ops_test.model.applications[f"{INTEGRATOR_APP_NAME}2"].units[0]
     results = await juju_.run_action(data_integrator_2_unit, "get-credentials")
@@ -201,14 +201,14 @@ async def test_charmed_dml_role(ops_test: OpsTest):
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
-            "SELECT `data` FROM charmed_dml_database.test_table",
+            "SELECT `data` FROM charmed_dml_db.test_table",
         ],
         commit=True,
     )
     assert sorted(rows) == sorted([
         "test_data_1",
         "test_data_2",
-    ]), "Unexpected data in charmed_dml_database with charmed_dml role"
+    ]), "Unexpected data in charmed_dml_db with charmed_dml role"
 
     logger.info("Checking that the charmed_dml role can write into an existing table")
     execute_queries_on_unit(
@@ -216,7 +216,7 @@ async def test_charmed_dml_role(ops_test: OpsTest):
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
-            "INSERT INTO charmed_dml_database.test_table (`data`) VALUES ('test_data_3')",
+            "INSERT INTO charmed_dml_db.test_table (`data`) VALUES ('test_data_3')",
         ],
         commit=True,
     )
@@ -228,7 +228,7 @@ async def test_charmed_dml_role(ops_test: OpsTest):
             results["mysql"]["username"],
             results["mysql"]["password"],
             [
-                "CREATE TABLE charmed_dml_database.new_table (`id` SERIAL PRIMARY KEY, `data` TEXT)",
+                "CREATE TABLE charmed_dml_db.new_table (`id` SERIAL PRIMARY KEY, `data` TEXT)",
             ],
             commit=True,
         )

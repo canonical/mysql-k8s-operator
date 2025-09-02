@@ -1510,12 +1510,9 @@ class MySQLBase(ABC):
         """Create an application database."""
         role_name = f"charmed_dba_{database}"
 
-        if len(database) >= ROLE_MAX_LENGTH:
-            logger.error(f"Failed to create application database {database}")
-            raise MySQLCreateApplicationDatabaseError("Name longer than 32 characters")
         if len(role_name) >= ROLE_MAX_LENGTH:
-            logger.warning(f"Pruning application database role name {role_name}")
-            role_name = role_name[:ROLE_MAX_LENGTH]
+            logger.error(f"Failed to create application database {database}")
+            raise MySQLCreateApplicationDatabaseError("Role name longer than 32 characters")
 
         create_database_commands = (
             "shell.connect_to_primary()",

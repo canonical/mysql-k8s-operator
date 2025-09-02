@@ -32,7 +32,7 @@ from ..helpers import (
 )
 
 # Copied these values from high_availability.application_charm.src.charm
-DATABASE_NAME = "continuous_writes_database"
+DATABASE_NAME = "continuous_writes"
 TABLE_NAME = "data"
 
 CLUSTER_NAME = "test_cluster"

@@ -52,7 +52,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
 async def test_charmed_dba_role(ops_test: OpsTest):
     """Test the DBA predefined role."""
     await ops_test.model.applications[INTEGRATOR_APP_NAME].set_config({
-        "database-name": "charmed_dba_database",
+        "database-name": "charmed_dba_db",
         "extra-user-roles": "charmed_dba",
     })
     await ops_test.model.add_relation(INTEGRATOR_APP_NAME, DATABASE_APP_NAME)
