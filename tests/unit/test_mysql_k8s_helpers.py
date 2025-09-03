@@ -258,25 +258,7 @@ class TestMySQL(unittest.TestCase):
         )
         self.mysql.container = _container
 
-        self.mysql._run_mysqlsh_script(
-            "script", user="serverconfig", password="serverconfigpassword", host="127.0.0.1:3306"
-        )
-
-        call_script = "shell.options.set('useWizards', False)\nprint('###')\nscript"
-        _container.exec.assert_called_once_with(
-            [
-                "/usr/bin/mysqlsh",
-                "--passwords-from-stdin",
-                "--uri=serverconfig@127.0.0.1:3306",
-                "--python",
-                "--verbose=0",
-                "-c",
-                call_script,
-            ],
-            stdin="serverconfigpassword",
-        )
-
-        _container.reset_mock()
+        script = "shell.options.set('useWizards', False)\nprint('###')\nscript"
         output = self.mysql._run_mysqlsh_script(
             "script",
             user="serverconfig",
@@ -288,16 +270,15 @@ class TestMySQL(unittest.TestCase):
 
         _container.exec.assert_called_once_with(
             [
-                "timeout",
-                "10",
                 "/usr/bin/mysqlsh",
                 "--passwords-from-stdin",
                 "--uri=serverconfig@127.0.0.1:3306",
                 "--python",
                 "--verbose=0",
                 "-c",
-                call_script,
+                script,
             ],
+            timeout=10,
             stdin="serverconfigpassword",
         )
 

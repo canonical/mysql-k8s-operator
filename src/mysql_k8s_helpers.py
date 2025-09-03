@@ -695,7 +695,6 @@ class MySQL(MySQLBase):
         Returns:
             stdout of the script
         """
-        # TODO: remove timeout from _run_mysqlsh_script contract/signature in the mysql lib
         prepend_cmd = "shell.options.set('useWizards', False)\nprint('###')\n"
         script = prepend_cmd + script
 
@@ -710,14 +709,8 @@ class MySQL(MySQLBase):
             script,
         ]
 
-        # workaround for timeout not working on pebble exec
-        # https://github.com/canonical/operator/issues/1329
-        if timeout:
-            cmd.insert(0, str(timeout))
-            cmd.insert(0, "timeout")
-
         try:
-            process = self.container.exec(cmd, stdin=password)
+            process = self.container.exec(cmd, timeout=timeout, stdin=password)
             stdout, _ = process.wait_output()
             return stdout.split("###")[1].strip()
         except (ExecError, ChangeError) as e:
