@@ -34,14 +34,17 @@ from charms.mysql.v0.mysql import (
     MySQLAddInstanceToClusterError,
     MySQLCharmBase,
     MySQLConfigureInstanceError,
+    MySQLConfigureMySQLRolesError,
     MySQLConfigureMySQLUsersError,
     MySQLCreateClusterError,
+    MySQLCreateClusterSetError,
     MySQLGetClusterPrimaryAddressError,
     MySQLGetMySQLVersionError,
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLNoMemberStateError,
     MySQLRebootFromCompleteOutageError,
+    MySQLRejoinInstanceToClusterError,
     MySQLServiceNotRunningError,
     MySQLSetClusterPrimaryError,
     MySQLUnableToGetMemberStateError,
@@ -372,6 +375,25 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         """Returns whether the unit is busy."""
         return self._is_cluster_blocked()
 
+    def _create_cluster(self) -> None:
+        juju_version = ops.JujuVersion.from_environ()
+
+        try:
+            # Create the cluster when is the leader unit
+            logger.info(f"Creating cluster {self.app_peer_data['cluster-name']}")
+            self.create_cluster()
+            self.unit.set_ports(3306, 33060) if juju_version.supports_open_port_on_k8s else None
+            self.unit.status = ops.ActiveStatus(self.active_status_message)
+        except (
+            MySQLCreateClusterError,
+            MySQLCreateClusterSetError,
+            MySQLInitializeJujuOperationsTableError,
+            MySQLNoMemberStateError,
+            MySQLUnableToGetMemberStateError,
+        ):
+            logger.exception("Failed to initialize primary")
+            raise
+
     def _get_primary_from_online_peer(self) -> Optional[str]:
         """Get the primary address from an online peer."""
         for unit in self.peers.units:
@@ -442,7 +464,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
                 # add random delay to mitigate collisions when multiple units are joining
                 # due the difference between the time we test for locks and acquire them
-                sleep(random.uniform(0, 1.5))
+                # Not used for cryptographic purpose
+                sleep(random.uniform(0, 1.5))  # noqa: S311
 
                 if self._mysql.are_locks_acquired(from_instance=lock_instance or cluster_primary):
                     self.unit.status = WaitingStatus("waiting to join the cluster")
@@ -462,7 +485,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     instance_label
                     in self._mysql.get_cluster_status(from_instance=cluster_primary)[
                         "defaultreplicaset"
-                    ]["topology"].keys()
+                    ]["topology"]
                 ):
                     self._mysql.execute_remove_instance(
                         connect_instance=cluster_primary, force=True
@@ -594,7 +617,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         self.unit_peer_data.setdefault("member-role", "unknown")
         self.unit_peer_data.setdefault("member-state", "waiting")
 
-    def _on_config_changed(self, _: EventBase) -> None:  # noqa: C901
+    def _on_config_changed(self, _: EventBase) -> None:
         """Handle the config changed event."""
         container = self.unit.get_container(CONTAINER_NAME)
         if not container.can_connect():
@@ -624,20 +647,20 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         new_config_dict = self._write_mysqld_configuration()
         changed_config = compare_dictionaries(previous_config_dict, new_config_dict)
 
-        if self.mysql_config.keys_requires_restart(changed_config):
-            # there are static configurations in changed keys
-
-            if self._mysql.is_mysqld_running():
-                logger.info("Configuration change requires restart")
-                if "loose-audit_log_format" in changed_config:
-                    # plugins are manipulated running daemon
-                    if self.config.plugin_audit_enabled:
-                        self._mysql.install_plugins(["audit_log"])
-                    else:
-                        self._mysql.uninstall_plugins(["audit_log"])
-                # restart the service
-                self.on[f"{self.restart.name}"].acquire_lock.emit()
-                return
+        if (
+            self.mysql_config.keys_requires_restart(changed_config)
+            and self._mysql.is_mysqld_running()
+        ):
+            logger.info("Configuration change requires restart")
+            if "loose-audit_log_format" in changed_config:
+                # plugins are manipulated running daemon
+                if self.config.plugin_audit_enabled:
+                    self._mysql.install_plugins(["audit_log"])
+                else:
+                    self._mysql.uninstall_plugins(["audit_log"])
+            # restart the service
+            self.on[f"{self.restart.name}"].acquire_lock.emit()
+            return
 
         if dynamic_config := self.mysql_config.filter_static_keys(changed_config):
             # if only dynamic config changed, apply it
@@ -677,17 +700,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             "cluster-set-domain-name", self.config.cluster_set_name or f"cluster-set-{common_hash}"
         )
 
-    def _open_ports(self) -> None:
-        """Open ports if supported.
-
-        Used if `juju expose` ran on application
-        """
-        if ops.JujuVersion.from_environ().supports_open_port_on_k8s:
-            try:
-                self.unit.set_ports(3306, 33060)
-            except ops.ModelError:
-                logger.exception("failed to open port")
-
     def _write_mysqld_configuration(self) -> dict:
         """Write the mysqld configuration to the file."""
         memory_limit_bytes = (self.config.profile_limit_memory or 0) * BYTES_1MB
@@ -725,7 +737,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             logger.info("Configuring initialized mysqld")
             # Configure all base users and revoke privileges from the root users
-            self._mysql.configure_mysql_users()
+            self._mysql.configure_mysql_router_roles()
+            self._mysql.configure_mysql_system_roles()
+            self._mysql.configure_mysql_system_users()
 
             if self.config.plugin_audit_enabled:
                 # Enable the audit plugin
@@ -737,6 +751,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         except (
             MySQLInitialiseMySQLDError,
             MySQLServiceNotRunningError,
+            MySQLConfigureMySQLRolesError,
             MySQLConfigureMySQLUsersError,
             MySQLConfigureInstanceError,
             ChangeError,
@@ -757,8 +772,6 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 container.restart(MYSQLD_EXPORTER_SERVICE)
             else:
                 container.start(MYSQLD_EXPORTER_SERVICE)
-
-        self._open_ports()
 
         try:
             # Set workload version
@@ -840,23 +853,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             self.join_unit_to_cluster()
             return
 
-        try:
-            # Create the cluster when is the leader unit
-            logger.info(f"Creating cluster {self.app_peer_data['cluster-name']}")
-            self.unit.status = MaintenanceStatus("Creating cluster")
-            self.create_cluster()
-            self.unit.status = ops.ActiveStatus(self.active_status_message)
-
-        except (
-            MySQLCreateClusterError,
-            MySQLUnableToGetMemberStateError,
-            MySQLNoMemberStateError,
-            MySQLInitializeJujuOperationsTableError,
-            MySQLCreateClusterError,
-        ):
-            logger.exception("Failed to initialize primary")
-            raise
-
+        self._create_cluster()
         self._mysql.reconcile_binlogs_collection(force_restart=True)
 
     def _handle_potential_cluster_crash_scenario(self) -> bool:  # noqa: C901
@@ -926,8 +923,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                         self.unit.status = ActiveStatus(self.active_status_message)
                     else:
                         self.unit.status = BlockedStatus("failed to recover cluster.")
-                finally:
-                    return True
+                return True
 
             if self._mysql.is_cluster_auto_rejoin_ongoing():
                 logger.info("Cluster auto-rejoin attempts are still ongoing.")
@@ -945,7 +941,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         It is supposed to be called when the MySQL 8.0.21+ auto-rejoin attempts have been exhausted,
         on an OFFLINE replica that still belongs to the cluster
         """
-        if not self._mysql.is_instance_in_cluster(self.unit_label):
+        if not self._mysql.instance_belongs_to_cluster(self.unit_label):
             logger.warning("Instance does not belong to the cluster. Cannot perform manual rejoin")
             return
 
@@ -954,14 +950,37 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.warning("Instance does not have ONLINE peers. Cannot perform manual rejoin")
             return
 
+        # add random delay to mitigate collisions when multiple units are rejoining
+        # due the difference between the time we test for locks and acquire them
+        # Not used for cryptographic purpose
+        sleep(random.uniform(0, 1.5))  # noqa: S311
+
+        if self._mysql.are_locks_acquired(from_instance=cluster_primary):
+            logger.info("waiting: cluster lock is held")
+            return
+        try:
+            self._mysql.rejoin_instance_to_cluster(
+                unit_address=self.unit_address,
+                unit_label=self.unit_label,
+                from_instance=cluster_primary,
+            )
+        except MySQLRejoinInstanceToClusterError:
+            logger.warning("Can't rejoin instance to cluster. Falling back to remove and add.")
+
         self._mysql.remove_instance(
             unit_label=self.unit_label,
+            auto_dissolve=False,
         )
         self._mysql.add_instance_to_cluster(
             instance_address=self.unit_address,
             instance_unit_label=self.unit_label,
             from_instance=cluster_primary,
         )
+
+    def update_endpoints(self) -> None:
+        """Update the endpoints for the database relation."""
+        self.database_relation._configure_endpoints(None)
+        self._on_update_status(None)
 
     def _is_cluster_blocked(self) -> bool:
         """Performs cluster state checks for the update-status handler.
@@ -1028,6 +1047,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             return
 
         if not primary_address:
+            logger.error("Cluster has no primary. Check cluster status on online units.")
+            self.app.status = MaintenanceStatus("Cluster has no primary.")
             return
 
         if "s3-block-message" in self.app_peer_data:

@@ -140,7 +140,7 @@ build
 .config
 
 # Makefile
-Makefile
+./Makefile
 
 # local pyright settings
 pyrightconfig.json

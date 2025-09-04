@@ -29,7 +29,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm):
     config = {
         "profile": "testing",
         "mysql-root-interface-user": "test-user",
-        "mysql-root-interface-database": "continuous_writes_database",
+        "mysql-root-interface-database": "continuous_writes",
     }
     resources = {
         "mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"],

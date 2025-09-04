@@ -1,0 +1,10 @@
+# Monitoring (COS)
+
+```{toctree}
+:titlesonly:
+:maxdepth: 2
+
+Enable monitoring <enable-monitoring>
+Enable alert rules <enable-alert-rules>
+Enable tracing <enable-tracing>
+```

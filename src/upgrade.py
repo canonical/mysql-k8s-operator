@@ -62,7 +62,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         super().__init__(charm, **kwargs)
         self.charm = charm
 
-        self.framework.observe(getattr(self.charm.on, "mysql_pebble_ready"), self._on_pebble_ready)
+        self.framework.observe(self.charm.on.mysql_pebble_ready, self._on_pebble_ready)
         self.framework.observe(self.charm.on.stop, self._on_stop)
         self.framework.observe(
             self.charm.on[self.relation_name].relation_changed, self._on_upgrade_changed
@@ -95,12 +95,12 @@ class MySQLK8sUpgrade(DataUpgrade):
             # ensure cluster node addresses are consistent in cluster metadata
             # https://github.com/canonical/mysql-k8s-operator/issues/327
             self.charm._mysql.rescan_cluster()
-        except MySQLRescanClusterError:
+        except MySQLRescanClusterError as e:
             raise ClusterNotReadyError(
                 message=fail_message,
                 cause="Failed to rescan cluster",
                 resolution="Check the cluster status",
-            )
+            ) from e
 
         if cluster_status := self.charm._mysql.get_cluster_status(extended=True):
             if _count_online_instances(cluster_status) < self.charm.app.planned_units():
@@ -122,24 +122,24 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         try:
             self._pre_upgrade_prepare()
-        except MySQLSetClusterPrimaryError:
+        except MySQLSetClusterPrimaryError as e:
             raise ClusterNotReadyError(
                 message=fail_message,
                 cause="Failed to set primary",
                 resolution="Check the cluster status",
-            )
-        except k8s_helpers.KubernetesClientError:
+            ) from e
+        except k8s_helpers.KubernetesClientError as e:
             raise ClusterNotReadyError(
                 message=fail_message,
                 cause="Failed to patch statefulset",
                 resolution="Check kubernetes access policy",
-            )
-        except MySQLSetVariableError:
+            ) from e
+        except MySQLSetVariableError as e:
             raise ClusterNotReadyError(
                 message=fail_message,
                 cause="Failed to set slow shutdown",
                 resolution="Check the cluster status",
-            )
+            ) from e
 
     @override
     def log_rollback_instructions(self) -> None:
@@ -288,7 +288,7 @@ class MySQLK8sUpgrade(DataUpgrade):
                 message="Cannot set rolling update partition",
                 cause="Error setting rolling update partition",
                 resolution="Check kubernetes access policy",
-            )
+            ) from None
 
     def _check_server_upgradeability(self) -> None:
         """Check if the server can be upgraded.

@@ -189,7 +189,6 @@ class MySQL(MySQLBase):
         is available we fix permissions incorrectly with chown.
         """
         paths = container.list_files(MYSQL_DATA_DIR, itself=True)
-        assert len(paths) == 1, "list_files doesn't return only directory itself"
         logger.debug(f"Data directory ownership: {paths[0].user}:{paths[0].group}")
         if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
             logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
@@ -203,7 +202,7 @@ class MySQL(MySQLBase):
                 process.wait()
             except ExecError as e:
                 logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
-                raise MySQLInitialiseMySQLDError(e.stderr or "")
+                raise MySQLInitialiseMySQLDError(e.stderr or "") from None
 
     @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
     def initialise_mysqld(self) -> None:
@@ -229,7 +228,7 @@ class MySQL(MySQLBase):
         except (ExecError, ChangeError, PathError, TimeoutError):
             logger.exception("Failed to initialise MySQL data directory")
             self.reset_data_dir()
-            raise MySQLInitialiseMySQLDError
+            raise MySQLInitialiseMySQLDError from None
 
     def reset_root_password_and_start_mysqld(self) -> None:
         """Reset the root user password and start mysqld."""
@@ -286,7 +285,7 @@ class MySQL(MySQLBase):
             if check_port and not self.check_mysqlcli_connection():
                 raise MySQLServiceNotRunningError("Connection with mysqlcli not possible")
         except MySQLClientError:
-            raise MySQLServiceNotRunningError
+            raise MySQLServiceNotRunningError from None
 
         logger.debug("MySQL connection possible")
 
@@ -302,7 +301,7 @@ class MySQL(MySQLBase):
         # days * minutes/day = amount of rotated files to keep
         logs_rotations = logs_retention_period * 1440
 
-        with open("templates/logrotate.j2", "r") as file:
+        with open("templates/logrotate.j2") as file:
             template = jinja2.Template(file.read())
 
         rendered = template.render(
@@ -450,7 +449,7 @@ class MySQL(MySQLBase):
         if unit_address in members_in_cluster:
             raise MySQLWaitUntilUnitRemovedFromClusterError("Remove member still in cluster")
 
-    def create_database(self, database_name: str) -> None:
+    def create_database_legacy(self, database_name: str) -> None:
         """Creates a database.
 
         Args:
@@ -473,9 +472,11 @@ class MySQL(MySQLBase):
             )
         except MySQLClientError as e:
             logger.exception(f"Failed to create database {database_name}", exc_info=e)
-            raise MySQLCreateDatabaseError(e.message)
+            raise MySQLCreateDatabaseError(e.message) from None
 
-    def create_user(self, username: str, password: str, label: str, hostname: str = "%") -> None:
+    def create_user_legacy(
+        self, username: str, password: str, label: str, hostname: str = "%"
+    ) -> None:
         """Creates a new user.
 
         Args:
@@ -505,7 +506,7 @@ class MySQL(MySQLBase):
             )
         except MySQLClientError as e:
             logger.exception(f"Failed to create user {username}@{hostname}")
-            raise MySQLCreateUserError(e.message)
+            raise MySQLCreateUserError(e.message) from None
 
     def escalate_user_privileges(self, username: str, hostname: str = "%") -> None:
         """Escalates the provided user's privileges.
@@ -545,11 +546,8 @@ class MySQL(MySQLBase):
                 password=self.server_config_password,
             )
         except MySQLClientError as e:
-            logger.exception(
-                f"Failed to escalate user privileges for {username}@{hostname}",
-                exc_info=e,
-            )
-            raise MySQLEscalateUserPrivilegesError(e.message)
+            logger.exception(f"Failed to escalate user privileges for {username}@{hostname}")
+            raise MySQLEscalateUserPrivilegesError(e.message) from None
 
     def delete_users_with_label(self, label_name: str, label_value: str) -> None:
         """Delete users with the provided label.
@@ -562,7 +560,7 @@ class MySQL(MySQLBase):
             MySQLDeleteUsersWIthLabelError if there is an error deleting users for the label
         """
         get_label_users = (
-            "SELECT CONCAT(user.user, '@', user.host) FROM mysql.user AS user "
+            "SELECT CONCAT(user.user, '@', user.host) FROM mysql.user AS user "  # noqa: S608
             "JOIN information_schema.user_attributes AS attributes"
             " ON (user.user = attributes.user AND user.host = attributes.host) "
             f'WHERE attributes.attribute LIKE \'%"{label_name}": "{label_value}"%\'',
@@ -593,10 +591,9 @@ class MySQL(MySQLBase):
             )
         except MySQLClientError as e:
             logger.exception(
-                f"Failed to query and delete users for label {label_name}={label_value}",
-                exc_info=e,
+                f"Failed to query and delete users for label {label_name}={label_value}"
             )
-            raise MySQLDeleteUsersWithLabelError(e.message)
+            raise MySQLDeleteUsersWithLabelError(e.message) from None
 
     def is_mysqld_running(self) -> bool:
         """Returns whether server is connectable and mysqld is running."""
@@ -614,7 +611,7 @@ class MySQL(MySQLBase):
         except ChangeError:
             error_message = f"Failed to stop service {MYSQLD_SERVICE}"
             logger.exception(error_message)
-            raise MySQLStopMySQLDError(error_message)
+            raise MySQLStopMySQLDError(error_message) from None
 
     def start_mysqld(self) -> None:
         """Starts the mysqld process."""
@@ -627,7 +624,7 @@ class MySQL(MySQLBase):
         ):
             error_message = f"Failed to start service {MYSQLD_SERVICE}"
             logger.exception(error_message)
-            raise MySQLStartMySQLDError(error_message)
+            raise MySQLStartMySQLDError(error_message) from None
 
     def restart_mysql_exporter(self) -> None:
         """Restarts the mysqld exporter service in pebble."""
@@ -729,7 +726,7 @@ class MySQL(MySQLBase):
             else:
                 self.strip_off_passwords_from_exception(e)
                 logger.exception("Failed to execute mysql-shell command")
-            raise MySQLClientError
+            raise MySQLClientError from None
 
     def _run_mysqlcli_script(
         self,
@@ -778,7 +775,7 @@ class MySQL(MySQLBase):
             else:
                 self.strip_off_passwords_from_exception(e)
                 logger.exception("Failed to execute MySQL cli command")
-            raise MySQLClientError
+            raise MySQLClientError from None
 
     def write_content_to_file(
         self,
@@ -847,7 +844,7 @@ class MySQL(MySQLBase):
 
             return True
         except ExecError as e:
-            raise MySQLClientError(e.stderr or "")
+            raise MySQLClientError(e.stderr or "") from None
 
     def get_available_memory(self) -> int:
         """Get available memory for the container in bytes."""

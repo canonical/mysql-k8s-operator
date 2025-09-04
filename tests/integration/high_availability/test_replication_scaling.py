@@ -54,9 +54,9 @@ async def test_scaling_without_data_loss(
 
     # scale up the mysql application
     await scale_application(ops_test, mysql_application_name, 4)
-    assert await ensure_n_online_mysql_members(
-        ops_test, 4
-    ), "The cluster is not fully online after scaling up"
+    assert await ensure_n_online_mysql_members(ops_test, 4), (
+        "The cluster is not fully online after scaling up"
+    )
 
     # ensure value inserted before scale exists in all units
     for attempt in Retrying(stop=stop_after_delay(10), wait=wait_fixed(2)):
@@ -84,9 +84,9 @@ async def test_scaling_without_data_loss(
 
     # scale down the mysql application
     await scale_application(ops_test, mysql_application_name, 3)
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The cluster is not fully online after scaling down"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The cluster is not fully online after scaling down"
+    )
 
     # ensure data written before scale down is persisted
     for unit in ops_test.model.applications[mysql_application_name].units:

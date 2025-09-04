@@ -36,9 +36,9 @@ async def test_pod_eviction_and_pvc_deletion(
 
     logger.info("Waiting until 3 mysql instances are online")
     # ensure all units in the cluster are online
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application is not fully online"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application is not fully online"
+    )
 
     logger.info("Ensuring all units have continuous writes incrementing")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
@@ -65,9 +65,9 @@ async def test_pod_eviction_and_pvc_deletion(
         )
 
     logger.info("Waiting until 3 mysql instances are online")
-    assert await ensure_n_online_mysql_members(
-        ops_test, 3
-    ), "The deployed mysql application is not fully online after primary pod eviction"
+    assert await ensure_n_online_mysql_members(ops_test, 3), (
+        "The deployed mysql application is not fully online after primary pod eviction"
+    )
 
     logger.info("Ensuring all units have continuous writes incrementing")
     await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)

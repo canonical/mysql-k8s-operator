@@ -62,14 +62,16 @@ class TestDatabase(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.update_endpoints")
     @patch("k8s_helpers.KubernetesHelpers.create_endpoint_services")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.29-0ubuntu0.20.04.3")
-    @patch("mysql_k8s_helpers.MySQL.create_application_database_and_scoped_user")
+    @patch("mysql_k8s_helpers.MySQL.create_database")
+    @patch("mysql_k8s_helpers.MySQL.create_scoped_user")
     @patch(
         "relations.mysql_provider.generate_random_password", return_value="super_secure_password"
     )
     def test_database_requested(
         self,
         _generate_random_password,
-        _create_application_database_and_scoped_user,
+        _create_scoped_user,
+        _create_database,
         _get_mysql_version,
         _create_endpoint_services,
         _update_endpoints,
@@ -88,7 +90,7 @@ class TestDatabase(unittest.TestCase):
             self.database_relation_id, self.harness.charm.app
         )
         database_relation = self.charm.model.get_relation(DB_RELATION_NAME)
-        app_unit = list(database_relation.units)[0]
+        app_unit = next(iter(database_relation.units))
 
         self.assertEqual(database_relation_databag, {})
         self.assertEqual(database_relation.data.get(app_unit), {})
@@ -116,7 +118,8 @@ class TestDatabase(unittest.TestCase):
         )
 
         _generate_random_password.assert_called_once()
-        _create_application_database_and_scoped_user.assert_called_once()
+        _create_database.assert_called_once()
+        _create_scoped_user.assert_called_once()
         _get_mysql_version.assert_called_once()
         _create_endpoint_services.assert_called_once()
         _update_endpoints.assert_called()

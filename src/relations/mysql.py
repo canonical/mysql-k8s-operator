@@ -9,7 +9,8 @@ import typing
 
 from charms.mysql.v0.mysql import (
     MySQLCheckUserExistenceError,
-    MySQLCreateApplicationDatabaseAndScopedUserError,
+    MySQLCreateApplicationDatabaseError,
+    MySQLCreateApplicationScopedUserError,
     MySQLDeleteUsersForUnitError,
 )
 from ops.charm import RelationBrokenEvent, RelationChangedEvent, RelationCreatedEvent
@@ -99,18 +100,19 @@ class MySQLRelation(Object):
         ):
             return
 
-        if isinstance(self.charm.unit.status, ActiveStatus) and self.model.relations.get(
-            LEGACY_MYSQL
+        active_and_related = isinstance(
+            self.charm.unit.status, ActiveStatus
+        ) and self.model.relations.get(LEGACY_MYSQL)
+
+        if active_and_related and (
+            self.charm.config.mysql_interface_database
+            != self.charm.app_peer_data[MYSQL_RELATION_DATABASE_KEY]
+            or self.charm.config.mysql_interface_user
+            != self.charm.app_peer_data[MYSQL_RELATION_USER_KEY]
         ):
-            if (
-                self.charm.config.mysql_interface_database
-                != self.charm.app_peer_data[MYSQL_RELATION_DATABASE_KEY]
-                or self.charm.config.mysql_interface_user
-                != self.charm.app_peer_data[MYSQL_RELATION_USER_KEY]
-            ):
-                self.charm.app.status = BlockedStatus(
-                    "Remove and re-relate `mysql` relations in order to change config"
-                )
+            self.charm.app.status = BlockedStatus(
+                "Remove and re-relate `mysql` relations in order to change config"
+            )
 
     def _on_leader_elected(self, _) -> None:
         """Handle the leader elected event.
@@ -195,7 +197,7 @@ class MySQLRelation(Object):
 
         self.model.get_relation(LEGACY_MYSQL).data[self.charm.unit].update(updates)
 
-    def _on_mysql_relation_created(self, event: RelationCreatedEvent) -> None:  # noqa: C901
+    def _on_mysql_relation_created(self, event: RelationCreatedEvent) -> None:
         """Handle the legacy 'mysql' relation created event.
 
         Will set up the database and the scoped application user. The connection
@@ -212,7 +214,7 @@ class MySQLRelation(Object):
         if (
             not self.charm._is_peer_data_set
             or not self.charm.unit_initialized()
-            or not self.charm.unit_peer_data.get("member-state") == "online"
+            or self.charm.unit_peer_data.get("member-state") != "online"
         ):
             logger.info("Unit not ready to execute `mysql` relation created. Deferring")
             event.defer()
@@ -245,14 +247,18 @@ class MySQLRelation(Object):
 
         try:
             logger.info("Creating application database and scoped user")
-            self.charm._mysql.create_application_database_and_scoped_user(
+            self.charm._mysql.create_database(database)
+            self.charm._mysql.create_scoped_user(
                 database,
                 username,
                 password,
                 "%",
                 unit_name="mysql-legacy-relation",
             )
-        except MySQLCreateApplicationDatabaseAndScopedUserError:
+        except (
+            MySQLCreateApplicationDatabaseError,
+            MySQLCreateApplicationScopedUserError,
+        ):
             self.charm.unit.status = BlockedStatus(
                 "Failed to create application database and scoped user"
             )
