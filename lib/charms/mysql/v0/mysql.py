@@ -127,7 +127,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 93
+LIBPATCH = 94
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -916,11 +916,7 @@ class MySQLCharmBase(CharmBase, ABC):
 
         return ",".join(rw_endpoints), ",".join(ro_endpoints), ",".join(no_endpoints)
 
-    def get_secret(
-        self,
-        scope: Scopes,
-        key: str,
-    ) -> str | None:
+    def get_secret(self, scope: Scopes, key: str) -> str | None:
         """Get secret from the secret storage.
 
         Retrieve secret from juju secrets backend if secret exists there.
@@ -1012,7 +1008,18 @@ class MySQLMemberState(str, enum.Enum):
 class MySQLClusterState(str, enum.Enum):
     """MySQL Cluster state."""
 
+    # TODO: python 3.11 has new enum.StrEnum
+    #       that can remove str inheritance
+
     OK = "ok"
+    OK_PARTIAL = "ok_partial"
+    OK_NO_TOLERANCE = "ok_no_tolerance"
+    OK_NO_TOLERANCE_PARTIAL = "ok_no_tolerance_partial"
+    NO_QUORUM = "no_quorum"
+    OFFLINE = "offline"
+    ERROR = "error"
+    UNREACHABLE = "unreachable"
+    UNKNOWN = "unknown"
     FENCED = "fenced_writes"
 
 

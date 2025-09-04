@@ -57,6 +57,7 @@ from charms.data_platform_libs.v0.s3 import (
     S3Requirer,
 )
 from charms.mysql.v0.mysql import (
+    MySQLClusterState,
     MySQLConfigureInstanceError,
     MySQLCreateClusterError,
     MySQLCreateClusterSetError,
@@ -111,7 +112,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 16
+LIBPATCH = 17
 
 ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE = "S3 repository claimed by another cluster"
 MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
@@ -280,6 +281,7 @@ class MySQLBackups(Object):
     def _on_create_backup(self, event: ActionEvent) -> None:
         """Handle the create backup action."""
         logger.info("A backup has been requested on unit")
+        force = event.params.get("force", False)
 
         if not self._pre_create_backup_checks(event):
             return
@@ -295,9 +297,16 @@ class MySQLBackups(Object):
 
         backup_path = str(pathlib.Path(s3_parameters["path"]) / datetime_backup_requested)
 
+        # Check if this cluster can perform backup
+        can_cluster_perform_backup, validation_message = self._can_cluster_perform_backup()
+        if not (can_cluster_perform_backup or force):
+            logger.error(f"Backup failed: {validation_message}")
+            event.fail(validation_message or "")
+            return
+
         # Check if this unit can perform backup
         can_unit_perform_backup, validation_message = self._can_unit_perform_backup()
-        if not can_unit_perform_backup:
+        if not (can_unit_perform_backup or force):
             logger.error(f"Backup failed: {validation_message}")
             event.fail(validation_message or "")
             return
@@ -354,6 +363,21 @@ class MySQLBackups(Object):
             "backup-id": datetime_backup_requested,
         })
         self.charm._on_update_status(None)
+
+    def _can_cluster_perform_backup(self) -> tuple[bool, str | None]:
+        """Validates whether this cluster can perform a backup.
+
+        Returns: tuple of (success, error_message)
+        """
+        cluster_status = self.charm._mysql.get_cluster_status()
+        if not cluster_status:
+            return False, "Cluster status unknown"
+
+        cluster_status = cluster_status["defaultreplicaset"]["status"]
+        if cluster_status not in (MySQLClusterState.OK, MySQLClusterState.OK_PARTIAL):
+            return False, "Cluster is not in a healthy state"
+
+        return True, None
 
     def _can_unit_perform_backup(self) -> tuple[bool, str | None]:
         """Validates whether this unit can perform a backup.
