@@ -27,7 +27,7 @@ groups:
 
       - alert: MySQLClusterTooManyPrimaries
         expr: count(mysql_perf_schema_replication_group_member_info{member_role="PRIMARY"}) > 1
-        for: 15m
+        for: 5m
         labels:
           severity: critical
         annotations:
