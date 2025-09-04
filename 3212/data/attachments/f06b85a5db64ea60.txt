@@ -1,0 +1,49 @@
+[32mINFO    [0m integration.backups:backups.py:125 Creating backup
+[32mINFO    [0m integration.backups:backups.py:129 Creating test data 1
+[32mINFO    [0m integration.backups:backups.py:145 Creating test data 2
+[32mINFO    [0m integration.backups:backups.py:157 Scaling down to 1 unit
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m integration.backups:backups.py:169 Restoring backup 2025-09-04T01:56:50Z with bad restore-to-time parameter
+[32mINFO    [0m integration.backups:backups.py:178 Restoring backup 2025-09-04T01:56:50Z with year_before restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:190 Restoring backup 2025-09-04T01:56:50Z with year_after restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m integration.backups:backups.py:202 Restoring backup 2025-09-04T01:56:50Z with actual restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m integration.backups:backups.py:214 Restoring backup 2025-09-04T01:56:50Z with restore-to-time=latest parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:38 Cleaning backups from cloud buckets
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  02:02:01Z
+
+App            Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+mysql-k8s      8.0.42-0ubuntu0.22.04.2  blocked      1  mysql-k8s                       0  10.152.183.86   no       Move restored cluster to another S3 repository
+s3-integrator                           active       1  s3-integrator  latest/stable  145  10.152.183.176  no       
+
+Unit              Workload  Agent      Address     Ports  Message
+mysql-k8s/0*      active    executing  10.1.22.76         Primary
+s3-integrator/0*  active    idle       10.1.22.72         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
