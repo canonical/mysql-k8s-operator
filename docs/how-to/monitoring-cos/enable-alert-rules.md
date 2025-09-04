@@ -73,6 +73,7 @@ juju config alertmanager config_file=@myalert.yaml
 
 At this stage, the COS Alert Manager will start sending alert notifications to Pushover. Users can receive them on all supported [Pushover clients/apps](https://pushover.net/clients). 
 
+> Some alert rules use `for: 0m`, but may still appear delayed. This is because Prometheus evaluates alert rules at intervals (configured via [`evaluation_interval`](https://charmhub.io/prometheus-k8s/configurations#evaluation_interval), typically every minute) and depends on fresh data scraped at its own intervals (default: 1 min). As a result, the best-case alert delay is: **scrape interval + evaluation interval**.
 
 <details><summary>Screenshot of Pushover web client
 </summary>
