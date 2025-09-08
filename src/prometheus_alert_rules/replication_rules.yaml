@@ -1,0 +1,91 @@
+groups:
+  - name: MySQL Replication Alert Rules
+    rules:
+      - alert: MySQLClusterUnitOffline
+        expr: mysql_perf_schema_replication_group_member_info{member_state="OFFLINE"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: MySQL cluster member {{ $labels.instance }} is offline
+          description: |
+            The MySQL member is marked offline in the cluster, although the process might still be running.
+            If this is unexpected, please check the logs.
+            LABELS = {{ $labels }}.
+
+      - alert: MySQLClusterNoPrimary
+        expr: absent(mysql_perf_schema_replication_group_member_info{member_role="PRIMARY",member_state="ONLINE"})
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: MySQL cluster reports no primary
+          description: |
+            MySQL has no primaries. The cluster will likely be in a Read-Only state.
+            Please check the cluster health, the logs and investigate.
+            LABELS = {{ $labels }}.
+
+      - alert: MySQLClusterTooManyPrimaries
+        expr: count(mysql_perf_schema_replication_group_member_info{member_role="PRIMARY"}) > 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: MySQL cluster reports more than one primary.
+          description: |
+            MySQL reports more than one primary. This can indicate a split-brain situation.
+            Please refer to the troubleshooting docs.
+            LABELS = {{ $labels }}.
+
+      - alert: MySQLNoReplication
+        expr: absent(mysql_perf_schema_replication_group_member_info{member_role="SECONDARY"})
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: MySQL cluster has no secondaries.
+          description: |
+            The MySQL cluster has no secondaries. This means that the cluster is not redundant and a failure of the primary will lead to downtime.
+            Please check the cluster health, the logs and investigate.
+            LABELS = {{ $labels }}.
+
+      - alert: MySQLGroupReplicationReduced
+        expr: |
+          count(mysql_perf_schema_replication_group_member_info{member_state="ONLINE"} == 1)
+          <
+          max_over_time(
+            count(mysql_perf_schema_replication_group_member_info{member_state="ONLINE"} == 1)[6h:]
+          )
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: MySQL cluster's Group Replication size reduced
+          description: |
+            The number of ONLINE members in the MySQL Group Replication cluster has reduced compared to the maximum observed in the last 6 hours.
+            Please check the cluster health, the logs and investigate.
+            LABELS = {{ $labels }}.
+
+      - alert: MySQLGroupReplicationConflicts
+        expr: rate(mysql_perf_schema_conflicts_detected[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: MySQL cluster reports Group Replication conflicts
+          description: |
+            Conflicts indicate concurrent writes to the same rows/keys across members.
+            Please check the cluster health, the logs and investigate.
+            LABELS = {{ $labels }}.
+
+      - alert: MySQLGroupReplicationQueueSizeHigh
+        expr: mysql_perf_schema_transactions_in_queue > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: MySQL cluster reports high Group Replication queue size
+          description: |
+            A high number of transactions in the Group Replication queue might indicate network issues or overloaded nodes.
+            Please check the cluster health, the logs and investigate.
+            LABELS = {{ $labels }}.
