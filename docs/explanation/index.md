@@ -21,6 +21,7 @@ Legacy charm <legacy-charm>
 :maxdepth: 2
 
 Users <users>
+Roles <roles>
 Logs <logs/index>
 ```
 
