@@ -67,6 +67,7 @@ from charms.mysql.v0.mysql import (
     MySQLExecuteBackupCommandsError,
     MySQLInitializeJujuOperationsTableError,
     MySQLKillSessionError,
+    MySQLMemberState,
     MySQLNoMemberStateError,
     MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLPrepareBackupForRestoreError,
@@ -374,7 +375,7 @@ class MySQLBackups(Object):
             return False, "Cluster status unknown"
 
         cluster_status = cluster_status["defaultreplicaset"]["status"]
-        if cluster_status not in (MySQLClusterState.OK, MySQLClusterState.OK_PARTIAL):
+        if cluster_status not in [MySQLClusterState.OK, MySQLClusterState.OK_PARTIAL]:
             return False, "Cluster is not in a healthy state"
 
         return True, None
@@ -405,7 +406,7 @@ class MySQLBackups(Object):
         if role == "primary" and self.charm.app.planned_units() > 1:
             return False, "Unit cannot perform backups as it is the cluster primary"
 
-        if state in ["recovering", "offline", "error"]:
+        if state not in [MySQLMemberState.ONLINE]:
             return False, f"Unit cannot perform backups as its state is {state}"
 
         return True, None
