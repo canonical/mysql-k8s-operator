@@ -1,0 +1,62 @@
+[32mINFO    [0m integration.backups:backups.py:125 Creating backup
+[32mINFO    [0m integration.backups:backups.py:129 Creating test data 1
+[32mINFO    [0m integration.backups:backups.py:145 Creating test data 2
+[32mINFO    [0m integration.backups:backups.py:157 Scaling down to 1 unit
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:169 Restoring backup 2025-09-12T01:44:20Z with bad restore-to-time parameter
+[32mINFO    [0m integration.backups:backups.py:178 Restoring backup 2025-09-12T01:44:20Z with year_before restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:190 Restoring backup 2025-09-12T01:44:20Z with year_after restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:202 Restoring backup 2025-09-12T01:44:20Z with actual restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:214 Restoring backup 2025-09-12T01:44:20Z with restore-to-time=latest parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:38 Cleaning backups from cloud buckets
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  01:48:49Z
+
+App            Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+mysql-k8s      8.0.42-0ubuntu0.22.04.2  blocked      1  mysql-k8s                       0  10.152.183.53   no       Move restored cluster to another S3 repository
+s3-integrator                           active       1  s3-integrator  latest/stable  145  10.152.183.178  no       
+
+Unit              Workload  Agent  Address      Ports  Message
+mysql-k8s/0*      active    idle   10.1.242.76         Primary
+s3-integrator/0*  active    idle   10.1.242.72         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 01:41:06 ERROR unit.mysql-k8s/2.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 01:41:06 ERROR unit.mysql-k8s/2.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:41:07 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:41:07 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 01:41:08 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 01:41:08 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 01:41:12 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 01:41:12 ERROR unit.mysql-k8s/1.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 01:41:14 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 714, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', 'shell.options.set(\'useWizards\', False)\nprint(\'###\')\ninstance_configured = dba.check_instance_configuration()[\'status\'] == \'ok\'\nprint("INSTANCE_CONFIGURED" if instance_configured else "INSTANCE_NOT_CONFIGURED")'], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m", stderr="Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062' (111)\n"
+unit-mysql-k8s-0: 01:41:14 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Binlogs collector service does not exist
+unit-mysql-k8s-0: 01:41:14 ERROR unit.mysql-k8s/0.juju-log database-peers:3: Failed to reconcile binlogs collection during peer relation event
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
