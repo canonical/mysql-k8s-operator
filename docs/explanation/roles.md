@@ -13,8 +13,9 @@ There are several definitions of roles in Charmed MySQL K8s:
 ```
 
 ## MySQL K8s roles
+MySQL does not provide any built-in roles for users to get permissions from.
 
-### Charmed MySQL K8s instance-level roles
+## Charmed MySQL K8s instance-level roles
 
 Charmed MySQL K8s introduces the following instance-level predefined roles:
 
@@ -46,7 +47,7 @@ mysql> SELECT host, user FROM mysql.user;
 Additionally, the role `charmed_router` is available to ease the integration with [Charmed MySQL Router](https://charmhub.io/mysql-router).
 This role contains all the necessary permissions for a MySQL Router relation user to operate.
 
-### Charmed MySQL K8s database-level roles
+## Charmed MySQL K8s database-level roles
 
 Charmed MySQL K8s also introduces database level roles, with permissions tied to each database that's created.
 Example for a database named `test`:
