@@ -45,6 +45,13 @@ set-tls-private-key:
 create-backup:
   description: Create a database backup using xtrabackup.
     S3 credentials are retrieved from a relation with the S3 integrator charm.
+  params:
+    force:
+      type: boolean
+      default: False
+      description: |
+        Whether to ignore cluster health concerns and create the backup regardless.
+        Use it with caution, as it can potentially create a backup from stale data.
 
 list-backups:
   description: List available backup_ids in the S3 bucket and path provided by the S3 integrator charm.

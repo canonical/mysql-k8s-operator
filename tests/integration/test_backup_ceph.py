@@ -19,9 +19,11 @@ from pytest_operator.plugin import OpsTest
 from . import juju_
 from .helpers import (
     execute_queries_on_unit,
+    get_primary_unit,
     get_server_config_credentials,
     get_unit_address,
     rotate_credentials,
+    scale_application,
 )
 from .high_availability.high_availability_helpers import (
     deploy_and_scale_mysql,
@@ -145,16 +147,19 @@ def clean_backups_from_buckets(cloud_credentials, cloud_configs):
 
 async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
-    # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
-    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm, num_units=1)
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm)
 
-    mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
-    assert mysql_unit
+    zeroth_unit = ops_test.model.units[f"{mysql_application_name}/0"]
+    primary_unit = await get_primary_unit(ops_test, zeroth_unit, mysql_application_name)
 
     logger.info("Rotating all mysql credentials")
-    await rotate_credentials(mysql_unit, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD)
-    await rotate_credentials(mysql_unit, username="serverconfig", password=SERVER_CONFIG_PASSWORD)
-    await rotate_credentials(mysql_unit, username="root", password=ROOT_PASSWORD)
+    await rotate_credentials(
+        primary_unit, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD
+    )
+    await rotate_credentials(
+        primary_unit, username="serverconfig", password=SERVER_CONFIG_PASSWORD
+    )
+    await rotate_credentials(primary_unit, username="root", password=ROOT_PASSWORD)
 
     logger.info("Deploying s3-integrator")
 
@@ -174,13 +179,19 @@ async def test_backup(
     ops_test: OpsTest, charm, cloud_credentials, cloud_configs, credentials
 ) -> None:
     """Test to create a backup and list backups."""
-    # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
-    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm, num_units=1)
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm)
 
     global backup_id, backups_by_cloud, value_before_backup, value_after_backup
 
     zeroth_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     assert zeroth_unit
+
+    primary_unit = await get_primary_unit(ops_test, zeroth_unit, mysql_application_name)
+    non_primary_units = [
+        unit
+        for unit in ops_test.model.applications[mysql_application_name].units
+        if unit.name != primary_unit.name
+    ]
 
     # insert data into cluster before
     logger.info("Inserting value before backup")
@@ -216,7 +227,7 @@ async def test_backup(
     # create backup
     logger.info("Creating backup")
 
-    results = await juju_.run_action(zeroth_unit, "create-backup", **{"--wait": "5m"})
+    results = await juju_.run_action(non_primary_units[0], "create-backup", **{"--wait": "5m"})
     backup_id = results["backup-id"]
 
     # list backups again and ensure new backup id exists
@@ -243,8 +254,11 @@ async def test_restore_on_same_cluster(
     ops_test: OpsTest, charm, cloud_credentials, cloud_configs, credentials
 ) -> None:
     """Test to restore a backup to the same mysql cluster."""
-    # TODO: deploy 3 units when bug https://bugs.launchpad.net/juju/+bug/1995466 is resolved
-    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm, num_units=1)
+    mysql_application_name = await deploy_and_scale_mysql(ops_test, charm)
+
+    logger.info("Scaling mysql application to 1 unit")
+    async with ops_test.fast_forward():
+        await scale_application(ops_test, mysql_application_name, 1)
 
     mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
     assert mysql_unit
