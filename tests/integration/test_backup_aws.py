@@ -93,13 +93,17 @@ async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
     """Simple test to ensure that the mysql charm gets deployed."""
     mysql_application_name = await deploy_and_scale_mysql(ops_test, charm)
 
-    mysql_unit = ops_test.model.units[f"{mysql_application_name}/0"]
-    assert mysql_unit
+    zeroth_unit = ops_test.model.units[f"{mysql_application_name}/0"]
+    primary_unit = await get_primary_unit(ops_test, zeroth_unit, mysql_application_name)
 
     logger.info("Rotating all mysql credentials")
-    await rotate_credentials(mysql_unit, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD)
-    await rotate_credentials(mysql_unit, username="serverconfig", password=SERVER_CONFIG_PASSWORD)
-    await rotate_credentials(mysql_unit, username="root", password=ROOT_PASSWORD)
+    await rotate_credentials(
+        primary_unit, username="clusteradmin", password=CLUSTER_ADMIN_PASSWORD
+    )
+    await rotate_credentials(
+        primary_unit, username="serverconfig", password=SERVER_CONFIG_PASSWORD
+    )
+    await rotate_credentials(primary_unit, username="root", password=ROOT_PASSWORD)
 
     logger.info("Deploying s3-integrator")
 
