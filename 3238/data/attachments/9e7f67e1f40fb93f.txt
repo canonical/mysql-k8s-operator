@@ -1,0 +1,15 @@
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  data-integrator1/0 [executing] blocked: Please specify either topic, index, database name, or prefix
+  mysql-k8s/0 [executing] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m integration.roles.test_instance_roles:test_instance_roles.py:99 Checking that the charmed_read role can read from an existing table
+[32mINFO    [0m integration.roles.test_instance_roles:test_instance_roles.py:114 Checking that the charmed_read role cannot write into an existing table
+[32mINFO    [0m integration.roles.test_instance_roles:test_instance_roles.py:126 Checking that the charmed_read role cannot create a new table
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  data-integrator1/0 [idle] active:
