@@ -127,7 +127,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 94
+LIBPATCH = 95
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1545,7 +1545,7 @@ class MySQLBase(ABC):
         )
 
         try:
-            logger.info(f"Creating application database {database} and DBA role {role_name}")
+            logger.info(f"Creating application {database=} and DBA {role_name=}")
             self._run_mysqlsh_script(
                 "\n".join(create_database_commands + create_dba_role_commands),
                 user=self.server_config_user,
