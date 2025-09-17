@@ -1209,6 +1209,21 @@ class MySQLBase(ABC):
             config.write(string_io)
             return string_io.getvalue(), dict(config["mysqld"])
 
+    def _build_mysql_database_dba_role(self, database: str) -> str:
+        """Builds the database-level DBA role, given length constraints."""
+        role_prefix = "charmed_dba"
+        role_suffix = "XX"
+
+        role_name_available = ROLE_MAX_LENGTH - len(role_prefix) - len(role_suffix) - 2
+        role_name_description = database[:role_name_available]
+        role_name_collisions = self.list_mysql_roles(f"{role_prefix}_{role_name_description}_%")
+
+        return "_".join((
+            role_prefix,
+            role_name_description,
+            str(len(role_name_collisions)).zfill(len(role_suffix)),
+        ))
+
     def configure_mysql_router_roles(self) -> None:
         """Configure the MySQL Router roles for the instance."""
         for role in (LEGACY_ROLE_ROUTER, MODERN_ROLE_ROUTER):
@@ -1515,11 +1530,7 @@ class MySQLBase(ABC):
 
     def create_database(self, database: str) -> None:
         """Create an application database."""
-        role_name = f"charmed_dba_{database}"
-
-        if len(role_name) >= ROLE_MAX_LENGTH:
-            logger.error(f"Failed to create application database {database}")
-            raise MySQLCreateApplicationDatabaseError("Role name longer than 32 characters")
+        role_name = self._build_mysql_database_dba_role(database)
 
         create_database_commands = (
             "shell.connect_to_primary()",
@@ -1534,6 +1545,7 @@ class MySQLBase(ABC):
         )
 
         try:
+            logger.info(f"Creating application database {database} and DBA role {role_name}")
             self._run_mysqlsh_script(
                 "\n".join(create_database_commands + create_dba_role_commands),
                 user=self.server_config_user,
@@ -1584,6 +1596,7 @@ class MySQLBase(ABC):
             )
 
         try:
+            logger.info(f"Creating application scoped user {username}@{hostname}")
             self._run_mysqlsh_script(
                 "\n".join(create_scoped_user_commands + grant_scoped_user_commands),
                 user=self.server_config_user,
