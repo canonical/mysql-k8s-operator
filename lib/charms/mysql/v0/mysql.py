@@ -1530,16 +1530,20 @@ class MySQLBase(ABC):
 
     def create_database(self, database: str) -> None:
         """Create an application database."""
+        databases = self.get_non_system_databases()
+        if database in databases:
+            return
+
         role_name = self._build_mysql_database_dba_role(database)
 
         create_database_commands = (
             "shell.connect_to_primary()",
-            f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database}`;")',
+            f'session.run_sql("CREATE DATABASE `{database}`;")',
             f'session.run_sql("GRANT SELECT ON `{database}`.* TO {ROLE_READ};")',
             f'session.run_sql("GRANT SELECT, INSERT, DELETE, UPDATE ON `{database}`.* TO {ROLE_DML};")',
         )
         create_dba_role_commands = (
-            f'session.run_sql("CREATE ROLE IF NOT EXISTS `{role_name}`;")',
+            f'session.run_sql("CREATE ROLE `{role_name}`;")',
             f'session.run_sql("GRANT SELECT, INSERT, DELETE, UPDATE, EXECUTE ON `{database}`.* TO {role_name};")',
             f'session.run_sql("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DROP, INDEX, LOCK TABLES, REFERENCES, TRIGGER ON `{database}`.* TO {role_name};")',
         )
