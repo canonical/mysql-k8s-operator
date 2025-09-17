@@ -127,7 +127,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 94
+LIBPATCH = 95
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -1209,6 +1209,21 @@ class MySQLBase(ABC):
             config.write(string_io)
             return string_io.getvalue(), dict(config["mysqld"])
 
+    def _build_mysql_database_dba_role(self, database: str) -> str:
+        """Builds the database-level DBA role, given length constraints."""
+        role_prefix = "charmed_dba"
+        role_suffix = "XX"
+
+        role_name_available = ROLE_MAX_LENGTH - len(role_prefix) - len(role_suffix) - 2
+        role_name_description = database[:role_name_available]
+        role_name_collisions = self.list_mysql_roles(f"{role_prefix}_{role_name_description}_%")
+
+        return "_".join((
+            role_prefix,
+            role_name_description,
+            str(len(role_name_collisions)).zfill(len(role_suffix)),
+        ))
+
     def configure_mysql_router_roles(self) -> None:
         """Configure the MySQL Router roles for the instance."""
         for role in (LEGACY_ROLE_ROUTER, MODERN_ROLE_ROUTER):
@@ -1513,29 +1528,35 @@ class MySQLBase(ABC):
             logger.error(f"Failed to configure mysqlrouter {username=}")
             raise MySQLConfigureRouterUserError from e
 
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception_type(MySQLCreateApplicationDatabaseError),
+    )
     def create_database(self, database: str) -> None:
         """Create an application database."""
-        role_name = f"charmed_dba_{database}"
+        databases = self.get_non_system_databases()
+        if database in databases:
+            return
 
-        if len(role_name) >= ROLE_MAX_LENGTH:
-            logger.error(f"Failed to create application database {database}")
-            raise MySQLCreateApplicationDatabaseError("Role name longer than 32 characters")
+        role_name = self._build_mysql_database_dba_role(database)
 
-        create_database_commands = (
+        create_commands = (
             "shell.connect_to_primary()",
-            f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database}`;")',
+            f'session.run_sql("CREATE ROLE `{role_name}`;")',
+            f'session.run_sql("CREATE DATABASE `{database}`;")',
+        )
+        grant_commands = (
             f'session.run_sql("GRANT SELECT ON `{database}`.* TO {ROLE_READ};")',
             f'session.run_sql("GRANT SELECT, INSERT, DELETE, UPDATE ON `{database}`.* TO {ROLE_DML};")',
-        )
-        create_dba_role_commands = (
-            f'session.run_sql("CREATE ROLE IF NOT EXISTS `{role_name}`;")',
             f'session.run_sql("GRANT SELECT, INSERT, DELETE, UPDATE, EXECUTE ON `{database}`.* TO {role_name};")',
             f'session.run_sql("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DROP, INDEX, LOCK TABLES, REFERENCES, TRIGGER ON `{database}`.* TO {role_name};")',
         )
 
         try:
+            logger.info(f"Creating application {database=} and DBA {role_name=}")
             self._run_mysqlsh_script(
-                "\n".join(create_database_commands + create_dba_role_commands),
+                "\n".join(create_commands + grant_commands),
                 user=self.server_config_user,
                 password=self.server_config_password,
                 host=self.instance_def(self.server_config_user),
@@ -1584,6 +1605,7 @@ class MySQLBase(ABC):
             )
 
         try:
+            logger.info(f"Creating application scoped user {username}@{hostname}")
             self._run_mysqlsh_script(
                 "\n".join(create_scoped_user_commands + grant_scoped_user_commands),
                 user=self.server_config_user,
