@@ -18,7 +18,6 @@ from .helpers import (
     get_unit_address,
     is_relation_joined,
 )
-from .juju_ import juju_major_version
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,7 @@ CLUSTER_NAME = "test_cluster"
 
 
 # TODO: deploy and relate osm-grafana once it can be use with MySQL Group Replication
+@markers.juju3
 @markers.amd64_only  # kafka-k8s charm not available for arm64
 async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest, charm) -> None:
     """Test the deployment and relation with osm bundle with mysql replacing mariadb."""
@@ -49,12 +49,9 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest, charm) -> None:
             "--resource",
             "keystone-image=opensourcemano/keystone:testing-daily",
             "osm-keystone",
+            "--base",
+            "ubuntu@22.04",
         ]
-
-        if juju_major_version >= 3:
-            osm_keystone_deploy_commands.extend(["--base", "ubuntu@22.04"])
-        else:
-            osm_keystone_deploy_commands.extend(["--series", "jammy"])
 
         await asyncio.gather(
             ops_test.model.deploy(
@@ -91,13 +88,11 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest, charm) -> None:
                 channel="latest/stable",
                 base="ubuntu@20.04",
             ),
-            # sticking to revision that support both juju 2.9.x and 3.x
             ops_test.model.deploy(
                 "mongodb-k8s",
                 application_name="mongodb",
-                channel="5/edge",
-                revision=36,
-                series="jammy",
+                channel="6/stable",
+                base="ubuntu@22.04",
             ),
         )
 
@@ -171,6 +166,7 @@ async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest, charm) -> None:
 
 
 @pytest.mark.abort_on_fail
+@markers.juju3
 @markers.amd64_only  # kafka-k8s charm not available for arm64
 async def test_osm_pol_operations(ops_test: OpsTest) -> None:
     """Test the existence of databases and tables created by osm-pol's migrations."""
