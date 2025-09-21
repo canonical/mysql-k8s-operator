@@ -1,0 +1,108 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:57 Deploying mysql-k8s and scaling to 3 units
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-0
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [allocating] waiting: installing agent
+  mysql-k8s/1 [allocating] waiting: installing agent
+  mysql-k8s/2 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] maintenance: installing charm software
+  mysql-k8s/1 [executing] maintenance: installing charm software
+  mysql-k8s/2 [executing] maintenance: installing charm software
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/1 [idle] waiting: waiting to get cluster primary from peers
+  mysql-k8s/2 [executing] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] waiting: waiting to join the cluster
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:60 Deploying mysql-test-app
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/mysql-test-app-85
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-test-app/0 [allocating] waiting: installing agent
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:63 Relating mysql-k8s with mysql-test-app
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: Primary
+  mysql-test-app/0 [idle] waiting: 
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+  mysql-test-app/0 [idle] active: 
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:268 Deploying Chaos Mesh
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:278 Ensure chaos mesh is ready
+[32mINFO    [0m integration.conftest:conftest.py:31 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:35 Ensuring that there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:40 Ensuring that all instances have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=120 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=153 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=153 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=185 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=185 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=218 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:48 Creating networkchaos policy to isolate instance mysql-k8s/2 from the cluster
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:55 Wait until MySQL GR actually detects isolated instance
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:74 Ensure all units have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=296 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=329 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=329 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=361 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:79 Remove networkchaos policy isolating instance from cluster
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:83 Wait until returning instance enters recovery
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:87 Wait until returning instance become active
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:92 Wait until all units are online
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:97 Ensure isolated instance is now secondary
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:108 Ensure there are 3 online mysql members
+[32mINFO    [0m integration.high_availability.test_self_healing_network_cut:test_self_healing_network_cut.py:113 Ensure all units have incrementing continuous writes
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=444 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=477 on unit mysql-k8s/0
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=477 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=509 on unit mysql-k8s/1
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=509 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.high_availability_helpers:high_availability_helpers.py:500 max_written_value=542 on unit mysql-k8s/2
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:45 Destroying chaos mesh
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  01:56:26Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address        Exposed  Message
+mysql-k8s       8.0.42-0ubuntu0.22.04.2  active      3  mysql-k8s                      0  10.152.183.68  no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   85  10.152.183.71  no       Last written value=494
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0        active    idle   10.1.242.75         Primary
+mysql-k8s/1*       active    idle   10.1.242.76         
+mysql-k8s/2        active    idle   10.1.242.77         
+mysql-test-app/0*  active    idle   10.1.242.78         Last written value=494
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 01:53:18 ERROR unit.mysql-k8s/0.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 714, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\n\x1b[33mWARNING: \x1b[0mError connecting to Cluster: MYSQLSH 51004: Unable to connect to the primary member of the Cluster: \'Can\'t connect to MySQL server on \'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local.:3306\' (110)\'\nRetrying getCluster() using a secondary member\nNo PRIMARY member found for cluster \'test_cluster\'\nNo PRIMARY member found for cluster \'test_cluster\'\nTraceback (most recent call last):\n  File "<string>", line 4, in <module>\nmysqlsh.Error: Shell Error (51603): Cluster.status: Could not connect to PRIMARY of Primary Cluster \'test_cluster\'\n'
+unit-mysql-k8s-0: 01:53:18 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-2: 01:55:21 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Binlogs collector service does not exist
+unit-mysql-k8s-2: 01:55:21 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
