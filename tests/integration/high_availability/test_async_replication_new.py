@@ -39,9 +39,6 @@ def first_model(juju: Juju, request: pytest.FixtureRequest) -> Generator:
     """Creates and return the first model."""
     yield juju.model
 
-    if request.config.getoption("--keep-models"):
-        return
-
 
 @pytest.fixture(scope="module")
 def second_model(juju: Juju, request: pytest.FixtureRequest) -> Generator:
