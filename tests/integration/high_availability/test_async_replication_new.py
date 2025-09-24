@@ -53,7 +53,7 @@ def second_model(juju: Juju, request: pytest.FixtureRequest) -> Generator:
         return
 
     logging.info(f"Destroying model: {model_name}")
-    juju.destroy_model(model_name, destroy_storage=True)
+    juju.destroy_model(model_name, destroy_storage=True, force=True)
 
 
 @pytest.fixture()
