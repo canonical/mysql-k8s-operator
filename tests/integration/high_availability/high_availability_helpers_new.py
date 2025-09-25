@@ -2,10 +2,13 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import subprocess
 from collections.abc import Callable
+from pathlib import Path
 
 import jubilant
 import kubernetes
+import yaml
 from jubilant import Juju
 from jubilant.statustypes import Status, UnitStatus
 from lightkube.core.client import Client
@@ -16,25 +19,29 @@ from constants import SERVER_CONFIG_USERNAME
 
 from ..helpers import execute_queries_on_unit
 
+CHARM_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 MINUTE_SECS = 60
 
 JujuModelStatusFn = Callable[[Status], bool]
 JujuAppsStatusFn = Callable[[Status, str], bool]
 
 
-def check_mysql_units_writes_increment(juju: Juju, app_name: str) -> None:
+def check_mysql_units_writes_increment(
+    juju: Juju, app_name: str, app_units: list[str] | None = None
+) -> None:
     """Ensure that continuous writes is incrementing on all units.
 
     Also, ensure that all continuous writes up to the max written value is available
     on all units (ensure that no committed data is lost).
     """
-    mysql_app_units = get_app_units(juju, app_name)
-    mysql_app_primary = get_mysql_primary_unit(juju, app_name)
+    if not app_units:
+        app_units = get_app_units(juju, app_name)
 
-    app_max_value = get_mysql_max_written_value(juju, app_name, mysql_app_primary)
+    app_primary = get_mysql_primary_unit(juju, app_name)
+    app_max_value = get_mysql_max_written_value(juju, app_name, app_primary)
 
     juju.model_config({"update-status-hook-interval": "15s"})
-    for unit_name in mysql_app_units:
+    for unit_name in app_units:
         for attempt in Retrying(
             reraise=True,
             stop=stop_after_delay(5 * MINUTE_SECS),
@@ -119,6 +126,26 @@ def get_app_units(juju: Juju, app_name: str) -> dict[str, UnitStatus]:
     return app_status.units
 
 
+def get_model_debug_logs(juju: Juju, log_level: str, log_lines: int = 100) -> str:
+    """Return the juju logs from a specific model.
+
+    Args:
+        juju: The juju instance to use.
+        log_level: The logging level to return messages from
+        log_lines: The maximum lines to return at once
+    """
+    return subprocess.check_output(
+        [
+            "juju",
+            "debug-log",
+            f"--model={juju.model}",
+            f"--level={log_level}",
+            f"--limit={log_lines}",
+        ],
+        text=True,
+    )
+
+
 def get_unit_address(juju: Juju, app_name: str, unit_name: str) -> str:
     """Get the application unit IP."""
     model_status = juju.status()
@@ -139,6 +166,43 @@ def get_unit_by_index(juju: Juju, app_name: str, index: int) -> str:
             return name
 
     raise Exception("No application unit found")
+
+
+def get_unit_info(juju: Juju, unit_name: str) -> dict:
+    """Return a dictionary with the show-unit data."""
+    output = subprocess.check_output(
+        ["juju", "show-unit", f"--model={juju.model}", unit_name],
+        text=True,
+    )
+
+    return yaml.safe_load(output)
+
+
+def get_relation_data(juju: Juju, app_name: str, rel_name: str) -> list[dict]:
+    """Returns a list that contains the relation-data.
+
+    Args:
+        juju: The juju instance to use.
+        app_name: The name of the application
+        rel_name: name of the relation to get connection data from
+
+    Returns:
+        A list that contains the relation-data
+    """
+    app_leader = get_app_leader(juju, app_name)
+    app_leader_info = get_unit_info(juju, app_leader)
+    if not app_leader_info:
+        raise ValueError(f"No unit info could be grabbed for unit {app_leader}")
+
+    relation_data = [
+        value
+        for value in app_leader_info[app_leader]["relation-info"]
+        if value["endpoint"] == rel_name
+    ]
+    if not relation_data:
+        raise ValueError(f"No relation data could be grabbed for relation {rel_name}")
+
+    return relation_data
 
 
 def get_mysql_cluster_status(juju: Juju, unit: str, cluster_set: bool | None = False) -> dict:
@@ -249,3 +313,17 @@ def wait_for_apps_status(jubilant_status_func: JujuAppsStatusFn, *apps: str) -> 
         jubilant.all_agents_idle(status, *apps),
         jubilant_status_func(status, *apps),
     ))
+
+
+def wait_for_unit_status(app_name: str, unit_name: str, unit_status: str) -> JujuModelStatusFn:
+    """Returns whether a Juju unit to have a specific status."""
+    return lambda status: (
+        status.apps[app_name].units[unit_name].workload_status.current == unit_status
+    )
+
+
+def wait_for_unit_message(app_name: str, unit_name: str, unit_message: str) -> JujuModelStatusFn:
+    """Returns whether a Juju unit to have a specific message."""
+    return lambda status: (
+        status.apps[app_name].units[unit_name].workload_status.message == unit_message
+    )

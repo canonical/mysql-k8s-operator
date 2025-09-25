@@ -5,16 +5,15 @@
 import logging
 import time
 from collections.abc import Generator
-from pathlib import Path
 
 import jubilant
 import pytest
-import yaml
 from jubilant import Juju
 
 from .. import architecture
 from ..markers import juju3
 from .high_availability_helpers_new import (
+    CHARM_METADATA,
     exec_k8s_container_command,
     get_app_leader,
     get_app_units,
@@ -28,7 +27,6 @@ MYSQL_APP_2 = "db2"
 MYSQL_ROUTER_NAME = "mysql-router-k8s"
 MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 MINUTE_SECS = 60
 
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
@@ -79,7 +77,7 @@ def test_build_and_deploy(first_model: str, second_model: str, charm: str) -> No
     """Simple test to ensure that the MySQL application charms get deployed."""
     configuration = {"profile": "testing"}
     constraints = {"arch": architecture.architecture}
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+    resources = {"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     logging.info("Deploying mysql clusters")
     model_1 = Juju(model=first_model)

@@ -13,6 +13,8 @@ from .high_availability_helpers_new import (
     get_app_units,
     get_mysql_instance_label,
     get_mysql_primary_unit,
+    wait_for_unit_message,
+    wait_for_unit_status,
 )
 
 CHARM_NAME = "mysql-k8s"
@@ -73,10 +75,11 @@ def test_cluster_failover_after_majority_loss(juju: Juju, highly_available_clust
     juju.model_config({"update-status-hook-interval": "45s"})
     logging.info("Waiting to settle in error state")
     juju.wait(
-        lambda status: status.apps[app_name].units[unit_to_promote].workload_status.current
-        == "active"
-        and status.apps[app_name].units[units_to_kill[0]].workload_status.message == "offline"
-        and status.apps[app_name].units[units_to_kill[1]].workload_status.message == "offline",
+        ready=lambda status: all((
+            wait_for_unit_status(app_name, unit_to_promote, "active")(status),
+            wait_for_unit_message(app_name, units_to_kill[0], "offline")(status),
+            wait_for_unit_message(app_name, units_to_kill[1], "offline")(status),
+        )),
         timeout=60 * 15,
         delay=15,
     )

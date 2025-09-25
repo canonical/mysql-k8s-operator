@@ -6,16 +6,15 @@ import logging
 import time
 from collections.abc import Generator
 from contextlib import suppress
-from pathlib import Path
 
 import jubilant
 import pytest
-import yaml
 from jubilant import Juju, TaskError
 
 from .. import architecture
 from ..markers import juju3
 from .high_availability_helpers_new import (
+    CHARM_METADATA,
     check_mysql_units_writes_increment,
     get_app_leader,
     get_app_units,
@@ -25,13 +24,13 @@ from .high_availability_helpers_new import (
     get_mysql_variable_value,
     get_unit_by_index,
     wait_for_apps_status,
+    wait_for_unit_message,
 )
 
 MYSQL_APP_1 = "db1"
 MYSQL_APP_2 = "db2"
 MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 MINUTE_SECS = 60
 
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
@@ -82,7 +81,7 @@ def test_build_and_deploy(first_model: str, second_model: str, charm: str) -> No
     """Simple test to ensure that the MySQL application charms get deployed."""
     configuration = {"profile": "testing"}
     constraints = {"arch": architecture.architecture}
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+    resources = {"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     logging.info("Deploying mysql clusters")
     model_1 = Juju(model=first_model)
@@ -290,10 +289,7 @@ def run_upgrade_from_edge(juju: Juju, app_name: str, charm: str) -> None:
 
     logging.info("Wait for upgrade to complete on first upgrading unit")
     juju.wait(
-        ready=lambda status: (
-            status.apps[app_name].units[upgrade_unit].workload_status.message
-            == "upgrade completed"
-        ),
+        ready=wait_for_unit_message(app_name, upgrade_unit, "upgrade completed"),
         timeout=10 * MINUTE_SECS,
     )
 
