@@ -2,413 +2,415 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-
 import logging
-import subprocess
-from asyncio import gather
+import time
+from collections.abc import Generator
 from pathlib import Path
-from time import sleep
-from typing import Optional
 
+import jubilant
 import pytest
 import yaml
-from juju.model import Model
-from pytest_operator.plugin import OpsTest
+from jubilant import Juju
 
-from .. import architecture, juju_, markers
-from ..helpers import (
-    execute_queries_on_unit,
-    get_cluster_status,
-    get_leader_unit,
-    get_unit_address,
-)
-from .high_availability_helpers import (
-    DATABASE_NAME,
-    TABLE_NAME,
-    send_signal_to_pod_container_process,
+from .. import architecture
+from ..markers import juju3
+from .high_availability_helpers_new import (
+    exec_k8s_container_command,
+    get_app_leader,
+    get_app_units,
+    get_mysql_cluster_status,
+    get_mysql_max_written_value,
+    wait_for_apps_status,
 )
 
-logger = logging.getLogger(__name__)
-MYSQL_APP1 = "db1"
-MYSQL_APP2 = "db2"
-MYSQL_ROUTER_APP_NAME = "mysql-router-k8s"
-APPLICATION_APP_NAME = "mysql-test-app"
-
-MYSQL_CONTAINER_NAME = "mysql"
-MYSQLD_PROCESS_NAME = "mysqld"
+MYSQL_APP_1 = "db1"
+MYSQL_APP_2 = "db2"
+MYSQL_ROUTER_NAME = "mysql-router-k8s"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-MINUTE = 60
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @pytest.fixture(scope="module")
-def first_model(ops_test: OpsTest) -> Optional[Model]:
-    """Return the first model."""
-    first_model = ops_test.model
-    return first_model
+def first_model(juju: Juju, request: pytest.FixtureRequest) -> Generator:
+    """Creates and return the first model."""
+    yield juju.model
 
 
 @pytest.fixture(scope="module")
-async def second_model(ops_test: OpsTest, first_model, request) -> Model:  # pyright: ignore [reportInvalidTypeForm]
-    """Create and return the second model."""
-    second_model_name = f"{first_model.info.name}-other"
-    await ops_test._controller.add_model(second_model_name)
-    subprocess.run(["juju", "switch", second_model_name], check=True)
-    subprocess.run(
-        ["juju", "set-model-constraints", f"arch={architecture.architecture}"], check=True
-    )
-    subprocess.run(["juju", "switch", first_model.info.name], check=True)
-    second_model = Model()
-    await second_model.connect(model_name=second_model_name)
-    yield second_model  # pyright: ignore [reportReturnType]
+def second_model(juju: Juju, request: pytest.FixtureRequest) -> Generator:
+    """Creates and returns the second model."""
+    model_name = f"{juju.model}-other"
 
+    logging.info(f"Creating model: {model_name}")
+    juju.add_model(model_name)
+
+    yield model_name
     if request.config.getoption("--keep-models"):
         return
-    logger.info("Destroying second model")
-    await ops_test._controller.destroy_model(second_model_name, destroy_storage=True)
+
+    logging.info(f"Destroying model: {model_name}")
+    juju.destroy_model(model_name, destroy_storage=True, force=True)
 
 
-@markers.juju3
+@pytest.fixture()
+def continuous_writes(first_model: str) -> Generator:
+    """Starts continuous writes to the MySQL cluster for a test and clear the writes at the end."""
+    model_1 = Juju(model=first_model)
+    model_1_test_app_leader = get_app_leader(model_1, MYSQL_TEST_APP_NAME)
+
+    logging.info("Clearing continuous writes")
+    model_1.run(model_1_test_app_leader, "clear-continuous-writes")
+    logging.info("Starting continuous writes")
+    model_1.run(model_1_test_app_leader, "start-continuous-writes")
+
+    yield
+
+    logging.info("Clearing continuous writes")
+    model_1.run(model_1_test_app_leader, "clear-continuous-writes")
+
+
+@juju3
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(
-    ops_test: OpsTest, charm, first_model: Model, second_model: Model
-) -> None:
-    """Simple test to ensure that the mysql and application charms get deployed."""
-    config = {"cluster-name": "lima", "profile": "testing"}
+def test_build_and_deploy(first_model: str, second_model: str, charm: str) -> None:
+    """Simple test to ensure that the MySQL application charms get deployed."""
+    configuration = {"profile": "testing"}
+    constraints = {"arch": architecture.architecture}
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
-    logger.info("Deploying mysql clusters")
-    await first_model.deploy(
-        charm,
-        application_name=MYSQL_APP1,
-        num_units=3,
-        config=config,
-        resources=resources,
-        trust=True,
+    logging.info("Deploying mysql clusters")
+    model_1 = Juju(model=first_model)
+    model_1.deploy(
+        charm=charm,
+        app=MYSQL_APP_1,
         base="ubuntu@22.04",
-    )
-    config["cluster-name"] = "cuzco"
-    await second_model.deploy(
-        charm,
-        application_name=MYSQL_APP2,
-        num_units=3,
-        config=config,
+        config={**configuration, "cluster-name": "lima"},
+        constraints=constraints,
         resources=resources,
-        trust=True,
+        num_units=3,
+    )
+    model_2 = Juju(model=second_model)
+    model_2.deploy(
+        charm=charm,
+        app=MYSQL_APP_2,
         base="ubuntu@22.04",
+        config={**configuration, "cluster-name": "cuzco"},
+        constraints=constraints,
+        resources=resources,
+        num_units=3,
     )
 
-    logger.info("Waiting for the applications to settle")
-    await gather(
-        first_model.wait_for_idle(
-            apps=[MYSQL_APP1],
-            status="active",
-            timeout=10 * MINUTE,
-            raise_on_error=False,
-        ),
-        second_model.wait_for_idle(
-            apps=[MYSQL_APP2],
-            status="active",
-            timeout=10 * MINUTE,
-            raise_on_error=False,
-        ),
+    logging.info("Waiting for the applications to settle")
+    model_1.wait(
+        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        timeout=10 * MINUTE_SECS,
+    )
+    model_2.wait(
+        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_2),
+        timeout=10 * MINUTE_SECS,
     )
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
-async def test_async_relate(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
-    """Relate the two mysql clusters."""
-    logger.info("Creating offers in first model")
-    offer_command = f"offer {MYSQL_APP1}:replication-offer"
-    await ops_test.juju(*offer_command.split())
+def test_async_relate(first_model: str, second_model: str) -> None:
+    """Relate the two MySQL clusters."""
+    logging.info("Creating offers in first model")
+    model_1 = Juju(model=first_model)
+    model_1.offer(MYSQL_APP_1, endpoint="replication-offer")
 
-    logger.info("Consume offer in second model")
-    consume_command = (
-        f"consume -m {second_model.info.name} admin/{first_model.info.name}.{MYSQL_APP1}"
+    logging.info("Consuming offer in second model")
+    model_2 = Juju(model=second_model)
+    model_2.consume(f"{first_model}.{MYSQL_APP_1}")
+
+    logging.info("Relating the two mysql clusters")
+    model_2.integrate(
+        f"{MYSQL_APP_1}",
+        f"{MYSQL_APP_2}:replication",
     )
-    await ops_test.juju(*consume_command.split())
 
-    logger.info("Relating the two mysql clusters")
-    await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:replication")
-
-    logger.info("Waiting for the applications to settle")
-    await gather(
-        first_model.block_until(
-            lambda: any(
-                unit.workload_status == "blocked"
-                for unit in first_model.applications[MYSQL_APP1].units
-            ),
-            timeout=5 * MINUTE,
-        ),
-        second_model.block_until(
-            lambda: all(
-                unit.workload_status == "waiting"
-                for unit in second_model.applications[MYSQL_APP2].units
-            ),
-            timeout=5 * MINUTE,
-        ),
+    logging.info("Waiting for the applications to settle")
+    model_1.wait(
+        ready=wait_for_apps_status(jubilant.any_blocked, MYSQL_APP_1),
+        timeout=5 * MINUTE_SECS,
+    )
+    model_2.wait(
+        ready=wait_for_apps_status(jubilant.any_waiting, MYSQL_APP_2),
+        timeout=5 * MINUTE_SECS,
     )
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
-async def test_deploy_router_and_app(first_model: Model) -> None:
+def test_deploy_router_and_app(first_model: str) -> None:
     """Deploy the router and the test application."""
-    logger.info("Deploying router and application")
-    await first_model.deploy(
-        MYSQL_ROUTER_APP_NAME,
-        application_name=MYSQL_ROUTER_APP_NAME,
+    logging.info("Deploying the router and test application")
+    model_1 = Juju(model=first_model)
+    model_1.deploy(
+        charm=MYSQL_ROUTER_NAME,
+        app=MYSQL_ROUTER_NAME,
         base="ubuntu@22.04",
         channel="8.0/edge",
         num_units=1,
         trust=True,
     )
-    await first_model.deploy(
-        APPLICATION_APP_NAME,
-        application_name=APPLICATION_APP_NAME,
+    model_1.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
         base="ubuntu@22.04",
         channel="latest/edge",
         num_units=1,
+        trust=False,
     )
 
-    logger.info("Relate app and router")
-    await first_model.integrate(
-        APPLICATION_APP_NAME,
-        MYSQL_ROUTER_APP_NAME,
+    logging.info("Relating the router and test application")
+    model_1.integrate(
+        f"{MYSQL_ROUTER_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
     )
-    logger.info("Relate router and db")
-    await first_model.integrate(MYSQL_ROUTER_APP_NAME, MYSQL_APP1)
-
-    await first_model.wait_for_idle(
-        apps=[MYSQL_ROUTER_APP_NAME, APPLICATION_APP_NAME],
-        timeout=10 * MINUTE,
-        raise_on_error=False,
+    model_1.integrate(
+        f"{MYSQL_ROUTER_NAME}:backend-database",
+        f"{MYSQL_APP_1}:database",
     )
 
+    model_1.wait(
+        ready=wait_for_apps_status(jubilant.all_active, MYSQL_TEST_APP_NAME),
+        timeout=10 * MINUTE_SECS,
+    )
 
-@markers.juju3
+
+@juju3
 @pytest.mark.abort_on_fail
-async def test_create_replication(first_model: Model, second_model: Model) -> None:
-    """Run the create replication and wait for the applications to settle."""
-    logger.info("Running create replication action")
-    leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
-    assert leader_unit is not None, "No leader unit found"
+def test_create_replication(first_model: str, second_model: str) -> None:
+    """Run the create-replication action and wait for the applications to settle."""
+    model_1 = Juju(model=first_model)
+    model_2 = Juju(model=second_model)
 
-    await juju_.run_action(
-        leader_unit,
-        "create-replication",
-        **{"--wait": "5m"},
+    logging.info("Running create replication action")
+    task = model_1.run(
+        unit=get_app_leader(model_1, MYSQL_APP_1),
+        action="create-replication",
+        wait=5 * MINUTE_SECS,
     )
+    task.raise_on_failure()
 
-    logger.info("Waiting for the applications to settle")
-    await gather(
-        first_model.wait_for_idle(
-            apps=[MYSQL_APP1],
-            status="active",
-            timeout=5 * MINUTE,
-        ),
-        second_model.wait_for_idle(
-            apps=[MYSQL_APP2],
-            status="active",
-            timeout=5 * MINUTE,
-        ),
+    logging.info("Waiting for the applications to settle")
+    model_1.wait(
+        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        timeout=5 * MINUTE_SECS,
+    )
+    model_2.wait(
+        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_2),
+        timeout=5 * MINUTE_SECS,
     )
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
-async def test_data_replication(
-    first_model: Model, second_model: Model, continuous_writes
-) -> None:
+def test_data_replication(first_model: str, second_model: str, continuous_writes) -> None:
     """Test to write to primary, and read the same data back from replicas."""
-    results = await get_max_written_value(first_model, second_model)
-    assert len(results) == 6, f"Expected 6 results, got {len(results)}"
-    assert all(x == results[0] for x in results), "Data is not consistent across units"
+    logging.info("Testing data replication")
+    results = get_mysql_max_written_values(first_model, second_model)
+
+    assert len(results) == 6
+    assert all(results[0] == x for x in results), "Data is not consistent across units"
     assert results[0] > 1, "No data was written to the database"
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
-async def test_standby_promotion(
-    ops_test: OpsTest, first_model: Model, second_model: Model, continuous_writes
-) -> None:
+def test_standby_promotion(first_model: str, second_model: str, continuous_writes) -> None:
     """Test graceful promotion of a standby cluster to primary."""
-    leader_unit = await get_leader_unit(None, MYSQL_APP2, second_model)
+    model_2 = Juju(model=second_model)
+    model_2_mysql_leader = get_app_leader(model_2, MYSQL_APP_2)
 
-    assert leader_unit is not None, "No leader unit found on standby cluster"
+    logging.info("Promoting standby cluster to primary")
+    promotion_task = model_2.run(
+        unit=model_2_mysql_leader,
+        action="promote-to-primary",
+        params={"scope": "cluster"},
+    )
+    promotion_task.raise_on_failure()
 
-    logger.info("Promoting standby cluster to primary")
-    await juju_.run_action(
-        leader_unit,
-        "promote-to-primary",
-        **{"scope": "cluster"},
+    results = get_mysql_max_written_values(first_model, second_model)
+    assert len(results) == 6
+    assert all(results[0] == x for x in results), "Data is not consistent across units"
+    assert results[0] > 1, "No data was written to the database"
+
+    cluster_set_status = get_mysql_cluster_status(
+        juju=model_2,
+        unit=model_2_mysql_leader,
+        cluster_set=True,
     )
 
-    results = await get_max_written_value(first_model, second_model)
-    assert len(results) == 6, f"Expected 6 results, got {len(results)}"
-    assert all(x == results[0] for x in results), "Data is not consistent across units"
-    assert results[0] > 1, "No data was written to the database"
-
-    cluster_set_status = await get_cluster_status(leader_unit, cluster_set=True)
     assert cluster_set_status["clusters"]["cuzco"]["clusterrole"] == "primary", (
         "standby not promoted to primary"
     )
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
-async def test_failover(ops_test: OpsTest, first_model: Model, second_model: Model) -> None:
+def test_failover(first_model: str, second_model: str) -> None:
     """Test switchover on primary cluster fail."""
-    logger.info("Freezing mysqld on primary cluster units")
-    second_model_units = second_model.applications[MYSQL_APP2].units
+    logging.info("Freezing mysqld on primary cluster units")
+    model_2 = Juju(model=second_model)
+    model_2_mysql_units = get_app_units(model_2, MYSQL_APP_2)
 
-    # simulating a failure on the primary cluster
-    for unit in second_model_units:
-        await send_signal_to_pod_container_process(
-            second_model.info.name, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME, "SIGSTOP"
+    # Simulating a failure on the primary cluster
+    for unit_name in model_2_mysql_units:
+        return_code = exec_k8s_container_command(
+            juju=model_2,
+            unit_name=unit_name,
+            container_name="mysql",
+            command="pkill -f mysqld --signal SIGSTOP",
         )
+        assert return_code == 0, "Failed to execute command"
 
-    logger.info("Promoting standby cluster to primary with force flag")
-    leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
-    assert leader_unit is not None, "No leader unit found"
-    await juju_.run_action(
-        leader_unit,
-        "promote-to-primary",
-        **{"--wait": "5m", "scope": "cluster", "force": True},
+    logging.info("Promoting standby cluster to primary with force flag")
+    model_1 = Juju(model=first_model)
+    model_1_mysql_leader = get_app_leader(model_1, MYSQL_APP_1)
+
+    promotion_task = model_1.run(
+        unit=model_1_mysql_leader,
+        action="promote-to-primary",
+        params={"scope": "cluster", "force": True},
+        wait=5 * MINUTE_SECS,
+    )
+    promotion_task.raise_on_failure()
+
+    logging.info("Checking clusters statuses")
+    cluster_set_status = get_mysql_cluster_status(
+        juju=model_1,
+        unit=model_1_mysql_leader,
+        cluster_set=True,
     )
 
-    cluster_set_status = await get_cluster_status(leader_unit, cluster_set=True)
     assert cluster_set_status["clusters"]["lima"]["clusterrole"] == "primary", (
-        "standby not promoted to primary"
+        "standby not promoted to primary",
     )
     assert cluster_set_status["clusters"]["cuzco"]["globalstatus"] == "invalidated", (
         "old primary not invalidated"
     )
 
-    # restore mysqld process
-    for unit in second_model_units:
-        await send_signal_to_pod_container_process(
-            second_model.info.name, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME, "SIGCONT"
+    # Restore mysqld process
+    logging.info("Unfreezing mysqld on primary cluster units")
+    for unit_name in model_2_mysql_units:
+        return_code = exec_k8s_container_command(
+            juju=model_2,
+            unit_name=unit_name,
+            container_name="mysql",
+            command="pkill -f mysqld --signal SIGCONT",
         )
+        assert return_code == 0, "Failed to execute command"
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
-async def test_rejoin_invalidated_cluster(
-    first_model: Model, second_model: Model, continuous_writes
+def test_rejoin_invalidated_cluster(
+    first_model: str, second_model: str, continuous_writes
 ) -> None:
     """Test rejoin invalidated cluster with."""
-    leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
-    assert leader_unit is not None, "No leader unit found"
-    await juju_.run_action(
-        leader_unit,
-        "rejoin-cluster",
-        **{"--wait": "5m", "cluster-name": "cuzco"},
+    model_1 = Juju(model=first_model)
+    model_1_mysql_leader = get_app_leader(model_1, MYSQL_APP_1)
+
+    task = model_1.run(
+        unit=model_1_mysql_leader,
+        action="rejoin-cluster",
+        params={"cluster-name": "cuzco"},
+        wait=5 * MINUTE_SECS,
     )
-    results = await get_max_written_value(first_model, second_model)
-    assert len(results) == 6, f"Expected 6 results, got {len(results)}"
-    assert all(x == results[0] for x in results), "Data is not consistent across units"
+    task.raise_on_failure()
+
+    results = get_mysql_max_written_values(first_model, second_model)
+    assert len(results) == 6
+    assert all(results[0] == x for x in results), "Data is not consistent across units"
     assert results[0] > 1, "No data was written to the database"
 
 
-@markers.juju3
+@juju3
 @pytest.mark.abort_on_fail
-async def test_remove_relation_and_relate(
-    first_model: Model, second_model: Model, continuous_writes
-) -> None:
+def test_unrelate_and_relate(first_model: str, second_model: str, continuous_writes) -> None:
     """Test removing and re-relating the two mysql clusters."""
-    logger.info("Remove async relation")
-    await second_model.applications[MYSQL_APP2].remove_relation(
-        f"{MYSQL_APP2}:replication", MYSQL_APP1
+    model_1 = Juju(model=first_model)
+    model_2 = Juju(model=second_model)
+
+    logging.info("Remove async relation")
+    model_2.remove_relation(
+        f"{MYSQL_APP_1}",
+        f"{MYSQL_APP_2}:replication",
     )
 
-    second_model_units = second_model.applications[MYSQL_APP2].units
-    logger.info("waiting for units to be blocked")
-    await second_model.block_until(
-        lambda: all(unit.workload_status == "blocked" for unit in second_model_units),
-        timeout=10 * MINUTE,
+    logging.info("Waiting for the applications to settle")
+    model_1.wait(
+        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        timeout=10 * MINUTE_SECS,
+    )
+    model_2.wait(
+        ready=wait_for_apps_status(jubilant.all_blocked, MYSQL_APP_2),
+        timeout=10 * MINUTE_SECS,
     )
 
-    logger.info("Waiting for the applications to settle")
-    await gather(
-        first_model.wait_for_idle(
-            apps=[MYSQL_APP1],
-            status="active",
-            timeout=10 * MINUTE,
-        ),
-        second_model.wait_for_idle(
-            apps=[MYSQL_APP2],
-            status="blocked",
-            timeout=10 * MINUTE,
-        ),
+    logging.info("Re relating the two mysql clusters")
+    model_2.integrate(
+        f"{MYSQL_APP_1}",
+        f"{MYSQL_APP_2}:replication",
+    )
+    model_1.wait(
+        ready=wait_for_apps_status(jubilant.any_blocked, MYSQL_APP_1),
+        timeout=5 * MINUTE_SECS,
     )
 
-    logger.info("Re relating the two mysql clusters")
-    await second_model.integrate(f"{MYSQL_APP1}", f"{MYSQL_APP2}:replication")
+    logging.info("Running create replication action")
+    task = model_1.run(
+        unit=get_app_leader(model_1, MYSQL_APP_1),
+        action="create-replication",
+        wait=5 * MINUTE_SECS,
+    )
+    task.raise_on_failure()
 
-    logger.info("Waiting for the applications to settle")
-    await first_model.block_until(
-        lambda: any(
-            unit.workload_status == "blocked"
-            for unit in first_model.applications[MYSQL_APP1].units
-        ),
-        timeout=5 * MINUTE,
+    logging.info("Waiting for the applications to settle")
+    model_1.wait(
+        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        timeout=10 * MINUTE_SECS,
+    )
+    model_2.wait(
+        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_2),
+        timeout=10 * MINUTE_SECS,
     )
 
-    logger.info("Running create replication action")
-    leader_unit = await get_leader_unit(None, MYSQL_APP1, first_model)
-    assert leader_unit is not None, "No leader unit found"
-
-    await juju_.run_action(
-        leader_unit,
-        "create-replication",
-        **{"--wait": "5m"},
-    )
-
-    logger.info("Waiting for the applications to settle")
-    await gather(
-        first_model.wait_for_idle(
-            apps=[MYSQL_APP1],
-            status="active",
-            timeout=10 * MINUTE,
-        ),
-        second_model.wait_for_idle(
-            apps=[MYSQL_APP2],
-            status="active",
-            timeout=10 * MINUTE,
-        ),
-    )
-
-    results = await get_max_written_value(first_model, second_model)
-    assert len(results) == 6, f"Expected 6 results, got {len(results)}"
-    assert all(x == results[0] for x in results), "Data is not consistent across units"
+    results = get_mysql_max_written_values(first_model, second_model)
+    assert len(results) == 6
+    assert all(results[0] == x for x in results), "Data is not consistent across units"
     assert results[0] > 1, "No data was written to the database"
 
 
-async def get_max_written_value(first_model: Model, second_model: Model) -> list[int]:
+def get_mysql_max_written_values(first_model: str, second_model: str) -> list[int]:
     """Return list with max written value from all units."""
-    select_max_written_value_sql = [f"SELECT MAX(number) FROM `{DATABASE_NAME}`.`{TABLE_NAME}`;"]
-    logger.info("Testing data replication")
-    first_model_units = first_model.applications[MYSQL_APP1].units
-    second_model_units = second_model.applications[MYSQL_APP2].units
-    credentials = await juju_.run_action(
-        first_model_units[0], "get-password", username="serverconfig"
+    model_1 = Juju(model=first_model)
+    model_2 = Juju(model=second_model)
+
+    logging.info("Stopping continuous writes")
+    stopping_task = model_1.run(
+        unit=get_app_leader(model_1, MYSQL_TEST_APP_NAME),
+        action="stop-continuous-writes",
+        params={},
     )
+    stopping_task.raise_on_failure()
 
-    logger.info("Stopping continuous writes and wait (5s) for replication")
-    application_unit = first_model.applications[APPLICATION_APP_NAME].units[0]
-    await juju_.run_action(application_unit, "stop-continuous-writes")
-
-    sleep(5)
+    time.sleep(5)
     results = []
 
-    logger.info("Querying max value on all units")
-    for unit in first_model_units + second_model_units:
-        address = await get_unit_address(None, unit.name, unit.model)
-        values = execute_queries_on_unit(
-            address, credentials["username"], credentials["password"], select_max_written_value_sql
-        )
-        results.append(values[0])
+    logging.info(f"Querying max value on all {MYSQL_APP_1} units")
+    for unit_name in get_app_units(model_1, MYSQL_APP_1):
+        unit_max_value = get_mysql_max_written_value(model_1, MYSQL_APP_1, unit_name)
+        results.append(unit_max_value)
+
+    logging.info(f"Querying max value on all {MYSQL_APP_2} units")
+    for unit_name in get_app_units(model_2, MYSQL_APP_2):
+        unit_max_value = get_mysql_max_written_value(model_2, MYSQL_APP_2, unit_name)
+        results.append(unit_max_value)
 
     return results
