@@ -78,7 +78,7 @@ async def test_charmed_dba_role(ops_test: OpsTest):
 
     await ops_test.model.applications[f"{INTEGRATOR_APP_NAME}2"].set_config({
         "database-name": "throwaway",
-        "extra-user-roles": "charmed_dba_preserved",
+        "extra-user-roles": "charmed_dba_preserved_00",
     })
     await ops_test.model.add_relation(f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME)
     await ops_test.model.wait_for_idle(
@@ -147,4 +147,4 @@ async def test_charmed_dba_role(ops_test: OpsTest):
     assert sorted(rows) == sorted([
         "test_data_1",
         "test_data_2",
-    ]), "Unexpected data in preserved with charmed_dba_preserved role"
+    ]), "Unexpected data in preserved with charmed_dba_preserved_00 role"

@@ -53,12 +53,14 @@ Charmed MySQL K8s also introduces database level roles, with permissions tied to
 Example for a database named `test`:
 
 ```text
-mysql> SELECT host, user FROM mysql.user WHERE user LIKE '%_test';
-+-----------+------------------+
-| host      | user             |
-+-----------+------------------+
-| %         | charmed_dba_test |
-+-----------+------------------+
+mysql> SELECT host, user FROM mysql.user WHERE user LIKE '%_test_%';
++-----------+---------------------+
+| host      | user                |
++-----------+---------------------+
+| %         | charmed_dba_test_00 |
++-----------+---------------------+
 ```
 
-The `charmed_dba_<database>` role contains every data and schema related permission, scoped to the database it references.
+The `charmed_dba_<database>_<num>` role contains every data and schema related permission, scoped to the database it references.
+The numeric part is introduced in order to differentiate across DBA roles whose first set of characters is the same,
+given that database names will be pruned in order to fit into the MySQL role length limit (32 characters).
