@@ -1,0 +1,7 @@
+[32mINFO    [0m root:test_async_replication_upgrade.py:124 Creating offers in first model
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju offer db1:replication-offer
+[32mINFO    [0m root:test_async_replication_upgrade.py:128 Consuming offer in second model
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju consume --model testing-other testing.db1
+[32mINFO    [0m root:test_async_replication_upgrade.py:132 Relating the two mysql clusters
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju integrate --model testing-other db1 db2:replication
+[32mINFO    [0m root:test_async_replication_upgrade.py:138 Waiting for the applications to settle
