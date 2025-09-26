@@ -9,11 +9,11 @@ import zipfile
 from contextlib import suppress
 from pathlib import Path
 
-import jubilant
+import jubilant_backports
 import pytest
-from jubilant import Juju, TaskError
+from jubilant_backports import Juju, TaskError
 
-from ..markers import amd64_only, juju3
+from ..markers import amd64_only
 from .high_availability_helpers_new import (
     CHARM_METADATA,
     get_app_leader,
@@ -34,7 +34,6 @@ logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 # TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
-@juju3
 @amd64_only
 @pytest.mark.abort_on_fail
 def test_build_and_deploy(juju: Juju, charm: str) -> None:
@@ -54,15 +53,14 @@ def test_build_and_deploy(juju: Juju, charm: str) -> None:
 
     logging.info("Wait for applications to become active")
     juju.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_NAME),
-        error=jubilant.any_blocked,
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_NAME),
+        error=jubilant_backports.any_blocked,
         timeout=20 * MINUTE_SECS,
     )
 
 
 # TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
-@juju3
 @amd64_only
 @pytest.mark.abort_on_fail
 def test_pre_upgrade_check(juju: Juju) -> None:
@@ -76,7 +74,6 @@ def test_pre_upgrade_check(juju: Juju) -> None:
 
 # TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
-@juju3
 @amd64_only
 @pytest.mark.abort_on_fail
 def test_upgrade_to_failing(juju: Juju, charm: str) -> None:
@@ -100,7 +97,7 @@ def test_upgrade_to_failing(juju: Juju, charm: str) -> None:
 
     logging.info("Wait for upgrade to start")
     juju.wait(
-        ready=lambda status: jubilant.any_maintenance(status, MYSQL_APP_NAME),
+        ready=lambda status: jubilant_backports.any_maintenance(status, MYSQL_APP_NAME),
         timeout=10 * MINUTE_SECS,
     )
 
@@ -116,7 +113,6 @@ def test_upgrade_to_failing(juju: Juju, charm: str) -> None:
 
 # TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
-@juju3
 @amd64_only
 @pytest.mark.abort_on_fail
 def test_rollback(juju: Juju, charm: str) -> None:
@@ -144,7 +140,7 @@ def test_rollback(juju: Juju, charm: str) -> None:
 
     logging.info("Wait for upgrade to start")
     juju.wait(
-        ready=lambda status: jubilant.any_maintenance(status, MYSQL_APP_NAME),
+        ready=lambda status: jubilant_backports.any_maintenance(status, MYSQL_APP_NAME),
         timeout=10 * MINUTE_SECS,
     )
 
@@ -170,7 +166,7 @@ def test_rollback(juju: Juju, charm: str) -> None:
 
     logging.info("Wait for upgrade to complete")
     juju.wait(
-        ready=lambda status: jubilant.all_active(status, MYSQL_APP_NAME),
+        ready=lambda status: jubilant_backports.all_active(status, MYSQL_APP_NAME),
         timeout=20 * MINUTE_SECS,
     )
 

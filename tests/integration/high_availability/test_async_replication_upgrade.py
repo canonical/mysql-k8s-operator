@@ -7,9 +7,9 @@ import time
 from collections.abc import Generator
 from contextlib import suppress
 
-import jubilant
+import jubilant_backports
 import pytest
-from jubilant import Juju, TaskError
+from jubilant_backports import Juju, TaskError
 
 from .. import architecture
 from ..markers import juju3
@@ -107,11 +107,11 @@ def test_build_and_deploy(first_model: str, second_model: str, charm: str) -> No
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_1),
         timeout=10 * MINUTE_SECS,
     )
     model_2.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_2),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_2),
         timeout=10 * MINUTE_SECS,
     )
 
@@ -136,11 +136,11 @@ def test_async_relate(first_model: str, second_model: str) -> None:
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.any_blocked, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.any_blocked, MYSQL_APP_1),
         timeout=5 * MINUTE_SECS,
     )
     model_2.wait(
-        ready=wait_for_apps_status(jubilant.any_waiting, MYSQL_APP_2),
+        ready=wait_for_apps_status(jubilant_backports.any_waiting, MYSQL_APP_2),
         timeout=5 * MINUTE_SECS,
     )
 
@@ -166,7 +166,7 @@ def test_deploy_test_app(first_model: str) -> None:
     )
 
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_TEST_APP_NAME),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_TEST_APP_NAME),
         timeout=10 * MINUTE_SECS,
     )
 
@@ -188,11 +188,11 @@ def test_create_replication(first_model: str, second_model: str) -> None:
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_1),
         timeout=5 * MINUTE_SECS,
     )
     model_2.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_2),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_2),
         timeout=5 * MINUTE_SECS,
     )
 
@@ -305,7 +305,7 @@ def run_upgrade_from_edge(juju: Juju, app_name: str, charm: str) -> None:
 
     logging.info("Wait for upgrade to complete")
     juju.wait(
-        ready=lambda status: jubilant.all_active(status, app_name),
+        ready=lambda status: jubilant_backports.all_active(status, app_name),
         timeout=20 * MINUTE_SECS,
     )
 

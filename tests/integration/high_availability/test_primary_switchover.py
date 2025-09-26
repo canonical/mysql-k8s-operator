@@ -5,9 +5,8 @@ import logging
 import subprocess
 
 import pytest
-from jubilant import Juju, all_active
+from jubilant_backports import Juju, all_active
 
-from ..markers import juju3
 from .high_availability_helpers_new import (
     get_app_name,
     get_app_units,
@@ -22,7 +21,6 @@ CHARM_NAME = "mysql-k8s"
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-@juju3
 @pytest.mark.abort_on_fail
 def test_cluster_switchover(juju: Juju, highly_available_cluster) -> None:
     """Test that the primary node can be switched over."""
@@ -48,7 +46,6 @@ def test_cluster_switchover(juju: Juju, highly_available_cluster) -> None:
     assert get_mysql_primary_unit(juju, app_name) == new_primary_unit, "Switchover failed"
 
 
-@juju3
 @pytest.mark.abort_on_fail
 def test_cluster_failover_after_majority_loss(juju: Juju, highly_available_cluster) -> None:
     """Test the promote-to-primary command after losing the majority of nodes, with force flag."""
