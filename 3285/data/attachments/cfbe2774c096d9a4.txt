@@ -1,0 +1,6 @@
+[32mINFO    [0m root:test_async_replication.py:150 Deploying the router and test application
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju deploy --model testing mysql-router-k8s mysql-router-k8s --base ubuntu@22.04 --channel 8.0/edge --trust
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju deploy --model testing mysql-test-app mysql-test-app --base ubuntu@22.04 --channel latest/edge
+[32mINFO    [0m root:test_async_replication.py:169 Relating the router and test application
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju integrate --model testing mysql-router-k8s:database mysql-test-app:database
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju integrate --model testing mysql-router-k8s:backend-database db1:database
