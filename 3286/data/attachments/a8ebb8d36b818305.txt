@@ -1,0 +1,28 @@
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m root:test_async_replication.py:65 Clearing continuous writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-test-app/0 clear-continuous-writes
+[32mINFO    [0m root:test_async_replication.py:67 Starting continuous writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-test-app/0 start-continuous-writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json db1/0 rejoin-cluster --wait 300s --params /root/snap/juju/common/tmpytmgkjdj
+[32mINFO    [0m root:test_async_replication.py:395 Stopping continuous writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-test-app/0 stop-continuous-writes --params /root/snap/juju/common/tmptps5aluo
+[32mINFO    [0m root:test_async_replication.py:406 Querying max value on all db1 units
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json db1/0 get-password --params /root/snap/juju/common/tmpsiex3bh6
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json db1/1 get-password --params /root/snap/juju/common/tmpq1rc9403
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json db1/2 get-password --params /root/snap/juju/common/tmpfaan4btt
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m root:test_async_replication.py:411 Querying max value on all db2 units
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing-other --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing-other --format json db2/0 get-password --params /root/snap/juju/common/tmpd3k7grv_
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing-other --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing-other --format json db2/1 get-password --params /root/snap/juju/common/tmp9hdjhqn5
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing-other --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing-other --format json db2/2 get-password --params /root/snap/juju/common/tmpqqiak89h
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing-other --format json
+[32mINFO    [0m root:test_async_replication.py:72 Clearing continuous writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-test-app/0 clear-continuous-writes

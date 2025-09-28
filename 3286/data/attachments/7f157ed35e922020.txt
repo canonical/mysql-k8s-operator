@@ -1,0 +1,21 @@
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m root:test_async_replication_upgrade.py:68 Clearing continuous writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-test-app/0 clear-continuous-writes
+[32mINFO    [0m root:test_async_replication_upgrade.py:70 Starting continuous writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-test-app/0 start-continuous-writes
+[32mINFO    [0m root:test_async_replication_upgrade.py:221 Testing data replication
+[32mINFO    [0m root:test_async_replication_upgrade.py:234 Stopping continuous writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-test-app/0 stop-continuous-writes --params /root/snap/juju/common/tmpq622nt_r
+[32mINFO    [0m root:test_async_replication_upgrade.py:245 Querying max value on all db1 units
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json db1/0 get-password --params /root/snap/juju/common/tmp__7c4v4q
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json db1/1 get-password --params /root/snap/juju/common/tmphccvakkg
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json db1/2 get-password --params /root/snap/juju/common/tmp3mysr02y
+[32mINFO    [0m root:test_async_replication_upgrade.py:75 Clearing continuous writes
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-test-app/0 clear-continuous-writes
+[32mINFO    [0m root:test_async_replication_upgrade.py:58 Destroying model: testing-other
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju destroy-model testing-other --no-prompt --destroy-storage --force
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju debug-log --limit 1000
