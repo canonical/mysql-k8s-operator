@@ -2,168 +2,171 @@
 # See LICENSE file for licensing details.
 
 import logging
-import pathlib
 import shutil
-from time import sleep
-from zipfile import ZipFile
+import time
+import zipfile
+from contextlib import suppress
+from pathlib import Path
 
+import jubilant_backports
 import pytest
-import yaml
-from pytest_operator.plugin import OpsTest
+from jubilant_backports import Juju, TaskError
 
-from .. import juju_, markers
-from ..helpers import get_leader_unit, get_model_logs, get_unit_by_number
-from .high_availability_helpers import get_sts_partition
+from ..markers import amd64_only
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    get_app_leader,
+    get_k8s_stateful_set_partitions,
+    get_model_debug_logs,
+    get_unit_by_number,
+    wait_for_apps_status,
+    wait_for_unit_message,
+    wait_for_unit_status,
+)
 
-logger = logging.getLogger(__name__)
-
-TIMEOUT = 20 * 60
 MYSQL_APP_NAME = "mysql-k8s"
 
-METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-# TODO: remove after next incompatible MySQL server version released in our snap
+# TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
-@markers.amd64_only
+@amd64_only
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
-    """Simple test to ensure that the mysql and application charms get deployed."""
-    config = {"profile": "testing", "plugin-audit-enabled": "false"}
-    # MySQL 8.0.34 image, last known minor version incompatible
-    resources = {
-        "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
-    }
-    await ops_test.model.deploy(
-        charm,
-        application_name=MYSQL_APP_NAME,
-        config=config,
-        num_units=3,
-        resources=resources,
-        trust=True,
+def test_build_and_deploy(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
         base="ubuntu@22.04",
+        config={"profile": "testing", "plugin-audit-enabled": "false"},
+        resources={
+            # MySQL 8.0.34 image, last known minor version incompatible
+            "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21",
+        },
+        num_units=3,
+        trust=True,
     )
 
-    async with ops_test.fast_forward("30s"):
-        await ops_test.model.wait_for_idle(
-            apps=[MYSQL_APP_NAME],
-            status="active",
-            timeout=TIMEOUT,
-            raise_on_error=False,
-        )
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_NAME),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
 
 
-# TODO: remove after next incompatible MySQL server version released in our snap
+# TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
-@markers.amd64_only
+@amd64_only
 @pytest.mark.abort_on_fail
-async def test_pre_upgrade_check(ops_test: OpsTest) -> None:
+def test_pre_upgrade_check(juju: Juju) -> None:
     """Test that the pre-upgrade-check action runs successfully."""
-    logger.info("Get leader unit")
-    leader_unit = await get_leader_unit(ops_test, MYSQL_APP_NAME)
+    mysql_leader = get_app_leader(juju, MYSQL_APP_NAME)
 
-    assert leader_unit is not None, "No leader unit found"
-    logger.info("Run pre-upgrade-check action")
-    await juju_.run_action(leader_unit, "pre-upgrade-check")
+    logging.info("Run pre-upgrade-check action")
+    task = juju.run(unit=mysql_leader, action="pre-upgrade-check")
+    task.raise_on_failure()
 
 
-# TODO: remove after next incompatible MySQL server version released in our snap
+# TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
-@markers.amd64_only
+@amd64_only
 @pytest.mark.abort_on_fail
-async def test_upgrade_to_failling(ops_test: OpsTest, charm) -> None:
-    assert ops_test.model
-    application = ops_test.model.applications[MYSQL_APP_NAME]
-
+def test_upgrade_to_failing(juju: Juju, charm: str) -> None:
     with InjectFailure(
         path="src/upgrade.py",
         original_str="self.charm.recover_unit_after_restart()",
         replace_str="raise MySQLServiceNotRunningError",
     ):
-        logger.info("Build charm with failure injected")
-        new_charm = await charm_local_build(ops_test, charm, refresh=True)
+        logging.info("Build charm with failure injected")
+        new_charm = get_locally_built_charm(charm)
 
-    logger.info("Refresh the charm")
-    # Current MySQL Image > 8.0.34
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-    await application.refresh(path=new_charm, resources=resources)
-
-    logger.info("Wait for upgrade to start")
-    await ops_test.model.block_until(
-        lambda: "waiting" in {unit.workload_status for unit in application.units},
-        timeout=TIMEOUT,
-    )
-    logger.info("Get first upgrading unit")
-    upgrading_unit = get_unit_by_number(MYSQL_APP_NAME, application.units, 2)
-
-    assert upgrading_unit is not None, "No upgrading unit found"
-
-    logger.info("Wait for upgrade to fail on upgrading unit")
-    await ops_test.model.block_until(
-        lambda: upgrading_unit.workload_status == "blocked",
-        timeout=TIMEOUT,
-        wait_period=5,
+    logging.info("Refresh the charm")
+    juju.refresh(
+        app=MYSQL_APP_NAME,
+        path=new_charm,
+        resources={
+            # Current MySQL Image > 8.0.34
+            "mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"],
+        },
     )
 
+    logging.info("Wait for upgrade to start")
+    juju.wait(
+        ready=lambda status: jubilant_backports.any_maintenance(status, MYSQL_APP_NAME),
+        timeout=10 * MINUTE_SECS,
+    )
 
-# TODO: remove after next incompatible MySQL server version released in our rock
+    logging.info("Get first upgrading unit")
+    upgrade_unit = get_unit_by_number(juju, MYSQL_APP_NAME, 2)
+
+    logging.info("Wait for upgrade to fail on upgrading unit")
+    juju.wait(
+        ready=wait_for_unit_status(MYSQL_APP_NAME, upgrade_unit, "blocked"),
+        timeout=10 * MINUTE_SECS,
+    )
+
+
+# TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)
-@markers.amd64_only
+@amd64_only
 @pytest.mark.abort_on_fail
-async def test_rollback(ops_test, charm) -> None:
-    application = ops_test.model.applications[MYSQL_APP_NAME]
+def test_rollback(juju: Juju, charm: str) -> None:
+    """Test upgrade rollback to a healthy revision."""
+    mysql_app_leader = get_app_leader(juju, MYSQL_APP_NAME)
+    mysql_upgrade_unit = get_unit_by_number(juju, MYSQL_APP_NAME, 2)
 
-    logger.info("Get leader unit")
-    leader_unit = await get_leader_unit(ops_test, MYSQL_APP_NAME)
+    time.sleep(10)
 
-    assert leader_unit is not None, "No leader unit found"
+    logging.info("Run pre-upgrade-check action")
+    task = juju.run(unit=mysql_app_leader, action="pre-upgrade-check")
+    task.raise_on_failure()
 
-    logger.info("Run pre-upgrade-check action")
-    await juju_.run_action(leader_unit, "pre-upgrade-check")
+    time.sleep(20)
 
-    logger.info("Refresh with previous charm")
-    # MySQL 8.0.34 image
-    resources = {
-        "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21"
-    }
-    await application.refresh(path=charm, resources=resources)
-
-    logger.info("Wait for upgrade to start")
-    await ops_test.model.block_until(
-        lambda: "waiting" in {unit.workload_status for unit in application.units},
-        timeout=TIMEOUT,
+    logging.info("Refresh with previous charm")
+    juju.refresh(
+        app=MYSQL_APP_NAME,
+        path=charm,
+        resources={
+            # MySQL 8.0.34 image
+            "mysql-image": "ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21",
+        },
     )
 
-    unit = get_unit_by_number(MYSQL_APP_NAME, application.units, 2)
-    logger.info("Wait for upgrade to complete on first upgrading unit")
-    await ops_test.model.block_until(
-        lambda: unit.workload_status_message == "upgrade completed",
-        timeout=TIMEOUT,
-        wait_period=5,
+    logging.info("Wait for upgrade to start")
+    juju.wait(
+        ready=lambda status: jubilant_backports.any_maintenance(status, MYSQL_APP_NAME),
+        timeout=10 * MINUTE_SECS,
     )
 
-    logger.info("Ensure rollback has taken place")
-    message = "Downgrade is incompatible. Resetting workload"
-    warnings = await get_model_logs(ops_test, log_level="WARNING")
-    assert message in warnings
+    logging.info("Wait for upgrade to complete on first upgrading unit")
+    juju.wait(
+        ready=wait_for_unit_message(MYSQL_APP_NAME, mysql_upgrade_unit, "upgrade completed"),
+        timeout=10 * MINUTE_SECS,
+    )
 
-    logger.info("Resume upgrade")
-    while get_sts_partition(ops_test, MYSQL_APP_NAME) == 2:
-        # resume action sometime fails in CI, no clear reason
-        try:
-            await juju_.run_action(leader_unit, "resume-upgrade")
-            sleep(2)
-        except AssertionError:
-            # ignore action return error as it is expected when
-            # the leader unit is the next one to be upgraded
-            # due it being immediately rolled when the partition
-            # is patched in the statefulset
-            pass
+    logging.info("Ensure rollback has taken place")
+    unit_status_logs = get_model_debug_logs(juju, "WARNING", 100)
+    assert "Downgrade is incompatible. Resetting workload" in unit_status_logs
 
-    logger.info("Wait for application to recover")
-    await ops_test.model.block_until(
-        lambda: all(unit.workload_status == "active" for unit in application.units),
-        timeout=TIMEOUT,
+    logging.info("Resume upgrade")
+    while get_k8s_stateful_set_partitions(juju, MYSQL_APP_NAME) == 2:
+        # ignore action return error as it is expected when
+        # the leader unit is the next one to be upgraded
+        # due it being immediately rolled when the partition
+        # is patched in the stateful set
+        with suppress(TaskError):
+            task = juju.run(unit=mysql_app_leader, action="resume-upgrade")
+            task.raise_on_failure()
+
+    logging.info("Wait for upgrade to complete")
+    juju.wait(
+        ready=lambda status: jubilant_backports.all_active(status, MYSQL_APP_NAME),
+        timeout=20 * MINUTE_SECS,
     )
 
 
@@ -176,7 +179,7 @@ class InjectFailure:
             self.original_content = file.read()
 
     def __enter__(self):
-        logger.info("Injecting failure")
+        logging.info("Injecting failure")
         assert self.original_str in self.original_content, "replace content not found"
         new_content = self.original_content.replace(self.original_str, self.replace_str)
         assert self.original_str not in new_content, "original string not replaced"
@@ -184,34 +187,28 @@ class InjectFailure:
             file.write(new_content)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        logger.info("Reverting failure")
+        logging.info("Reverting failure")
         with open(self.path, "w") as file:
             file.write(self.original_content)
 
 
-async def charm_local_build(ops_test: OpsTest, charm, refresh: bool = False):
+def get_locally_built_charm(charm: str) -> str:
     """Wrapper for a local charm build zip file updating."""
-    local_charms = pathlib.Path().glob("local-*.charm")
-    for lc in local_charms:
-        # clean up local charms from previous runs to avoid
-        # pytest_operator_cache globbing them
-        lc.unlink()
+    local_charm_paths = Path().glob("local-*.charm")
 
-    # update charm zip
+    # Clean up local charms from previous runs
+    # to avoid pytest_operator_cache globbing them
+    for charm_path in local_charm_paths:
+        charm_path.unlink()
 
-    update_files = ["src/constants.py", "src/upgrade.py"]
+    # Create a copy of the charm to avoid modifying the original
+    local_charm_path = shutil.copy(charm, f"local-{Path(charm).stem}.charm")
+    local_charm_path = Path(local_charm_path)
 
-    charm = pathlib.Path(shutil.copy(charm, f"local-{pathlib.Path(charm).stem}.charm"))
-
-    for path in update_files:
+    for path in ["src/constants.py", "src/upgrade.py"]:
         with open(path) as f:
             content = f.read()
-
-        with ZipFile(charm, mode="a") as charm_zip:
+        with zipfile.ZipFile(local_charm_path, mode="a") as charm_zip:
             charm_zip.writestr(path, content)
 
-    if refresh:
-        # when refreshing, return posix path
-        return charm
-    # when deploying, return prefixed full path
-    return f"local:{charm.resolve()}"
+    return f"{local_charm_path.resolve()}"
