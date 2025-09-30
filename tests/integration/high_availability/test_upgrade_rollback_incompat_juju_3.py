@@ -19,7 +19,7 @@ from .high_availability_helpers_new import (
     get_app_leader,
     get_k8s_stateful_set_partitions,
     get_model_debug_logs,
-    get_unit_by_index,
+    get_unit_by_number,
     wait_for_apps_status,
     wait_for_unit_message,
     wait_for_unit_status,
@@ -102,7 +102,7 @@ def test_upgrade_to_failing(juju: Juju, charm: str) -> None:
     )
 
     logging.info("Get first upgrading unit")
-    upgrade_unit = get_unit_by_index(juju, MYSQL_APP_NAME, 2)
+    upgrade_unit = get_unit_by_number(juju, MYSQL_APP_NAME, 2)
 
     logging.info("Wait for upgrade to fail on upgrading unit")
     juju.wait(
@@ -118,7 +118,7 @@ def test_upgrade_to_failing(juju: Juju, charm: str) -> None:
 def test_rollback(juju: Juju, charm: str) -> None:
     """Test upgrade rollback to a healthy revision."""
     mysql_app_leader = get_app_leader(juju, MYSQL_APP_NAME)
-    mysql_upgrade_unit = get_unit_by_index(juju, MYSQL_APP_NAME, 2)
+    mysql_upgrade_unit = get_unit_by_number(juju, MYSQL_APP_NAME, 2)
 
     time.sleep(10)
 

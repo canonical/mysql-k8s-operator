@@ -22,7 +22,7 @@ from .high_availability_helpers_new import (
     get_mysql_max_written_value,
     get_mysql_primary_unit,
     get_mysql_variable_value,
-    get_unit_by_index,
+    get_unit_by_number,
     wait_for_apps_status,
     wait_for_unit_message,
 )
@@ -285,7 +285,7 @@ def run_upgrade_from_edge(juju: Juju, app_name: str, charm: str) -> None:
     juju.refresh(app=app_name, path=charm)
 
     app_leader = get_app_leader(juju, app_name)
-    upgrade_unit = get_unit_by_index(juju, app_name, 2)
+    upgrade_unit = get_unit_by_number(juju, app_name, 2)
 
     logging.info("Wait for upgrade to complete on first upgrading unit")
     juju.wait(

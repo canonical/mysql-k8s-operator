@@ -2,6 +2,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
@@ -157,12 +158,12 @@ def get_unit_address(juju: Juju, app_name: str, unit_name: str) -> str:
     raise Exception("No application unit found")
 
 
-def get_unit_by_index(juju: Juju, app_name: str, index: int) -> str:
-    """Get unit by index."""
+def get_unit_by_number(juju: Juju, app_name: str, unit_number: int) -> str:
+    """Get unit by number."""
     model_status = juju.status()
     app_status = model_status.apps[app_name]
     for name in app_status.units:
-        if name == f"{app_name}/{index}":
+        if name == f"{app_name}/{unit_number}":
             return name
 
     raise Exception("No application unit found")
@@ -171,11 +172,11 @@ def get_unit_by_index(juju: Juju, app_name: str, index: int) -> str:
 def get_unit_info(juju: Juju, unit_name: str) -> dict:
     """Return a dictionary with the show-unit data."""
     output = subprocess.check_output(
-        ["juju", "show-unit", f"--model={juju.model}", unit_name],
+        ["juju", "show-unit", f"--model={juju.model}", "--format=json", unit_name],
         text=True,
     )
 
-    return yaml.safe_load(output)
+    return json.loads(output)
 
 
 def get_relation_data(juju: Juju, app_name: str, rel_name: str) -> list[dict]:
@@ -205,13 +206,13 @@ def get_relation_data(juju: Juju, app_name: str, rel_name: str) -> list[dict]:
     return relation_data
 
 
-def get_mysql_cluster_status(juju: Juju, unit: str, cluster_set: bool | None = False) -> dict:
+def get_mysql_cluster_status(juju: Juju, unit: str, cluster_set: bool = False) -> dict:
     """Get the cluster status by running the get-cluster-status action.
 
     Args:
         juju: The juju instance to use.
         unit: The unit on which to execute the action on
-        cluster_set: Whether to get the cluster-set instead
+        cluster_set: Whether to get the cluster-set instead (optional)
 
     Returns:
         A dictionary representing the cluster status
@@ -219,7 +220,7 @@ def get_mysql_cluster_status(juju: Juju, unit: str, cluster_set: bool | None = F
     task = juju.run(
         unit=unit,
         action="get-cluster-status",
-        params={"cluster-set": bool(cluster_set)},
+        params={"cluster-set": cluster_set},
         wait=5 * MINUTE_SECS,
     )
     task.raise_on_failure()

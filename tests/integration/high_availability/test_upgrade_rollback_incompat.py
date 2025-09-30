@@ -12,7 +12,7 @@ import yaml
 from pytest_operator.plugin import OpsTest
 
 from .. import juju_, markers
-from ..helpers import get_leader_unit, get_model_logs, get_unit_by_index
+from ..helpers import get_leader_unit, get_model_logs, get_unit_by_number
 from .high_availability_helpers import get_sts_partition
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ async def test_upgrade_to_failling(ops_test: OpsTest, charm) -> None:
         timeout=TIMEOUT,
     )
     logger.info("Get first upgrading unit")
-    upgrading_unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
+    upgrading_unit = get_unit_by_number(MYSQL_APP_NAME, application.units, 2)
 
     assert upgrading_unit is not None, "No upgrading unit found"
 
@@ -134,7 +134,7 @@ async def test_rollback(ops_test, charm) -> None:
         timeout=TIMEOUT,
     )
 
-    unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
+    unit = get_unit_by_number(MYSQL_APP_NAME, application.units, 2)
     logger.info("Wait for upgrade to complete on first upgrading unit")
     await ops_test.model.block_until(
         lambda: unit.workload_status_message == "upgrade completed",

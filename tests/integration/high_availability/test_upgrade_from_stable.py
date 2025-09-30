@@ -12,7 +12,7 @@ from .. import juju_
 from ..helpers import (
     get_leader_unit,
     get_primary_unit,
-    get_unit_by_index,
+    get_unit_by_number,
     retrieve_database_variable_value,
 )
 from .high_availability_helpers import (
@@ -100,7 +100,7 @@ async def test_upgrade_from_stable(ops_test: OpsTest, charm, credentials):
 
     logger.info("Wait for upgrade to complete on first upgrading unit")
     # highest ordinal unit always the first to upgrade
-    unit = get_unit_by_index(MYSQL_APP_NAME, application.units, 2)
+    unit = get_unit_by_number(MYSQL_APP_NAME, application.units, 2)
 
     await ops_test.model.block_until(
         lambda: unit.workload_status_message == "upgrade completed", timeout=TIMEOUT

@@ -17,7 +17,7 @@ from .high_availability_helpers_new import (
     get_k8s_stateful_set_partitions,
     get_mysql_primary_unit,
     get_mysql_variable_value,
-    get_unit_by_index,
+    get_unit_by_number,
     wait_for_apps_status,
     wait_for_unit_message,
 )
@@ -104,7 +104,7 @@ def test_upgrade_from_stable(juju: Juju, charm: str, continuous_writes) -> None:
     )
 
     mysql_app_leader = get_app_leader(juju, MYSQL_APP_NAME)
-    mysql_upgrade_unit = get_unit_by_index(juju, MYSQL_APP_NAME, 2)
+    mysql_upgrade_unit = get_unit_by_number(juju, MYSQL_APP_NAME, 2)
 
     logging.info("Wait for upgrade to complete on first upgrading unit")
     juju.wait(
