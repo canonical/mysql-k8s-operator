@@ -6,7 +6,7 @@ Charmed MySQL K8s ships a pre-configured and pre-enabled list of Awesome Alert R
 
 ```{seealso}
 * [](/reference/alert-rules)
-* [Observability documentation > Add alert rules](https://documentation.ubuntu.com/observability/how-to/adding-alert-rules/)
+* [Observability documentation > Add alert rules](https://documentation.ubuntu.com/observability/latest/how-to/adding-alert-rules/)
 ```
 
 <details><summary>Screenshot of MySQL alert rules in Grafana web interface

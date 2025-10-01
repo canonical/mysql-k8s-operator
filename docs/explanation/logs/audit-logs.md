@@ -1,3 +1,4 @@
+(audit_logs)=
 # Audit Logs
 
 The Audit Log plugin allows all login/logout records to be stored in a log file. It is enabled in Charmed MySQL K8s by default.
@@ -23,14 +24,14 @@ It's recommended to integrate the charm with [COS](/how-to/monitoring-cos/enable
     ```bash
     juju config mysql-k8s plugin-audit-enabled=false
     ```
-    Valid value are `false` and `true`. By setting it to false, existing logs are still kept in the `archive_audit` directory.
+    Valid value are `false` and `true` (default). By setting it to false, existing logs are still kept in the `archive_audit` directory.
 
 1. `logs_audit_policy` - Audit log policy:
 
     ```bash
     juju config mysql-k8s logs_audit_policy=queries
     ```
-    Valid values are: "all", "logins" (default), "queries"
+    Valid values are `logins` (default), `queries` and `all`.
 
 1. `plugin-audit-strategy` - By default the audit plugin writes logs in asynchronous mode for better performance.
     To ensure logs are written to disk on more timely fashion, this configuration can be set to semi-synchronous mode:
@@ -38,5 +39,5 @@ It's recommended to integrate the charm with [COS](/how-to/monitoring-cos/enable
     ```bash
     juju config mysql-k8s plugin-audit-strategy=semi-async
     ```
-    Valid values are `async` and `semi-async`.
+    Valid values are `async` (default) and `semi-async`.
 

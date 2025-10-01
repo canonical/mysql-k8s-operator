@@ -81,9 +81,28 @@ Charmed MySQL K8s uses the [caching_sha2_password](https://dev.mysql.com/doc/ref
 
 ### Monitoring and auditing
 
-Charmed MySQL K8s provides native integration with the [Canonical Observability Stack (COS)](https://charmhub.io/topics/canonical-observability-stack). To reduce the blast radius of infrastructure disruptions, the general recommendation is to deploy COS and the observed application into separate environments, isolated from one another. Refer to the [COS production deployments best practices](https://charmhub.io/topics/canonical-observability-stack/reference/best-practices) for more information or see the How to guides for MySQL K8s [monitoring](https://canonical.com/data/docs/mysql/k8s/h-enable-monitoring), [alert rules](https://canonical.com/data/docs/mysql/k8s/h-enable-alert-rules), and [tracing](https://canonical.com/data/docs/mysql/k8s/h-enable-tracing) for practical instructions.
+Charmed MySQL K8s provides native integration with the [Canonical Observability Stack (COS)](https://charmhub.io/topics/canonical-observability-stack). To reduce the blast radius of infrastructure disruptions, the general recommendation is to deploy COS and the observed application into separate environments, isolated from one another. Refer to the [COS production deployments best practices](https://charmhub.io/topics/canonical-observability-stack/reference/best-practices) for more information.
 
-The Audit log plugin is enabled by default and produces login/logout logs. See the [Audit Logs](https://charmhub.io/mysql-k8s/docs/e-audit-logs) guide for further configuration. These logs are stored in the /var/log/mysql directory of the MySQL container and are rotated every minute to the /var/log/mysql/archive_audit directory. It’s recommended to integrate the charm with [COS](https://discourse.charmhub.io/t/9900), from where the logs can be easily persisted and queried using [Loki](https://charmhub.io/loki-k8s)/[Grafana](https://charmhub.io/grafana).
+For instructions, see the [How to enable monitoring](https://canonical.com/data/docs/mysql/k8s/h-enable-monitoring), [How to enable alert rules](https://canonical.com/data/docs/mysql/k8s/h-enable-alert-rules), and [How to enable tracing](https://canonical.com/data/docs/mysql/k8s/h-enable-tracing) guides.
+
+### Security event logging
+
+Charmed MySQL K8s provides [audit log plugin](audit_logs) enabled by default. These logs are stored in the `/var/log/mysql/audit.log` file of each unit, and rotated minutely the `archive_audit` sub directory. If COS is enabled, audit logs are also persisted there.
+
+We recommend setting the retention period to a value greater than the default (three days):
+
+```shell
+juju config mysql-k8s logs_retention_period=14 # days
+```
+
+By default, the audit log records logins and logouts. To include the SQL queries executed by each user:
+
+```shell
+juju config mysql-k8s logs_audit_policy=all
+```
+
+See the [Audit Logs](audit_logs) guide for further configuration.
+
 
 ## Additional Resources
 
