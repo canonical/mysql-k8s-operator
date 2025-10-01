@@ -8,9 +8,10 @@ import zipfile
 from contextlib import suppress
 from pathlib import Path
 
+import jubilant
 import jubilant_backports
 import pytest
-from jubilant_backports import Juju, TaskError
+from jubilant_backports import Juju
 
 from ..markers import amd64_only
 from .high_availability_helpers_new import (
@@ -159,7 +160,7 @@ def test_rollback(juju: Juju, charm: str) -> None:
         # the leader unit is the next one to be upgraded
         # due it being immediately rolled when the partition
         # is patched in the stateful set
-        with suppress(TaskError):
+        with suppress(jubilant.TaskError, jubilant_backports.TaskError):
             task = juju.run(unit=mysql_app_leader, action="resume-upgrade")
             task.raise_on_failure()
 
