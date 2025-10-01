@@ -5,16 +5,15 @@
 import logging
 import time
 from collections.abc import Generator
-from pathlib import Path
 
-import jubilant
+import jubilant_backports
 import pytest
-import yaml
-from jubilant import Juju
+from jubilant_backports import Juju
 
 from .. import architecture
 from ..markers import juju3
 from .high_availability_helpers_new import (
+    CHARM_METADATA,
     exec_k8s_container_command,
     get_app_leader,
     get_app_units,
@@ -28,7 +27,6 @@ MYSQL_APP_2 = "db2"
 MYSQL_ROUTER_NAME = "mysql-router-k8s"
 MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 MINUTE_SECS = 60
 
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
@@ -79,7 +77,7 @@ def test_build_and_deploy(first_model: str, second_model: str, charm: str) -> No
     """Simple test to ensure that the MySQL application charms get deployed."""
     configuration = {"profile": "testing"}
     constraints = {"arch": architecture.architecture}
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+    resources = {"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]}
 
     logging.info("Deploying mysql clusters")
     model_1 = Juju(model=first_model)
@@ -105,11 +103,11 @@ def test_build_and_deploy(first_model: str, second_model: str, charm: str) -> No
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_1),
         timeout=10 * MINUTE_SECS,
     )
     model_2.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_2),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_2),
         timeout=10 * MINUTE_SECS,
     )
 
@@ -134,11 +132,11 @@ def test_async_relate(first_model: str, second_model: str) -> None:
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.any_blocked, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.any_blocked, MYSQL_APP_1),
         timeout=5 * MINUTE_SECS,
     )
     model_2.wait(
-        ready=wait_for_apps_status(jubilant.any_waiting, MYSQL_APP_2),
+        ready=wait_for_apps_status(jubilant_backports.any_waiting, MYSQL_APP_2),
         timeout=5 * MINUTE_SECS,
     )
 
@@ -177,7 +175,7 @@ def test_deploy_router_and_app(first_model: str) -> None:
     )
 
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_TEST_APP_NAME),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_TEST_APP_NAME),
         timeout=10 * MINUTE_SECS,
     )
 
@@ -199,11 +197,11 @@ def test_create_replication(first_model: str, second_model: str) -> None:
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_1),
         timeout=5 * MINUTE_SECS,
     )
     model_2.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_2),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_2),
         timeout=5 * MINUTE_SECS,
     )
 
@@ -345,11 +343,11 @@ def test_unrelate_and_relate(first_model: str, second_model: str, continuous_wri
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_1),
         timeout=10 * MINUTE_SECS,
     )
     model_2.wait(
-        ready=wait_for_apps_status(jubilant.all_blocked, MYSQL_APP_2),
+        ready=wait_for_apps_status(jubilant_backports.all_blocked, MYSQL_APP_2),
         timeout=10 * MINUTE_SECS,
     )
 
@@ -359,7 +357,7 @@ def test_unrelate_and_relate(first_model: str, second_model: str, continuous_wri
         f"{MYSQL_APP_2}:replication",
     )
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.any_blocked, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.any_blocked, MYSQL_APP_1),
         timeout=5 * MINUTE_SECS,
     )
 
@@ -373,11 +371,11 @@ def test_unrelate_and_relate(first_model: str, second_model: str, continuous_wri
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_1),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_1),
         timeout=10 * MINUTE_SECS,
     )
     model_2.wait(
-        ready=wait_for_apps_status(jubilant.all_active, MYSQL_APP_2),
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_2),
         timeout=10 * MINUTE_SECS,
     )
 
