@@ -1,24 +1,12 @@
-variable "juju_model_name" {
-  description = "Juju model name"
+variable "model_name" {
+  description = "Juju model to deploy to"
   type        = string
 }
 
 variable "app_name" {
-  description = "Name of the application in the Juju model."
+  description = "Name of the juju application"
   type        = string
   default     = "mysql-k8s"
-}
-
-variable "channel" {
-  description = "Charm channel to use when deploying"
-  type        = string
-  default     = "8.0/stable"
-}
-
-variable "revision" {
-  description = "Revision number to deploy charm"
-  type        = number
-  default     = null
 }
 
 variable "base" {
@@ -27,32 +15,38 @@ variable "base" {
   default     = "ubuntu@22.04"
 }
 
-variable "units" {
-  description = "Number of units to deploy"
-  type        = number
-  default     = 1
-}
-
-variable "constraints" {
-  description = "Juju constraints to apply for this application."
-  type        = string
-  default     = "arch=amd64"
-}
-
-variable "storage_size" {
-  description = "Storage size"
-  type        = string
-  default     = "10G"
-}
-
 variable "config" {
   description = "Application configuration. Details at https://charmhub.io/mysql-k8s/configurations"
   type        = map(string)
   default     = {}
 }
 
-variable "resources" {
-  description = "Resources to use with the application"
-  type        = map(string)
-  default     = {}
+variable "constraints" {
+  description = "Juju constraints for the application"
+  type        = string
+  default     = "arch=amd64"
+}
+
+variable "channel" {
+  description = "Charm channel to deploy from"
+  type        = string
+  default     = "8.0/stable"
+}
+
+variable "revision" {
+  description = "Charm revision to deploy"
+  type        = number
+  default     = null
+}
+
+variable "units" {
+  description = "Number of units to deploy"
+  type        = number
+  default     = 3
+}
+
+variable "storage_size" {
+  description = "Storage size"
+  type        = string
+  default     = "10G"
 }
