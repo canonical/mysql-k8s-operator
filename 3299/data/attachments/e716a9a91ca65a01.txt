@@ -1,0 +1,9 @@
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju version --format json
+[32mINFO    [0m root:test_async_replication.py:46 Creating model: testing-other
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju add-model --no-switch testing-other
+[32mINFO    [0m root:test_async_replication.py:82 Deploying mysql clusters
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju deploy --model testing ./mysql-k8s_ubuntu@22.04-amd64.charm db1 --base ubuntu@22.04 --config profile=testing --config cluster-name=lima --constraints arch=amd64 --num-units 3 --resource mysql-image=ghcr.io/canonical/charmed-mysql@sha256:e78bdba30923ec87d67879a284d9162dfbb7600b34cbf3f84c9b4cce08648715
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju deploy --model testing-other ./mysql-k8s_ubuntu@22.04-amd64.charm db2 --base ubuntu@22.04 --config profile=testing --config cluster-name=cuzco --constraints arch=amd64 --num-units 3 --resource mysql-image=ghcr.io/canonical/charmed-mysql@sha256:e78bdba30923ec87d67879a284d9162dfbb7600b34cbf3f84c9b4cce08648715
+[32mINFO    [0m root:test_async_replication.py:104 Waiting for the applications to settle

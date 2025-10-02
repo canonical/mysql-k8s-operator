@@ -1,0 +1,95 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m root:test_upgrade_from_stable.py:96 Ensure continuous writes are incrementing
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmpcw7hhomm
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 get-password --params /root/snap/juju/common/tmpc5x_80te
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju model-config --model testing update-status-hook-interval=15s
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 get-password --params /root/snap/juju/common/tmpan5kgd57
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/1 get-password --params /root/snap/juju/common/tmp_9b4y4ov
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/2 get-password --params /root/snap/juju/common/tmpojzjj3yu
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m root:test_upgrade_from_stable.py:99 Refresh the charm
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju refresh --model testing mysql-k8s --path ./mysql-k8s_ubuntu@22.04-amd64.charm --resource mysql-image=ghcr.io/canonical/charmed-mysql@sha256:e78bdba30923ec87d67879a284d9162dfbb7600b34cbf3f84c9b4cce08648715
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m root:test_upgrade_from_stable.py:109 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m root:test_upgrade_from_stable.py:115 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.149:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 resume-upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.149:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m root:test_upgrade_from_stable.py:125 Wait for upgrade to complete
+[32mINFO    [0m root:test_upgrade_from_stable.py:131 Ensure continuous writes are incrementing
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmp72q_5cnn
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/1 get-password --params /root/snap/juju/common/tmp2l3yjx_v
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju model-config --model testing update-status-hook-interval=15s
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 get-password --params /root/snap/juju/common/tmphp0fa9qg
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/1 get-password --params /root/snap/juju/common/tmprepihbse
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/2 get-password --params /root/snap/juju/common/tmpedr0foff
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  02:07:18Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address        Exposed  Message
+mysql-k8s       8.0.42-0ubuntu0.22.04.2  active      3  mysql-k8s                      0  10.152.183.75  no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   85  10.152.183.42  no       Last written value=24308
+
+Unit               Workload  Agent      Address     Ports  Message
+mysql-k8s/0*       active    idle       10.1.72.81         
+mysql-k8s/1        active    executing  10.1.72.80         Primary
+mysql-k8s/2        active    idle       10.1.72.79         
+mysql-test-app/0*  active    idle       10.1.72.72         Last written value=24308
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-2: 02:00:49 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 02:00:49 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 02:00:50 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 02:00:50 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-0: 02:00:51 ERROR unit.mysql-k8s/0.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-0: 02:00:51 ERROR unit.mysql-k8s/0.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 02:00:53 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 02:00:53 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 02:00:56 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-1: 02:00:56 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 02:00:57 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Cannot connect to the pebble in the mysql container to check binlogs collector
+unit-mysql-k8s-2: 02:00:57 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-1: 02:01:01 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', 'shell.options.set(\'useWizards\', False)\nprint(\'###\')\ninstance_configured = dba.check_instance_configuration()[\'status\'] == \'ok\'\nprint("INSTANCE_CONFIGURED" if instance_configured else "INSTANCE_NOT_CONFIGURED")'], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m", stderr="Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local.:33062' (111)\n"
+unit-mysql-k8s-1: 02:01:01 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Binlogs collector service does not exist
+unit-mysql-k8s-1: 02:01:01 ERROR unit.mysql-k8s/1.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+unit-mysql-k8s-2: 02:01:01 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 723, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', 'shell.options.set(\'useWizards\', False)\nprint(\'###\')\ninstance_configured = dba.check_instance_configuration()[\'status\'] == \'ok\'\nprint("INSTANCE_CONFIGURED" if instance_configured else "INSTANCE_NOT_CONFIGURED")'], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m", stderr="Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local.:33062' (111)\n"
+unit-mysql-k8s-2: 02:01:01 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Binlogs collector service does not exist
+unit-mysql-k8s-2: 02:01:01 ERROR unit.mysql-k8s/2.juju-log database-peers:0: Failed to reconcile binlogs collection during peer relation event
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju debug-log --model testing --limit 1000
