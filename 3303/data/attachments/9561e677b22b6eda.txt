@@ -1,0 +1,45 @@
+[32mINFO    [0m integration.backups:backups.py:125 Creating backup
+[32mINFO    [0m integration.backups:backups.py:129 Creating test data 1
+[32mINFO    [0m integration.backups:backups.py:145 Creating test data 2
+[32mINFO    [0m integration.backups:backups.py:157 Scaling down to 1 unit
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m integration.backups:backups.py:169 Restoring backup 2025-10-04T01:54:54Z with bad restore-to-time parameter
+[32mINFO    [0m integration.backups:backups.py:178 Restoring backup 2025-10-04T01:54:54Z with year_before restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] blocked: Failed to restore point-in-time-recovery to the 2024-10-04 01:55:07
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:190 Restoring backup 2025-10-04T01:54:54Z with year_after restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] blocked: Failed to restore point-in-time-recovery to the 2026-10-04 01:55:07
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:202 Restoring backup 2025-10-04T01:54:54Z with actual restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] blocked: Failed to restore point-in-time-recovery to the 2025-10-04 01:55:07
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:214 Restoring backup 2025-10-04T01:54:54Z with restore-to-time=latest parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] blocked: Failed to restore point-in-time-recovery to the latest
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:38 Cleaning backups from cloud buckets
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  01:58:43Z
+
+App            Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+mysql-k8s      8.0.42-0ubuntu0.22.04.2  waiting      1  mysql-k8s                       0  10.152.183.108  no       installing agent
+s3-integrator                           active       1  s3-integrator  latest/stable  145  10.152.183.133  no       
+
+Unit              Workload  Agent  Address     Ports  Message
+mysql-k8s/0*      blocked   idle   10.1.72.77         Failed to restore point-in-time-recovery to the latest
+s3-integrator/0*  active    idle   10.1.72.72         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
