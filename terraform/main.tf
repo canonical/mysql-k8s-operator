@@ -1,21 +1,19 @@
-resource "juju_application" "k8s_mysql" {
+resource "juju_application" "mysql_server" {
   name  = var.app_name
-  model = var.juju_model_name
-  trust = true
+  model = var.model_name
 
   charm {
     name     = "mysql-k8s"
+    base     = var.base
     channel  = var.channel
     revision = var.revision
-    base     = var.base
   }
 
   storage_directives = {
     database = var.storage_size
   }
 
-  units       = var.units
-  constraints = var.constraints
   config      = var.config
-  resources   = var.resources
+  constraints = var.constraints
+  units       = var.units
 }
