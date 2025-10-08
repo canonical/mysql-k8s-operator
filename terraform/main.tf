@@ -1,6 +1,7 @@
 resource "juju_application" "mysql_server" {
   name  = var.app_name
   model = var.model_name
+  trust = true
 
   charm {
     name     = "mysql-k8s"
