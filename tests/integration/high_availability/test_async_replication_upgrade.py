@@ -7,10 +7,9 @@ import time
 from collections.abc import Generator
 from contextlib import suppress
 
-import jubilant
 import jubilant_backports
 import pytest
-from jubilant_backports import Juju
+from jubilant_backports import Juju, TaskError
 
 from .. import architecture
 from ..markers import juju3
@@ -300,7 +299,7 @@ def run_upgrade_from_edge(juju: Juju, app_name: str, charm: str) -> None:
         # the leader unit is the next one to be upgraded
         # due it being immediately rolled when the partition
         # is patched in the stateful set
-        with suppress(jubilant.TaskError, jubilant_backports.TaskError):
+        with suppress(TaskError):
             task = juju.run(unit=app_leader, action="resume-upgrade")
             task.raise_on_failure()
 
