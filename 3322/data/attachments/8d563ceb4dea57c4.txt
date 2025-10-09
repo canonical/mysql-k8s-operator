@@ -1,0 +1,132 @@
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m pytest_operator.plugin:plugin.py:675 Connecting to existing model concierge-microk8s:testing on unspecified cloud
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHSession received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHTunneler received from the controller
+[33mWARNING [0m juju.client.connection:connection.py:858 unexpected facade SSHServer received from the controller
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:27 Clearing continuous writes
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:29 Starting continuous writes
+[32mINFO    [0m root:test_upgrade_from_stable.py:96 Ensure continuous writes are incrementing
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmpx0d7onlt
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 get-password --params /root/snap/juju/common/tmphedf3pk9
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju model-config --model testing update-status-hook-interval=15s
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 get-password --params /root/snap/juju/common/tmpdgrdqrm_
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/1 get-password --params /root/snap/juju/common/tmp_uc9bnr5
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/2 get-password --params /root/snap/juju/common/tmpfil38da0
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m root:test_upgrade_from_stable.py:99 Refresh the charm
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju refresh --model testing mysql-k8s --path ./mysql-k8s_ubuntu@22.04-amd64.charm --resource mysql-image=ghcr.io/canonical/charmed-mysql@sha256:e78bdba30923ec87d67879a284d9162dfbb7600b34cbf3f84c9b4cce08648715
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju status --model testing --format json
+[32mINFO    [0m root:test_upgrade_from_stable.py:109 Wait for upgrade to complete on first upgrading unit
+[32mINFO    [0m root:test_upgrade_from_stable.py:115 Resume upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.54:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju run --model testing --format json mysql-k8s/0 resume-upgrade
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.54:16443/apis/apps/v1/namespaces/testing/statefulsets/mysql-k8s "HTTP/1.1 200 OK"
+[32mINFO    [0m root:test_upgrade_from_stable.py:125 Wait for upgrade to complete
+[32mINFO    [0m integration.high_availability.conftest:conftest.py:34 Clearing continuous writes
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  02:21:34Z
+
+App             Version                  Status   Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.42-0ubuntu0.22.04.2  waiting      3  mysql-k8s                      0  10.152.183.88   no       installing agent
+mysql-test-app  0.0.2                    active       1  mysql-test-app  latest/edge   85  10.152.183.156  no       Last written value=131031
+
+Unit               Workload     Agent  Address       Ports  Message
+mysql-k8s/0*       waiting      idle   10.1.113.140         other units upgrading first...
+mysql-k8s/1        maintenance  idle   10.1.113.144         upgrade completed
+mysql-k8s/2        maintenance  idle   10.1.113.143         upgrade completed
+mysql-test-app/0*  active       idle   10.1.113.136         Last written value=131031
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:59:55 ERROR unit.mysql-k8s/1.juju-log upgrade:1: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 1105, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/data_platform_libs/v0/upgrade.py", line 987, in on_upgrade_changed
+    top_state = self.peer_relation.data[top_unit].get("state")
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/model.py", line 1671, in __getitem__
+    return self._data[key]
+KeyError: <ops.model.Unit mysql-k8s/2>
+unit-mysql-k8s-1: 01:59:56 ERROR juju.worker.uniter.operation hook "upgrade-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-1: 02:00:03 ERROR unit.mysql-k8s/1.juju-log upgrade:1: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 1105, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/data_platform_libs/v0/upgrade.py", line 987, in on_upgrade_changed
+    top_state = self.peer_relation.data[top_unit].get("state")
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/model.py", line 1671, in __getitem__
+    return self._data[key]
+KeyError: <ops.model.Unit mysql-k8s/2>
+unit-mysql-k8s-1: 02:00:03 ERROR juju.worker.uniter.operation hook "upgrade-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-1: 02:00:15 ERROR unit.mysql-k8s/1.juju-log upgrade:1: Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/charm.py", line 1105, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/lib/charms/data_platform_libs/v0/upgrade.py", line 987, in on_upgrade_changed
+    top_state = self.peer_relation.data[top_unit].get("state")
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/model.py", line 1671, in __getitem__
+    return self._data[key]
+KeyError: <ops.model.Unit mysql-k8s/2>
+unit-mysql-k8s-1: 02:00:15 ERROR juju.worker.uniter.operation hook "upgrade-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-test-app-0: 02:10:39 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-k8s-0: 02:10:50 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[32mINFO    [0m jubilant:_juju.py:308 cli: juju debug-log --model testing --limit 1000
