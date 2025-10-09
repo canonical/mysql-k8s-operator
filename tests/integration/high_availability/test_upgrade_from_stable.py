@@ -4,10 +4,9 @@
 import logging
 from contextlib import suppress
 
-import jubilant
 import jubilant_backports
 import pytest
-from jubilant_backports import Juju
+from jubilant_backports import Juju, TaskError
 
 from .high_availability_helpers_new import (
     CHARM_METADATA,
@@ -118,7 +117,7 @@ def test_upgrade_from_stable(juju: Juju, charm: str, continuous_writes) -> None:
         # the leader unit is the next one to be upgraded
         # due it being immediately rolled when the partition
         # is patched in the stateful set
-        with suppress(jubilant.TaskError, jubilant_backports.TaskError):
+        with suppress(TaskError):
             task = juju.run(unit=mysql_app_leader, action="resume-upgrade")
             task.raise_on_failure()
 

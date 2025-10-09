@@ -943,34 +943,19 @@ files = [
 referencing = ">=0.31.0"
 
 [[package]]
-name = "jubilant"
+name = "jubilant-backports"
 version = "1.4.0"
 description = "Juju CLI wrapper for charm integration testing"
 optional = false
 python-versions = ">=3.8"
 groups = ["integration"]
 files = [
-    {file = "jubilant-1.4.0-py3-none-any.whl", hash = "sha256:1df7eaf125fad8d0d3d35e6d83eca43bfbb7884debcd6c7f4b0822600e2a485c"},
-    {file = "jubilant-1.4.0.tar.gz", hash = "sha256:aa377699a8811fea29bfe0febb6b552d4593c02e666f5ba8c3fba24258700199"},
+    {file = "jubilant_backports-1.4.0-py3-none-any.whl", hash = "sha256:b5c2d9aca29b39543bbe45b3205e97dd22b60fca9f8e0e66885b71201f8127d5"},
+    {file = "jubilant_backports-1.4.0.tar.gz", hash = "sha256:0961645e67a08e85b3371d6c386795d254527d0c107a355ca24bdbca3872b671"},
 ]
 
 [package.dependencies]
 PyYAML = "==6.*"
-
-[[package]]
-name = "jubilant-backports"
-version = "1.0.0a1"
-description = "Extends Jubilant to include support for Juju 2.9"
-optional = false
-python-versions = ">=3.8"
-groups = ["integration"]
-files = [
-    {file = "jubilant_backports-1.0.0a1-py3-none-any.whl", hash = "sha256:ff8d73e17afaae4418c588496978ac42ee9eb9d6d4e77ce103102772038796cc"},
-    {file = "jubilant_backports-1.0.0a1.tar.gz", hash = "sha256:03f0788a2301e1a71ebab56bc59515361c37e5686e40a985caba5b2907514e3f"},
-]
-
-[package.dependencies]
-jubilant = ">=1.2,<2.0"
 
 [[package]]
 name = "juju"
@@ -2480,4 +2465,4 @@ test = ["big-O", "importlib-resources ; python_version < \"3.9\"", "jaraco.funct
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "c2407e93e59715299ecbfdf96dc95c92eef74ec9dbb0db2ede0a1920434e0763"
+content-hash = "425c7113a403655fe1c21892a6d37934e2ee63eac23572c3e5e10935720151d8"
