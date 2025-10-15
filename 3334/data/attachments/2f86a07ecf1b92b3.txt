@@ -1,0 +1,5 @@
+[32mINFO    [0m integration.test_saturate_max_connections:test_saturate_max_connections.py:44 Deploying test app
+[32mINFO    [0m juju.model:model.py:2284 Deploying ch:amd64/jammy/mysql-test-app-85
+[32mINFO    [0m integration.test_saturate_max_connections:test_saturate_max_connections.py:54 Relating test app to mysql
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m integration.test_saturate_max_connections:test_saturate_max_connections.py:57 Waiting all to be active
