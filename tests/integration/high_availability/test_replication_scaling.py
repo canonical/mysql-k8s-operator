@@ -3,102 +3,85 @@
 
 import logging
 
-from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, stop_after_delay, wait_fixed
+import jubilant_backports
+import pytest
+from jubilant_backports import Juju
 
-from ..helpers import (
-    execute_queries_on_unit,
-    get_primary_unit,
-    get_unit_address,
-    scale_application,
-)
-from .high_availability_helpers import (
-    clean_up_database_and_table,
-    ensure_n_online_mysql_members,
-    get_application_name,
-    insert_data_into_mysql_and_validate_replication,
+from ..helpers import generate_random_string
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    insert_mysql_test_data,
+    remove_mysql_test_data,
+    scale_app_units,
+    verify_mysql_test_data,
+    wait_for_apps_status,
 )
 
-logger = logging.getLogger(__name__)
+MYSQL_APP_NAME = "mysql-k8s"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-TIMEOUT = 15 * 60
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-async def test_scaling_without_data_loss(
-    ops_test: OpsTest, highly_available_cluster, credentials
-) -> None:
-    """Test to ensure that data is preserved when a unit is scaled up and then down.
-
-    Ensures that there are no running continuous writes as the extra data in the
-    database makes scaling up slower.
-    """
-    mysql_application_name = get_application_name(ops_test, "mysql")
-    assert mysql_application_name, "mysql application not found"
-
-    # assert that there are 3 units in the mysql cluster
-    assert len(ops_test.model.applications[mysql_application_name].units) == 3
-
-    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
-    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
-    assert primary, "Primary unit not found"
-
-    # insert a value before scale up, and ensure that the value exists in all units
-    database_name, table_name = "test-preserves-data-on-delete", "data"
-    value_before_scale_up = await insert_data_into_mysql_and_validate_replication(
-        ops_test, database_name, table_name, credentials
+@pytest.mark.abort_on_fail
+def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    logging.info("Deploying MySQL cluster")
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=3,
+    )
+    juju.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
+        base="ubuntu@22.04",
+        channel="latest/edge",
+        config={"sleep_interval": 300},
+        num_units=1,
     )
 
-    select_value_before_scale_up_sql = [
-        f"SELECT id FROM `{database_name}`.`{table_name}` WHERE id = '{value_before_scale_up}'",
-    ]
-
-    # scale up the mysql application
-    await scale_application(ops_test, mysql_application_name, 4)
-    assert await ensure_n_online_mysql_members(ops_test, 4), (
-        "The cluster is not fully online after scaling up"
+    juju.integrate(
+        f"{MYSQL_APP_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
     )
 
-    # ensure value inserted before scale exists in all units
-    for attempt in Retrying(stop=stop_after_delay(10), wait=wait_fixed(2)):
-        with attempt:
-            for unit in ops_test.model.applications[mysql_application_name].units:
-                unit_address = await get_unit_address(ops_test, unit.name)
-
-                output = execute_queries_on_unit(
-                    unit_address,
-                    credentials["username"],
-                    credentials["password"],
-                    select_value_before_scale_up_sql,
-                )
-                assert output[0] == value_before_scale_up
-
-    # insert data after scale up
-    value_after_scale_up = await insert_data_into_mysql_and_validate_replication(
-        ops_test, database_name, table_name, credentials
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, MYSQL_APP_NAME, MYSQL_TEST_APP_NAME
+        ),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
     )
 
-    # verify inserted data is present on all units
-    select_value_after_scale_up_sql = [
-        f"SELECT id FROM `{database_name}`.`{table_name}` WHERE id = '{value_after_scale_up}'",
-    ]
 
-    # scale down the mysql application
-    await scale_application(ops_test, mysql_application_name, 3)
-    assert await ensure_n_online_mysql_members(ops_test, 3), (
-        "The cluster is not fully online after scaling down"
-    )
+@pytest.mark.abort_on_fail
+def test_scaling_without_data_loss(juju: Juju) -> None:
+    """Test that data is preserved during scale up and scale down."""
+    table_name = "instance_state_replication"
 
-    # ensure data written before scale down is persisted
-    for unit in ops_test.model.applications[mysql_application_name].units:
-        unit_address = await get_unit_address(ops_test, unit.name)
+    # Ensure that all units have the inserted data (scaling up)
+    table_value = generate_random_string(255)
+    insert_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+    scale_app_units(juju, MYSQL_APP_NAME, 4)
+    verify_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
 
-        output = execute_queries_on_unit(
-            unit_address,
-            credentials["username"],
-            credentials["password"],
-            select_value_after_scale_up_sql,
-        )
-        assert output[0] == value_after_scale_up
+    # Ensure that all units have the inserted data (stable)
+    table_value = generate_random_string(255)
+    insert_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+    verify_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
 
-    # clean up inserted data, and created tables + databases
-    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)
+    # Ensure that all units have the inserted data (scaling down)
+    table_value = generate_random_string(255)
+    insert_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+    scale_app_units(juju, MYSQL_APP_NAME, 3)
+    verify_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+
+    # Clean up inserted data, tables and databases
+    remove_mysql_test_data(juju, MYSQL_APP_NAME, table_name)

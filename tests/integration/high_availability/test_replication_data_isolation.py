@@ -3,84 +3,95 @@
 
 import logging
 
-from pytest_operator.plugin import OpsTest
+import jubilant_backports
+import pytest
+from jubilant_backports import Juju
 
-from ..helpers import (
-    execute_queries_on_unit,
-    get_primary_unit,
-    get_server_config_credentials,
-    get_unit_address,
-    scale_application,
-)
-from .high_availability_helpers import (
-    clean_up_database_and_table,
-    deploy_and_scale_mysql,
-    get_application_name,
-    insert_data_into_mysql_and_validate_replication,
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    insert_mysql_test_data,
+    remove_mysql_test_data,
+    verify_mysql_test_data,
+    wait_for_apps_status,
 )
 
-logger = logging.getLogger(__name__)
+MYSQL_APP_NAME = "mysql-k8s"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-TIMEOUT = 15 * 60
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-async def test_no_replication_across_clusters(
-    ops_test: OpsTest, charm, highly_available_cluster, continuous_writes, credentials
-) -> None:
-    """Test to ensure that writes to one cluster do not replicate to another cluster."""
-    mysql_application_name = get_application_name(ops_test, "mysql")
-
-    # assert that there are 3 units in the mysql cluster
-    assert len(ops_test.model.applications[mysql_application_name].units) == 3
-
-    # deploy another mysql application cluster with the same 'cluster-name'
-    another_mysql_application_name = "another-mysql"
-    await deploy_and_scale_mysql(
-        ops_test,
-        charm,
-        check_for_existing_application=False,
-        mysql_application_name=another_mysql_application_name,
+@pytest.mark.abort_on_fail
+def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    logging.info("Deploying MySQL cluster")
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=3,
+    )
+    juju.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
+        base="ubuntu@22.04",
+        channel="latest/edge",
+        config={"sleep_interval": 300},
         num_units=1,
     )
 
-    # insert some data into the first/original mysql cluster
-    database_name, table_name = "test-no-replication-across-clusters", "data"
-    await insert_data_into_mysql_and_validate_replication(
-        ops_test, database_name, table_name, credentials
+    juju.integrate(
+        f"{MYSQL_APP_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
     )
 
-    # ensure that the inserted data DOES NOT get replicated into the another mysql cluster
-    another_mysql_unit = ops_test.model.applications[another_mysql_application_name].units[0]
-    another_mysql_primary = await get_primary_unit(
-        ops_test, another_mysql_unit, another_mysql_application_name
-    )
-    assert another_mysql_primary
-    another_server_config_credentials = await get_server_config_credentials(another_mysql_primary)
-
-    select_databases_sql = [
-        "SELECT schema_name FROM information_schema.schemata",
-    ]
-
-    for unit in ops_test.model.applications[another_mysql_application_name].units:
-        unit_address = await get_unit_address(ops_test, unit.name)
-
-        output = execute_queries_on_unit(
-            unit_address,
-            another_server_config_credentials["username"],
-            another_server_config_credentials["password"],
-            select_databases_sql,
-        )
-
-        assert len(output) > 0
-        assert "information_schema" in output
-        assert database_name not in output
-
-    # remove another mysql application cluster
-    await scale_application(ops_test, another_mysql_application_name, 0, wait=False)
-    await ops_test.model.remove_application(
-        another_mysql_application_name,
-        block_until_done=False,
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, MYSQL_APP_NAME, MYSQL_TEST_APP_NAME
+        ),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
     )
 
-    # clean up inserted data, and created tables + databases
-    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)
+
+def test_cluster_data_isolation(juju: Juju, charm: str) -> None:
+    """Test for cluster data isolation.
+
+    This test creates a new cluster, create a new table on both cluster, write a single record with
+    the application name for each cluster, retrieve and compare these records, asserting they are
+    not the same.
+    """
+    mysql_main_app_name = f"{MYSQL_APP_NAME}"
+    mysql_other_app_name = f"{MYSQL_APP_NAME}-other"
+
+    juju.deploy(
+        charm=charm,
+        app=mysql_other_app_name,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=1,
+    )
+
+    logging.info("Wait for application to become active")
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, mysql_other_app_name),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
+
+    table_name = "cluster_isolation_table"
+
+    for app_name in (mysql_main_app_name, mysql_other_app_name):
+        insert_mysql_test_data(juju, app_name, table_name, f"{app_name}-value")
+    for app_name in (mysql_main_app_name, mysql_other_app_name):
+        verify_mysql_test_data(juju, app_name, table_name, f"{app_name}-value")
+    for app_name in (mysql_main_app_name, mysql_other_app_name):
+        remove_mysql_test_data(juju, app_name, table_name)
+
+    juju.remove_application(mysql_other_app_name, destroy_storage=True, force=True)
