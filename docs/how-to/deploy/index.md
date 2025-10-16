@@ -11,6 +11,14 @@ GKE <gke>
 EKS <eks>
 AKS <aks>
 Multi-AZ <multi-az>
-Terraform <terraform>
 Air-gapped <air-gapped>
+```
+
+## Terraform
+
+```{toctree}
+:titlesonly:
+:maxdepth: 2
+
+Terraform <terraform/index>
 ```
