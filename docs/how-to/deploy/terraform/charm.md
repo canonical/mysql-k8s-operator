@@ -1,5 +1,9 @@
 # Deploy charm module
 
+The MySQL K8s _charm_ Terraform module is the smallest unit that can be deployed using Terraform,
+only containing the MySQL Server charm. It is supposed to be deployed alongside other charms
+to build a more complex setup.
+
 ## Install Terraform tooling
 
 This guide assumes Juju is installed, and you have a K8s controller already bootstrapped. For more information, check the [Charmed MySQL tutorial](/tutorial/index).

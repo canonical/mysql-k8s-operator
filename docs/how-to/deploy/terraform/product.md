@@ -1,5 +1,9 @@
 # Deploy product module
 
+The MySQL K8s _product_ Terraform module is the set of recommended charms to be deployed using Terraform,
+only containing Data-Platform owned charms by default. It could be extended with the addition of
+TLS and COS (_Canonical Observability Stack_) charms to build more complex setups.
+
 ## Install Terraform tooling
 
 This guide assumes Juju is installed, and you have a K8s controller already bootstrapped. For more information, check the [Charmed MySQL tutorial](/tutorial/index).
@@ -74,7 +78,7 @@ terraform apply -auto-approve \
 ## Configure the deployment
 
 The S3 Integrator charm needs to be configured for it to work properly.
-Wait until it reaches `active` status and run:
+Wait until it reaches `blocked` status and run:
 
 ```shell
 juju run s3-integrator/leader sync-s3-credentials \
