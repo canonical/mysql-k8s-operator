@@ -1,0 +1,61 @@
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that max_connections is set to 100 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/0
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that max_connections is set to 100 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/1
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that max_connections is set to 100 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that innodb_buffer_pool_size is set to 20971520 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that innodb_buffer_pool_chunk_size is set to 1048576 on mysql-k8s/2
+[32mINFO    [0m integration.test_charm:test_charm.py:341 Checking that group_replication_message_cache_size is set to 134217728 on mysql-k8s/2
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  08:57:30Z
+
+App        Version  Status  Scale  Charm      Channel  Rev  Address         Exposed  Message
+mysql-k8s           active      3  mysql-k8s             0  10.152.183.211  no       
+
+Unit          Workload  Agent  Address      Ports  Message
+mysql-k8s/0*  active    idle   10.1.71.215         Primary
+mysql-k8s/1   active    idle   10.1.71.216         
+mysql-k8s/2   active    idle   10.1.71.217         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 08:50:48 ERROR unit.mysql-k8s/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 1123, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/relations/mysql_provider.py", line 252, in _on_update_status
+    self.charm._mysql.update_endpoints(DB_RELATION_NAME)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 896, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.charm.get_cluster_endpoints(relation_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 903, in get_cluster_endpoints
+    address = f"{self.get_unit_address(unit_labels[k], relation_name)}:3306"
+KeyError: 'mysql-k8s-3'
+unit-mysql-k8s-0: 08:50:48 ERROR juju.worker.uniter.operation hook "update-status" (via hook dispatching script: dispatch) failed: exit status 1
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
