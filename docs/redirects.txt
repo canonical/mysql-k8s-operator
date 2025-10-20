@@ -53,12 +53,12 @@ h-upgrade-juju/ how-to/refresh/upgrade-juju
 h-upgrade-minor/ how-to/refresh/single-cluster/refresh-single-cluster
 h-rollback-minor/ how-to/refresh/single-cluster/roll-back-single-cluster
 
-h-async/ how-to/cross-regional-async-replication/
-h-async-deployment/ how-to/cross-regional-async-replication/deploy
-h-async-clients/ how-to/cross-regional-async-replication/clients
-h-async-failover/ how-to/cross-regional-async-replication/switchover-failover
-h-async-recovery/ how-to/cross-regional-async-replication/recovery
-h-async-removal/ how-to/cross-regional-async-replication/removal
+h-async/ how-to/cluster-cluster-replication/
+h-async-deployment/ how-to/cluster-cluster-replication/deploy
+h-async-clients/ how-to/cluster-cluster-replication/clients
+h-async-failover/ how-to/cluster-cluster-replication/switchover-failover
+h-async-recovery/ how-to/cluster-cluster-replication/recovery
+h-async-removal/ how-to/cluster-cluster-replication/removal
 
 h-development-integrate/ how-to/development/integrate-with-your-charm
 h-migrate-mysqldump/ how-to/development/migrate-data-via-mysqldump

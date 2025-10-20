@@ -6,7 +6,7 @@ To learn more about the different release tracks and channels, see the [Juju doc
 
 To see all releases and commits, check the [Charmed MySQL K8s Releases page on GitHub](https://github.com/canonical/mysql-k8s-operator/releases).
 
-| Release | MySQL version | Juju version | [TLS encryption](/how-to/enable-tls)* | [COS monitoring](/how-to/monitoring-cos/enable-monitoring) | [Minor version upgrades](/how-to/refresh/single-cluster/refresh-single-cluster) | [Cross-regional async replication](/how-to/cross-regional-async-replication/deploy) | [Point-in-time recovery](point-in-time-recovery)
+| Release | MySQL version | Juju version | [TLS encryption](/how-to/enable-tls)* | [COS monitoring](/how-to/monitoring-cos/enable-monitoring) | [Minor version upgrades](/how-to/refresh/single-cluster/refresh-single-cluster) | [Cluster-cluster replication](/how-to/cluster-cluster-replication/deploy) | [Point-in-time recovery](point-in-time-recovery)
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | [254], [255] | 8.0.41 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] | ![check] |
 | [240], [241] | 8.0.41 | `3.5.4+` | ![check] | ![check] | ![check] | ![check] | |

@@ -56,13 +56,13 @@ Monitoring (COS) <monitoring-cos/index>
 Refresh (upgrade) <refresh/index>
 ```
 
-## Cross-regional (cluster-cluster) async replication
+## Cluster-cluster replication
 
 ```{toctree}
 :titlesonly:
 :maxdepth: 2
 
-Cross-regional async replication <cross-regional-async-replication/index>
+Cluster-cluster replication <cluster-cluster-replication/index>
 ```
 
 ## Development

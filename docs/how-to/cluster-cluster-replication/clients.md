@@ -1,8 +1,8 @@
 # Clients
 
-## Pre-requisits
+## Pre-requisites
 
-Make sure both `Rome` and `Lisbon` Clusters are deployed using the [Async Deployment manual](/how-to/cross-regional-async-replication/deploy)!
+Make sure both `rome` and `lisbon` clusters are deployed according to [](/how-to/cluster-cluster-replication/deploy).
 
 ## Offer and consume database endpoints
 

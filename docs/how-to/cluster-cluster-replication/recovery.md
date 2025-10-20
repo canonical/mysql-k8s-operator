@@ -2,19 +2,19 @@
 
 ## Pre-requisites
 
-Make sure both `Rome` and `Lisbon` clusters are deployed following the [async deployment guide](/how-to/cross-regional-async-replication/deploy).
+Make sure both `Rome` and `Lisbon` clusters are deployed following the [cluster-cluster deployment guide](/how-to/cluster-cluster-replication/deploy).
 
 ## Recover detached cluster
 
-If the relation between clusters was removed and one side went into detached/blocked state: simply relate async replication back to restore ClusterSet.
+If the relation between clusters was removed and one side went into detached/blocked state: simply relate cluster-cluster replication back to restore ClusterSet.
 
 ## Recover lost cluster
 
-If a cluster has been lost and the ClusterSet need new member: deploy new db application and init async replication. The data will be copied automatically and the new cluster will join ClusterSet.
+If a cluster has been lost and the ClusterSet need new member: deploy new db application and init cluster-cluster replication. The data will be copied automatically and the new cluster will join ClusterSet.
 
 ## Recover invalidated cluster
 
-A cluster in the cluster-set gets invalidated when async replication auto-recovery fails on a disconnection event or when a failover is run against another cluster-set member while this cluster is unreachable. 
+A cluster in the cluster-set gets invalidated when cluster-cluster replication auto-recovery fails on a disconnection event or when a failover is run against another cluster-set member while this cluster is unreachable. 
 
 If the invalidated cluster connections is restored, it's status will be displayed in `juju status` as:
 

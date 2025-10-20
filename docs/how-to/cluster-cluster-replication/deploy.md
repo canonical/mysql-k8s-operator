@@ -1,16 +1,7 @@
-# Deploy async replication
-
-The following table shows the source and target controller/model combinations that are currently supported:
-
-|  | AWS | GCP | Azure |
-|---|---|:---:|:---:|
-| AWS | ![ check ] |  |  |
-| GCP |  | ![ check ] |  |
-| Azure |  | | ![ check ] |
-
-## Deploy
+# Deploy 
 
 Deploy two MySQL Clusters, named `Rome` and `Lisbon`:
+
 ```shell
 juju add-model rome    # 1st cluster location: Rome
 juju add-model lisbon  # 2nd cluster location: Lisbon
@@ -22,8 +13,8 @@ juju switch lisbon
 juju deploy mysql-k8s db2 --trust --channel=8.0/edge --config profile=testing --config cluster-name=lisbon --base ubuntu@22.04
 ```
 
-```{note}
-Remove profile configuration for production deployments. For more information, see our documentation about [Profiles](https://charmhub.io/mysql-k8s/docs/r-profiles).
+```{caution}
+Remove [profile](/reference/profiles) configuration for production deployments. 
 ```
 
 ## Offer
