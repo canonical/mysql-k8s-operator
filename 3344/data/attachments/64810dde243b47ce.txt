@@ -1,0 +1,63 @@
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:303 Deploying a new mysql cluster
+[32mINFO    [0m juju.model:model.py:2284 Deploying local:mysql-k8s-1
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+[33mWARNING [0m juju.model:model.py:1666 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [executing] active: 
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:322 Rotating all mysql credentials
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:339 Syncing credentials
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:353 Waiting for blocked application status with another cluster S3 repository
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:361 Restoring backup_id='2025-10-20T02:06:55Z'
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:366 Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:380 Inserting value after restore
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:389 Ensuring that pre-backup and post-restore values exist in the database
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:400 Scaling mysql application to 3 units
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s (waiting for exactly 3 units, current : 1)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [executing] active: Primary
+  another-mysql-k8s/1 [executing] maintenance: Initialising mysqld
+  another-mysql-k8s/2 [executing] maintenance: Initialising mysqld
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  another-mysql-k8s/1 [executing] waiting: waiting to get cluster primary from peers
+  another-mysql-k8s/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  another-mysql-k8s/0 [idle] active: Primary
+  another-mysql-k8s/1 [idle] active: 
+  another-mysql-k8s/2 [executing] maintenance: joining the cluster
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:408 Ensuring inserted values before backup and after restore exist on all units
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:426 Waiting for blocked application status after restore
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.9    unsupported  02:20:23Z
+
+App                Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+another-mysql-k8s  8.0.42-0ubuntu0.22.04.2  blocked      3  mysql-k8s                       1  10.152.183.240  no       Move restored cluster to another S3 repository
+mysql-k8s                                   blocked      3  mysql-k8s                       0  10.152.183.160  no       Move restored cluster to another S3 repository
+s3-integrator                               active       1  s3-integrator  latest/stable  145  10.152.183.72   no       
+
+Unit                  Workload  Agent  Address      Ports  Message
+another-mysql-k8s/0*  active    idle   10.1.71.214         Primary
+another-mysql-k8s/1   active    idle   10.1.71.217         
+another-mysql-k8s/2   active    idle   10.1.71.218         
+mysql-k8s/0*          active    idle   10.1.71.204         Primary
+mysql-k8s/1           active    idle   10.1.71.211         
+mysql-k8s/2           active    idle   10.1.71.210         
+s3-integrator/0*      active    idle   10.1.71.209         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[32mINFO    [0m integration.test_backup_aws:test_backup_aws.py:77 Cleaning backups from buckets
