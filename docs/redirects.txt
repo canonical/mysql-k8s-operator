@@ -48,10 +48,10 @@ h-enable-monitoring/ how-to/monitoring-cos/enable-monitoring
 h-enable-alert-rules/ how-to/monitoring-cos/enable-alert-rules
 h-enable-tracing/ how-to/monitoring-cos/enable-tracing
 
-h-upgrade/ how-to/upgrade/
-h-upgrade-juju/ how-to/upgrade/upgrade-juju
-h-upgrade-minor/ how-to/upgrade/perform-a-minor-upgrade
-h-rollback-minor/ how-to/upgrade/perform-a-minor-rollback
+h-upgrade/ how-to/refresh/
+h-upgrade-juju/ how-to/refresh/upgrade-juju
+h-upgrade-minor/ how-to/refresh/single-cluster/refresh-single-cluster
+h-rollback-minor/ how-to/refresh/single-cluster/roll-back-single-cluster
 
 h-async/ how-to/cross-regional-async-replication/
 h-async-deployment/ how-to/cross-regional-async-replication/deploy

@@ -47,13 +47,13 @@ Integrate with observability services like Grafana, Prometheus, and Tempo.
 Monitoring (COS) <monitoring-cos/index>
 ```
 
-## Upgrades
+## Refresh ( upgrade)
 
 ```{toctree}
 :titlesonly:
 :maxdepth: 2
 
-Upgrade <upgrade/index>
+Refresh (upgrade) <refresh/index>
 ```
 
 ## Cross-regional (cluster-cluster) async replication

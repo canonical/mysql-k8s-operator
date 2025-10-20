@@ -9,7 +9,7 @@ This is feature is in development. It is **not recommended** for production envi
 ## Prerequisites
 
 * Charmed MySQL K8s revision 146 or higher 
-  * See [](/how-to/upgrade/index)
+  * See [](/how-to/refresh/index)
 * `cos-lite` bundle deployed in a Kubernetes environment
   * See the [COS Microk8s tutorial](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s)
 
