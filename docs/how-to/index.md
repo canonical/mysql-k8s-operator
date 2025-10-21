@@ -47,7 +47,7 @@ Integrate with observability services like Grafana, Prometheus, and Tempo.
 Monitoring (COS) <monitoring-cos/index>
 ```
 
-## Refresh ( upgrade)
+## Refresh (upgrade)
 
 ```{toctree}
 :titlesonly:

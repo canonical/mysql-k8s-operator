@@ -30,4 +30,3 @@ Use the [`get-cluster-status`](https://charmhub.io/mysql-k8s/actions#get-cluster
 
 If something goes wrong, roll back the cluster. See: [](/how-to/refresh/single-cluster/roll-back-single-cluster)
 
-

@@ -50,7 +50,7 @@ This charm supports in-place upgrades to higher versions via Juju's [`refresh`](
 
 ```
 
-Due to an upstream issue with MySQL Server version `8.0.35`, Charmed MySQL versions below [Revision 153](https://github.com/canonical/mysql-operator/releases/tag/rev153) **cannot** be upgraded using Juju's `refresh`.
+Due to an upstream issue with MySQL Server version `8.0.35`, Charmed MySQL versions below [Revision 127](https://github.com/canonical/mysql-k8s-operator/releases/tag/rev127) **cannot** be upgraded using Juju's `refresh`.
 
 To upgrade from older versions to Revision 153 or higher, the data must be migrated manually. See: [](/how-to/development/migrate-data-via-backup-restore).
 
