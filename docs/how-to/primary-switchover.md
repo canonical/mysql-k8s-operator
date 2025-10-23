@@ -15,6 +15,6 @@ In this example, the unit `mysql/1` will become the new primary. The previous pr
 secondary.
 
 ```{caution}
-The `promote-to-primary` action can be used in cluster scope, when using async replication.
-Check [Switchover / Failover](cross-regional-async-replication/switchover-failover) for more information.
+The `promote-to-primary` action can be used in cluster scope, when using cluster-cluster replication.
+Check [Switchover / Failover](cluster-cluster-replication/switchover-failover) for more information.
 ```

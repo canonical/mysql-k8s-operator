@@ -12,7 +12,7 @@ The charm follows [standard Juju applications statuses](https://documentation.ub
 | **waiting** | any | Charm is waiting for relations to be finished | No actions required |
 | **maintenance** | any | Charm is performing the internal maintenance (e.g. cluster re-configuration) | No actions required |
 | **blocked** | any | The manual user activity is required! | Follow the message hints (see below) |
-| **blocked** | Failed to set up relation | The relation between two applications failed to be created. Most probably it is a regression of the recent changes in applications | Check Juju [debug-log](https://juju.is/docs/olm/juju-debug-log). Increase debug level and reproduce the issue. Report as an issue with debug logs attached (if reproducible). Consider to try previous revision for both applications |
+| **blocked** | Failed to set up relation | The relation between two applications failed to be created. Most probably it is a regression of the recent changes in applications | Check Juju [debug-log](https://documentation.ubuntu.com/juju/3.6/reference/juju-cli/list-of-juju-cli-commands/debug-log/). Increase debug level and reproduce the issue. Report as an issue with debug logs attached (if reproducible). Consider to try previous revision for both applications |
 | **blocked** | Failed to initialize mysql relation | The same as "Failed to set up relation" | See "Failed to set up relation" |
 | **blocked** | Failed to remove relation user | TODO: clean manually? How to unblock? | |
 | **blocked** | Failed to install and configure MySQL | TODO |  |

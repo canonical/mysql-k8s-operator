@@ -2,12 +2,12 @@
 
 ## Pre-requisites
 
-Make sure both `Rome` and `Lisbon` clusters are deployed following the [async deployment guide](/how-to/cross-regional-async-replication/deploy).
+Make sure both `Rome` and `Lisbon` clusters are deployed following the [cluster-cluster deployment guide](/how-to/cluster-cluster-replication/deploy).
 
 ## Detach Cluster from ClusterSet
 
 ```{important} 
-It is important to [switchover](/how-to/cross-regional-async-replication/switchover-failover) the `Primary` cluster before detaching it from ClusterSet!
+It is important to [switchover](/how-to/cluster-cluster-replication/switchover-failover) the `Primary` cluster before detaching it from ClusterSet!
 ```
 
 Assuming the `Lisbon` is a current `Primary` and we want to detach `Rome` (for removal or reuse):
@@ -24,7 +24,7 @@ From this points, there are three options, as described in the following section
 
 ## Rejoin detached cluster into previous ClusterSet
 
-At this stage, the detached/blocked cluster `Rome` can re-join the previous ClusterSet by restoring async integration/relation:
+At this stage, the detached/blocked cluster `Rome` can re-join the previous ClusterSet by restoring cluster-cluster integration/relation:
 
 ```shell
 juju switch rome

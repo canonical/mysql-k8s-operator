@@ -62,5 +62,5 @@ ERROR Charm feature requirements cannot be met:
       - charm requires feature "juju" (version >= 3.1.5) but model currently supports version 3.1.4
 ```
 
-You must then [upgrade to the required Juju version](/how-to/upgrade/upgrade-juju) before proceeding with the charm upgrade.
+You must then [upgrade to the required Juju version](/how-to/refresh/upgrade-juju) before proceeding with the charm upgrade.
 

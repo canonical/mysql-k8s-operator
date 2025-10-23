@@ -63,7 +63,7 @@ Charmed MySQL K8s and Charmed MySQL Router K8s run on top of the same rock (OCI-
 
 [Charmed MySQL K8s operator](https://github.com/canonical/mysql-k8s-operator) and [Charmed MySQL Router K8s operator](https://github.com/canonical/mysql-router-k8s-operator) install pinned versions of the rock to provide reproducible and secure environments. New versions (revisions) of charmed operators can be released to update the operator's code, workloads, or both. It is important to refresh the charm regularly to make sure the workload is as secure as possible.
 
-For more information on upgrading Charmed MySQL K8s, see the [How to upgrade MySQL](/how-to/upgrade/index) and [How to upgrade MySQL Router](https://charmhub.io/mysql-router-k8s/docs/h-upgrade) guides, as well as the [Releases](/reference/releases).
+For more information on upgrading Charmed MySQL K8s, see the [How to upgrade MySQL](/how-to/refresh/index) and [How to upgrade MySQL Router](https://charmhub.io/mysql-router-k8s/docs/h-upgrade) guides, as well as the [Releases](/reference/releases).
 
 ### Encryption
 
