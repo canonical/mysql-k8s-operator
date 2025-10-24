@@ -14,12 +14,6 @@ on:
       - 'docs/**'
   schedule:
     - cron: '53 0 * * *'  # Daily at 00:53 UTC
-  # Triggered on push to branch "main" by .github/workflows/release.yaml
-  workflow_call:
-    outputs:
-      artifact-prefix:
-        description: build_charm.yaml `artifact-prefix` output
-        value: ${{ jobs.build.outputs.artifact-prefix }}
 
 jobs:
   lint:

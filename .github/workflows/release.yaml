@@ -9,9 +9,17 @@ on:
     paths-ignore:
       - 'docs/**'
       - '.github/renovate.json5'
+      - '.github/workflows/automatic-doc-checks.yml'
+      - '.github/workflows/ci.yaml'
       - '.github/workflows/check_libs.yaml'
+      - '.github/workflows/check_pr.yaml'
+      - '.github/workflows/tiobe_scan.yaml'
 
 jobs:
+  build:
+    name: Build charm
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v37.0.0
+
   lib-check:
     name: Check libraries
     runs-on: ubuntu-latest
@@ -30,10 +38,26 @@ jobs:
           credentials: ${{ secrets.CHARMHUB_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  ci-tests:
+  integration-tests:
+    name: Integration tests
     needs:
+      - build
       - lib-check
-    uses: ./.github/workflows/ci.yaml
+    uses: ./.github/workflows/integration_test.yaml
+    with:
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
+    secrets: inherit
+    permissions:
+      contents: write  # Needed for Allure Report
+
+  release-tests:
+    name: Release tests
+    needs:
+      - build
+      - lib-check
+    uses: ./.github/workflows/release_test.yaml
+    with:
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets: inherit
     permissions:
       contents: write  # Needed for Allure Report
@@ -41,12 +65,14 @@ jobs:
   release:
     name: Release charm
     needs:
+      - build
       - lib-check
-      - ci-tests
+      - integration-tests
+      - release-tests
     uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@v37.0.0
     with:
       track: '8.0'
-      artifact-prefix: ${{ needs.ci-tests.outputs.artifact-prefix }}
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets:
       charmhub-token: ${{ secrets.CHARMHUB_TOKEN }}
     permissions:
