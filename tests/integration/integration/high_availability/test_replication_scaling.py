@@ -1,0 +1,87 @@
+# Copyright 2022 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+import logging
+
+import jubilant_backports
+import pytest
+from jubilant_backports import Juju
+
+from ...helpers import generate_random_string
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    insert_mysql_test_data,
+    remove_mysql_test_data,
+    scale_app_units,
+    verify_mysql_test_data,
+    wait_for_apps_status,
+)
+
+MYSQL_APP_NAME = "mysql-k8s"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
+
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
+
+
+@pytest.mark.abort_on_fail
+def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    logging.info("Deploying MySQL cluster")
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=3,
+    )
+    juju.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
+        base="ubuntu@22.04",
+        channel="latest/edge",
+        config={"sleep_interval": 300},
+        num_units=1,
+    )
+
+    juju.integrate(
+        f"{MYSQL_APP_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
+    )
+
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, MYSQL_APP_NAME, MYSQL_TEST_APP_NAME
+        ),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
+
+
+@pytest.mark.abort_on_fail
+def test_scaling_without_data_loss(juju: Juju) -> None:
+    """Test that data is preserved during scale up and scale down."""
+    table_name = "instance_state_replication"
+
+    # Ensure that all units have the inserted data (scaling up)
+    table_value = generate_random_string(255)
+    insert_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+    scale_app_units(juju, MYSQL_APP_NAME, 4)
+    verify_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+
+    # Ensure that all units have the inserted data (stable)
+    table_value = generate_random_string(255)
+    insert_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+    verify_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+
+    # Ensure that all units have the inserted data (scaling down)
+    table_value = generate_random_string(255)
+    insert_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+    scale_app_units(juju, MYSQL_APP_NAME, 3)
+    verify_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+
+    # Clean up inserted data, tables and databases
+    remove_mysql_test_data(juju, MYSQL_APP_NAME, table_name)
