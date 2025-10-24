@@ -173,31 +173,6 @@ def get_mysql_max_written_value(juju: Juju, app_name: str, unit_name: str) -> in
     return output[0]
 
 
-def get_mysql_variable_value(juju: Juju, app_name: str, unit_name: str, variable_name: str) -> str:
-    """Retrieve a database variable value as a string.
-
-    Args:
-        juju: The Juju model.
-        app_name: The application name.
-        unit_name: The unit name.
-        variable_name: The variable name.
-    """
-    credentials_task = juju.run(
-        unit=unit_name,
-        action="get-password",
-        params={"username": SERVER_CONFIG_USERNAME},
-    )
-    credentials_task.raise_on_failure()
-
-    output = execute_queries_on_unit(
-        get_unit_address(juju, app_name, unit_name),
-        credentials_task.results["username"],
-        credentials_task.results["password"],
-        [f"SELECT @@{variable_name};"],
-    )
-    return output[0]
-
-
 def wait_for_apps_status(jubilant_status_func: JujuAppsStatusFn, *apps: str) -> JujuModelStatusFn:
     """Waits for Juju agents to be idle, and for applications to reach a certain status.
 
