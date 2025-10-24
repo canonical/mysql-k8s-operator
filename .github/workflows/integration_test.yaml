@@ -1,3 +1,7 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+name: Integration tests
+
 on:
   workflow_call:
     inputs:
@@ -31,17 +35,20 @@ jobs:
 
           spread_jobs = (
               subprocess.run(
-                  ["charmcraft", "test", "--list", "github-ci"], capture_output=True, check=True, text=True
+                  ["charmcraft", "test", "--list", "github-ci:tests/spread/integration/"],
+                  capture_output=True,
+                  check=True,
+                  text=True,
               )
               .stdout.strip()
               .split("\n")
           )
           jobs = []
           for job in spread_jobs:
-              # Example `job`: "github-ci:ubuntu-24.04:tests/spread/test_charm.py:juju36"
+              # Example `job`: "github-ci:ubuntu-24.04:tests/spread/integration/test_charm.py:juju36"
               _, runner, task, variant = job.split(":")
               # Example: "test_charm.py"
-              task = task.removeprefix("tests/spread/")
+              task = task.removeprefix("tests/spread/integration/")
               if runner.endswith("-arm"):
                   architecture = "arm64"
               else:
@@ -62,7 +69,7 @@ jobs:
               file.write(output)
       - name: Generate Allure default test results
         if: ${{ github.event_name == 'schedule' && github.run_attempt == '1' }}
-        run: tox run -e integration -- tests/integration --allure-default-dir=allure-default-results
+        run: tox run -e integration -- tests/integration/integration --allure-default-dir=allure-default-results
       - name: Upload Allure default results
         # Default test results in case the integration tests time out or runner set up fails
         # (So that Allure report will show "unknown"/"failed" test result, instead of omitting the test)
