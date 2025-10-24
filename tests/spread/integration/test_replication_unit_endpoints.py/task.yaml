@@ -1,6 +1,6 @@
-summary: test_self_healing_setup_crash.py
+summary: test_replication_unit_endpoints.py
 environment:
-  TEST_MODULE: high_availability/test_self_healing_setup_crash.py
+  TEST_MODULE: high_availability/test_replication_unit_endpoints.py
 execute: |
   tox run -e integration -- "tests/integration/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
 artifacts:

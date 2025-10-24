@@ -12,7 +12,7 @@ from pytest_operator.plugin import OpsTest
 from constants import SERVER_CONFIG_USERNAME
 
 from . import architecture, juju_
-from .high_availability.high_availability_helpers import get_application_name
+from .integration.high_availability.high_availability_helpers import get_application_name
 
 logger = logging.getLogger(__name__)
 
