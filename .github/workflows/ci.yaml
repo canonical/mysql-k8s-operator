@@ -81,3 +81,17 @@ jobs:
     secrets: inherit
     permissions:
       contents: write  # Needed for Allure Report
+
+  # TODO: REMOVE BEFORE MERGING
+  release-test:
+    name: Release test charm
+    needs:
+      - lint
+      - unit-test
+      - build
+    uses: ./.github/workflows/release_test.yaml
+    with:
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
+    secrets: inherit
+    permissions:
+      contents: write  # Needed for Allure Report
