@@ -8,15 +8,17 @@ to build a more complex setup.
 
 This guide assumes Juju is installed, and you have a K8s controller already bootstrapped. For more information, check the [Charmed MySQL tutorial](/tutorial/index).
 
-Let's install Terraform Provider and example modules:
+Let's install the Terraform and YQ snaps:
 ```shell
 sudo snap install terraform --classic
+sudo snap install yq
 ```
 
 Switch to the K8s provider and create a new model:
 ```shell
 juju switch microk8s
 juju add-model my-model
+juju show-model my-model | yq '."my-model"."model-uuid"'
 ```
 
 Clone the MySQL operator repository and navigate to the terraform module:
@@ -35,7 +37,7 @@ terraform init
 Open the `main.tf` file to see the brief contents of the Terraform module, and run `terraform plan` to get a preview of the changes that will be made:
 
 ```shell
-terraform plan -var 'model_name=my-model'
+terraform plan -var 'model=<model-uuid>'
 ```
 
 ## Apply the deployment
@@ -43,7 +45,7 @@ terraform plan -var 'model_name=my-model'
 If everything looks correct, deploy the resources (skip the approval):
 
 ```shell
-terraform apply -auto-approve -var 'model_name=my-model'
+terraform apply -auto-approve -var 'model=<model-uuid>'
 ```
 
 ## Check deployment status
@@ -73,7 +75,7 @@ Continue to operate the charm as usual from here or apply further Terraform chan
 
 To keep the house clean, remove the newly deployed MySQL K8s charm by running
 ```shell
-terraform destroy -var 'model_name=my-model'
+terraform destroy -var 'model=<model-uuid>'
 ```
 
 ---
