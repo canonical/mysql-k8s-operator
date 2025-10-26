@@ -1,0 +1,16 @@
+[32mINFO    [0m integration.conftest:conftest.py:31 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:197 Inserting value before backup
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:205 Setting s3 config
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:207 Syncing credentials
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [executing] active: 
+  s3-integrator/0 [executing] blocked: Missing parameters: ['access-key', 'secret-key']
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:221 Listing existing backup ids
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:228 Creating backup
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:234 Listing backup ids post backup
+[32mINFO    [0m integration.test_backup_ceph:test_backup_ceph.py:243 Inserting value after backup
