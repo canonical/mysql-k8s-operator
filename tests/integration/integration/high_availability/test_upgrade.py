@@ -12,7 +12,7 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju, TaskError
 
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
     get_app_leader,

@@ -7,7 +7,7 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     delete_k8s_pod,
     get_mysql_primary_unit,

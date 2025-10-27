@@ -13,7 +13,7 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_instances_online,
     check_mysql_units_writes_increment,
@@ -23,7 +23,6 @@ from .high_availability_helpers_new import (
     wait_for_apps_status,
     wait_for_unit_status,
 )
-
 
 MYSQL_APP_NAME = "mysql-k8s"
 MYSQL_TEST_APP_NAME = "mysql-test-app"

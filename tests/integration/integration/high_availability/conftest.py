@@ -9,15 +9,15 @@ import pytest
 from jubilant_backports import Juju
 from pytest_operator.plugin import OpsTest
 
+from ...helpers_ha import (
+    get_app_leader,
+)
 from .high_availability_helpers import (
     deploy_and_scale_application,
     deploy_and_scale_mysql,
     deploy_chaos_mesh,
     destroy_chaos_mesh,
     relate_mysql_and_application,
-)
-from .high_availability_helpers_new import (
-    get_app_leader,
 )
 
 MYSQL_TEST_APP_NAME = "mysql-test-app"

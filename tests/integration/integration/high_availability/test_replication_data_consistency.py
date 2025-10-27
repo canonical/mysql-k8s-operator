@@ -8,7 +8,7 @@ import pytest
 from jubilant_backports import Juju
 
 from ...helpers import generate_random_string
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
     insert_mysql_test_data,

@@ -15,7 +15,7 @@ from tenacity import (
 
 from constants import CONTAINER_NAME
 
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
     exec_k8s_container_command,

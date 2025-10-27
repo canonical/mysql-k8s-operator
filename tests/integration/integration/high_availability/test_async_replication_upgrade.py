@@ -12,8 +12,7 @@ import pytest
 from jubilant_backports import Juju, TaskError
 
 from ... import architecture
-from ...markers import juju3
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
     get_app_leader,
@@ -26,6 +25,7 @@ from .high_availability_helpers_new import (
     wait_for_apps_status,
     wait_for_unit_message,
 )
+from ...markers import juju3
 
 MYSQL_APP_1 = "db1"
 MYSQL_APP_2 = "db2"

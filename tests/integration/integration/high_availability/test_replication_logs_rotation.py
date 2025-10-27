@@ -18,7 +18,7 @@ from tenacity import (
 
 from constants import CONTAINER_NAME, MYSQL_LOG_DIR
 
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     get_app_leader,
     get_mysql_instance_label,

@@ -10,7 +10,7 @@ from lightkube.core.client import Client
 from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.core_v1 import PersistentVolume, PersistentVolumeClaim, Pod
 
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
     get_k8s_pod,
