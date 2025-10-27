@@ -597,23 +597,26 @@ class MySQLCharmBase(CharmBase, ABC):
 
     def _get_cluster_status(self, event: ActionEvent) -> None:
         """Action used  to retrieve the cluster status."""
-        if event.params.get("cluster-set"):
-            logger.debug("Getting cluster set status")
-            status = self._mysql.get_cluster_set_status(extended=0)
-        else:
-            logger.debug("Getting cluster status")
-            status = self._mysql.get_cluster_status()
+        try:
+            if event.params.get("cluster-set"):
+                logger.debug("Getting cluster set status")
+                status = self._mysql.get_cluster_set_status(extended=0)
+            else:
+                logger.debug("Getting cluster status")
+                status = self._mysql.get_cluster_status()
 
-        if status:
+            if not status:
+                event.fail("Failed to read cluster status. See logs for more information.")
+                return
+
             event.set_results({
                 "success": True,
                 "status": status,
             })
-        else:
-            event.set_results({
-                "success": False,
-                "message": "Failed to read cluster status.  See logs for more information.",
-            })
+
+        except Exception:
+            logger.exception("Error while reading cluster status")
+            event.fail("Error while reading cluster status. See logs for more information.")
 
     def _on_promote_to_primary(self, event: ActionEvent) -> None:
         """Action for setting this unit as the cluster primary."""
