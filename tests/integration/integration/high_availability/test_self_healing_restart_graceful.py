@@ -10,7 +10,7 @@ from jubilant_backports import Juju
 from constants import SERVER_CONFIG_USERNAME
 
 from ...helpers import execute_queries_on_unit
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
     get_mysql_primary_unit,

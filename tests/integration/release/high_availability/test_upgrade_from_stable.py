@@ -11,7 +11,7 @@ import pytest
 from jubilant_backports import Juju, TaskError
 
 from ... import architecture, markers
-from .high_availability_helpers import (
+from ...helpers_ha import (
     check_mysql_units_writes_increment,
     get_app_leader,
     get_k8s_stateful_set_partitions,

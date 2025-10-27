@@ -12,8 +12,7 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju, TaskError
 
-from ...markers import amd64_only
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     get_app_leader,
     get_k8s_stateful_set_partitions,
@@ -23,6 +22,7 @@ from .high_availability_helpers_new import (
     wait_for_unit_message,
     wait_for_unit_status,
 )
+from ...markers import amd64_only
 
 MYSQL_APP_NAME = "mysql-k8s"
 

@@ -13,8 +13,7 @@ from jubilant_backports import Juju
 from constants import CONTAINER_NAME
 
 from ... import architecture
-from ...markers import juju3
-from .high_availability_helpers_new import (
+from ...helpers_ha import (
     CHARM_METADATA,
     exec_k8s_container_command,
     get_app_leader,
@@ -23,6 +22,7 @@ from .high_availability_helpers_new import (
     get_mysql_max_written_value,
     wait_for_apps_status,
 )
+from ...markers import juju3
 
 MYSQL_APP_1 = "db1"
 MYSQL_APP_2 = "db2"

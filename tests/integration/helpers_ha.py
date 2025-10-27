@@ -30,7 +30,7 @@ from constants import (
     SERVER_CONFIG_USERNAME,
 )
 
-from ...helpers import execute_queries_on_unit
+from .helpers import execute_queries_on_unit
 
 CHARM_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
