@@ -4,7 +4,8 @@
 
 import json
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
 from pathlib import Path
 
 import jubilant_backports
@@ -14,8 +15,11 @@ from jubilant_backports import Juju
 from jubilant_backports.statustypes import Status, UnitStatus
 from lightkube.core.client import Client
 from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.resources.core_v1 import Endpoints
 from tenacity import (
     Retrying,
+    retry,
+    stop_after_attempt,
     stop_after_delay,
     wait_fixed,
 )
@@ -43,17 +47,11 @@ def check_mysql_instances_online(juju: Juju, app_name: str) -> bool:
     mysql_app_leader = get_app_leader(juju, app_name)
     mysql_app_units = get_app_units(juju, app_name)
 
-    for attempt in Retrying(stop=stop_after_delay(10 * MINUTE_SECS), wait=wait_fixed(10)):
-        with attempt:
-            mysql_cluster_status = get_mysql_cluster_status(juju, mysql_app_leader)
-            mysql_cluster_topology = mysql_cluster_status["defaultreplicaset"]["topology"]
-            assert len(mysql_cluster_topology) == len(mysql_app_units)
+    mysql_cluster_status = get_mysql_cluster_status(juju, mysql_app_leader)
+    mysql_cluster_topology = mysql_cluster_status["defaultreplicaset"]["topology"]
+    assert len(mysql_cluster_topology) == len(mysql_app_units)
 
-            for member in mysql_cluster_topology.values():
-                if member["status"] != "online":
-                    return False
-
-    return True
+    return all(member["status"] == "online" for member in mysql_cluster_topology.values())
 
 
 def check_mysql_units_writes_increment(
@@ -70,7 +68,6 @@ def check_mysql_units_writes_increment(
     app_primary = get_mysql_primary_unit(juju, app_name)
     app_max_value = get_mysql_max_written_value(juju, app_name, app_primary)
 
-    juju.model_config({"update-status-hook-interval": "15s"})
     for unit_name in app_units:
         for attempt in Retrying(
             reraise=True,
@@ -120,11 +117,23 @@ def get_k8s_stateful_set_partitions(juju: Juju, app_name: str) -> int:
     client = Client()
     stateful_set = client.get(
         res=StatefulSet,
-        namespace=juju.model,
         name=app_name,
+        namespace=juju.model,
     )
 
     return stateful_set.spec.updateStrategy.rollingUpdate.partition
+
+
+def get_k8s_endpoint_addresses(juju: Juju, endpoint_name: str) -> list[str]:
+    """Retrieve the addresses selected by a K8s endpoint."""
+    client = Client()
+    endpoint = client.get(
+        res=Endpoints,
+        name=endpoint_name,
+        namespace=juju.model,
+    )
+
+    return [address.ip for subset in endpoint.subsets for address in subset.addresses]
 
 
 def get_app_leader(juju: Juju, app_name: str) -> str:
@@ -159,13 +168,13 @@ def get_app_units(juju: Juju, app_name: str) -> dict[str, UnitStatus]:
 def scale_app_units(juju: Juju, app_name: str, num_units: int) -> None:
     """Scale a given application to a number of units."""
     app_units = get_app_units(juju, app_name)
-    app_units_diff = len(app_units) - num_units
+    app_units_diff = num_units - len(app_units)
 
     scale_func = None
     if app_units_diff > 0:
-        scale_func = juju.remove_unit
-    if app_units_diff < 0:
         scale_func = juju.add_unit
+    if app_units_diff < 0:
+        scale_func = juju.remove_unit
     if app_units_diff == 0:
         return
 
@@ -272,6 +281,7 @@ def get_relation_data(juju: Juju, app_name: str, rel_name: str) -> list[dict]:
     return relation_data
 
 
+@retry(stop=stop_after_attempt(30), wait=wait_fixed(5), reraise=True)
 def get_mysql_cluster_status(juju: Juju, unit: str, cluster_set: bool = False) -> dict:
     """Get the cluster status by running the get-cluster-status action.
 
@@ -291,7 +301,7 @@ def get_mysql_cluster_status(juju: Juju, unit: str, cluster_set: bool = False) -
     )
     task.raise_on_failure()
 
-    return task.results.get("status", {})
+    return task.results["status"]
 
 
 def get_mysql_instance_label(unit_name: str) -> str:
@@ -364,6 +374,19 @@ def get_mysql_variable_value(juju: Juju, app_name: str, unit_name: str, variable
         [f"SELECT @@{variable_name};"],
     )
     return output[0]
+
+
+@contextmanager
+def update_interval(juju: Juju, interval: str) -> Generator:
+    """Temporarily speed up update-status firing rate for the current model."""
+    update_interval_key = "update-status-hook-interval"
+    update_interval_val = juju.model_config()[update_interval_key]
+
+    juju.model_config({update_interval_key: interval})
+    try:
+        yield
+    finally:
+        juju.model_config({update_interval_key: update_interval_val})
 
 
 def insert_mysql_test_data(juju: Juju, app_name: str, table_name: str, value: str) -> None:
