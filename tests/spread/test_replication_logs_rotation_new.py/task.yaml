@@ -1,7 +1,0 @@
-summary: test_replication_logs_rotation_new.py
-environment:
-  TEST_MODULE: high_availability/test_replication_logs_rotation_new.py
-execute: |
-  tox run -e integration -- "tests/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
-artifacts:
-  - allure-results
