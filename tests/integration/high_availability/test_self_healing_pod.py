@@ -3,60 +3,88 @@
 
 import logging
 
-import lightkube
-from lightkube.resources.core_v1 import Pod
-from pytest_operator.plugin import OpsTest
+import jubilant_backports
+import pytest
+from jubilant_backports import Juju
 
-from ..helpers import (
-    scale_application,
+from ..helpers import generate_random_string
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    delete_k8s_pod,
+    get_app_units,
+    insert_mysql_test_data,
+    remove_mysql_test_data,
+    scale_app_units,
+    verify_mysql_test_data,
+    wait_for_apps_status,
 )
-from .high_availability_helpers import (
-    clean_up_database_and_table,
-    get_application_name,
-    insert_data_into_mysql_and_validate_replication,
-)
 
-logger = logging.getLogger(__name__)
+MYSQL_APP_NAME = "mysql-k8s"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-MYSQL_CONTAINER_NAME = "mysql"
-MYSQLD_PROCESS_NAME = "mysqld"
-TIMEOUT = 40 * 60
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-async def test_single_unit_pod_delete(
-    ops_test: OpsTest, highly_available_cluster, credentials
-) -> None:
-    """Delete the pod in a single unit deployment and write data to new pod."""
-    mysql_application_name = get_application_name(ops_test, "mysql")
-    assert mysql_application_name, "mysql application name is not set"
-
-    logger.info("Scale mysql application to 1 unit that is active")
-    async with ops_test.fast_forward("60s"):
-        await scale_application(ops_test, mysql_application_name, 1)
-    unit = ops_test.model.applications[mysql_application_name].units[0]
-    assert unit.workload_status == "active"
-
-    logger.info("Delete pod for the the mysql unit")
-    client = lightkube.Client()
-    client.delete(Pod, unit.name.replace("/", "-"), namespace=ops_test.model.info.name)
-
-    logger.info("Wait for a new pod to be created by k8s")
-    async with ops_test.fast_forward("60s"):
-        await ops_test.model.wait_for_idle(
-            apps=[mysql_application_name],
-            status="active",
-            raise_on_blocked=True,
-            timeout=TIMEOUT,
-            idle_period=30,
-        )
-
-    logger.info("Write data to unit and verify that data was written")
-    database_name, table_name = "test-single-pod-delete", "data"
-    await insert_data_into_mysql_and_validate_replication(
-        ops_test,
-        database_name=database_name,
-        table_name=table_name,
-        credentials=credentials,
-        mysql_application_substring="mysql-k8s",
+@pytest.mark.abort_on_fail
+def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    logging.info("Deploying MySQL cluster")
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=3,
     )
-    await clean_up_database_and_table(ops_test, database_name, table_name, credentials)
+    juju.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
+        base="ubuntu@22.04",
+        channel="latest/edge",
+        config={"sleep_interval": 300},
+        num_units=1,
+    )
+
+    juju.integrate(
+        f"{MYSQL_APP_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
+    )
+
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, MYSQL_APP_NAME, MYSQL_TEST_APP_NAME
+        ),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
+
+
+@pytest.mark.abort_on_fail
+def test_single_unit_pod_delete(juju: Juju) -> None:
+    """Delete the pod in a single unit deployment and write data to new pod."""
+    logging.info("Scale mysql application to 1 unit that is active")
+    scale_app_units(juju, MYSQL_APP_NAME, 1)
+
+    mysql_units = get_app_units(juju, MYSQL_APP_NAME)
+
+    logging.info("Delete pod for the the mysql unit")
+    delete_k8s_pod(juju, mysql_units[0])
+
+    logging.info("Wait for a new pod to be created by k8s")
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_NAME),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
+
+    logging.info("Write data to unit and verify that data was written")
+    table_name = "data"
+    table_value = generate_random_string(255)
+
+    insert_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+    verify_mysql_test_data(juju, MYSQL_APP_NAME, table_name, table_value)
+    remove_mysql_test_data(juju, MYSQL_APP_NAME, table_name)

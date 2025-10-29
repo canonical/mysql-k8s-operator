@@ -1,6 +1,6 @@
-summary: test_self_healing_process_killed_new.py
+summary: test_self_healing_node_drain.py
 environment:
-  TEST_MODULE: high_availability/test_self_healing_process_killed_new.py
+  TEST_MODULE: high_availability/test_self_healing_node_drain.py
 execute: |
   tox run -e integration -- "tests/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
 artifacts:

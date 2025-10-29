@@ -3,85 +3,113 @@
 
 import logging
 
-from pytest_operator.plugin import OpsTest
+import jubilant_backports
+import pytest
+from jubilant_backports import Juju
 
-from ..helpers import (
-    execute_queries_on_unit,
-    get_primary_unit,
+from constants import SERVER_CONFIG_USERNAME
+
+from ..helpers import execute_queries_on_unit
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    check_mysql_units_writes_increment,
+    get_mysql_primary_unit,
     get_unit_address,
     start_mysqld_service,
     stop_mysqld_service,
-)
-from .high_availability_helpers import (
-    ensure_all_units_continuous_writes_incrementing,
-    ensure_process_not_running,
-    get_application_name,
+    wait_for_apps_status,
+    wait_for_unit_status,
 )
 
-logger = logging.getLogger(__name__)
+MYSQL_APP_NAME = "mysql-k8s"
+MYSQL_PROCESS_NAME = "mysqld"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-MYSQL_CONTAINER_NAME = "mysql"
-MYSQLD_PROCESS_NAME = "mysqld"
-TIMEOUT = 40 * 60
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-async def test_cluster_manual_rejoin(
-    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
-) -> None:
+@pytest.mark.abort_on_fail
+def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    logging.info("Deploying MySQL cluster")
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=3,
+    )
+    juju.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
+        base="ubuntu@22.04",
+        channel="latest/edge",
+        config={"sleep_interval": 300},
+        num_units=1,
+    )
+
+    juju.integrate(
+        f"{MYSQL_APP_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
+    )
+
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, MYSQL_APP_NAME, MYSQL_TEST_APP_NAME
+        ),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
+
+
+@pytest.mark.abort_on_fail
+def test_cluster_manual_rejoin(juju: Juju, continuous_writes) -> None:
     """The cluster manual re-join test.
 
     A graceful restart is performed in one of the instances (choosing Primary to make it painful).
     In order to verify that the instance can come back ONLINE, after disabling automatic re-join
     """
     # Ensure continuous writes still incrementing for all units
-    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)
 
-    mysql_app_name = get_application_name(ops_test, "mysql")
-    mysql_units = ops_test.model.applications[mysql_app_name].units
+    mysql_primary_unit = get_mysql_primary_unit(juju, MYSQL_APP_NAME)
 
-    primary_unit = await get_primary_unit(ops_test, mysql_units[0], mysql_app_name)
-    primary_unit_ip = await get_unit_address(ops_test, primary_unit.name)
+    credentials_task = juju.run(
+        unit=mysql_primary_unit,
+        action="get-password",
+        params={"username": SERVER_CONFIG_USERNAME},
+    )
+    credentials_task.raise_on_failure()
 
-    queries = [
-        "SET PERSIST group_replication_autorejoin_tries=0",
-    ]
+    config = {
+        "username": credentials_task.results["username"],
+        "password": credentials_task.results["password"],
+        "host": get_unit_address(juju, MYSQL_APP_NAME, mysql_primary_unit),
+    }
 
-    # Disable automatic re-join procedure
     execute_queries_on_unit(
-        unit_address=primary_unit_ip,
-        username=credentials["username"],
-        password=credentials["password"],
-        queries=queries,
+        unit_address=config["host"],
+        username=config["username"],
+        password=config["password"],
+        queries=["SET PERSIST group_replication_autorejoin_tries=0"],
         commit=True,
     )
 
-    logger.info(f"Stopping mysqld on {primary_unit.name}")
-    await stop_mysqld_service(ops_test, primary_unit.name)
+    logging.info(f"Stopping server on unit {mysql_primary_unit}")
+    stop_mysqld_service(juju, mysql_primary_unit)
 
-    logger.info(f"Wait until mysqld stopped on {primary_unit.name}")
-    await ensure_process_not_running(
-        ops_test=ops_test,
-        unit_name=primary_unit.name,
-        container_name=MYSQL_CONTAINER_NAME,
-        process=MYSQLD_PROCESS_NAME,
+    logging.info(f"Starting server on unit {mysql_primary_unit}")
+    start_mysqld_service(juju, mysql_primary_unit)
+
+    logging.info("Waiting unit to be back online")
+    juju.wait(
+        ready=wait_for_unit_status(MYSQL_APP_NAME, mysql_primary_unit, "active"),
+        timeout=20 * MINUTE_SECS,
     )
 
-    logger.info(f"Starting mysqld on {primary_unit.name}")
-    await start_mysqld_service(ops_test, primary_unit.name)
-
-    # Verify unit comes back active
-    async with ops_test.fast_forward():
-        logger.info("Waiting unit to be back online as secondary")
-        await ops_test.model.block_until(
-            lambda: primary_unit.workload_status == "active"
-            and primary_unit.workload_status_message == "",
-            timeout=TIMEOUT,
-        )
-        logger.info("Waiting unit to be back online.")
-        await ops_test.model.block_until(
-            lambda: primary_unit.workload_status == "active",
-            timeout=TIMEOUT,
-        )
-
     # Ensure continuous writes still incrementing for all units
-    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)

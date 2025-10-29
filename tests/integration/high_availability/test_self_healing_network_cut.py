@@ -2,113 +2,152 @@
 # See LICENSE file for licensing details.
 
 import logging
+import os
+import random
+import subprocess
+import tempfile
+from pathlib import Path
+from string import Template
 
-from pytest_operator.plugin import OpsTest
+import jubilant_backports
+import pytest
+from jubilant_backports import Juju
 
-from ..helpers import (
-    get_cluster_status,
-    get_primary_unit,
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    check_mysql_instances_online,
+    check_mysql_units_writes_increment,
+    get_app_units,
+    get_mysql_primary_unit,
+    update_interval,
+    wait_for_apps_status,
+    wait_for_unit_status,
 )
-from .high_availability_helpers import (
-    ensure_all_units_continuous_writes_incrementing,
-    ensure_n_online_mysql_members,
-    get_application_name,
-    isolate_instance_from_cluster,
-    remove_instance_isolation,
-    wait_until_units_in_status,
-)
 
-logger = logging.getLogger(__name__)
+MYSQL_APP_NAME = "mysql-k8s"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-MYSQL_CONTAINER_NAME = "mysql"
-MYSQLD_PROCESS_NAME = "mysqld"
-TIMEOUT = 40 * 60
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-async def test_network_cut_affecting_an_instance(
-    ops_test: OpsTest, highly_available_cluster, continuous_writes, chaos_mesh, credentials
-) -> None:
+@pytest.mark.abort_on_fail
+def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    logging.info("Deploying MySQL cluster")
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=3,
+    )
+    juju.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
+        base="ubuntu@22.04",
+        channel="latest/edge",
+        config={"sleep_interval": 300},
+        num_units=1,
+    )
+
+    juju.integrate(
+        f"{MYSQL_APP_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
+    )
+
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, MYSQL_APP_NAME, MYSQL_TEST_APP_NAME
+        ),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
+
+
+@pytest.mark.abort_on_fail
+def test_network_cut_affecting_an_instance(juju: Juju, continuous_writes, chaos_mesh) -> None:
     """Test for a network cut affecting an instance."""
-    mysql_application_name = get_application_name(ops_test, "mysql")
-    assert mysql_application_name, "mysql application name is not set"
+    logging.info("Ensuring that all instances have incrementing continuous writes")
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)
 
-    logger.info("Ensuring that there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(ops_test, 3), (
-        "The deployed mysql application does not have three online nodes"
-    )
+    mysql_units = get_app_units(juju, MYSQL_APP_NAME)
+    mysql_primary = get_mysql_primary_unit(juju, MYSQL_APP_NAME)
 
-    logger.info("Ensuring that all instances have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
+    logging.info("Creating network-chaos policy")
+    create_instance_isolation_config(juju, mysql_primary)
 
-    mysql_units = ops_test.model.applications[mysql_application_name].units
-    primary = await get_primary_unit(ops_test, mysql_units[0], mysql_application_name)
+    online_units = set(mysql_units) - {mysql_primary}
+    online_units = list(online_units)
+    random_unit = random.choice(online_units)
 
-    assert primary is not None, "No primary unit found"
+    logging.info("Checking whether the remaining units are online")
+    assert check_mysql_instances_online(juju, MYSQL_APP_NAME, online_units)
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME, online_units)
 
-    logger.info(
-        f"Creating networkchaos policy to isolate instance {primary.name} from the cluster"
-    )
-    isolate_instance_from_cluster(ops_test, primary.name)
+    new_mysql_primary = get_mysql_primary_unit(juju, MYSQL_APP_NAME, random_unit)
+    assert new_mysql_primary != mysql_primary
 
-    remaining_units = [unit for unit in mysql_units if unit.name != primary.name]
+    logging.info("Removing network-chaos policy")
+    remove_instance_isolation_config(juju)
 
-    logger.info("Wait until MySQL GR actually detects isolated instance")
-    await wait_until_units_in_status(ops_test, [primary], remaining_units[0], "(missing)")
-    await wait_until_units_in_status(ops_test, remaining_units, remaining_units[0], "online")
-
-    cluster_status = await get_cluster_status(remaining_units[0])
-
-    isolated_primary_status, isolated_primary_memberrole = next(
-        iter([
-            (member["status"], member["memberrole"])
-            for label, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if label == primary.name.replace("/", "-")
-        ])
-    )
-    assert isolated_primary_status == "(missing)"
-    assert isolated_primary_memberrole == "secondary"
-
-    new_primary = await get_primary_unit(ops_test, remaining_units[0], mysql_application_name)
-    assert primary.name != new_primary.name
-
-    logger.info("Ensure all units have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(
-        ops_test, credentials=credentials, mysql_units=remaining_units
-    )
-
-    logger.info("Remove networkchaos policy isolating instance from cluster")
-    remove_instance_isolation(ops_test)
-
-    async with ops_test.fast_forward():
-        logger.info("Wait until returning instance enters recovery")
-        await ops_test.model.block_until(
-            lambda: primary.workload_status != "active", timeout=TIMEOUT
-        )
-        logger.info("Wait until returning instance become active")
-        await ops_test.model.block_until(
-            lambda: primary.workload_status == "active", timeout=TIMEOUT
+    with update_interval(juju, "10s"):
+        logging.info("Wait until returning instance enters recovery")
+        juju.wait(
+            ready=wait_for_unit_status(MYSQL_APP_NAME, mysql_primary, "active"),
+            timeout=20 * MINUTE_SECS,
         )
 
-    logger.info("Wait until all units are online")
-    await wait_until_units_in_status(ops_test, mysql_units, mysql_units[0], "online")
+    logging.info("Check that all units are online")
+    assert check_mysql_instances_online(juju, MYSQL_APP_NAME, online_units)
 
-    new_cluster_status = await get_cluster_status(mysql_units[0])
+    logging.info("Ensuring that all instances have incrementing continuous writes")
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)
 
-    logger.info("Ensure isolated instance is now secondary")
-    isolated_primary_status, isolated_primary_memberrole = next(
-        iter([
-            (member["status"], member["memberrole"])
-            for label, member in new_cluster_status["defaultreplicaset"]["topology"].items()
-            if label == primary.name.replace("/", "-")
-        ])
-    )
-    assert isolated_primary_status == "online"
-    assert isolated_primary_memberrole == "secondary"
 
-    logger.info("Ensure there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(ops_test, 3), (
-        "The deployed mysql application does not have three online nodes"
+def create_instance_isolation_config(juju: Juju, unit_name: str) -> None:
+    """Create a NetworkChaos config to use chaos-mesh to simulate a network cut."""
+    network_loss_config_path = (
+        "tests/integration/high_availability/manifests/chaos_network_loss.yml"
     )
 
-    logger.info("Ensure all units have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
+    with tempfile.NamedTemporaryFile(dir=Path.home()) as temp_file:
+        with open(network_loss_config_path) as network_loss_file:
+            contents = network_loss_file.read()
+            template = Template(contents).substitute(
+                namespace=juju.model,
+                pod=unit_name.replace("/", "-"),
+            )
+
+            temp_file.write(str.encode(template))
+            temp_file.flush()
+
+        env = os.environ
+        env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
+
+        try:
+            subprocess.check_output(["microk8s.kubectl", "apply", "-f", temp_file.name], env=env)
+        except subprocess.CalledProcessError as e:
+            logging.error(e.output)
+            logging.error(e.stderr)
+            raise
+
+
+def remove_instance_isolation_config(juju: Juju) -> None:
+    """Delete the NetworkChaos that is isolating the primary unit of the cluster."""
+    env = os.environ
+    env["KUBECONFIG"] = os.path.expanduser("~/.kube/config")
+
+    subprocess.check_output(
+        [
+            "microk8s.kubectl",
+            f"--namespace={juju.model}",
+            "delete",
+            "networkchaos",
+            "network-loss-primary",
+        ],
+        env=env,
+    )

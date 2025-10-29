@@ -1,4 +1,4 @@
-# Copyright 2025 Canonical Ltd.
+# Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import logging
@@ -66,7 +66,7 @@ def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
 
 
 @pytest.mark.abort_on_fail
-def test_pod_eviction_and_pvc_deletion(juju: Juju, continuous_writes_new) -> None:
+def test_pod_eviction_and_pvc_deletion(juju: Juju, continuous_writes) -> None:
     """Test behavior when node drains - pod is evicted and pvs are rotated."""
     logging.info("Ensuring that all instances have incrementing continuous writes")
     check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)
