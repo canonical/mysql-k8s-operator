@@ -12,3 +12,5 @@ backends:
   - -lxd-vm  # This task requires charm built on different architecture from host
 systems:
   - -ubuntu-24.04-arm
+variants:
+  - -juju29

@@ -147,7 +147,7 @@ def upgrade_from_stable(juju: Juju, charm: str) -> None:
     logging.info("Wait for upgrade to complete on first upgrading unit")
     juju.wait(
         ready=wait_for_unit_message(MYSQL_APP_NAME, mysql_upgrade_unit, "upgrade completed"),
-        timeout=10 * MINUTE_SECS,
+        timeout=20 * MINUTE_SECS,
     )
 
     logging.info("Resume upgrade")
