@@ -1,0 +1,116 @@
+[32mINFO    [0m integration.backups:backups.py:125 Creating backup
+[32mINFO    [0m integration.backups:backups.py:129 Creating test data 1
+[32mINFO    [0m integration.backups:backups.py:145 Creating test data 2
+[32mINFO    [0m integration.backups:backups.py:157 Scaling down to 1 unit
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:169 Restoring backup 2025-10-30T12:51:47Z with bad restore-to-time parameter
+[32mINFO    [0m integration.backups:backups.py:178 Restoring backup 2025-10-30T12:51:47Z with year_before restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] blocked: Failed to restore point-in-time-recovery to the 2024-10-30 12:52:00
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:190 Restoring backup 2025-10-30T12:51:47Z with year_after restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] blocked: Failed to restore point-in-time-recovery to the 2026-10-30 12:52:00
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:202 Restoring backup 2025-10-30T12:51:47Z with actual restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] blocked: Failed to restore point-in-time-recovery to the 2025-10-30 12:52:00
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:214 Restoring backup 2025-10-30T12:51:47Z with restore-to-time=latest parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] blocked: Failed to restore point-in-time-recovery to the latest
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.backups:backups.py:38 Cleaning backups from cloud buckets
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.11   unsupported  12:55:44Z
+
+App            Version                  Status   Scale  Charm          Channel        Rev  Address         Exposed  Message
+mysql-k8s      8.0.42-0ubuntu0.22.04.2  waiting      1  mysql-k8s                       0  10.152.183.173  no       installing agent
+s3-integrator                           active       1  s3-integrator  latest/stable  145  10.152.183.25   no       
+
+Unit              Workload  Agent  Address       Ports  Message
+mysql-k8s/0*      blocked   idle   10.1.113.141         Failed to restore point-in-time-recovery to the latest
+s3-integrator/0*  active    idle   10.1.113.136         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 12:53:17 ERROR unit.mysql-k8s/0.juju-log Restore failed: Bad restore-to-time format
+unit-mysql-k8s-0: 12:53:38 ERROR unit.mysql-k8s/0.juju-log Failed command: commands=mysql-pitr-helper recover, user=None, group=None
+unit-mysql-k8s-0: 12:53:38 ERROR unit.mysql-k8s/0.juju-log Failed to restore pitr
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 3568, in restore_pitr
+    return self._execute_commands(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 670, in _execute_commands
+    raise MySQLExecError from None
+charms.mysql.v0.mysql.MySQLExecError
+unit-mysql-k8s-0: 12:53:38 ERROR unit.mysql-k8s/0.juju-log Restore failed: Failed to restore point-in-time-recovery to the 2024-10-30 12:52:00
+unit-mysql-k8s-0: 12:54:10 ERROR unit.mysql-k8s/0.juju-log Failed command: commands=mysql-pitr-helper recover, user=None, group=None
+unit-mysql-k8s-0: 12:54:10 ERROR unit.mysql-k8s/0.juju-log Failed to restore pitr
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 3568, in restore_pitr
+    return self._execute_commands(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 670, in _execute_commands
+    raise MySQLExecError from None
+charms.mysql.v0.mysql.MySQLExecError
+unit-mysql-k8s-0: 12:54:10 ERROR unit.mysql-k8s/0.juju-log Restore failed: Failed to restore point-in-time-recovery to the 2026-10-30 12:52:00
+unit-mysql-k8s-0: 12:54:43 ERROR unit.mysql-k8s/0.juju-log Failed command: commands=mysql-pitr-helper recover, user=None, group=None
+unit-mysql-k8s-0: 12:54:43 ERROR unit.mysql-k8s/0.juju-log Failed to restore pitr
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 3568, in restore_pitr
+    return self._execute_commands(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 670, in _execute_commands
+    raise MySQLExecError from None
+charms.mysql.v0.mysql.MySQLExecError
+unit-mysql-k8s-0: 12:54:43 ERROR unit.mysql-k8s/0.juju-log Restore failed: Failed to restore point-in-time-recovery to the 2025-10-30 12:52:00
+unit-mysql-k8s-0: 12:54:46 ERROR unit.mysql-k8s/0.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 714, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ndba.reboot_cluster_from_complete_outage('test_cluster')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.reboot_cluster_from_complete_outage: This function is not available through a session to a standalone instance (metadata exists, instance does not belong to that metadata, and GR is not active)\n\n'
+unit-mysql-k8s-0: 12:54:46 ERROR unit.mysql-k8s/0.juju-log Failed to reboot cluster
+unit-mysql-k8s-0: 12:54:46 ERROR unit.mysql-k8s/0.juju-log Failed to reboot cluster from complete outage.
+unit-mysql-k8s-0: 12:54:46 ERROR unit.mysql-k8s/0.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 714, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.get_cluster('test_cluster')\nprint(cluster.status({'extended': False}))"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m###\n", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nTraceback (most recent call last):\n  File "<string>", line 3, in <module>\nRuntimeError: Dba.get_cluster: This function is not available through a session to a standalone instance (metadata exists, instance does not belong to that metadata, and GR is not active)\n\n'
+unit-mysql-k8s-0: 12:54:46 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster status for test_cluster
+unit-mysql-k8s-0: 12:54:47 ERROR unit.mysql-k8s/0.juju-log Failed to get cluster endpoints
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 896, in update_endpoints
+    rw_endpoints, ro_endpoints, offline = self.charm.get_cluster_endpoints(relation_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 892, in get_cluster_endpoints
+    raise MySQLGetClusterEndpointsError("Failed to get endpoints from cluster topology")
+charms.mysql.v0.mysql.MySQLGetClusterEndpointsError: Failed to get endpoints from cluster topology
+unit-mysql-k8s-0: 12:55:15 ERROR unit.mysql-k8s/0.juju-log Failed command: commands=mysql-pitr-helper recover, user=None, group=None
+unit-mysql-k8s-0: 12:55:15 ERROR unit.mysql-k8s/0.juju-log Failed to restore pitr
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 3568, in restore_pitr
+    return self._execute_commands(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 670, in _execute_commands
+    raise MySQLExecError from None
+charms.mysql.v0.mysql.MySQLExecError
+unit-mysql-k8s-0: 12:55:15 ERROR unit.mysql-k8s/0.juju-log Restore failed: Failed to restore point-in-time-recovery to the latest
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
