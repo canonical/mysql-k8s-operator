@@ -10,6 +10,8 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
+from constants import CONTAINER_NAME
+
 from .. import architecture
 from ..markers import juju3
 from .high_availability_helpers_new import (
@@ -259,13 +261,12 @@ def test_failover(first_model: str, second_model: str) -> None:
 
     # Simulating a failure on the primary cluster
     for unit_name in model_2_mysql_units:
-        return_code = exec_k8s_container_command(
+        exec_k8s_container_command(
             juju=model_2,
             unit_name=unit_name,
-            container_name="mysql",
+            container_name=CONTAINER_NAME,
             command="pkill -f mysqld --signal SIGSTOP",
         )
-        assert return_code == 0, "Failed to execute command"
 
     logging.info("Promoting standby cluster to primary with force flag")
     model_1 = Juju(model=first_model)
@@ -296,13 +297,12 @@ def test_failover(first_model: str, second_model: str) -> None:
     # Restore mysqld process
     logging.info("Unfreezing mysqld on primary cluster units")
     for unit_name in model_2_mysql_units:
-        return_code = exec_k8s_container_command(
+        exec_k8s_container_command(
             juju=model_2,
             unit_name=unit_name,
-            container_name="mysql",
+            container_name=CONTAINER_NAME,
             command="pkill -f mysqld --signal SIGCONT",
         )
-        assert return_code == 0, "Failed to execute command"
 
 
 @juju3

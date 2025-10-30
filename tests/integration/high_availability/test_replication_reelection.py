@@ -4,17 +4,15 @@
 import logging
 
 import jubilant_backports
-import lightkube
 import pytest
 from jubilant_backports import Juju
-from lightkube.resources.core_v1 import Pod
 
 from ..helpers import generate_random_string
 from .high_availability_helpers_new import (
     CHARM_METADATA,
     check_mysql_instances_online,
     check_mysql_units_writes_increment,
-    get_mysql_instance_label,
+    delete_k8s_pod,
     get_mysql_primary_unit,
     insert_mysql_test_data,
     remove_mysql_test_data,
@@ -71,11 +69,9 @@ def test_kill_primary_check_reelection(juju: Juju) -> None:
     check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)
 
     mysql_old_primary = get_mysql_primary_unit(juju, MYSQL_APP_NAME)
-    mysql_old_primary_label = get_mysql_instance_label(mysql_old_primary)
 
     logging.info("Killing the primary pod")
-    client = lightkube.Client()
-    client.delete(Pod, mysql_old_primary_label, namespace=juju.model)
+    delete_k8s_pod(juju, mysql_old_primary)
 
     juju.wait(
         ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_NAME),

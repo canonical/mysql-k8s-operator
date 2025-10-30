@@ -3,94 +3,108 @@
 
 import logging
 
-from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, stop_after_delay, wait_fixed
+import jubilant_backports
+import pytest
+from jubilant_backports import Juju
 
-from ..helpers import (
-    get_cluster_status,
-    get_process_pid,
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    check_mysql_instances_online,
+    check_mysql_units_writes_increment,
+    get_app_units,
     start_mysqld_service,
     stop_mysqld_service,
-)
-from .high_availability_helpers import (
-    ensure_all_units_continuous_writes_incrementing,
-    ensure_n_online_mysql_members,
-    ensure_process_not_running,
-    get_application_name,
+    update_interval,
+    wait_for_apps_status,
+    wait_for_unit_status,
 )
 
-logger = logging.getLogger(__name__)
+MYSQL_APP_NAME = "mysql-k8s"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
 
-MYSQL_CONTAINER_NAME = "mysql"
-MYSQLD_PROCESS_NAME = "mysqld"
-TIMEOUT = 40 * 60
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-async def test_graceful_full_cluster_crash_test(
-    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
-) -> None:
-    """Test to send SIGTERM to all units and then ensure that the cluster recovers."""
-    mysql_application_name = get_application_name(ops_test, "mysql")
-    assert mysql_application_name, "mysql application name is not set"
-
-    logger.info("Ensure there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(ops_test, 3), (
-        "The deployed mysql application does not have three online nodes"
+@pytest.mark.abort_on_fail
+def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    logging.info("Deploying MySQL cluster")
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=3,
+    )
+    juju.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
+        base="ubuntu@22.04",
+        channel="latest/edge",
+        config={"sleep_interval": 300},
+        num_units=1,
     )
 
-    logger.info("Ensure that all units have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
+    juju.integrate(
+        f"{MYSQL_APP_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
+    )
 
-    mysql_units = ops_test.model.applications[mysql_application_name].units
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, MYSQL_APP_NAME, MYSQL_TEST_APP_NAME
+        ),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
 
-    unit_mysqld_pids = {}
-    logger.info("Get mysqld pids on all instances")
-    for unit in mysql_units:
-        pid = await get_process_pid(ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME)
-        assert (pid or -1) > 1, "mysql process id is not known/positive"
 
-        unit_mysqld_pids[unit.name] = pid
+@pytest.mark.abort_on_fail
+async def test_graceful_full_cluster_crash(juju: Juju, continuous_writes) -> None:
+    """Pause test.
 
-    for unit in mysql_units:
-        logger.info(f"Stopping mysqld on {unit.name}")
-        await stop_mysqld_service(ops_test, unit.name)
+    A graceful simultaneous restart of all instances,
+    check primary election after the start, write and read data
+    """
+    # Ensure continuous writes still incrementing for all units
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)
 
-    logger.info("Wait until mysqld stopped on all instances")
-    for attempt in Retrying(stop=stop_after_delay(300), wait=wait_fixed(30)):
-        with attempt:
-            for unit in mysql_units:
-                await ensure_process_not_running(
-                    ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
-                )
-    for unit in mysql_units:
-        logger.info(f"Starting mysqld on {unit.name}")
-        await start_mysqld_service(ops_test, unit.name)
+    mysql_units = get_app_units(juju, MYSQL_APP_NAME)
 
-    async with ops_test.fast_forward("60s"):
-        logger.info("Block until all in maintenance/offline")
-        await ops_test.model.block_until(
-            lambda: all(unit.workload_status == "maintenance" for unit in mysql_units),
-            timeout=TIMEOUT,
+    logging.info("Stopping all instances")
+    for unit_name in mysql_units:
+        stop_mysqld_service(juju, unit_name)
+
+    logging.info("Starting all instances")
+    for unit_name in mysql_units:
+        start_mysqld_service(juju, unit_name)
+
+    with update_interval(juju, "10s"):
+        logging.info("Waiting units to enter maintenance")
+        juju.wait(
+            ready=lambda status: all((
+                wait_for_unit_status(MYSQL_APP_NAME, f"{MYSQL_APP_NAME}/0", "maintenance")(status),
+                wait_for_unit_status(MYSQL_APP_NAME, f"{MYSQL_APP_NAME}/1", "maintenance")(status),
+                wait_for_unit_status(MYSQL_APP_NAME, f"{MYSQL_APP_NAME}/2", "maintenance")(status),
+            )),
+            timeout=20 * MINUTE_SECS,
+        )
+        logging.info("Waiting units to be back online")
+        juju.wait(
+            ready=lambda status: all((
+                wait_for_unit_status(MYSQL_APP_NAME, f"{MYSQL_APP_NAME}/0", "active")(status),
+                wait_for_unit_status(MYSQL_APP_NAME, f"{MYSQL_APP_NAME}/1", "active")(status),
+                wait_for_unit_status(MYSQL_APP_NAME, f"{MYSQL_APP_NAME}/2", "active")(status),
+            )),
+            timeout=20 * MINUTE_SECS,
         )
 
-        logger.info("Wait all members to recover")
-        await ops_test.model.wait_for_idle(
-            apps=[mysql_application_name],
-            status="active",
-            raise_on_blocked=False,
-            timeout=TIMEOUT,
-            idle_period=30,
-        )
+    logging.info("Check that all units are online")
+    assert check_mysql_instances_online(juju, MYSQL_APP_NAME, mysql_units)
 
-    for unit in mysql_units:
-        new_pid = await get_process_pid(
-            ops_test, unit.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
-        )
-        assert new_pid > unit_mysqld_pids[unit.name], "The mysqld process did not restart"
-
-    cluster_status = await get_cluster_status(mysql_units[0])
-    for member in cluster_status["defaultreplicaset"]["topology"].values():
-        assert member["status"] == "online"
-
-    logger.info("Ensure all units have incrementing continuous writes")
-    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
+    # Ensure continuous writes still incrementing for all units
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)

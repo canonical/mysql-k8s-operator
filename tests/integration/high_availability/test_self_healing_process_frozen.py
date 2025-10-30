@@ -2,145 +2,159 @@
 # See LICENSE file for licensing details.
 
 import logging
+import random
 
-from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, stop_after_delay, wait_fixed
-
-from ..helpers import (
-    get_primary_unit,
-    get_process_pid,
-)
-from .high_availability_helpers import (
-    ensure_all_units_continuous_writes_incrementing,
-    ensure_n_online_mysql_members,
-    get_application_name,
-    get_process_stat,
-    send_signal_to_pod_container_process,
+import jubilant_backports
+import pytest
+from jubilant_backports import Juju
+from tenacity import (
+    Retrying,
+    stop_after_attempt,
+    wait_fixed,
 )
 
-logger = logging.getLogger(__name__)
+from constants import CONTAINER_NAME
 
-MYSQL_CONTAINER_NAME = "mysql"
-MYSQLD_PROCESS_NAME = "mysqld"
-TIMEOUT = 40 * 60
+from .high_availability_helpers_new import (
+    CHARM_METADATA,
+    check_mysql_units_writes_increment,
+    exec_k8s_container_command,
+    get_app_units,
+    get_mysql_primary_unit,
+    get_unit_process_id,
+    wait_for_apps_status,
+)
+
+MYSQL_APP_NAME = "mysql-k8s"
+MYSQL_PROCESS_NAME = "mysqld"
+MYSQL_TEST_APP_NAME = "mysql-test-app"
+
+MINUTE_SECS = 60
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
-async def test_freeze_db_process(
-    ops_test: OpsTest, highly_available_cluster, continuous_writes, credentials
-) -> None:
+@pytest.mark.abort_on_fail
+def test_deploy_highly_available_cluster(juju: Juju, charm: str) -> None:
+    """Simple test to ensure that the MySQL and application charms get deployed."""
+    logging.info("Deploying MySQL cluster")
+    juju.deploy(
+        charm=charm,
+        app=MYSQL_APP_NAME,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        num_units=3,
+    )
+    juju.deploy(
+        charm=MYSQL_TEST_APP_NAME,
+        app=MYSQL_TEST_APP_NAME,
+        base="ubuntu@22.04",
+        channel="latest/edge",
+        config={"sleep_interval": 300},
+        num_units=1,
+    )
+
+    juju.integrate(
+        f"{MYSQL_APP_NAME}:database",
+        f"{MYSQL_TEST_APP_NAME}:database",
+    )
+
+    logging.info("Wait for applications to become active")
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, MYSQL_APP_NAME, MYSQL_TEST_APP_NAME
+        ),
+        error=jubilant_backports.any_blocked,
+        timeout=20 * MINUTE_SECS,
+    )
+
+
+@pytest.mark.abort_on_fail
+def test_freeze_db_process(juju: Juju, continuous_writes) -> None:
     """Test to send a SIGSTOP to the primary db process and ensure that the cluster self heals."""
-    mysql_application_name = get_application_name(ops_test, "mysql")
-    assert mysql_application_name, "mysql application name is not set"
+    logging.info("Ensuring that all instances have incrementing continuous writes")
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)
 
-    # ensure all units in the cluster are online
-    assert await ensure_n_online_mysql_members(ops_test, 3), (
-        "The deployed mysql application is not fully online"
+    mysql_units = get_app_units(juju, MYSQL_APP_NAME)
+    mysql_primary_unit = get_mysql_primary_unit(juju, MYSQL_APP_NAME)
+    mysql_primary_unit_pid = get_unit_process_id(juju, mysql_primary_unit, MYSQL_PROCESS_NAME)
+
+    logging.info(f"Stopping process id {mysql_primary_unit_pid}")
+    exec_k8s_container_command(
+        juju=juju,
+        unit_name=mysql_primary_unit,
+        container_name=CONTAINER_NAME,
+        command=f"pkill -f {MYSQL_PROCESS_NAME} --signal SIGSTOP",
     )
 
-    logger.info("Ensuring that all units continuous writes incrementing")
-    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
-
-    mysql_unit = ops_test.model.applications[mysql_application_name].units[0]
-    primary = await get_primary_unit(ops_test, mysql_unit, mysql_application_name)
-
-    mysql_pid = await get_process_pid(
-        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
-    )
-    assert (mysql_pid or -1) > 0, "mysql process id is not positive"
-
-    logger.info(f"Sending SIGSTOP to unit {primary.name}")
-    await send_signal_to_pod_container_process(
-        ops_test.model.info.name,
-        primary.name,
-        MYSQL_CONTAINER_NAME,
-        MYSQLD_PROCESS_NAME,
-        "SIGSTOP",
-    )
-
-    # ensure that the mysqld process is stopped after receiving the sigstop
-    # T = stopped by job control signal
+    # Ensure that the mysqld process is stopped after receiving the sigstop
     # (see https://man7.org/linux/man-pages/man1/ps.1.html under PROCESS STATE CODES)
-    mysql_process_stat_after_sigstop = await get_process_stat(
-        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+    assert "T" in get_process_stat(
+        juju=juju,
+        unit_name=mysql_primary_unit,
+        container_name=CONTAINER_NAME,
+        process_name=MYSQL_PROCESS_NAME,
     )
-    assert "T" in mysql_process_stat_after_sigstop, "mysql process is not stopped after sigstop"
 
-    remaining_online_units = [
-        unit
-        for unit in ops_test.model.applications[mysql_application_name].units
-        if unit.name != primary.name
-    ]
+    online_units = set(mysql_units) - {mysql_primary_unit}
+    online_units = list(online_units)
+    random_unit = random.choice(online_units)
 
-    logger.info("Waiting for new primary to be elected")
-
-    # retring as it may take time for the cluster to recognize that the primary process is stopped
-    for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
+    logging.info("Waiting for new primary to be elected")
+    for attempt in Retrying(stop=stop_after_attempt(10), wait=wait_fixed(10)):
         with attempt:
-            assert await ensure_n_online_mysql_members(ops_test, 2, remaining_online_units), (
-                "The deployed mysql application does not have two online nodes"
-            )
+            new_mysql_primary_unit = get_mysql_primary_unit(juju, MYSQL_APP_NAME, random_unit)
+            assert new_mysql_primary_unit != mysql_primary_unit
 
-            new_primary = await get_primary_unit(
-                ops_test, remaining_online_units[0], mysql_application_name
-            )
-            assert primary.name != new_primary.name, "new mysql primary was not elected"
-
-    logger.info("Ensuring all remaining units continuous writes incrementing")
-
-    async with ops_test.fast_forward():
-        for attempt in Retrying(stop=stop_after_delay(15 * 60), wait=wait_fixed(10)):
-            with attempt:
-                await ensure_all_units_continuous_writes_incrementing(
-                    ops_test, credentials=credentials, mysql_units=remaining_online_units
-                )
-
-    logger.info(f"Sending SIGCONT to {primary.name}")
-    await send_signal_to_pod_container_process(
-        ops_test.model.info.name,
-        primary.name,
-        MYSQL_CONTAINER_NAME,
-        MYSQLD_PROCESS_NAME,
-        "SIGCONT",
+    logging.info(f"Continuing process id {mysql_primary_unit_pid}")
+    exec_k8s_container_command(
+        juju=juju,
+        unit_name=mysql_primary_unit,
+        container_name=CONTAINER_NAME,
+        command=f"pkill -f {MYSQL_PROCESS_NAME} --signal SIGCONT",
     )
 
-    # ensure that the mysqld process has started after receiving the sigstop
+    # Ensure that the mysqld process has started after receiving the sigstop
+    # (see https://man7.org/linux/man-pages/man1/ps.1.html under PROCESS STATE CODES)
     # T = stopped by job control signal
     # R = running or runnable
     # S = interruptible sleep
     # I = idle kernel thread
-    # (see https://man7.org/linux/man-pages/man1/ps.1.html under PROCESS STATE CODES)
-    mysql_process_stat_after_sigcont = await get_process_stat(
-        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
+    mysql_process_stat = get_process_stat(
+        juju=juju,
+        unit_name=mysql_primary_unit,
+        container_name=CONTAINER_NAME,
+        process_name=MYSQL_PROCESS_NAME,
     )
-    assert "T" not in mysql_process_stat_after_sigcont, (
-        "mysql process is not started after sigcont"
-    )
-    assert (
-        "R" in mysql_process_stat_after_sigcont
-        or "S" in mysql_process_stat_after_sigcont
-        or "I" in mysql_process_stat_after_sigcont
-    ), "mysql process not running or sleeping after sigcont"
+    assert all((
+        "T" not in mysql_process_stat,
+        "R" in mysql_process_stat or "S" in mysql_process_stat or "I" in mysql_process_stat,
+    ))
 
-    new_mysql_pid = await get_process_pid(
-        ops_test, primary.name, MYSQL_CONTAINER_NAME, MYSQLD_PROCESS_NAME
-    )
-    assert new_mysql_pid == mysql_pid, (
-        "mysql process id is not the same as it was before process was stopped"
-    )
+    new_mysql_primary_unit_pid = get_unit_process_id(juju, mysql_primary_unit, MYSQL_PROCESS_NAME)
+    assert new_mysql_primary_unit_pid == mysql_primary_unit_pid
 
-    # wait for possible recovery of the old primary
-    async with ops_test.fast_forward("60s"):
-        await ops_test.model.wait_for_idle(
-            apps=[mysql_application_name],
-            status="active",
-            raise_on_blocked=False,
-            timeout=TIMEOUT,
-        )
-
-    logger.info("Ensuring that there are 3 online mysql members")
-    assert await ensure_n_online_mysql_members(ops_test, 3, remaining_online_units), (
-        "The deployed mysql application does not have three online nodes"
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APP_NAME),
+        timeout=20 * MINUTE_SECS,
     )
 
-    logger.info("Ensure all units continuous writes incrementing")
-    await ensure_all_units_continuous_writes_incrementing(ops_test, credentials=credentials)
+    logging.info("Ensuring that all instances have incrementing continuous writes")
+    check_mysql_units_writes_increment(juju, MYSQL_APP_NAME)
+
+
+def get_process_stat(juju: Juju, unit_name: str, container_name: str, process_name: str) -> str:
+    """Retrieve the STAT column of a process on a pod container.
+
+    Args:
+        juju: The Juju instance
+        unit_name: The name of the unit for the process
+        container_name: The name of the container for the process
+        process_name: The name of the process to get the STAT for
+    """
+    return juju.ssh(
+        command=f"ps -eo comm,stat | grep {process_name} | awk '{{print $2}}'",
+        target=unit_name,
+        container=container_name,
+    )

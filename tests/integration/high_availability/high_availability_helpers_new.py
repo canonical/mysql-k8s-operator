@@ -11,11 +11,11 @@ from pathlib import Path
 import jubilant_backports
 import kubernetes
 import yaml
-from jubilant_backports import Juju
-from jubilant_backports.statustypes import Status, UnitStatus
+from jubilant_backports import CLIError, Juju
+from jubilant_backports.statustypes import Status
 from lightkube.core.client import Client
 from lightkube.resources.apps_v1 import StatefulSet
-from lightkube.resources.core_v1 import Endpoints
+from lightkube.resources.core_v1 import Endpoints, PersistentVolume, PersistentVolumeClaim, Pod
 from tenacity import (
     Retrying,
     retry,
@@ -24,7 +24,11 @@ from tenacity import (
     wait_fixed,
 )
 
-from constants import SERVER_CONFIG_USERNAME
+from constants import (
+    CONTAINER_NAME,
+    MYSQLD_SERVICE,
+    SERVER_CONFIG_USERNAME,
+)
 
 from ..helpers import execute_queries_on_unit
 
@@ -37,25 +41,36 @@ JujuModelStatusFn = Callable[[Status], bool]
 JujuAppsStatusFn = Callable[[Status, str], bool]
 
 
-def check_mysql_instances_online(juju: Juju, app_name: str) -> bool:
+def check_mysql_instances_online(
+    juju: Juju,
+    app_name: str,
+    app_units: list[str] | None = None,
+) -> bool:
     """Checks whether all MySQL cluster instances are online.
 
     Args:
         juju: The Juju instance
         app_name: The name of the application
+        app_units: The list of application units to check
     """
-    mysql_app_leader = get_app_leader(juju, app_name)
-    mysql_app_units = get_app_units(juju, app_name)
+    if not app_units:
+        app_units = get_app_units(juju, app_name)
 
-    mysql_cluster_status = get_mysql_cluster_status(juju, mysql_app_leader)
+    mysql_cluster_status = get_mysql_cluster_status(juju, app_units[0])
     mysql_cluster_topology = mysql_cluster_status["defaultreplicaset"]["topology"]
-    assert len(mysql_cluster_topology) == len(mysql_app_units)
 
-    return all(member["status"] == "online" for member in mysql_cluster_topology.values())
+    for unit_name in app_units:
+        unit_label = get_mysql_instance_label(unit_name)
+        if mysql_cluster_topology[unit_label]["status"] != "online":
+            return False
+
+    return True
 
 
 def check_mysql_units_writes_increment(
-    juju: Juju, app_name: str, app_units: list[str] | None = None
+    juju: Juju,
+    app_name: str,
+    app_units: list[str] | None = None,
 ) -> None:
     """Ensure that continuous writes is incrementing on all units.
 
@@ -65,7 +80,7 @@ def check_mysql_units_writes_increment(
     if not app_units:
         app_units = get_app_units(juju, app_name)
 
-    app_primary = get_mysql_primary_unit(juju, app_name)
+    app_primary = get_mysql_primary_unit(juju, app_name, app_units[0])
     app_max_value = get_mysql_max_written_value(juju, app_name, app_primary)
 
     for unit_name in app_units:
@@ -80,9 +95,19 @@ def check_mysql_units_writes_increment(
                 app_max_value = unit_max_value
 
 
+def delete_k8s_pod(juju: Juju, unit_name: str) -> None:
+    """Delete the K8s pod associated with the unit name."""
+    client = Client()
+    client.delete(
+        res=Pod,
+        name=get_mysql_instance_label(unit_name),
+        namespace=juju.model,
+    )
+
+
 def exec_k8s_container_command(
     juju: Juju, unit_name: str, container_name: str, command: str
-) -> int:
+) -> None:
     """Send the specified signal to a pod container process.
 
     Args:
@@ -109,7 +134,8 @@ def exec_k8s_container_command(
         timeout=5,
     )
 
-    return response.returncode
+    if response.returncode != 0:
+        raise RuntimeError("Failed to execute command")
 
 
 def get_k8s_stateful_set_partitions(juju: Juju, app_name: str) -> int:
@@ -136,6 +162,65 @@ def get_k8s_endpoint_addresses(juju: Juju, endpoint_name: str) -> list[str]:
     return [address.ip for subset in endpoint.subsets for address in subset.addresses]
 
 
+def get_k8s_pod(juju: Juju, unit_name: str) -> Pod:
+    """Retrieve the K8s pod associated with the unit name."""
+    client = Client()
+
+    return client.get(
+        res=Pod,
+        name=get_mysql_instance_label(unit_name),
+        namespace=juju.model,
+    )
+
+
+def get_k8s_pod_pvcs(juju: Juju, unit_name: str) -> list[PersistentVolumeClaim]:
+    """Retrieve the PVCs of a K8s pod."""
+    client = Client()
+    pod = client.get(
+        res=Pod,
+        name=get_mysql_instance_label(unit_name),
+        namespace=juju.model,
+    )
+
+    pod_pvcs = []
+    if pod.spec is None:
+        return pod_pvcs
+
+    for volume in pod.spec.volumes:
+        if volume.persistentVolumeClaim is None:
+            continue
+
+        pod_pvcs.append(
+            client.get(
+                res=PersistentVolumeClaim,
+                name=volume.persistentVolumeClaim.claimName,
+                namespace=pod.metadata.namespace,
+            )
+        )
+
+    return pod_pvcs
+
+
+def get_k8s_pod_pvs(juju: Juju, unit_name: str) -> list[PersistentVolume]:
+    """Retrieve the PVs of a K8s pod."""
+    client = Client()
+    pod = client.get(
+        res=Pod,
+        name=get_mysql_instance_label(unit_name),
+        namespace=juju.model,
+    )
+
+    pod_pvs = []
+    if pod.spec is None:
+        return pod_pvs
+
+    for volume in client.list(res=PersistentVolume, namespace=pod.metadata.namespace):
+        if volume.spec.claimRef.name.endswith(pod.metadata.name):
+            pod_pvs.append(volume)
+
+    return pod_pvs
+
+
 def get_app_leader(juju: Juju, app_name: str) -> str:
     """Get the leader unit for the given application."""
     model_status = juju.status()
@@ -158,11 +243,11 @@ def get_app_name(juju: Juju, charm_name: str) -> str | None:
     raise Exception("No application name found")
 
 
-def get_app_units(juju: Juju, app_name: str) -> dict[str, UnitStatus]:
+def get_app_units(juju: Juju, app_name: str) -> list[str]:
     """Get the units for the given application."""
     model_status = juju.status()
     app_status = model_status.apps[app_name]
-    return app_status.units
+    return list(app_status.units)
 
 
 def scale_app_units(juju: Juju, app_name: str, num_units: int) -> None:
@@ -246,11 +331,14 @@ def get_unit_info(juju: Juju, unit_name: str) -> dict:
 def get_unit_process_id(juju: Juju, unit_name: str, process_name: str) -> int | None:
     """Return the pid of a process running in a given unit."""
     try:
-        task = juju.exec(f"pgrep -x {process_name}", unit=unit_name)
-        task.raise_on_failure()
+        output = juju.ssh(
+            command=f"pgrep -x {process_name}",
+            target=unit_name,
+            container=CONTAINER_NAME,
+        )
 
-        return int(task.stdout.strip())
-    except Exception:
+        return int(output.strip())
+    except CLIError:
         return None
 
 
@@ -314,10 +402,12 @@ def get_mysql_unit_name(instance_label: str) -> str:
     return "/".join(instance_label.rsplit("-", 1))
 
 
-def get_mysql_primary_unit(juju: Juju, app_name: str) -> str:
+def get_mysql_primary_unit(juju: Juju, app_name: str, unit_name: str | None = None) -> str:
     """Get the current primary node of the cluster."""
-    mysql_primary = get_app_leader(juju, app_name)
-    mysql_cluster_status = get_mysql_cluster_status(juju, mysql_primary)
+    if unit_name is None:
+        unit_name = get_app_leader(juju, app_name)
+
+    mysql_cluster_status = get_mysql_cluster_status(juju, unit_name)
     mysql_cluster_topology = mysql_cluster_status["defaultreplicaset"]["topology"]
 
     for label, value in mysql_cluster_topology.items():
@@ -492,6 +582,46 @@ def verify_mysql_test_data(juju: Juju, app_name: str, table_name: str, value: st
                     select_queries,
                 )
                 assert output[0] == value
+
+
+def start_mysqld_service(juju: Juju, unit_name: str) -> None:
+    """Start the mysqld service.
+
+    Args:
+        juju: The Juju model.
+        unit_name: The name of the unit
+    """
+    juju.ssh(
+        command=f"pebble start {MYSQLD_SERVICE}",
+        target=unit_name,
+        container=CONTAINER_NAME,
+    )
+
+    # Hold execution until process is started
+    for attempt in Retrying(stop=stop_after_attempt(10), wait=wait_fixed(5)):
+        with attempt:
+            if get_unit_process_id(juju, unit_name, MYSQLD_SERVICE) is None:
+                raise Exception("Failed to start the mysqld process")
+
+
+def stop_mysqld_service(juju: Juju, unit_name: str) -> None:
+    """Stop the mysqld service.
+
+    Args:
+        juju: The Juju model.
+        unit_name: The name of the unit
+    """
+    juju.ssh(
+        command=f"pebble stop {MYSQLD_SERVICE}",
+        target=unit_name,
+        container=CONTAINER_NAME,
+    )
+
+    # Hold execution until process is stopped
+    for attempt in Retrying(stop=stop_after_attempt(10), wait=wait_fixed(5)):
+        with attempt:
+            if get_unit_process_id(juju, unit_name, MYSQLD_SERVICE) is not None:
+                raise Exception("Failed to stop the mysqld process")
 
 
 def wait_for_apps_status(jubilant_status_func: JujuAppsStatusFn, *apps: str) -> JujuModelStatusFn:

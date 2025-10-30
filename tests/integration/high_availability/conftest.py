@@ -3,47 +3,54 @@
 # See LICENSE file for licensing details.
 
 import logging
+from collections.abc import Generator
 
 import pytest
+from jubilant_backports import Juju
 from pytest_operator.plugin import OpsTest
 
-from .. import juju_
 from .high_availability_helpers import (
-    APPLICATION_DEFAULT_APP_NAME,
     deploy_and_scale_application,
     deploy_and_scale_mysql,
     deploy_chaos_mesh,
     destroy_chaos_mesh,
     relate_mysql_and_application,
 )
+from .high_availability_helpers_new import (
+    get_app_leader,
+)
+
+MYSQL_TEST_APP_NAME = "mysql-test-app"
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-async def continuous_writes(ops_test: OpsTest) -> None:
+def continuous_writes(juju: Juju) -> Generator:
     """Starts continuous writes to the MySQL cluster for a test and clear the writes at the end."""
-    application_unit = ops_test.model.applications[APPLICATION_DEFAULT_APP_NAME].units[0]
-    logger.info("Clearing continuous writes")
-    await juju_.run_action(application_unit, "clear-continuous-writes")
-    logger.info("Starting continuous writes")
-    await juju_.run_action(application_unit, "start-continuous-writes")
+    test_app_leader = get_app_leader(juju, MYSQL_TEST_APP_NAME)
+
+    logging.info("Clearing continuous writes")
+    juju.run(test_app_leader, "clear-continuous-writes")
+    logging.info("Starting continuous writes")
+    juju.run(test_app_leader, "start-continuous-writes")
 
     yield
 
-    logger.info("Clearing continuous writes")
-    await juju_.run_action(application_unit, "clear-continuous-writes")
+    logging.info("Clearing continuous writes")
+    juju.run(test_app_leader, "clear-continuous-writes")
 
 
 @pytest.fixture()
-def chaos_mesh(ops_test: OpsTest) -> None:
+def chaos_mesh(juju: Juju) -> Generator:
     """Deploys chaos mesh to the namespace and uninstalls it at the end."""
-    deploy_chaos_mesh(ops_test.model.info.name)
+    logger.info("Deploying chaos mesh")
+    deploy_chaos_mesh(juju.model)
 
     yield
 
     logger.info("Destroying chaos mesh")
-    destroy_chaos_mesh(ops_test.model.info.name)
+    destroy_chaos_mesh(juju.model)
 
 
 @pytest.fixture(scope="module")

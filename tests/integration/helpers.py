@@ -19,7 +19,7 @@ from mysql.connector.errors import (
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from constants import CONTAINER_NAME, MYSQLD_SERVICE, SERVER_CONFIG_USERNAME
+from constants import CONTAINER_NAME, SERVER_CONFIG_USERNAME
 
 from . import juju_
 from .connector import MySQLConnector
@@ -74,20 +74,6 @@ async def get_cluster_status(unit: Unit, cluster_set=False) -> Dict:
     else:
         results = await juju_.run_action(unit, "get-cluster-status")
     return results.get("status", {})
-
-
-async def get_leader_unit(
-    ops_test: Optional[OpsTest], app_name: str, model: Optional[Model] = None
-) -> Optional[Unit]:
-    leader_unit = None
-    if model is None:
-        model = ops_test.model
-    for unit in model.applications[app_name].units:
-        if await unit.is_leader_from_status():
-            leader_unit = unit
-            break
-
-    return leader_unit
 
 
 async def get_relation_data(
@@ -359,50 +345,7 @@ def is_connection_possible(credentials: Dict, **extra_opts) -> bool:
         return False
 
 
-async def get_process_pid(
-    ops_test: OpsTest, unit_name: str, container_name: str, process: str, full_match: bool = False
-) -> Optional[int]:
-    """Return the pid of a process running in a given unit.
-
-    Args:
-        ops_test: The ops test object passed into every test case
-        unit_name: The name of the unit
-        container_name: The name of the container in the unit
-        process: The process name to search for
-        full_match: Whether to fully match the process name
-
-    Returns:
-        A integer for the process id
-    """
-    get_pid_commands = [
-        "ssh",
-        "--container",
-        container_name,
-        unit_name,
-        "pgrep",
-        "-f" if full_match else "-x",
-        process,
-    ]
-    return_code, pid, _ = await ops_test.juju(*get_pid_commands)
-
-    if return_code == 1:
-        return None
-
-    assert return_code == 0, (
-        f"Failed getting pid, unit={unit_name}, container={container_name}, process={process}"
-    )
-
-    stripped_pid = pid.strip()
-    if not stripped_pid:
-        return -1
-
-    return int(stripped_pid)
-
-
-async def get_tls_ca(
-    ops_test: OpsTest,
-    unit_name: str,
-) -> str:
+async def get_tls_ca(ops_test: OpsTest, unit_name: str) -> str:
     """Returns the TLS CA used by the unit.
 
     Args:
@@ -445,30 +388,6 @@ async def unit_file_md5(ops_test: OpsTest, unit_name: str, file_path: str) -> st
 
     except Exception:
         return None
-
-
-async def stop_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
-    """Stop the mysqld service.
-
-    Args:
-        ops_test: The ops test framework instance
-        unit_name: The name of the unit
-    """
-    await ops_test.juju(
-        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "stop", MYSQLD_SERVICE
-    )
-
-
-async def start_mysqld_service(ops_test: OpsTest, unit_name: str) -> None:
-    """Start the mysqld service.
-
-    Args:
-        ops_test: The ops test framework instance
-        unit_name: The name of the unit
-    """
-    await ops_test.juju(
-        "ssh", "--container", CONTAINER_NAME, unit_name, "pebble", "start", MYSQLD_SERVICE
-    )
 
 
 async def retrieve_database_variable_value(
