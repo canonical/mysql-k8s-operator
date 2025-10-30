@@ -1,6 +1,6 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: Tests
+name: Pull Request
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,14 +12,6 @@ on:
       - '**.md'
       - '.github/renovate.json5'
       - 'docs/**'
-  schedule:
-    - cron: '53 0 * * *'  # Daily at 00:53 UTC
-  # Triggered on push to branch "main" by .github/workflows/release.yaml
-  workflow_call:
-    outputs:
-      artifact-prefix:
-        description: build_charm.yaml `artifact-prefix` output
-        value: ${{ jobs.build.outputs.artifact-prefix }}
 
 jobs:
   lint:
@@ -76,12 +68,26 @@ jobs:
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v32.2.1
 
   integration-test:
-    name: Integration test charm
+    name: Integration tests
     needs:
       - lint
       - unit-test
       - build
     uses: ./.github/workflows/integration_test.yaml
+    with:
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
+    secrets: inherit
+    permissions:
+      contents: write  # Needed for Allure Report
+
+  # TODO: REMOVE BEFORE MERGING
+  release-test:
+    name: Release tests
+    needs:
+      - lint
+      - unit-test
+      - build
+    uses: ./.github/workflows/release_test.yaml
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets: inherit
