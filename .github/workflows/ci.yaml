@@ -73,7 +73,7 @@ jobs:
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v32.2.1
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v32.2.3
 
   integration-test:
     name: Integration test charm
