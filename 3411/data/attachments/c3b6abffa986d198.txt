@@ -1,0 +1,9 @@
+[32mINFO    [0m root:test_upgrade_rollback_incompat.py:182 Injecting failure
+[32mINFO    [0m root:test_upgrade_rollback_incompat.py:84 Build charm with failure injected
+[32mINFO    [0m root:test_upgrade_rollback_incompat.py:190 Reverting failure
+[32mINFO    [0m root:test_upgrade_rollback_incompat.py:87 Refresh the charm
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju refresh --model testing mysql-k8s --path /root/spread_project/local-mysql-k8s_ubuntu@22.04-amd64.charm --resource mysql-image=ghcr.io/canonical/charmed-mysql@sha256:e78bdba30923ec87d67879a284d9162dfbb7600b34cbf3f84c9b4cce08648715
+[32mINFO    [0m root:test_upgrade_rollback_incompat.py:97 Wait for upgrade to start
+[32mINFO    [0m root:test_upgrade_rollback_incompat.py:103 Get first upgrading unit
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m root:test_upgrade_rollback_incompat.py:106 Wait for upgrade to fail on upgrading unit
