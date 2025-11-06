@@ -233,15 +233,15 @@ linkcheck_ignore = [
     "https://portal.azure.com/*",
     "https://dev.mysql.com/*",
     "https://www.mysql.com/*",
-    "https://www.terraform.io/*"
-    ]
+    "https://www.terraform.io/*",
+]
 
 # A regex list of URLs where anchors are ignored by 'make linkcheck'
 
 linkcheck_anchors_ignore_for_url = [r"https://github\.com/.*"]
 
 # give linkcheck multiple tries on failure
-linkcheck_timeout = 30
+linkcheck_timeout = 90
 linkcheck_retries = 3
 
 ########################
