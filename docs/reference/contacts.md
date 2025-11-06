@@ -17,6 +17,4 @@ Our legacy [Mattermost](/reference/contacts) channel is read-only until January 
 * [Charmed MySQL K8s](https://charmhub.io/mysql-k8s)
 * [Git sources for Charmed MySQL K8s](https://github.com/canonical/mysql-k8s-operator)
 * [Canonical Data on Launchpad](https://launchpad.net/~data-platform)
-* [Canonical Data on Matrix](https://matrix.to/#/#charmhub-data-platform:ubuntu.com) 
-* [Mailing list on Launchpad](https://lists.launchpad.net/data-platform/)
-
+* [Canonical Data on Matrix](https://matrix.to/#/#charmhub-data-platform:ubuntu.com)
