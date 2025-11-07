@@ -1,0 +1,25 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.11   unsupported  02:00:16Z
+
+App           Version                  Status  Scale  Charm          Channel        Rev  Address         Exposed  Message
+kafka                                  active      1  kafka-k8s      latest/stable    5  10.152.183.23   no       
+mongodb       6.0.24                   active      1  mongodb-k8s    6/stable        81  10.152.183.139  no       
+mysql-k8s     8.0.42-0ubuntu0.22.04.2  active      1  mysql-k8s                       0  10.152.183.25   no       
+osm-keystone                           active      1  osm-keystone   latest/beta     10  10.152.183.205  no       
+osm-pol                                active      1  osm-pol        latest/beta    337  10.152.183.68   no       
+zookeeper                              active      1  zookeeper-k8s  latest/stable   10  10.152.183.120  no       
+
+Unit             Workload  Agent  Address      Ports  Message
+kafka/0*         active    idle   10.1.184.86         
+mongodb/0*       active    idle   10.1.184.78         Primary.
+mysql-k8s/0*     active    idle   10.1.184.82         Primary
+osm-keystone/0*  active    idle   10.1.184.73         
+osm-pol/0*       active    idle   10.1.184.80         
+zookeeper/0*     active    idle   10.1.184.84         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
