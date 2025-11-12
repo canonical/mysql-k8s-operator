@@ -1,6 +1,6 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: Tests
+name: Pull Request
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,14 +12,6 @@ on:
       - '**.md'
       - '.github/renovate.json5'
       - 'docs/**'
-  schedule:
-    - cron: '53 0 * * *'  # Daily at 00:53 UTC
-  # Triggered on push to branch "main" by .github/workflows/release.yaml
-  workflow_call:
-    outputs:
-      artifact-prefix:
-        description: build_charm.yaml `artifact-prefix` output
-        value: ${{ jobs.build.outputs.artifact-prefix }}
 
 jobs:
   lint:
@@ -76,7 +68,7 @@ jobs:
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v37.0.0
 
   integration-test:
-    name: Integration test charm
+    name: Integration tests
     needs:
       - lint
       - unit-test

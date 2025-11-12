@@ -99,8 +99,10 @@ backends:
             - -juju29
 
 suites:
-  tests/spread/:
-    summary: Spread tests
+  tests/spread/integration/:
+    summary: Spread integration tests
+  tests/spread/release/:
+    summary: Spread release tests
 
 path: /root/spread_project
 
