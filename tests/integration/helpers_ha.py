@@ -369,6 +369,29 @@ def get_relation_data(juju: Juju, app_name: str, rel_name: str) -> list[dict]:
     return relation_data
 
 
+def is_relation_joined(
+    status: jubilant_backports.Status,
+    endpoint_one: str,
+    endpoint_two: str,
+    application_one: str,
+    application_two: str,
+) -> bool:
+    """Check if a relation is joined.
+
+    Args:
+        juju: The juju instance to use
+        endpoint_one: The first endpoint of the relation
+        endpoint_two: The second endpoint of the relation
+        application_one: The name of the first application
+        application_two: The name of the second application
+    """
+    relations_one = status.apps[application_one].relations.get(endpoint_one, {})
+    relations_two = status.apps[application_two].relations.get(endpoint_two, {})
+    return any(
+        app_status_rel.related_app == application_two for app_status_rel in relations_one
+    ) and any(app_status_rel.related_app == application_one for app_status_rel in relations_two)
+
+
 @retry(stop=stop_after_attempt(30), wait=wait_fixed(5), reraise=True)
 def get_mysql_cluster_status(juju: Juju, unit: str, cluster_set: bool = False) -> dict:
     """Get the cluster status by running the get-cluster-status action.
