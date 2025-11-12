@@ -25,7 +25,7 @@ on:
 jobs:
   promote:
     name: Promote charm
-    uses: canonical/data-platform-workflows/.github/workflows/_promote_charm.yaml@v31.1.1  # Use v32 after this charm adds refresh v3
+    uses: canonical/data-platform-workflows/.github/workflows/_promote_charm_legacy.yaml@v37.0.0
     with:
       track: '8.0'
       from-risk: ${{ inputs.from-risk }}
