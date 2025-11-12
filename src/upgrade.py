@@ -19,7 +19,6 @@ from charms.mysql.v0.mysql import (
     MySQLPluginInstallError,
     MySQLRebootFromCompleteOutageError,
     MySQLRescanClusterError,
-    MySQLServerNotUpgradableError,
     MySQLServiceNotRunningError,
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
@@ -224,7 +223,6 @@ class MySQLK8sUpgrade(DataUpgrade):
 
         try:
             self.charm._reconcile_pebble_layer(container)
-            self._check_server_upgradeability()
             self.charm.unit.status = MaintenanceStatus("recovering unit after upgrade")
             self.charm.recover_unit_after_restart()
             if self.charm.config.plugin_audit_enabled:
@@ -243,12 +241,7 @@ class MySQLK8sUpgrade(DataUpgrade):
             self.charm.unit.status = BlockedStatus(
                 "upgrade failed. Check logs for rollback instruction"
             )
-        except (
-            RetryError,
-            MySQLServerNotUpgradableError,
-            MySQLServiceNotRunningError,
-            ChangeError,
-        ):
+        except (RetryError, MySQLServiceNotRunningError, ChangeError):
             # Failed to recover unit
             if (
                 not self._check_server_unsupported_downgrade()
@@ -289,21 +282,6 @@ class MySQLK8sUpgrade(DataUpgrade):
                 cause="Error setting rolling update partition",
                 resolution="Check kubernetes access policy",
             ) from None
-
-    def _check_server_upgradeability(self) -> None:
-        """Check if the server can be upgraded.
-
-        Use mysql-shell upgrade checker utility to ensure server upgradeability.
-
-        Raises:
-            VersionError: If the server is not upgradeable.
-        """
-        if len(self.upgrade_stack or []) < self.charm.app.planned_units():
-            # check is done for 1st upgrading unit
-            return
-        instance = getfqdn(self.charm.get_unit_hostname(f"{self.charm.app.name}/0"))
-        self.charm._mysql.verify_server_upgradable(instance=instance)
-        logger.info("Check MySQL server upgradeability passed")
 
     def _check_server_unsupported_downgrade(self) -> bool:
         """Check error log for unsupported downgrade.
