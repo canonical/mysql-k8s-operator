@@ -11,8 +11,6 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
-from .. import markers
-
 logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
@@ -20,8 +18,6 @@ IMAGE_SOURCE = METADATA["resources"]["mysql-image"]["upstream-source"]
 TIMEOUT = 10 * 60
 
 
-# TODO: remove after https://github.com/canonical/grafana-agent-k8s-operator/issues/309 fixed
-@markers.amd64_only
 @pytest.mark.abort_on_fail
 async def test_deploy_bundle_with_cos_integrations(ops_test: OpsTest, charm) -> None:
     """Test COS integrations formed before mysql is allocated and deployed."""
