@@ -13,6 +13,7 @@ from jubilant_backports import Juju
 from ... import markers
 from ...helpers_ha import (
     get_relation_data,
+    is_relation_joined,
     wait_for_apps_status,
 )
 
@@ -63,6 +64,17 @@ def test_relation_creation_eager(juju: Juju):
     juju.integrate(
         f"{APPLICATION_APP_NAME}:{APPLICATION_ENDPOINT}",
         f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
+    )
+
+    logger.info("Waiting for relation to be joined...")
+    juju.wait(
+        lambda status: is_relation_joined(
+            status,
+            APPLICATION_ENDPOINT,
+            DATABASE_ENDPOINT,
+            APPLICATION_APP_NAME,
+            DATABASE_APP_NAME,
+        )
     )
 
     def count_units(status: jubilant_backports.Status, app_name: str, num_units: int) -> bool:
@@ -120,10 +132,14 @@ def test_relation_broken(juju: Juju):
         f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
     )
 
-    # Inspired by https://github.com/canonical/jubilant/blob/f9f785a/tests/integration/test_relations.py#L19-L24
     juju.wait(
-        lambda status: not status.apps[APPLICATION_APP_NAME].relations
-        and not status.apps[DATABASE_APP_NAME].relations
+        lambda status: not is_relation_joined(
+            status,
+            APPLICATION_ENDPOINT,
+            DATABASE_ENDPOINT,
+            APPLICATION_APP_NAME,
+            DATABASE_APP_NAME,
+        )
     )
 
     juju.wait(
