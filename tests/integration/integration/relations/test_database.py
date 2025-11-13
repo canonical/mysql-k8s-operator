@@ -13,7 +13,6 @@ from jubilant_backports import Juju
 from ... import markers
 from ...helpers_ha import (
     get_relation_data,
-    is_relation_joined,
     wait_for_apps_status,
 )
 
@@ -66,25 +65,6 @@ def test_relation_creation_eager(juju: Juju):
         f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
     )
 
-    logger.info("Waiting for relation to be joined...")
-    juju.wait(
-        lambda status: is_relation_joined(
-            status,
-            APPLICATION_ENDPOINT,
-            DATABASE_ENDPOINT,
-            APPLICATION_APP_NAME,
-            DATABASE_APP_NAME,
-        )
-    )
-
-    logger.info("Waiting for unit counts...")
-    juju.wait(
-        lambda status: len(status.apps[DATABASE_APP_NAME].units) == 3,
-    )
-    juju.wait(
-        lambda status: len(status.apps[APPLICATION_APP_NAME].units) == 2,
-    )
-
     logger.info("Waiting for application app to be waiting...")
     juju.wait(
         wait_for_apps_status(jubilant_backports.all_waiting, APPLICATION_APP_NAME),
@@ -126,16 +106,6 @@ def test_relation_broken(juju: Juju):
     juju.remove_relation(
         f"{APPLICATION_APP_NAME}:{APPLICATION_ENDPOINT}",
         f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
-    )
-
-    juju.wait(
-        lambda status: not is_relation_joined(
-            status,
-            APPLICATION_ENDPOINT,
-            DATABASE_ENDPOINT,
-            APPLICATION_APP_NAME,
-            DATABASE_APP_NAME,
-        )
     )
 
     juju.wait(

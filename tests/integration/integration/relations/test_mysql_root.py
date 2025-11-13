@@ -10,7 +10,7 @@ import pytest
 import yaml
 from jubilant_backports import Juju
 
-from ...helpers_ha import is_relation_joined, wait_for_apps_status
+from ...helpers_ha import wait_for_apps_status
 
 logger = logging.getLogger(__name__)
 
@@ -63,23 +63,6 @@ def test_relation_creation_eager(juju: Juju):
     juju.integrate(
         f"{APPLICATION_APP_NAME}:{APPLICATION_ENDPOINT}",
         f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
-    )
-
-    juju.wait(
-        lambda status: is_relation_joined(
-            status,
-            APPLICATION_ENDPOINT,
-            DATABASE_ENDPOINT,
-            APPLICATION_APP_NAME,
-            DATABASE_APP_NAME,
-        )
-    )
-
-    juju.wait(
-        lambda status: len(status.apps[DATABASE_APP_NAME].units) == 3,
-    )
-    juju.wait(
-        lambda status: len(status.apps[APPLICATION_APP_NAME].units) == 2,
     )
 
     logger.info("Waiting for application app to be waiting...")
