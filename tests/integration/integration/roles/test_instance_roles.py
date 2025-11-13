@@ -2,21 +2,20 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import asyncio
 import logging
 from pathlib import Path
 
+import jubilant_backports
 import pytest
 import yaml
+from jubilant_backports import Juju
 from mysql.connector.errors import ProgrammingError
-from pytest_operator.plugin import OpsTest
 
-from ... import juju_
-from ...helpers import (
+from ...helpers_ha import (
     execute_queries_on_unit,
-    get_primary_unit,
-    get_server_config_credentials,
-    get_unit_address,
+    get_mysql_primary_unit,
+    get_mysql_server_credentials,
+    wait_for_apps_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,62 +27,62 @@ INTEGRATOR_APP_NAME = "data-integrator"
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
+def test_build_and_deploy(juju: Juju, charm) -> None:
     """Simple test to ensure that the mysql and data-integrator charms get deployed."""
     resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
 
-    async with ops_test.fast_forward("10s"):
-        await asyncio.gather(
-            ops_test.model.deploy(
-                charm,
-                application_name=DATABASE_APP_NAME,
-                num_units=3,
-                resources=resources,
-                base="ubuntu@22.04",
-                config={"profile": "testing"},
-            ),
-            ops_test.model.deploy(
-                INTEGRATOR_APP_NAME,
-                application_name=f"{INTEGRATOR_APP_NAME}1",
-                base="ubuntu@24.04",
-            ),
-            ops_test.model.deploy(
-                INTEGRATOR_APP_NAME,
-                application_name=f"{INTEGRATOR_APP_NAME}2",
-                base="ubuntu@24.04",
-            ),
-        )
-
-    await ops_test.model.wait_for_idle(
-        apps=[DATABASE_APP_NAME],
-        status="active",
+    juju.deploy(
+        charm,
+        DATABASE_APP_NAME,
+        num_units=3,
+        resources=resources,
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
     )
-    await ops_test.model.wait_for_idle(
-        apps=[f"{INTEGRATOR_APP_NAME}1", f"{INTEGRATOR_APP_NAME}2"],
-        status="blocked",
+    juju.deploy(
+        INTEGRATOR_APP_NAME,
+        f"{INTEGRATOR_APP_NAME}1",
+        base="ubuntu@24.04",
+    )
+    juju.deploy(
+        INTEGRATOR_APP_NAME,
+        f"{INTEGRATOR_APP_NAME}2",
+        base="ubuntu@22.04",
+    )
+
+    juju.wait(
+        wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
+    )
+    juju.wait(
+        wait_for_apps_status(
+            jubilant_backports.all_blocked, f"{INTEGRATOR_APP_NAME}1", f"{INTEGRATOR_APP_NAME}2"
+        ),
     )
 
 
 @pytest.mark.abort_on_fail
-async def test_charmed_read_role(ops_test: OpsTest):
+def test_charmed_read_role(juju: Juju):
     """Test the charmed_read predefined role."""
-    await ops_test.model.applications[f"{INTEGRATOR_APP_NAME}1"].set_config({
-        "database-name": "charmed_read_db",
-        "extra-user-roles": "charmed_read",
-    })
-    await ops_test.model.add_relation(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
-    await ops_test.model.wait_for_idle(
-        apps=[f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME],
-        status="active",
+    juju.config(
+        f"{INTEGRATOR_APP_NAME}1",
+        {"database-name": "charmed_read_db", "extra-user-roles": "charmed_read"},
+    )
+    juju.integrate(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
+    status = juju.wait(
+        wait_for_apps_status(
+            jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME
+        ),
     )
 
-    mysql_unit = ops_test.model.applications[DATABASE_APP_NAME].units[0]
-    primary_unit = await get_primary_unit(ops_test, mysql_unit, DATABASE_APP_NAME)
-    primary_unit_address = await get_unit_address(ops_test, primary_unit.name)
-    server_config_credentials = await get_server_config_credentials(primary_unit)
+    primary_unit_name, primary_unit = next(
+        (unit_name, unit)
+        for (unit_name, unit) in status.apps[DATABASE_APP_NAME].units.items()
+        if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME)
+    )
+    server_config_credentials = get_mysql_server_credentials(juju, primary_unit_name)
 
     execute_queries_on_unit(
-        primary_unit_address,
+        primary_unit.address,
         server_config_credentials["username"],
         server_config_credentials["password"],
         [
@@ -93,12 +92,12 @@ async def test_charmed_read_role(ops_test: OpsTest):
         commit=True,
     )
 
-    data_integrator_unit = ops_test.model.applications[f"{INTEGRATOR_APP_NAME}1"].units[0]
-    results = await juju_.run_action(data_integrator_unit, "get-credentials")
+    data_integrator_unit_name = next(iter(status.apps[f"{INTEGRATOR_APP_NAME}1"].units.keys()))
+    results = juju.run(data_integrator_unit_name, "get-credentials").results
 
     logger.info("Checking that the charmed_read role can read from an existing table")
     rows = execute_queries_on_unit(
-        primary_unit_address,
+        primary_unit.address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -114,7 +113,7 @@ async def test_charmed_read_role(ops_test: OpsTest):
     logger.info("Checking that the charmed_read role cannot write into an existing table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
-            primary_unit_address,
+            primary_unit.address,
             results["mysql"]["username"],
             results["mysql"]["password"],
             [
@@ -126,7 +125,7 @@ async def test_charmed_read_role(ops_test: OpsTest):
     logger.info("Checking that the charmed_read role cannot create a new table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
-            primary_unit_address,
+            primary_unit.address,
             results["mysql"]["username"],
             results["mysql"]["password"],
             [
@@ -135,49 +134,48 @@ async def test_charmed_read_role(ops_test: OpsTest):
             commit=True,
         )
 
-    await ops_test.model.applications[DATABASE_APP_NAME].remove_relation(
-        f"{DATABASE_APP_NAME}:database",
-        f"{INTEGRATOR_APP_NAME}1:mysql",
-    )
-    await ops_test.model.wait_for_idle(
-        apps=[f"{INTEGRATOR_APP_NAME}1"],
-        status="blocked",
+    juju.remove_relation(f"{DATABASE_APP_NAME}:database", f"{INTEGRATOR_APP_NAME}1:mysql")
+    juju.wait(
+        wait_for_apps_status(jubilant_backports.all_blocked, f"{INTEGRATOR_APP_NAME}1"),
     )
 
 
 @pytest.mark.abort_on_fail
-async def test_charmed_dml_role(ops_test: OpsTest):
+def test_charmed_dml_role(juju: Juju):
     """Test the charmed_dml role."""
-    await ops_test.model.applications[f"{INTEGRATOR_APP_NAME}1"].set_config({
-        "database-name": "charmed_dml_db",
-        "extra-user-roles": "",
-    })
-    await ops_test.model.add_relation(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
-    await ops_test.model.wait_for_idle(
-        apps=[f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME],
-        status="active",
+    juju.config(
+        f"{INTEGRATOR_APP_NAME}1", {"database-name": "charmed_dml_db", "extra-user-roles": ""}
+    )
+    juju.integrate(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
+    juju.wait(
+        wait_for_apps_status(
+            jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME
+        ),
     )
 
-    await ops_test.model.applications[f"{INTEGRATOR_APP_NAME}2"].set_config({
-        "database-name": "throwaway",
-        "extra-user-roles": "charmed_dml",
-    })
-    await ops_test.model.add_relation(f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME)
-    await ops_test.model.wait_for_idle(
-        apps=[f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME],
-        status="active",
+    juju.config(
+        f"{INTEGRATOR_APP_NAME}2",
+        {"database-name": "throwaway", "extra-user-roles": "charmed_dml"},
+    )
+    juju.integrate(f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME)
+    status = juju.wait(
+        wait_for_apps_status(
+            jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME
+        ),
     )
 
-    mysql_unit = ops_test.model.applications[DATABASE_APP_NAME].units[0]
-    primary_unit = await get_primary_unit(ops_test, mysql_unit, DATABASE_APP_NAME)
-    primary_unit_address = await get_unit_address(ops_test, primary_unit.name)
-
-    data_integrator_1_unit = ops_test.model.applications[f"{INTEGRATOR_APP_NAME}1"].units[0]
-    results = await juju_.run_action(data_integrator_1_unit, "get-credentials")
+    mysql_unit_name = next(iter(status.apps[DATABASE_APP_NAME].units.keys()))
+    primary_unit = next(
+        unit
+        for (unit_name, unit) in status.apps[DATABASE_APP_NAME].units.items()
+        if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME, mysql_unit_name)
+    )
+    data_integrator_1_unit_name = next(iter(status.apps[f"{INTEGRATOR_APP_NAME}1"].units.keys()))
+    results = juju.run(data_integrator_1_unit_name, "get-credentials").results
 
     logger.info("Checking that when no role is specified the created user can do everything")
     rows = execute_queries_on_unit(
-        primary_unit_address,
+        primary_unit.address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -192,12 +190,12 @@ async def test_charmed_dml_role(ops_test: OpsTest):
         "test_data_2",
     ]), "Unexpected data in charmed_dml_db with charmed_dml role"
 
-    data_integrator_2_unit = ops_test.model.applications[f"{INTEGRATOR_APP_NAME}2"].units[0]
-    results = await juju_.run_action(data_integrator_2_unit, "get-credentials")
+    data_integrator_2_unit_name = next(iter(status.apps[f"{INTEGRATOR_APP_NAME}2"].units.keys()))
+    results = juju.run(data_integrator_2_unit_name, "get-credentials").results
 
     logger.info("Checking that the charmed_dml role can read from an existing table")
     rows = execute_queries_on_unit(
-        primary_unit_address,
+        primary_unit.address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -212,7 +210,7 @@ async def test_charmed_dml_role(ops_test: OpsTest):
 
     logger.info("Checking that the charmed_dml role can write into an existing table")
     execute_queries_on_unit(
-        primary_unit_address,
+        primary_unit.address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -224,7 +222,7 @@ async def test_charmed_dml_role(ops_test: OpsTest):
     logger.info("Checking that the charmed_dml role cannot create a new table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
-            primary_unit_address,
+            primary_unit.address,
             results["mysql"]["username"],
             results["mysql"]["password"],
             [
@@ -233,15 +231,16 @@ async def test_charmed_dml_role(ops_test: OpsTest):
             commit=True,
         )
 
-    await ops_test.model.applications[DATABASE_APP_NAME].remove_relation(
+    juju.remove_relation(
         f"{DATABASE_APP_NAME}:database",
         f"{INTEGRATOR_APP_NAME}1:mysql",
     )
-    await ops_test.model.applications[DATABASE_APP_NAME].remove_relation(
+    juju.remove_relation(
         f"{DATABASE_APP_NAME}:database",
         f"{INTEGRATOR_APP_NAME}2:mysql",
     )
-    await ops_test.model.wait_for_idle(
-        apps=[f"{INTEGRATOR_APP_NAME}1", f"{INTEGRATOR_APP_NAME}2"],
-        status="blocked",
+    juju.wait(
+        wait_for_apps_status(
+            jubilant_backports.all_blocked, f"{INTEGRATOR_APP_NAME}1", f"{INTEGRATOR_APP_NAME}2"
+        ),
     )
