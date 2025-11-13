@@ -77,16 +77,12 @@ def test_relation_creation_eager(juju: Juju):
         )
     )
 
-    def count_units(status: jubilant_backports.Status, app_name: str, num_units: int) -> bool:
-        app = status.apps[app_name]
-        return len(app.units) == num_units
-
     logger.info("Waiting for unit counts...")
     juju.wait(
-        lambda status: count_units(status, DATABASE_APP_NAME, 3),
+        lambda status: len(status.apps[DATABASE_APP_NAME].units) == 3,
     )
     juju.wait(
-        lambda status: count_units(status, APPLICATION_APP_NAME, 2),
+        lambda status: len(status.apps[APPLICATION_APP_NAME].units) == 2,
     )
 
     logger.info("Waiting for application app to be waiting...")
