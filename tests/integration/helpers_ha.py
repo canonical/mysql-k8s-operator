@@ -417,12 +417,15 @@ def get_mysql_primary_unit(juju: Juju, app_name: str, unit_name: str | None = No
     raise Exception("No MySQL primary node found")
 
 
-def get_mysql_server_credentials(juju: Juju, unit_name: str) -> dict[str, str]:
+def get_mysql_server_credentials(
+    juju: Juju, unit_name: str, username: str = SERVER_CONFIG_USERNAME
+) -> dict[str, str]:
     """Helper to run an action to retrieve server config credentials.
 
     Args:
         juju: The Juju model
         unit_name: The juju unit on which to run the get-password action for server-config credentials
+        username: The username to use
 
     Returns:
         A dictionary with the server config username and password
@@ -430,7 +433,7 @@ def get_mysql_server_credentials(juju: Juju, unit_name: str) -> dict[str, str]:
     credentials_task = juju.run(
         unit=unit_name,
         action="get-password",
-        params={"username": SERVER_CONFIG_USERNAME},
+        params={"username": username},
     )
     credentials_task.raise_on_failure()
 

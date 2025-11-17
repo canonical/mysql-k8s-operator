@@ -7,13 +7,12 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
-from constants import SERVER_CONFIG_USERNAME
-
 from ...helpers import execute_queries_on_unit
 from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
     get_mysql_primary_unit,
+    get_mysql_server_credentials,
     get_unit_address,
     start_mysqld_service,
     stop_mysqld_service,
@@ -78,16 +77,11 @@ def test_cluster_manual_rejoin(juju: Juju, continuous_writes) -> None:
 
     mysql_primary_unit = get_mysql_primary_unit(juju, MYSQL_APP_NAME)
 
-    credentials_task = juju.run(
-        unit=mysql_primary_unit,
-        action="get-password",
-        params={"username": SERVER_CONFIG_USERNAME},
-    )
-    credentials_task.raise_on_failure()
+    credentials = get_mysql_server_credentials(juju, mysql_primary_unit)
 
     config = {
-        "username": credentials_task.results["username"],
-        "password": credentials_task.results["password"],
+        "username": credentials["username"],
+        "password": credentials["password"],
         "host": get_unit_address(juju, MYSQL_APP_NAME, mysql_primary_unit),
     }
 
