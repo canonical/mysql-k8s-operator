@@ -13,8 +13,10 @@ from mysql.connector.errors import ProgrammingError
 
 from ...helpers_ha import (
     execute_queries_on_unit,
+    get_app_units,
     get_mysql_primary_unit,
     get_mysql_server_credentials,
+    get_unit_address,
     wait_for_apps_status,
 )
 
@@ -66,21 +68,22 @@ def test_charmed_read_role(juju: Juju):
         {"database-name": "charmed_read_db", "extra-user-roles": "charmed_read"},
     )
     juju.integrate(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
-    status = juju.wait(
+    juju.wait(
         ready=wait_for_apps_status(
             jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME
         ),
     )
 
-    primary_unit_name, primary_unit = next(
-        (unit_name, unit)
-        for (unit_name, unit) in status.apps[DATABASE_APP_NAME].units.items()
+    primary_unit_name = next(
+        unit_name
+        for unit_name in get_app_units(juju, DATABASE_APP_NAME)
         if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME)
     )
+    primary_unit_address = get_unit_address(juju, DATABASE_APP_NAME, primary_unit_name)
     server_config_credentials = get_mysql_server_credentials(juju, primary_unit_name)
 
     execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         server_config_credentials["username"],
         server_config_credentials["password"],
         [
@@ -90,12 +93,12 @@ def test_charmed_read_role(juju: Juju):
         commit=True,
     )
 
-    data_integrator_unit_name = next(iter(status.apps[f"{INTEGRATOR_APP_NAME}1"].units.keys()))
+    data_integrator_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}1")[0]
     results = juju.run(data_integrator_unit_name, "get-credentials").results
 
     logger.info("Checking that the charmed_read role can read from an existing table")
     rows = execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -111,7 +114,7 @@ def test_charmed_read_role(juju: Juju):
     logger.info("Checking that the charmed_read role cannot write into an existing table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
-            primary_unit.address,
+            primary_unit_address,
             results["mysql"]["username"],
             results["mysql"]["password"],
             [
@@ -123,7 +126,7 @@ def test_charmed_read_role(juju: Juju):
     logger.info("Checking that the charmed_read role cannot create a new table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
-            primary_unit.address,
+            primary_unit_address,
             results["mysql"]["username"],
             results["mysql"]["password"],
             [
@@ -156,24 +159,25 @@ def test_charmed_dml_role(juju: Juju):
         {"database-name": "throwaway", "extra-user-roles": "charmed_dml"},
     )
     juju.integrate(f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME)
-    status = juju.wait(
+    juju.wait(
         ready=wait_for_apps_status(
             jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME
         ),
     )
 
-    mysql_unit_name = next(iter(status.apps[DATABASE_APP_NAME].units.keys()))
-    primary_unit = next(
-        unit
-        for (unit_name, unit) in status.apps[DATABASE_APP_NAME].units.items()
+    mysql_unit_name = get_app_units(juju, DATABASE_APP_NAME)[0]
+    primary_unit_name = next(
+        unit_name
+        for unit_name in get_app_units(juju, DATABASE_APP_NAME)
         if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME, mysql_unit_name)
     )
-    data_integrator_1_unit_name = next(iter(status.apps[f"{INTEGRATOR_APP_NAME}1"].units.keys()))
+    primary_unit_address = get_unit_address(juju, DATABASE_APP_NAME, primary_unit_name)
+    data_integrator_1_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}1")[0]
     results = juju.run(data_integrator_1_unit_name, "get-credentials").results
 
     logger.info("Checking that when no role is specified the created user can do everything")
     rows = execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -188,12 +192,12 @@ def test_charmed_dml_role(juju: Juju):
         "test_data_2",
     ]), "Unexpected data in charmed_dml_db with charmed_dml role"
 
-    data_integrator_2_unit_name = next(iter(status.apps[f"{INTEGRATOR_APP_NAME}2"].units.keys()))
+    data_integrator_2_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}2")[0]
     results = juju.run(data_integrator_2_unit_name, "get-credentials").results
 
     logger.info("Checking that the charmed_dml role can read from an existing table")
     rows = execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -208,7 +212,7 @@ def test_charmed_dml_role(juju: Juju):
 
     logger.info("Checking that the charmed_dml role can write into an existing table")
     execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -220,7 +224,7 @@ def test_charmed_dml_role(juju: Juju):
     logger.info("Checking that the charmed_dml role cannot create a new table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
-            primary_unit.address,
+            primary_unit_address,
             results["mysql"]["username"],
             results["mysql"]["password"],
             [

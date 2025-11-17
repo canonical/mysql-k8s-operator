@@ -11,7 +11,13 @@ import yaml
 from jubilant_backports import Juju
 from mysql.connector.errors import ProgrammingError
 
-from ...helpers_ha import execute_queries_on_unit, get_mysql_primary_unit, wait_for_apps_status
+from ...helpers_ha import (
+    execute_queries_on_unit,
+    get_app_units,
+    get_mysql_primary_unit,
+    get_unit_address,
+    wait_for_apps_status,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,25 +82,25 @@ def test_charmed_dba_role(juju: Juju):
         },
     )
     juju.integrate(f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME)
-    status = juju.wait(
+    juju.wait(
         ready=wait_for_apps_status(
             jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME
         )
     )
 
-    primary_unit_name, primary_unit = next(
-        (unit_name, unit)
-        for (unit_name, unit) in status.apps[DATABASE_APP_NAME].units.items()
+    primary_unit_name = next(
+        unit_name
+        for unit_name in get_app_units(juju, DATABASE_APP_NAME)
         if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME)
     )
-
-    data_integrator_2_unit_name = next(iter(status.apps[f"{INTEGRATOR_APP_NAME}2"].units.keys()))
+    primary_unit_address = get_unit_address(juju, DATABASE_APP_NAME, primary_unit_name)
+    data_integrator_2_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}2")[0]
     results = juju.run(data_integrator_2_unit_name, "get-credentials").results
 
     logger.info("Checking that the database-level DBA role cannot create new databases")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
-            primary_unit.address,
+            primary_unit_address,
             results["mysql"]["username"],
             results["mysql"]["password"],
             ["CREATE DATABASE IF NOT EXISTS test"],
@@ -103,7 +109,7 @@ def test_charmed_dba_role(juju: Juju):
 
     logger.info("Checking that the database-level DBA role can see all databases")
     execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         ["SHOW DATABASES"],
@@ -112,7 +118,7 @@ def test_charmed_dba_role(juju: Juju):
 
     logger.info("Checking that the database-level DBA role can create a new table")
     execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -123,7 +129,7 @@ def test_charmed_dba_role(juju: Juju):
 
     logger.info("Checking that the database-level DBA role can write into an existing table")
     execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [
@@ -134,7 +140,7 @@ def test_charmed_dba_role(juju: Juju):
 
     logger.info("Checking that the database-level DBA role can read from an existing table")
     rows = execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         [

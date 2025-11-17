@@ -11,8 +11,10 @@ from jubilant_backports import Juju
 
 from ...helpers_ha import (
     execute_queries_on_unit,
+    get_app_units,
     get_mysql_primary_unit,
     get_mysql_server_credentials,
+    get_unit_address,
     wait_for_apps_status,
 )
 
@@ -53,32 +55,33 @@ def test_charmed_dba_role(juju: Juju):
         },
     )
     juju.integrate(INTEGRATOR_APP_NAME, DATABASE_APP_NAME)
-    status = juju.wait(
+    juju.wait(
         ready=wait_for_apps_status(
             jubilant_backports.all_active, INTEGRATOR_APP_NAME, DATABASE_APP_NAME
         )
     )
 
-    primary_unit_name, primary_unit = next(
-        (unit_name, unit)
-        for (unit_name, unit) in status.apps[DATABASE_APP_NAME].units.items()
+    primary_unit_name = next(
+        unit_name
+        for unit_name in get_app_units(juju, DATABASE_APP_NAME)
         if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME)
     )
+    primary_unit_address = get_unit_address(juju, DATABASE_APP_NAME, primary_unit_name)
     server_config_credentials = get_mysql_server_credentials(juju, primary_unit_name)
 
     execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         server_config_credentials["username"],
         server_config_credentials["password"],
         ["CREATE DATABASE IF NOT EXISTS test"],
         commit=True,
     )
 
-    data_integrator_unit_name = next(iter(status.apps[INTEGRATOR_APP_NAME].units.keys()))
+    data_integrator_unit_name = get_app_units(juju, INTEGRATOR_APP_NAME)[0]
     results = juju.run(data_integrator_unit_name, "get-credentials").results
 
     rows = execute_queries_on_unit(
-        primary_unit.address,
+        primary_unit_address,
         results["mysql"]["username"],
         results["mysql"]["password"],
         ["SHOW DATABASES"],
