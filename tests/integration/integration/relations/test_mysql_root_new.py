@@ -26,22 +26,20 @@ APPLICATION_ENDPOINT = "mysql"
 @pytest.mark.skip_if_deployed
 def test_build_and_deploy(juju: Juju, charm):
     """Build the charm and deploy 3 units to ensure a cluster is formed."""
-    (
-        juju.deploy(
-            charm,
-            DATABASE_APP_NAME,
-            config={
-                "profile": "testing",
-                "mysql-root-interface-user": "test-user",
-                "mysql-root-interface-database": "continuous_writes",
-            },
-            num_units=3,
-            resources={
-                "mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"],
-            },
-            base="ubuntu@22.04",
-            trust=True,
-        ),
+    juju.deploy(
+        charm,
+        DATABASE_APP_NAME,
+        config={
+            "profile": "testing",
+            "mysql-root-interface-user": "test-user",
+            "mysql-root-interface-database": "continuous_writes",
+        },
+        num_units=3,
+        resources={
+            "mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"],
+        },
+        base="ubuntu@22.04",
+        trust=True,
     )
     juju.deploy(
         APPLICATION_APP_NAME,
