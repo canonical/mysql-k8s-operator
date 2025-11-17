@@ -24,13 +24,11 @@ INTEGRATOR_APP_NAME = "data-integrator"
 @pytest.mark.abort_on_fail
 def test_build_and_deploy(juju: Juju, charm) -> None:
     """Simple test to ensure that the mysql and data-integrator charms get deployed."""
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-
     juju.deploy(
         charm,
         DATABASE_APP_NAME,
         num_units=3,
-        resources=resources,
+        resources={"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]},
         base="ubuntu@22.04",
         config={"profile": "testing"},
     )
