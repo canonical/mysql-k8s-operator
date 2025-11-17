@@ -3,20 +3,16 @@
 # See LICENSE file for licensing details.
 
 import logging
-from pathlib import Path
 
 import jubilant_backports
 import pytest
-import yaml
 from jubilant_backports import Juju
 
-from ...helpers_ha import MINUTE_SECS, wait_for_apps_status
+from ...helpers_ha import CHARM_METADATA, MINUTE_SECS, wait_for_apps_status
 
 logger = logging.getLogger(__name__)
 
-DB_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-
-DATABASE_APP_NAME = DB_METADATA["name"]
+DATABASE_APP_NAME = CHARM_METADATA["name"]
 DATABASE_ENDPOINT = "mysql-root"
 APPLICATION_APP_NAME = "mysql-test-app"
 APPLICATION_ENDPOINT = "mysql"
@@ -36,7 +32,7 @@ def test_build_and_deploy(juju: Juju, charm):
         },
         num_units=3,
         resources={
-            "mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"],
+            "mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"],
         },
         base="ubuntu@22.04",
         trust=True,

@@ -3,15 +3,14 @@
 # See LICENSE file for licensing details.
 
 import logging
-from pathlib import Path
 
 import jubilant_backports
 import pytest
-import yaml
 from jubilant_backports import Juju
 
 from ... import markers
 from ...helpers_ha import (
+    CHARM_METADATA,
     MINUTE_SECS,
     get_relation_data,
     wait_for_apps_status,
@@ -19,9 +18,7 @@ from ...helpers_ha import (
 
 logger = logging.getLogger(__name__)
 
-DB_METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-
-DATABASE_APP_NAME = DB_METADATA["name"]
+DATABASE_APP_NAME = CHARM_METADATA["name"]
 DATABASE_ENDPOINT = "database"
 APPLICATION_APP_NAME = "mysql-test-app"
 APPLICATION_ENDPOINT = "database"
@@ -38,7 +35,7 @@ def test_build_and_deploy(juju: Juju, charm):
         DATABASE_APP_NAME,
         config={"cluster-name": "test_cluster", "profile": "testing"},
         num_units=3,
-        resources={"mysql-image": DB_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
         base="ubuntu@22.04",
         trust=True,
     )

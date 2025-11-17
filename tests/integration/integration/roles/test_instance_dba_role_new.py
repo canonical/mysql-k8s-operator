@@ -2,14 +2,13 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from pathlib import Path
 
 import jubilant_backports
 import pytest
-import yaml
 from jubilant_backports import Juju
 
 from ...helpers_ha import (
+    CHARM_METADATA,
     execute_queries_on_unit,
     get_app_units,
     get_mysql_primary_unit,
@@ -18,9 +17,7 @@ from ...helpers_ha import (
     wait_for_apps_status,
 )
 
-METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-
-DATABASE_APP_NAME = METADATA["name"]
+DATABASE_APP_NAME = CHARM_METADATA["name"]
 INTEGRATOR_APP_NAME = "data-integrator"
 
 
@@ -31,7 +28,7 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
         charm,
         DATABASE_APP_NAME,
         num_units=3,
-        resources={"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]},
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
         base="ubuntu@22.04",
         config={"profile": "testing"},
     )
