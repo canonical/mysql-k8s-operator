@@ -38,8 +38,8 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
         base="ubuntu@24.04",
     )
 
-    juju.wait(wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME))
-    juju.wait(wait_for_apps_status(jubilant_backports.all_blocked, INTEGRATOR_APP_NAME))
+    juju.wait(ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME))
+    juju.wait(ready=wait_for_apps_status(jubilant_backports.all_blocked, INTEGRATOR_APP_NAME))
 
 
 @pytest.mark.abort_on_fail
@@ -54,7 +54,9 @@ def test_charmed_dba_role(juju: Juju):
     )
     juju.integrate(INTEGRATOR_APP_NAME, DATABASE_APP_NAME)
     status = juju.wait(
-        wait_for_apps_status(jubilant_backports.all_active, INTEGRATOR_APP_NAME, DATABASE_APP_NAME)
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, INTEGRATOR_APP_NAME, DATABASE_APP_NAME
+        )
     )
 
     primary_unit_name, primary_unit = next(

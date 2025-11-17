@@ -10,7 +10,7 @@ import pytest
 import yaml
 from jubilant_backports import Juju
 
-from ...helpers_ha import wait_for_apps_status
+from ...helpers_ha import MINUTE_SECS, wait_for_apps_status
 
 logger = logging.getLogger(__name__)
 
@@ -64,13 +64,13 @@ def test_relation_creation_eager(juju: Juju):
 
     logger.info("Waiting for application app to be waiting...")
     juju.wait(
-        wait_for_apps_status(jubilant_backports.all_waiting, APPLICATION_APP_NAME),
+        ready=wait_for_apps_status(jubilant_backports.all_waiting, APPLICATION_APP_NAME),
         error=jubilant_backports.any_blocked,
-        timeout=1000,
+        timeout=15 * MINUTE_SECS,
     )
     logger.info("Waiting for database app to be active...")
     juju.wait(
-        wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
+        ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
         error=jubilant_backports.any_blocked,
-        timeout=1000,
+        timeout=15 * MINUTE_SECS,
     )

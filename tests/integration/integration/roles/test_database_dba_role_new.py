@@ -43,9 +43,9 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
         base="ubuntu@24.04",
     )
 
-    juju.wait(wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME))
+    juju.wait(ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME))
     juju.wait(
-        wait_for_apps_status(
+        ready=wait_for_apps_status(
             jubilant_backports.all_blocked, f"{INTEGRATOR_APP_NAME}1", f"{INTEGRATOR_APP_NAME}2"
         )
     )
@@ -63,7 +63,7 @@ def test_charmed_dba_role(juju: Juju):
     )
     juju.integrate(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
     juju.wait(
-        wait_for_apps_status(
+        ready=wait_for_apps_status(
             jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME
         )
     )
@@ -77,7 +77,7 @@ def test_charmed_dba_role(juju: Juju):
     )
     juju.integrate(f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME)
     status = juju.wait(
-        wait_for_apps_status(
+        ready=wait_for_apps_status(
             jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME
         )
     )
