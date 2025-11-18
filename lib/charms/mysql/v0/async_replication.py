@@ -10,7 +10,6 @@ from functools import cached_property
 from time import sleep
 
 from charms.mysql.v0.mysql import (
-    MySQLFencingWritesError,
     MySQLPromoteClusterToPrimaryError,
     MySQLRejoinClusterError,
 )
@@ -52,7 +51,7 @@ logger = logging.getLogger(__name__)
 # The unique Charmhub library identifier, never change it
 LIBID = "4de21f1a022c4e2c87ac8e672ec16f6a"
 LIBAPI = 0
-LIBPATCH = 10
+LIBPATCH = 11
 
 RELATION_OFFER = "replication-offer"
 RELATION_CONSUMER = "replication"
@@ -174,38 +173,6 @@ class MySQLAsyncReplication(Object):
         except MySQLPromoteClusterToPrimaryError:
             logger.exception("Failed to promote cluster to primary")
             event.fail("Failed to promote cluster to primary")
-
-    def _on_fence_unfence_writes_action(self, event: ActionEvent) -> None:
-        """Fence or unfence writes to a cluster."""
-        if event.params.get("cluster-set-name") != self.cluster_set_name:
-            event.fail("Invalid/empty cluster set name")
-            return
-        if self.role.cluster_role == "replica":
-            event.fail("Only a primary cluster can have writes fenced/unfence")
-            return
-
-        try:
-            if (
-                event.handle.kind == "fence_writes_action"
-                and not self._charm._mysql.is_cluster_writes_fenced()
-            ):
-                logger.info("Fencing writes to the cluster")
-                self._charm._mysql.fence_writes()
-                event.set_results({"message": "Writes to the cluster are now fenced"})
-            elif (
-                event.handle.kind == "unfence_writes_action"
-                and self._charm._mysql.is_cluster_writes_fenced()
-            ):
-                logger.info("Unfencing writes to the cluster")
-                self._charm._mysql.unfence_writes()
-                event.set_results({"message": "Writes to the cluster are now resumed"})
-            else:
-                event.fail("Writes are already fenced/unfenced")
-                return
-            # update status
-            self._charm._on_update_status(None)
-        except MySQLFencingWritesError:
-            event.fail("Failed to fence writes. Check logs for details")
 
     def on_async_relation_broken(self, event: RelationBrokenEvent):  # noqa: C901
         """Handle the async relation being broken from either side."""
