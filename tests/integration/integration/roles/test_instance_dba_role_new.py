@@ -63,11 +63,7 @@ def test_charmed_dba_role(juju: Juju):
         timeout=15 * MINUTE_SECS,
     )
 
-    primary_unit_name = next(
-        unit_name
-        for unit_name in get_app_units(juju, DATABASE_APP_NAME)
-        if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME)
-    )
+    primary_unit_name = get_mysql_primary_unit(juju, DATABASE_APP_NAME)
     primary_unit_address = get_unit_address(juju, DATABASE_APP_NAME, primary_unit_name)
     server_config_credentials = get_mysql_server_credentials(juju, primary_unit_name)
 

@@ -75,11 +75,7 @@ def test_charmed_read_role(juju: Juju):
         timeout=15 * MINUTE_SECS,
     )
 
-    primary_unit_name = next(
-        unit_name
-        for unit_name in get_app_units(juju, DATABASE_APP_NAME)
-        if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME)
-    )
+    primary_unit_name = get_mysql_primary_unit(juju, DATABASE_APP_NAME)
     primary_unit_address = get_unit_address(juju, DATABASE_APP_NAME, primary_unit_name)
     server_config_credentials = get_mysql_server_credentials(juju, primary_unit_name)
 
@@ -169,12 +165,7 @@ def test_charmed_dml_role(juju: Juju):
         timeout=15 * MINUTE_SECS,
     )
 
-    mysql_unit_name = get_app_units(juju, DATABASE_APP_NAME)[0]
-    primary_unit_name = next(
-        unit_name
-        for unit_name in get_app_units(juju, DATABASE_APP_NAME)
-        if unit_name == get_mysql_primary_unit(juju, DATABASE_APP_NAME, mysql_unit_name)
-    )
+    primary_unit_name = get_mysql_primary_unit(juju, DATABASE_APP_NAME)
     primary_unit_address = get_unit_address(juju, DATABASE_APP_NAME, primary_unit_name)
     data_integrator_1_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}1")[0]
     results = juju.run(data_integrator_1_unit_name, "get-credentials").results
