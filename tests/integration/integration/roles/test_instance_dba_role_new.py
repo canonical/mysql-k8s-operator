@@ -53,10 +53,7 @@ def test_charmed_dba_role(juju: Juju):
     """Test the DBA predefined role."""
     juju.config(
         INTEGRATOR_APP_NAME,
-        {
-            "database-name": "charmed_dba_db",
-            "extra-user-roles": "charmed_dba",
-        },
+        {"database-name": "charmed_dba_db", "extra-user-roles": "charmed_dba"},
     )
     juju.integrate(INTEGRATOR_APP_NAME, DATABASE_APP_NAME)
     juju.wait(

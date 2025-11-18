@@ -64,10 +64,7 @@ def test_charmed_dba_role(juju: Juju):
     """Test the database-level DBA role."""
     juju.config(
         f"{INTEGRATOR_APP_NAME}1",
-        {
-            "database-name": "preserved",
-            "extra-user-roles": "",
-        },
+        {"database-name": "preserved", "extra-user-roles": ""},
     )
     juju.integrate(f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME)
     juju.wait(
@@ -79,10 +76,7 @@ def test_charmed_dba_role(juju: Juju):
 
     juju.config(
         f"{INTEGRATOR_APP_NAME}2",
-        {
-            "database-name": "throwaway",
-            "extra-user-roles": "charmed_dba_preserved_00",
-        },
+        {"database-name": "throwaway", "extra-user-roles": "charmed_dba_preserved_00"},
     )
     juju.integrate(f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME)
     juju.wait(
