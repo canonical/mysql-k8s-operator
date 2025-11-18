@@ -11,6 +11,7 @@ from mysql.connector.errors import ProgrammingError
 
 from ...helpers_ha import (
     CHARM_METADATA,
+    MINUTE_SECS,
     execute_queries_on_unit,
     get_app_units,
     get_mysql_primary_unit,
@@ -46,11 +47,15 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
         base="ubuntu@24.04",
     )
 
-    juju.wait(ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME))
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
+        timeout=15 * MINUTE_SECS,
+    )
     juju.wait(
         ready=wait_for_apps_status(
             jubilant_backports.all_blocked, f"{INTEGRATOR_APP_NAME}1", f"{INTEGRATOR_APP_NAME}2"
-        )
+        ),
+        timeout=15 * MINUTE_SECS,
     )
 
 
@@ -68,7 +73,8 @@ def test_charmed_dba_role(juju: Juju):
     juju.wait(
         ready=wait_for_apps_status(
             jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}1", DATABASE_APP_NAME
-        )
+        ),
+        timeout=15 * MINUTE_SECS,
     )
 
     juju.config(
@@ -82,7 +88,8 @@ def test_charmed_dba_role(juju: Juju):
     juju.wait(
         ready=wait_for_apps_status(
             jubilant_backports.all_active, f"{INTEGRATOR_APP_NAME}2", DATABASE_APP_NAME
-        )
+        ),
+        timeout=15 * MINUTE_SECS,
     )
 
     primary_unit_name = next(

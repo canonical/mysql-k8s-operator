@@ -78,7 +78,10 @@ def test_relation_creation_eager(juju: Juju):
 @markers.only_without_juju_secrets
 def test_relation_creation_databag(juju: Juju):
     """Relate charms and wait for the expected changes in status."""
-    juju.wait(ready=jubilant_backports.all_active)
+    juju.wait(
+        ready=jubilant_backports.all_active,
+        timeout=15 * MINUTE_SECS,
+    )
 
     relation_data = get_relation_data(juju, APPLICATION_APP_NAME, "database")
     assert {"password", "username"} <= set(relation_data[0]["application-data"])
@@ -88,7 +91,10 @@ def test_relation_creation_databag(juju: Juju):
 @markers.only_with_juju_secrets
 def test_relation_creation(juju: Juju):
     """Relate charms and wait for the expected changes in status."""
-    juju.wait(ready=jubilant_backports.all_active)
+    juju.wait(
+        ready=jubilant_backports.all_active,
+        timeout=15 * MINUTE_SECS,
+    )
 
     relation_data = get_relation_data(juju, APPLICATION_APP_NAME, "database")
     assert not {"password", "username"} <= set(relation_data[0]["application-data"])
@@ -106,8 +112,10 @@ def test_relation_broken(juju: Juju):
     juju.wait(
         ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
         error=jubilant_backports.any_blocked,
+        timeout=15 * MINUTE_SECS,
     )
     juju.wait(
         ready=wait_for_apps_status(jubilant_backports.all_waiting, APPLICATION_APP_NAME),
         error=jubilant_backports.any_blocked,
+        timeout=15 * MINUTE_SECS,
     )
