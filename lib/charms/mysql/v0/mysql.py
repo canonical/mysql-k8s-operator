@@ -127,7 +127,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 95
+LIBPATCH = 96
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -413,10 +413,6 @@ class MySQLSetVariableError(Error):
 
 class MySQLGetVariableError(Error):
     """Exception raised when there is an issue getting a variable."""
-
-
-class MySQLServerNotUpgradableError(Error):
-    """Exception raised when there is an issue checking for upgradeability."""
 
 
 class MySQLSecretError(Error):
@@ -2863,42 +2859,6 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.error("Failed to set cluster primary")
             raise MySQLSetClusterPrimaryError(e.message) from e
-
-    def verify_server_upgradable(self, instance: str | None = None) -> None:
-        """Wrapper for API check_for_server_upgrade."""
-        # use cluster admin user to enforce standard port usage
-        check_command = [
-            "try:",
-            "    util.check_for_server_upgrade(options={'outputFormat': 'JSON'})",
-            "except ValueError:",  # ValueError is raised for same version check
-            "    if session.run_sql('select @@version').fetch_all()[0][0].split('-')[0] in shell.version:",
-            "        print('SAME_VERSION')",
-            "    else:",
-            "        raise",
-        ]
-
-        def _strip_output(output: str):
-            # output may need first line stripped to
-            # remove information header text
-            if not output.split("\n")[0].startswith("{"):
-                return "\n".join(output.split("\n")[1:])
-            return output
-
-        try:
-            output = self._run_mysqlsh_script(
-                "\n".join(check_command),
-                user=self.server_config_user,
-                password=self.server_config_password,
-                host=self.instance_def(self.server_config_user, instance),
-            )
-            if "SAME_VERSION" in output:
-                return
-            result = json.loads(_strip_output(output))
-            if result["errorCount"] == 0:
-                return
-            raise MySQLServerNotUpgradableError(result.get("summary"))
-        except MySQLClientError as e:
-            raise MySQLServerNotUpgradableError("Failed to check for server upgrade") from e
 
     def get_mysql_version(self) -> str | None:
         """Get the running mysqld version."""

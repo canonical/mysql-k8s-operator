@@ -168,10 +168,8 @@ class TestUpgrade(unittest.TestCase):
     @patch("charm.MySQLOperatorCharm._write_mysqld_configuration")
     @patch("mysql_k8s_helpers.MySQL.hold_if_recovering")
     @patch("mysql_k8s_helpers.MySQL.get_mysql_version", return_value="8.0.33")
-    @patch("mysql_k8s_helpers.MySQL.verify_server_upgradable")
     def test_pebble_ready(
         self,
-        mock_is_server_upgradable,
         mock_get_mysql_version,
         mock_hold_if_recovering,
         mock_write_mysqld_configuration,
@@ -230,17 +228,3 @@ class TestUpgrade(unittest.TestCase):
         mock_set_rolling_update_partition.side_effect = k8s_helpers.KubernetesClientError
         with self.assertRaises(KubernetesClientError):
             self.charm.upgrade._set_rolling_update_partition(partition=1)
-
-    @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
-    @patch("mysql_k8s_helpers.MySQL.verify_server_upgradable")
-    def test_check_server_upgradeability(
-        self, mock_verify_server_upgradeable, mock_get_unit_address
-    ):
-        """Test the server upgradeability check."""
-        self.charm.upgrade._check_server_upgradeability()
-        mock_verify_server_upgradeable.assert_not_called()
-
-        self.charm.upgrade.upgrade_stack = [0, 1]
-
-        self.charm.upgrade._check_server_upgradeability()
-        mock_verify_server_upgradeable.assert_called_once()
