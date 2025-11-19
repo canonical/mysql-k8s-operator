@@ -417,6 +417,29 @@ def get_mysql_primary_unit(juju: Juju, app_name: str, unit_name: str | None = No
     raise Exception("No MySQL primary node found")
 
 
+def get_mysql_server_credentials(
+    juju: Juju, unit_name: str, username: str = SERVER_CONFIG_USERNAME
+) -> dict[str, str]:
+    """Helper to run an action to retrieve server config credentials.
+
+    Args:
+        juju: The Juju model
+        unit_name: The juju unit on which to run the get-password action for server-config credentials
+        username: The username to use
+
+    Returns:
+        A dictionary with the server config username and password
+    """
+    credentials_task = juju.run(
+        unit=unit_name,
+        action="get-password",
+        params={"username": username},
+    )
+    credentials_task.raise_on_failure()
+
+    return credentials_task.results
+
+
 def get_mysql_max_written_value(juju: Juju, app_name: str, unit_name: str) -> int:
     """Retrieve the max written value in the MySQL database.
 
@@ -425,17 +448,12 @@ def get_mysql_max_written_value(juju: Juju, app_name: str, unit_name: str) -> in
         app_name: The application name.
         unit_name: The unit name.
     """
-    credentials_task = juju.run(
-        unit=unit_name,
-        action="get-password",
-        params={"username": SERVER_CONFIG_USERNAME},
-    )
-    credentials_task.raise_on_failure()
+    credentials = get_mysql_server_credentials(juju, unit_name)
 
     output = execute_queries_on_unit(
         get_unit_address(juju, app_name, unit_name),
-        credentials_task.results["username"],
-        credentials_task.results["password"],
+        credentials["username"],
+        credentials["password"],
         ["SELECT MAX(number) FROM `continuous_writes`.`data`;"],
     )
     return output[0]
@@ -450,17 +468,12 @@ def get_mysql_variable_value(juju: Juju, app_name: str, unit_name: str, variable
         unit_name: The unit name.
         variable_name: The variable name.
     """
-    credentials_task = juju.run(
-        unit=unit_name,
-        action="get-password",
-        params={"username": SERVER_CONFIG_USERNAME},
-    )
-    credentials_task.raise_on_failure()
+    credentials = get_mysql_server_credentials(juju, unit_name)
 
     output = execute_queries_on_unit(
         get_unit_address(juju, app_name, unit_name),
-        credentials_task.results["username"],
-        credentials_task.results["password"],
+        credentials["username"],
+        credentials["password"],
         [f"SELECT @@{variable_name};"],
     )
     return output[0]
@@ -491,12 +504,7 @@ def insert_mysql_test_data(juju: Juju, app_name: str, table_name: str, value: st
     mysql_leader = get_app_leader(juju, app_name)
     mysql_primary = get_mysql_primary_unit(juju, app_name)
 
-    credentials_task = juju.run(
-        unit=mysql_leader,
-        action="get-password",
-        params={"username": SERVER_CONFIG_USERNAME},
-    )
-    credentials_task.raise_on_failure()
+    credentials = get_mysql_server_credentials(juju, mysql_leader)
 
     insert_queries = [
         f"CREATE DATABASE IF NOT EXISTS `{TEST_DATABASE_NAME}`",
@@ -506,8 +514,8 @@ def insert_mysql_test_data(juju: Juju, app_name: str, table_name: str, value: st
 
     execute_queries_on_unit(
         get_unit_address(juju, app_name, mysql_primary),
-        credentials_task.results["username"],
-        credentials_task.results["password"],
+        credentials["username"],
+        credentials["password"],
         insert_queries,
         commit=True,
     )
@@ -524,12 +532,7 @@ def remove_mysql_test_data(juju: Juju, app_name: str, table_name: str) -> None:
     mysql_leader = get_app_leader(juju, app_name)
     mysql_primary = get_mysql_primary_unit(juju, app_name)
 
-    credentials_task = juju.run(
-        unit=mysql_leader,
-        action="get-password",
-        params={"username": SERVER_CONFIG_USERNAME},
-    )
-    credentials_task.raise_on_failure()
+    credentials = get_mysql_server_credentials(juju, mysql_leader)
 
     remove_queries = [
         f"DROP TABLE IF EXISTS `{TEST_DATABASE_NAME}`.`{table_name}`",
@@ -538,8 +541,8 @@ def remove_mysql_test_data(juju: Juju, app_name: str, table_name: str) -> None:
 
     execute_queries_on_unit(
         get_unit_address(juju, app_name, mysql_primary),
-        credentials_task.results["username"],
-        credentials_task.results["password"],
+        credentials["username"],
+        credentials["password"],
         remove_queries,
         commit=True,
     )
@@ -557,12 +560,7 @@ def verify_mysql_test_data(juju: Juju, app_name: str, table_name: str, value: st
     mysql_app_leader = get_app_leader(juju, app_name)
     mysql_app_units = get_app_units(juju, app_name)
 
-    credentials_task = juju.run(
-        unit=mysql_app_leader,
-        action="get-password",
-        params={"username": SERVER_CONFIG_USERNAME},
-    )
-    credentials_task.raise_on_failure()
+    credentials = get_mysql_server_credentials(juju, mysql_app_leader)
 
     select_queries = [
         f"SELECT id FROM `{TEST_DATABASE_NAME}`.`{table_name}` WHERE id = '{value}'",
@@ -577,8 +575,8 @@ def verify_mysql_test_data(juju: Juju, app_name: str, table_name: str, value: st
             with attempt:
                 output = execute_queries_on_unit(
                     get_unit_address(juju, app_name, unit_name),
-                    credentials_task.results["username"],
-                    credentials_task.results["password"],
+                    credentials["username"],
+                    credentials["password"],
                     select_queries,
                 )
                 assert output[0] == value

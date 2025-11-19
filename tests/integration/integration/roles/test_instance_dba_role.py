@@ -2,68 +2,70 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import asyncio
-from pathlib import Path
 
+import jubilant_backports
 import pytest
-import yaml
-from pytest_operator.plugin import OpsTest
+from jubilant_backports import Juju
 
-from ... import juju_
-from ...helpers import (
+from ...helpers_ha import (
+    CHARM_METADATA,
+    MINUTE_SECS,
     execute_queries_on_unit,
-    get_primary_unit,
-    get_server_config_credentials,
+    get_app_units,
+    get_mysql_primary_unit,
+    get_mysql_server_credentials,
     get_unit_address,
+    wait_for_apps_status,
 )
 
-METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-
-DATABASE_APP_NAME = METADATA["name"]
+DATABASE_APP_NAME = CHARM_METADATA["name"]
 INTEGRATOR_APP_NAME = "data-integrator"
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
+def test_build_and_deploy(juju: Juju, charm) -> None:
     """Simple test to ensure that the mysql and data-integrator charms get deployed."""
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
+    juju.deploy(
+        charm,
+        DATABASE_APP_NAME,
+        num_units=3,
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
+        base="ubuntu@22.04",
+        config={"profile": "testing"},
+    )
+    juju.deploy(
+        INTEGRATOR_APP_NAME,
+        base="ubuntu@24.04",
+    )
 
-    async with ops_test.fast_forward("10s"):
-        await asyncio.gather(
-            ops_test.model.deploy(
-                charm,
-                application_name=DATABASE_APP_NAME,
-                num_units=3,
-                resources=resources,
-                base="ubuntu@22.04",
-                config={"profile": "testing"},
-            ),
-            ops_test.model.deploy(
-                INTEGRATOR_APP_NAME,
-                base="ubuntu@24.04",
-            ),
-        )
-
-    await ops_test.model.wait_for_idle(apps=[DATABASE_APP_NAME], status="active")
-    await ops_test.model.wait_for_idle(apps=[INTEGRATOR_APP_NAME], status="blocked")
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
+        timeout=15 * MINUTE_SECS,
+    )
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_blocked, INTEGRATOR_APP_NAME),
+        timeout=15 * MINUTE_SECS,
+    )
 
 
 @pytest.mark.abort_on_fail
-async def test_charmed_dba_role(ops_test: OpsTest):
+def test_charmed_dba_role(juju: Juju):
     """Test the DBA predefined role."""
-    await ops_test.model.applications[INTEGRATOR_APP_NAME].set_config({
-        "database-name": "charmed_dba_db",
-        "extra-user-roles": "charmed_dba",
-    })
-    await ops_test.model.add_relation(INTEGRATOR_APP_NAME, DATABASE_APP_NAME)
-    await ops_test.model.wait_for_idle(
-        apps=[INTEGRATOR_APP_NAME, DATABASE_APP_NAME], status="active"
+    juju.config(
+        INTEGRATOR_APP_NAME,
+        {"database-name": "charmed_dba_db", "extra-user-roles": "charmed_dba"},
+    )
+    juju.integrate(INTEGRATOR_APP_NAME, DATABASE_APP_NAME)
+    juju.wait(
+        ready=wait_for_apps_status(
+            jubilant_backports.all_active, INTEGRATOR_APP_NAME, DATABASE_APP_NAME
+        ),
+        timeout=15 * MINUTE_SECS,
     )
 
-    mysql_unit = ops_test.model.applications[DATABASE_APP_NAME].units[0]
-    primary_unit = await get_primary_unit(ops_test, mysql_unit, DATABASE_APP_NAME)
-    primary_unit_address = await get_unit_address(ops_test, primary_unit.name)
-    server_config_credentials = await get_server_config_credentials(primary_unit)
+    primary_unit_name = get_mysql_primary_unit(juju, DATABASE_APP_NAME)
+    primary_unit_address = get_unit_address(juju, DATABASE_APP_NAME, primary_unit_name)
+    server_config_credentials = get_mysql_server_credentials(juju, primary_unit_name)
 
     execute_queries_on_unit(
         primary_unit_address,
@@ -73,8 +75,8 @@ async def test_charmed_dba_role(ops_test: OpsTest):
         commit=True,
     )
 
-    data_integrator_unit = ops_test.model.applications[INTEGRATOR_APP_NAME].units[0]
-    results = await juju_.run_action(data_integrator_unit, "get-credentials")
+    data_integrator_unit_name = get_app_units(juju, INTEGRATOR_APP_NAME)[0]
+    results = juju.run(data_integrator_unit_name, "get-credentials").results
 
     rows = execute_queries_on_unit(
         primary_unit_address,
