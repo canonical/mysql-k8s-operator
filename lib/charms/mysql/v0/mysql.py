@@ -49,13 +49,6 @@ class MySQL(MySQLBase):
             )
         # Add new attribute
         self.new_parameter = new_parameter
-
-    # abstract method implementation
-    @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
-    def wait_until_mysql_connection(self) -> None:
-        if not os.path.exists(MYSQLD_SOCK_FILE):
-            raise MySQLServiceNotRunningError()
-
     ...
 ```
 
@@ -127,7 +120,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 96
+LIBPATCH = 97
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -433,10 +426,6 @@ class MySQLRemoveReplicaClusterError(Error):
 
 class MySQLPromoteClusterToPrimaryError(Error):
     """Exception raised when there is an issue promoting a replica cluster to primary."""
-
-
-class MySQLFencingWritesError(Error):
-    """Exception raised when there is an issue fencing or unfencing writes."""
 
 
 class MySQLRejoinClusterError(Error):
@@ -844,19 +833,17 @@ class MySQLCharmBase(CharmBase, ABC):
     @property
     def active_status_message(self) -> str:
         """Active status message."""
-        if self.unit_peer_data.get("member-role") == "primary":
-            if self._mysql.is_cluster_replica():
-                status = self._mysql.get_replica_cluster_status()
-                if status == "ok":
-                    return "Standby"
-                else:
-                    return f"Standby ({status})"
-            elif self._mysql.is_cluster_writes_fenced():
-                return "Primary (fenced writes)"
-            else:
-                return "Primary"
+        if self.unit_peer_data.get("member-role") != "primary":
+            return ""
 
-        return ""
+        if self._mysql.is_cluster_replica() is False:
+            return "Primary"
+
+        status = self._mysql.get_replica_cluster_status()
+        if status == MySQLClusterState.OK:
+            return "Standby"
+        else:
+            return f"Standby ({status})"
 
     @property
     def removing_unit(self) -> bool:
@@ -1019,7 +1006,6 @@ class MySQLClusterState(str, enum.Enum):
     ERROR = "error"
     UNREACHABLE = "unreachable"
     UNKNOWN = "unknown"
-    FENCED = "fenced_writes"
 
 
 class MySQLTextLogs(str, enum.Enum):
@@ -1815,7 +1801,6 @@ class MySQLBase(ABC):
                 password=self.server_config_password,
                 host=self.instance_def(self.server_config_user),
             )
-            self.wait_until_mysql_connection()
         except MySQLClientError as e:
             logger.error(f"Failed to configure instance {self.instance_address}")
             raise MySQLConfigureInstanceError from e
@@ -1946,51 +1931,6 @@ class MySQLBase(ABC):
         except MySQLClientError as e:
             logger.error("Failed to promote cluster to primary")
             raise MySQLPromoteClusterToPrimaryError from e
-
-    def fence_writes(self) -> None:
-        """Fence writes on the primary cluster."""
-        commands = (
-            "c = dba.get_cluster()",
-            "c.fence_writes()",
-        )
-
-        try:
-            self._run_mysqlsh_script(
-                "\n".join(commands),
-                user=self.server_config_user,
-                password=self.server_config_password,
-                host=self.instance_def(self.server_config_user),
-            )
-        except MySQLClientError as e:
-            logger.error("Failed to fence writes on cluster")
-            raise MySQLFencingWritesError from e
-
-    def unfence_writes(self) -> None:
-        """Unfence writes on the primary cluster and reset read_only flag."""
-        commands = (
-            "c = dba.get_cluster()",
-            "c.unfence_writes()",
-            "session.run_sql('SET GLOBAL read_only=OFF')",
-        )
-
-        try:
-            self._run_mysqlsh_script(
-                "\n".join(commands),
-                user=self.server_config_user,
-                password=self.server_config_password,
-                host=self.instance_def(self.server_config_user),
-            )
-        except MySQLClientError as e:
-            logger.error("Failed to resume writes on primary cluster")
-            raise MySQLFencingWritesError from e
-
-    def is_cluster_writes_fenced(self) -> bool | None:
-        """Check if the cluster is fenced against writes."""
-        status = self.get_cluster_status()
-        if not status:
-            return
-
-        return status["defaultreplicaset"]["status"] == MySQLClusterState.FENCED
 
     def is_cluster_in_cluster_set(self, cluster_name: str) -> bool | None:
         """Check if a cluster is in the cluster set."""
@@ -3835,14 +3775,6 @@ class MySQLBase(ABC):
     @abstractmethod
     def restart_mysql_exporter(self) -> None:
         """Restart the mysqld exporter."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def wait_until_mysql_connection(self, check_port: bool = True) -> None:
-        """Wait until a connection to MySQL has been obtained.
-
-        Implemented in subclasses, test for socket file existence.
-        """
         raise NotImplementedError
 
     @abstractmethod
