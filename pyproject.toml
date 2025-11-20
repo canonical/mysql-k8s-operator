@@ -32,7 +32,9 @@ charm-libs = [
     # tempo_coordinator_k8s/v0/charm_tracing.py
     "opentelemetry-exporter-otlp-proto-http==1.21.0",
 ]
-format = ["ruff>=0.12.7,<0.13"]
+format = [
+    "ruff>=0.12.7,<0.13",
+]
 lint = [
     "ruff>=0.12.7,<0.13",
     "codespell~=2.3",
