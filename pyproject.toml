@@ -88,6 +88,7 @@ asyncio_mode = "auto"
 [tool.ruff]
 # preview and explicit preview are enabled for CPY001
 preview = true
+target-version = "py38"  # Bump when ready to re-lint
 src = ["src", "."]
 line-length = 99
 
