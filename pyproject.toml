@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 [project]
-name = "mysql-k8s-operator"
+name = "unused"  # Charm is not meant to be packaged
 dependencies = [
   "ops>=2.15.0,<3",
   "lightkube>=0.15.0,<0.16",
