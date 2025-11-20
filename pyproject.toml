@@ -11,6 +11,7 @@ dependencies = [
   "jinja2>=3.1.2,<4",
   "pyyaml>=6.0.2,<7",
 ]
+requires-python = ">=3.10,<4"
 
 [dependency-groups]
 charm-libs = [
@@ -64,9 +65,6 @@ integration = [
 [tool.poetry]
 package-mode = false
 requires-poetry = ">=2.2.0"
-
-[tool.poetry.dependencies]
-python = "^3.10"
 
 [tool.poetry.group.format]
 optional = true
