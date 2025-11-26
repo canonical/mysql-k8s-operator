@@ -1,0 +1,3 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"Simple test to ensure that all MySQL stable revisions can be upgraded.","464252","test_upgrade_from_stable_amd","tests.integration.release.high_availability","2025-11-26","passed","2025-11-26","","test_upgrade_from_stable","",""
+"Simple test to ensure that all MySQL stable revisions can be upgraded.","0","test_upgrade_from_stable_arm","tests.integration.release.high_availability","2025-11-26","skipped","2025-11-26","","test_upgrade_from_stable","",""
