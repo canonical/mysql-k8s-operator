@@ -19,10 +19,10 @@ from ...helpers_ha import (
     wait_for_apps_status,
 )
 
-logger = logging.getLogger(__name__)
-
 DATABASE_APP_NAME = CHARM_METADATA["name"]
 INTEGRATOR_APP_NAME = "data-integrator"
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @pytest.mark.abort_on_fail
@@ -91,7 +91,7 @@ def test_charmed_dba_role(juju: Juju):
     data_integrator_2_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}2")[0]
     results = juju.run(data_integrator_2_unit_name, "get-credentials").results
 
-    logger.info("Checking that the database-level DBA role cannot create new databases")
+    logging.info("Checking that the database-level DBA role cannot create new databases")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
             primary_unit_address,
@@ -101,7 +101,7 @@ def test_charmed_dba_role(juju: Juju):
             commit=True,
         )
 
-    logger.info("Checking that the database-level DBA role can see all databases")
+    logging.info("Checking that the database-level DBA role can see all databases")
     execute_queries_on_unit(
         primary_unit_address,
         results["mysql"]["username"],
@@ -110,7 +110,7 @@ def test_charmed_dba_role(juju: Juju):
         commit=True,
     )
 
-    logger.info("Checking that the database-level DBA role can create a new table")
+    logging.info("Checking that the database-level DBA role can create a new table")
     execute_queries_on_unit(
         primary_unit_address,
         results["mysql"]["username"],
@@ -121,7 +121,7 @@ def test_charmed_dba_role(juju: Juju):
         commit=True,
     )
 
-    logger.info("Checking that the database-level DBA role can write into an existing table")
+    logging.info("Checking that the database-level DBA role can write into an existing table")
     execute_queries_on_unit(
         primary_unit_address,
         results["mysql"]["username"],
@@ -132,7 +132,7 @@ def test_charmed_dba_role(juju: Juju):
         commit=True,
     )
 
-    logger.info("Checking that the database-level DBA role can read from an existing table")
+    logging.info("Checking that the database-level DBA role can read from an existing table")
     rows = execute_queries_on_unit(
         primary_unit_address,
         results["mysql"]["username"],
