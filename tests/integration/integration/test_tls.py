@@ -32,12 +32,14 @@ TLS_SETUP_SLEEP_TIME = 30
 
 if juju_.has_secrets:
     tls_app_name = "self-signed-certificates"
-    tls_channel = "latest/edge" if architecture.architecture == "arm64" else "latest/stable"
+    tls_channel = "1/stable"
     tls_config = {"ca-common-name": "Test CA"}
+    tls_base = "ubuntu@24.04"
 else:
     tls_app_name = "tls-certificates-operator"
     tls_channel = "legacy/edge" if architecture.architecture == "arm64" else "legacy/stable"
     tls_config = {"generate-self-signed-certificates": "true", "ca-common-name": "Test CA"}
+    tls_base = "ubuntu@22.04"
 
 
 @pytest.mark.abort_on_fail
@@ -118,7 +120,10 @@ async def test_enable_tls(ops_test: OpsTest) -> None:
     logger.info("Deploy TLS operator")
     async with ops_test.fast_forward("60s"):
         await ops_test.model.deploy(
-            tls_app_name, channel=tls_channel, config=tls_config, base="ubuntu@22.04"
+            tls_app_name,
+            channel=tls_channel,
+            config=tls_config,
+            base=tls_base,
         )
         await ops_test.model.wait_for_idle(apps=[tls_app_name], status="active", timeout=15 * 60)
 
