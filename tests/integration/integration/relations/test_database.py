@@ -16,14 +16,14 @@ from ...helpers_ha import (
     wait_for_apps_status,
 )
 
-logger = logging.getLogger(__name__)
-
 DATABASE_APP_NAME = CHARM_METADATA["name"]
 DATABASE_ENDPOINT = "database"
 APPLICATION_APP_NAME = "mysql-test-app"
 APPLICATION_ENDPOINT = "database"
 
 APPS = [DATABASE_APP_NAME, APPLICATION_APP_NAME]
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @pytest.mark.abort_on_fail
@@ -54,19 +54,19 @@ def test_relation_creation_eager(juju: Juju):
 
     It simulates a Terraform-like deployment strategy
     """
-    logger.info("Creating relation...")
+    logging.info("Creating relation...")
     juju.integrate(
         f"{APPLICATION_APP_NAME}:{APPLICATION_ENDPOINT}",
         f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
     )
 
-    logger.info("Waiting for application app to be waiting...")
+    logging.info("Waiting for application app to be waiting...")
     juju.wait(
         ready=wait_for_apps_status(jubilant_backports.all_waiting, APPLICATION_APP_NAME),
         error=jubilant_backports.any_blocked,
         timeout=15 * MINUTE_SECS,
     )
-    logger.info("Waiting for database app to be active...")
+    logging.info("Waiting for database app to be active...")
     juju.wait(
         ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
         error=jubilant_backports.any_blocked,

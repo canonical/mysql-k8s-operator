@@ -20,10 +20,10 @@ from ...helpers_ha import (
     wait_for_apps_status,
 )
 
-logger = logging.getLogger(__name__)
-
 DATABASE_APP_NAME = CHARM_METADATA["name"]
 INTEGRATOR_APP_NAME = "data-integrator"
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @pytest.mark.abort_on_fail
@@ -93,7 +93,7 @@ def test_charmed_read_role(juju: Juju):
     data_integrator_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}1")[0]
     results = juju.run(data_integrator_unit_name, "get-credentials").results
 
-    logger.info("Checking that the charmed_read role can read from an existing table")
+    logging.info("Checking that the charmed_read role can read from an existing table")
     rows = execute_queries_on_unit(
         primary_unit_address,
         results["mysql"]["username"],
@@ -108,7 +108,7 @@ def test_charmed_read_role(juju: Juju):
         "test_data_2",
     ]), "Unexpected data in charmed_read_db with charmed_read role"
 
-    logger.info("Checking that the charmed_read role cannot write into an existing table")
+    logging.info("Checking that the charmed_read role cannot write into an existing table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
             primary_unit_address,
@@ -120,7 +120,7 @@ def test_charmed_read_role(juju: Juju):
             commit=True,
         )
 
-    logger.info("Checking that the charmed_read role cannot create a new table")
+    logging.info("Checking that the charmed_read role cannot create a new table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
             primary_unit_address,
@@ -170,7 +170,7 @@ def test_charmed_dml_role(juju: Juju):
     data_integrator_1_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}1")[0]
     results = juju.run(data_integrator_1_unit_name, "get-credentials").results
 
-    logger.info("Checking that when no role is specified the created user can do everything")
+    logging.info("Checking that when no role is specified the created user can do everything")
     rows = execute_queries_on_unit(
         primary_unit_address,
         results["mysql"]["username"],
@@ -190,7 +190,7 @@ def test_charmed_dml_role(juju: Juju):
     data_integrator_2_unit_name = get_app_units(juju, f"{INTEGRATOR_APP_NAME}2")[0]
     results = juju.run(data_integrator_2_unit_name, "get-credentials").results
 
-    logger.info("Checking that the charmed_dml role can read from an existing table")
+    logging.info("Checking that the charmed_dml role can read from an existing table")
     rows = execute_queries_on_unit(
         primary_unit_address,
         results["mysql"]["username"],
@@ -205,7 +205,7 @@ def test_charmed_dml_role(juju: Juju):
         "test_data_2",
     ]), "Unexpected data in charmed_dml_db with charmed_dml role"
 
-    logger.info("Checking that the charmed_dml role can write into an existing table")
+    logging.info("Checking that the charmed_dml role can write into an existing table")
     execute_queries_on_unit(
         primary_unit_address,
         results["mysql"]["username"],
@@ -216,7 +216,7 @@ def test_charmed_dml_role(juju: Juju):
         commit=True,
     )
 
-    logger.info("Checking that the charmed_dml role cannot create a new table")
+    logging.info("Checking that the charmed_dml role cannot create a new table")
     with pytest.raises(ProgrammingError):
         execute_queries_on_unit(
             primary_unit_address,

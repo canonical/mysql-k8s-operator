@@ -21,7 +21,7 @@ from .high_availability.high_availability_helpers import (
 logger = logging.getLogger(__name__)
 
 S3_INTEGRATOR = "s3-integrator"
-S3_INTEGRATOR_CHANNEL = "latest/stable"
+S3_INTEGRATOR_CHANNEL = "1/stable"
 MYSQL_APPLICATION_NAME = "mysql-k8s"
 TIMEOUT = 10 * 60
 SERVER_CONFIG_USER = "serverconfig"
