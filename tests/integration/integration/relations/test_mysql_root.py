@@ -8,14 +8,18 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
-from ...helpers_ha import CHARM_METADATA, MINUTE_SECS, wait_for_apps_status
-
-logger = logging.getLogger(__name__)
+from ...helpers_ha import (
+    CHARM_METADATA,
+    MINUTE_SECS,
+    wait_for_apps_status,
+)
 
 DATABASE_APP_NAME = CHARM_METADATA["name"]
 DATABASE_ENDPOINT = "mysql-root"
 APPLICATION_APP_NAME = "mysql-test-app"
 APPLICATION_ENDPOINT = "mysql"
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @pytest.mark.abort_on_fail
@@ -54,13 +58,13 @@ def test_relation_creation_eager(juju: Juju):
         f"{DATABASE_APP_NAME}:{DATABASE_ENDPOINT}",
     )
 
-    logger.info("Waiting for application app to be waiting...")
+    logging.info("Waiting for application app to be waiting...")
     juju.wait(
         ready=wait_for_apps_status(jubilant_backports.all_waiting, APPLICATION_APP_NAME),
         error=jubilant_backports.any_blocked,
         timeout=15 * MINUTE_SECS,
     )
-    logger.info("Waiting for database app to be active...")
+    logging.info("Waiting for database app to be active...")
     juju.wait(
         ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
         error=jubilant_backports.any_blocked,
