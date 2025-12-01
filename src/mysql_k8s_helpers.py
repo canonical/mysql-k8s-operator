@@ -224,7 +224,7 @@ class MySQL(MySQLBase):
                 user=MYSQL_SYSTEM_USER,
                 group=MYSQL_SYSTEM_GROUP,
             )
-            process.wait()
+            process.wait_output()
         except (ExecError, ChangeError, PathError, TimeoutError):
             logger.exception("Failed to initialise MySQL data directory")
             self.reset_data_dir()
