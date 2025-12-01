@@ -20,7 +20,7 @@ from charms.mysql.v0.mysql import (
     MySQLStopMySQLDError,
 )
 from ops.model import Container
-from ops.pebble import ChangeError, ExecError, PathError
+from ops.pebble import APIError, ChangeError, ExecError, PathError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -886,7 +886,7 @@ class MySQL(MySQLBase):
             }
 
             return expected_content <= content_set
-        except ExecError:
+        except (ExecError, APIError):
             return False
 
     def update_endpoints(self, relation_name: str) -> None:
