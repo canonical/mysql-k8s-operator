@@ -1,0 +1,146 @@
+[32mINFO    [0m integration.integration.backups:backups.py:125 Creating backup
+[32mINFO    [0m integration.integration.backups:backups.py:129 Creating test data 1
+[32mINFO    [0m integration.integration.backups:backups.py:145 Creating test data 2
+[32mINFO    [0m integration.integration.backups:backups.py:157 Scaling down to 1 unit
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+[32mINFO    [0m integration.integration.backups:backups.py:169 Restoring backup 2025-12-01T19:57:50Z with bad restore-to-time parameter
+[32mINFO    [0m integration.integration.backups:backups.py:178 Restoring backup 2025-12-01T19:57:50Z with year_before restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] blocked: Failed to restore point-in-time-recovery to the 2024-12-01 19:58:05
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.integration.backups:backups.py:190 Restoring backup 2025-12-01T19:57:50Z with year_after restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] blocked: Failed to restore point-in-time-recovery to the 2026-12-01 19:58:05
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.integration.backups:backups.py:202 Restoring backup 2025-12-01T19:57:50Z with actual restore-to-time parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] blocked: Failed to restore point-in-time-recovery to the 2025-12-01 19:58:05
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.integration.backups:backups.py:214 Restoring backup 2025-12-01T19:57:50Z with restore-to-time=latest parameter
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] blocked: Failed to restore point-in-time-recovery to the latest
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.integration.backups:backups.py:38 Cleaning backups from cloud buckets
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.12   unsupported  20:01:46Z
+
+App            Version  Status   Scale  Charm          Channel   Rev  Address         Exposed  Message
+mysql-k8s               waiting      1  mysql-k8s                  0  10.152.183.173  no       installing agent
+s3-integrator           active       1  s3-integrator  1/stable  145  10.152.183.110  no       
+
+Unit              Workload  Agent  Address       Ports  Message
+mysql-k8s/0*      blocked   idle   10.1.243.141         Failed to restore point-in-time-recovery to the latest
+s3-integrator/0*  active    idle   10.1.243.136         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-0: 19:54:57 ERROR unit.mysql-k8s/0.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 714, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', 'shell.options.set(\'useWizards\', False)\nprint(\'###\')\nresult = session.run_sql("SELECT version()")\nprint(f"<VERSION>{result.fetch_one()[0]}</VERSION>")'], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m", stderr="Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062' (111)\n"
+unit-mysql-k8s-1: 19:54:57 ERROR unit.mysql-k8s/1.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/src/mysql_k8s_helpers.py", line 714, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-1/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', 'shell.options.set(\'useWizards\', False)\nprint(\'###\')\nresult = session.run_sql("SELECT version()")\nprint(f"<VERSION>{result.fetch_one()[0]}</VERSION>")'], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m", stderr="Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-1.mysql-k8s-endpoints.testing.svc.cluster.local.:33062' (111)\n"
+unit-mysql-k8s-0: 19:54:57 ERROR unit.mysql-k8s/0.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 714, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', "shell.options.set('useWizards', False)\nprint('###')\ncluster = dba.create_cluster('test_cluster', {'communicationStack': 'MySQL'})\ncluster.set_instance_option('mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.', 'label', 'mysql-k8s-0')"], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m", stderr="Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.:33062' (111)\n"
+unit-mysql-k8s-0: 19:54:57 ERROR unit.mysql-k8s/0.juju-log Failed to create cluster on instance: mysql-k8s-0.mysql-k8s-endpoints.testing.svc.cluster.local.
+unit-mysql-k8s-0: 19:54:57 ERROR unit.mysql-k8s/0.juju-log Failed to initialize primary
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1823, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 722, in _run_mysqlsh_script
+    raise MySQLClientError from None
+charms.mysql.v0.mysql.MySQLClientError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 384, in _create_cluster
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 673, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1831, in create_cluster
+    raise MySQLCreateClusterError from e
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-mysql-k8s-0: 19:54:57 ERROR unit.mysql-k8s/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1823, in create_cluster
+    self._run_mysqlsh_script(
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/mysql_k8s_helpers.py", line 722, in _run_mysqlsh_script
+    raise MySQLClientError from None
+charms.mysql.v0.mysql.MySQLClientError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 1123, in <module>
+    main(MySQLOperatorCharm)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 551, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 530, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 519, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 147, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 348, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 860, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 950, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 856, in _on_mysql_pebble_ready
+    self._create_cluster()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/src/charm.py", line 384, in _create_cluster
+    self.create_cluster()
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 673, in create_cluster
+    self._mysql.create_cluster(self.unit_label)
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 1065, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-mysql-k8s-0/charm/lib/charms/mysql/v0/mysql.py", line 1831, in create_cluster
+    raise MySQLCreateClusterError from e
+charms.mysql.v0.mysql.MySQLCreateClusterError
+unit-mysql-k8s-2: 19:54:57 ERROR unit.mysql-k8s/2.juju-log Failed to execute mysql-shell command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/src/mysql_k8s_helpers.py", line 714, in _run_mysqlsh_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-k8s-2/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysqlsh', '--passwords-from-stdin', '--uri=serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local.:33062', '--python', '--verbose=0', '-c', 'shell.options.set(\'useWizards\', False)\nprint(\'###\')\nresult = session.run_sql("SELECT version()")\nprint(f"<VERSION>{result.fetch_one()[0]}</VERSION>")'], stdout="\x1b[1mPlease provide the password for 'serverconfig@mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local.:33062': \x1b[0m", stderr="Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 2003 (HY000): Can't connect to MySQL server on 'mysql-k8s-2.mysql-k8s-endpoints.testing.svc.cluster.local.:33062' (111)\n"
+unit-mysql-k8s-0: 19:54:57 ERROR juju.worker.uniter.operation hook "mysql-pebble-ready" (via hook dispatching script: dispatch) failed: exit status 1
+unit-mysql-k8s-0: 19:54:57 ERROR juju.worker.uniter pebble poll failed for container "mysql": failed to send pebble-ready event: hook failed
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
