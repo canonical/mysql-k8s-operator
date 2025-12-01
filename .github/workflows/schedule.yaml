@@ -23,8 +23,6 @@ jobs:
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets: inherit
-    permissions:
-      contents: write  # Needed for Allure Report
 
   release-test:
     name: Release test charm
@@ -34,5 +32,3 @@ jobs:
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets: inherit
-    permissions:
-      contents: write  # Needed for Allure Report
