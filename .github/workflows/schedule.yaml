@@ -32,3 +32,141 @@ jobs:
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets: inherit
+
+  allure-report:
+    name: Publish Allure report
+    if: ${{ !cancelled() && github.run_attempt == '1' }}
+    needs:
+      - integration-test
+      - release-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Download Allure
+        # Following instructions from https://allurereport.org/docs/install-for-linux/#install-from-a-deb-package
+        run: gh release download --repo allure-framework/allure2 --pattern 'allure_*.deb'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Allure
+        run: |
+          sudo apt-get update
+          sudo apt-get install ./allure_*.deb -y
+      # For first run, manually create branch with no history
+      # (e.g.
+      # git checkout --orphan gh-pages-beta
+      # git rm -rf .
+      # touch .nojekyll
+      # git add .nojekyll
+      # git commit -m "Initial commit"
+      # git push origin gh-pages-beta
+      # )
+      - name: Checkout GitHub pages branch
+        uses: actions/checkout@v5
+        with:
+          ref: gh-pages-beta
+          path: repo/
+      - name: Download default test results
+        # Default test results in case the integration tests time out or runner set up fails
+        # (So that Allure report will show "unknown"/"failed" test result, instead of omitting the test)
+        uses: actions/download-artifact@v5
+        with:
+          path: allure-default-results/
+          name: allure-default-results-integration-test
+      - name: Download test results
+        uses: actions/download-artifact@v5
+        with:
+          path: allure-results/
+          pattern: allure-results-integration-test-*
+          merge-multiple: true
+      - name: Combine Allure default results & actual results
+        # For every test: if actual result available, use that. Otherwise, use default result
+        # So that, if actual result not available, Allure report will show "unknown"/"failed" test result
+        # instead of omitting the test
+        shell: python
+        run: |
+          import dataclasses
+          import json
+          import pathlib
+
+
+          @dataclasses.dataclass(frozen=True)
+          class Result:
+              test_case_id: str
+              path: pathlib.Path
+
+              def __eq__(self, other):
+                  if not isinstance(other, type(self)):
+                      return False
+                  return self.test_case_id == other.test_case_id
+
+
+          actual_results = pathlib.Path("allure-results")
+          default_results = pathlib.Path("allure-default-results")
+
+          results: dict[pathlib.Path, set[Result]] = {
+              actual_results: set(),
+              default_results: set(),
+          }
+          for directory, results_ in results.items():
+              for path in directory.glob("*-result.json"):
+                  with path.open("r") as file:
+                      id_ = json.load(file)["testCaseId"]
+                  results_.add(Result(id_, path))
+
+          actual_results.mkdir(exist_ok=True)
+
+          missing_results = results[default_results] - results[actual_results]
+          for default_result in missing_results:
+              # Move to `actual_results` directory
+              default_result.path.rename(actual_results / default_result.path.name)
+      - name: Load test report history
+        run: |
+          if [[ -d repo/_latest/history/ ]]
+          then
+            echo 'Loading history'
+            cp -r repo/_latest/history/ allure-results/
+          fi
+      - name: Create executor.json
+        shell: python
+        run: |
+          # Reverse engineered from https://github.com/simple-elf/allure-report-action/blob/eca283b643d577c69b8e4f048dd6cd8eb8457cfd/entrypoint.sh
+          import json
+
+          DATA = {
+              "name": "GitHub Actions",
+              "type": "github",
+              "buildOrder": ${{ github.run_number }},  # TODO future improvement: use run ID
+              "buildName": "Run ${{ github.run_id }}",
+              "buildUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "reportUrl": "../${{ github.run_number }}/",
+          }
+          with open("allure-results/executor.json", "w") as file:
+              json.dump(DATA, file)
+      - name: Generate Allure report
+        run: allure generate
+      - name: Create index.html
+        shell: python
+        run: |
+          DATA = f"""<!DOCTYPE html>
+          <meta charset="utf-8">
+          <meta http-equiv="cache-control" content="no-cache">
+          <meta http-equiv="refresh" content="0; url=${{ github.run_number }}">
+          """
+          with open("repo/index.html", "w") as file:
+              file.write(DATA)
+      - name: Update GitHub pages branch
+        working-directory: repo/
+        # TODO future improvement: commit message
+        run: |
+          mkdir '${{ github.run_number }}'
+          rm -f _latest
+          ln -s '${{ github.run_number }}' _latest
+          cp -r ../allure-report/. _latest/
+          git add .
+          git config user.name "GitHub Actions"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Allure report ${{ github.run_number }}"
+          # Uses token set in checkout step
+          git push origin gh-pages-beta
