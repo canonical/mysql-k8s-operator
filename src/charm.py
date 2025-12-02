@@ -748,6 +748,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
             # Configure instance as a cluster node
             self._mysql.configure_instance()
+            self._mysql.wait_until_mysql_connection()
         except (
             MySQLInitialiseMySQLDError,
             MySQLServiceNotRunningError,
