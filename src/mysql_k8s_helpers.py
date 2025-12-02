@@ -192,24 +192,23 @@ class MySQL(MySQLBase):
             paths = container.list_files(MYSQL_DATA_DIR, itself=True)
         except APIError:
             # MYSQL_DATA_DIR does not exist, create it
-            paths = container.make_dir(
-                MYSQL_DATA_DIR, user=MYSQL_SYSTEM_USER, group=MYSQL_SYSTEM_GROUP
-            )
-        else:
-            logger.debug(f"Data directory ownership: {paths[0].user}:{paths[0].group}")
-            if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
-                logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
-                try:
-                    process = container.exec([
-                        "chown",
-                        "-R",
-                        f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}",
-                        MYSQL_DATA_DIR,
-                    ])
-                    process.wait()
-                except ExecError as e:
-                    logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
-                    raise MySQLInitialiseMySQLDError(e.stderr or "") from None
+            container.make_dir(MYSQL_DATA_DIR, user=MYSQL_SYSTEM_USER, group=MYSQL_SYSTEM_GROUP)
+            return
+
+        logger.debug(f"Data directory ownership: {paths[0].user}:{paths[0].group}")
+        if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
+            logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
+            try:
+                process = container.exec([
+                    "chown",
+                    "-R",
+                    f"{MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}",
+                    MYSQL_DATA_DIR,
+                ])
+                process.wait()
+            except ExecError as e:
+                logger.error(f"Exited with code {e.exit_code}. Stderr:\n{e.stderr}")
+                raise MySQLInitialiseMySQLDError(e.stderr or "") from None
 
     @retry(reraise=True, stop=stop_after_delay(30), wait=wait_fixed(5))
     def initialise_mysqld(self) -> None:
