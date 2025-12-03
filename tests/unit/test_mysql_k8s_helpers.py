@@ -78,7 +78,7 @@ class TestMySQL(unittest.TestCase):
             group="mysql",
         )
 
-        _process.wait.assert_called_once()
+        _process.wait_output.assert_called_once()
 
     @patch("ops.model.Container")
     def test_initialise_mysqld_exception(self, _container):
