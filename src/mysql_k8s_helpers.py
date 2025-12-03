@@ -20,7 +20,7 @@ from charms.mysql.v0.mysql import (
     MySQLStopMySQLDError,
 )
 from ops.model import Container
-from ops.pebble import ChangeError, ExecError, PathError
+from ops.pebble import APIError, ChangeError, ExecError, PathError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -189,6 +189,10 @@ class MySQL(MySQLBase):
         Until the ability to set fsGroup and fsGroupChangePolicy via Pod securityContext
         is available we fix permissions incorrectly with chown.
         """
+        if not container.exists(MYSQL_DATA_DIR):
+            container.make_dir(MYSQL_DATA_DIR, user=MYSQL_SYSTEM_USER, group=MYSQL_SYSTEM_GROUP)
+            return
+
         paths = container.list_files(MYSQL_DATA_DIR, itself=True)
         logger.debug(f"Data directory ownership: {paths[0].user}:{paths[0].group}")
         if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
@@ -225,7 +229,7 @@ class MySQL(MySQLBase):
                 user=MYSQL_SYSTEM_USER,
                 group=MYSQL_SYSTEM_GROUP,
             )
-            process.wait()
+            process.wait_output()
         except (ExecError, ChangeError, PathError, TimeoutError):
             logger.exception("Failed to initialise MySQL data directory")
             self.reset_data_dir()
@@ -887,7 +891,7 @@ class MySQL(MySQLBase):
             }
 
             return expected_content <= content_set
-        except ExecError:
+        except (ExecError, APIError):
             return False
 
     def update_endpoints(self, relation_name: str) -> None:
