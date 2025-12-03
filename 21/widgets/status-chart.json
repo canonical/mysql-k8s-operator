@@ -1,0 +1,1 @@
+[{"uid":"11f598518fed90a","name":"test_upgrade_from_stable_arm","time":{"start":1764726827160,"stop":1764726827160,"duration":0},"status":"skipped","severity":"normal"},{"uid":"dcfa9510b4444120","name":"test_upgrade_from_stable_amd","time":{"start":1764726195581,"stop":1764726712382,"duration":516801},"status":"passed","severity":"normal"}]
