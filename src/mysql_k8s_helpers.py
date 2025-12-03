@@ -188,13 +188,11 @@ class MySQL(MySQLBase):
         Until the ability to set fsGroup and fsGroupChangePolicy via Pod securityContext
         is available we fix permissions incorrectly with chown.
         """
-        try:
-            paths = container.list_files(MYSQL_DATA_DIR, itself=True)
-        except APIError:
-            # MYSQL_DATA_DIR does not exist, create it
+        if not container.exists(MYSQL_DATA_DIR):
             container.make_dir(MYSQL_DATA_DIR, user=MYSQL_SYSTEM_USER, group=MYSQL_SYSTEM_GROUP)
             return
 
+        paths = container.list_files(MYSQL_DATA_DIR, itself=True)
         logger.debug(f"Data directory ownership: {paths[0].user}:{paths[0].group}")
         if paths[0].user != MYSQL_SYSTEM_USER or paths[0].group != MYSQL_SYSTEM_GROUP:
             logger.debug(f"Changing ownership to {MYSQL_SYSTEM_USER}:{MYSQL_SYSTEM_GROUP}")
