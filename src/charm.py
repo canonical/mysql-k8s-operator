@@ -79,7 +79,9 @@ from constants import (
     MONITORING_PASSWORD_KEY,
     MONITORING_USERNAME,
     MYSQL_BINLOGS_COLLECTOR_SERVICE,
+    MYSQL_LOG_ERROR,
     MYSQL_LOG_FILES,
+    MYSQL_LOG_SERVICE,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
     MYSQLD_CONFIG_FILE,
@@ -238,7 +240,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             "--basedir=/usr",
             "--datadir=/var/lib/mysql",
             "--plugin-dir=/usr/lib/mysql/plugin",
-            "--log-error=/var/log/mysql/error.log",
+            f"--log-error={MYSQL_LOG_ERROR}",
             f"--pid-file={self.unit_label}.pid",
         ]
 
@@ -248,7 +250,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             "services": {
                 MYSQLD_SERVICE: {
                     "override": "replace",
-                    "summary": "mysqld safe",
+                    "summary": "mysql daemon",
                     "command": " ".join(mysqld_cmd),
                     "startup": "enabled",
                     "user": MYSQL_SYSTEM_USER,
@@ -257,6 +259,14 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     "environment": {
                         "MYSQLD_PARENT_PID": 1,
                     },
+                    "requires": [MYSQL_LOG_SERVICE],
+                    "after": [MYSQL_LOG_SERVICE],
+                },
+                MYSQL_LOG_SERVICE: {
+                    "override": "replace",
+                    "summary": "tail log",
+                    "command": f"tail -F {MYSQL_LOG_ERROR}",
+                    "startup": "enabled",
                 },
                 MYSQLD_EXPORTER_SERVICE: {
                     "override": "replace",

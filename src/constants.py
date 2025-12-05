@@ -7,6 +7,7 @@ PASSWORD_LENGTH = 24
 PEER = "database-peers"
 CONTAINER_NAME = "mysql"
 MYSQLD_SERVICE = "mysqld"
+MYSQL_LOG_SERVICE = "mysql"
 MYSQLD_LOCATION = f"/usr/sbin/{MYSQLD_SERVICE}"
 ROOT_USERNAME = "root"
 CLUSTER_ADMIN_USERNAME = "clusteradmin"
@@ -34,8 +35,9 @@ MYSQLD_SOCK_FILE = "/var/run/mysqld/mysqld.sock"
 MYSQLD_CONFIG_FILE = "/etc/mysql/mysql.conf.d/z-custom.cnf"
 MYSQLD_INIT_CONFIG_FILE = "/etc/mysql/mysql.conf.d/z-custom-init-file.cnf"
 MYSQL_LOG_DIR = "/var/log/mysql"
+MYSQL_LOG_ERROR = f"{MYSQL_LOG_DIR}/error.log"
 MYSQL_LOG_FILES = [
-    f"{MYSQL_LOG_DIR}/error.log",
+    MYSQL_LOG_ERROR,
     f"{MYSQL_LOG_DIR}/audit.log",
     f"{MYSQL_LOG_DIR}/general.log",
 ]

@@ -69,13 +69,21 @@ class TestCharm(unittest.TestCase):
             "services": {
                 "mysqld": {
                     "override": "replace",
-                    "summary": "mysqld safe",
+                    "summary": "mysql daemon",
                     "command": " ".join(mysqld_cmd),
                     "startup": "enabled",
                     "user": "mysql",
                     "group": "mysql",
                     "kill-delay": "24h",
                     "environment": {"MYSQLD_PARENT_PID": 1},
+                    "requires": ["mysql"],
+                    "after": ["mysql"],
+                },
+                "mysql": {
+                    "override": "replace",
+                    "summary": "tail log",
+                    "command": "tail -F /var/log/mysql/error.log",
+                    "startup": "enabled",
                 },
                 "mysqld_exporter": {
                     "override": "replace",
