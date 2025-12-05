@@ -143,6 +143,8 @@ def test_charmed_read_role(juju: Juju):
     juju.remove_relation(f"{DATABASE_APP_NAME}:database", f"{INTEGRATOR_APP_NAME}1:mysql")
     juju.wait(
         ready=lambda status: all((
+            # wait for relation to be fully removed before adding it again in the following test
+            jubilant_backports.all_agents_idle(status, f"{INTEGRATOR_APP_NAME}1"),
             *(
                 wait_for_unit_status(f"{INTEGRATOR_APP_NAME}1", unit_name, "blocked")
                 for unit_name in status.get_units(f"{INTEGRATOR_APP_NAME}1")
