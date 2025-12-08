@@ -39,6 +39,7 @@ from constants import (
     MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
     MYSQL_LOG_DIR,
+    MYSQL_LOG_ERROR,
     MYSQL_SYSTEM_GROUP,
     MYSQL_SYSTEM_USER,
     MYSQLD_DEFAULTS_CONFIG_FILE,
@@ -919,7 +920,7 @@ class MySQL(MySQLBase):
 
     def fetch_error_log(self) -> Optional[str]:
         """Fetch the MySQL error log."""
-        return self.read_file_content("/var/log/mysql/error.log")
+        return self.read_file_content(MYSQL_LOG_ERROR)
 
     def _file_exists(self, path: str) -> bool:
         """Check if a file exists.
