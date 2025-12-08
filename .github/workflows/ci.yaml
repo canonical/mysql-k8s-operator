@@ -65,7 +65,7 @@ jobs:
 
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v37.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v40.0.0
 
   integration-test:
     name: Integration tests
@@ -77,5 +77,3 @@ jobs:
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets: inherit
-    permissions:
-      contents: write  # Needed for Allure Report

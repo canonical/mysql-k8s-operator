@@ -17,6 +17,7 @@ from ...helpers_ha import (
     get_mysql_server_credentials,
     get_unit_address,
     wait_for_apps_status,
+    wait_for_unit_status,
 )
 
 DATABASE_APP_NAME = CHARM_METADATA["name"]
@@ -46,7 +47,12 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
         timeout=15 * MINUTE_SECS,
     )
     juju.wait(
-        ready=wait_for_apps_status(jubilant_backports.all_blocked, INTEGRATOR_APP_NAME),
+        ready=lambda status: all((
+            *(
+                wait_for_unit_status(INTEGRATOR_APP_NAME, unit_name, "blocked")
+                for unit_name in status.get_units(INTEGRATOR_APP_NAME)
+            ),
+        )),
         timeout=15 * MINUTE_SECS,
     )
 

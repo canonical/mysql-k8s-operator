@@ -19,7 +19,7 @@ on:
 jobs:
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v37.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v40.0.0
 
   lib-check:
     name: Check libraries
@@ -48,8 +48,6 @@ jobs:
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets: inherit
-    permissions:
-      contents: write  # Needed for Allure Report
 
   release-tests:
     name: Release tests
@@ -60,8 +58,6 @@ jobs:
     with:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets: inherit
-    permissions:
-      contents: write  # Needed for Allure Report
 
   release:
     name: Release charm
@@ -70,7 +66,7 @@ jobs:
       - lib-check
       - integration-tests
       - release-tests
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@v37.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@v40.0.0
     with:
       track: '8.0'
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
