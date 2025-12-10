@@ -3,9 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
-import os
 import socket
-import uuid
 from pathlib import Path
 
 import boto3
@@ -55,33 +53,12 @@ logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 backup_id, value_before_backup, value_after_backup = None, None, None
 
 
-@pytest.fixture(scope="session")
-def cloud_credentials() -> dict[str, str]:
-    """Read cloud credentials."""
-    return {
-        "access-key": os.environ["AWS_ACCESS_KEY"],
-        "secret-key": os.environ["AWS_SECRET_KEY"],
-    }
-
-
-@pytest.fixture(scope="session")
-def cloud_configs() -> dict[str, str]:
-    # Add UUID to path to avoid conflict with tests running in parallel (e.g. multiple Juju
-    # versions on a PR, multiple PRs)
-    path = f"mysql-k8s/{uuid.uuid4()}"
-
-    return {
-        "endpoint": "https://s3.amazonaws.com",
-        "bucket": "data-charms-testing",
-        "path": path,
-        "region": "us-east-1",
-    }
-
-
 @pytest.fixture(scope="session", autouse=True)
-def clean_backups_from_buckets(cloud_credentials, cloud_configs):
+def clean_backups_from_buckets(cloud_configs_aws):
     """Teardown to clean up created backups from clouds."""
     yield
+
+    cloud_configs, cloud_credentials = cloud_configs_aws
 
     logger.info("Cleaning backups from buckets")
     session = boto3.session.Session(  # pyright: ignore
@@ -140,9 +117,11 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
 
 
 @pytest.mark.abort_on_fail
-def test_backup(juju: Juju, cloud_credentials, cloud_configs) -> None:
+def test_backup(juju: Juju, cloud_configs_aws) -> None:
     """Test to create a backup and list backups."""
     global backup_id, value_before_backup, value_after_backup
+
+    cloud_configs, cloud_credentials = cloud_configs_aws
 
     app_units = get_app_units(juju, DATABASE_APP_NAME)
     zeroth_unit_name = app_units[0]
@@ -204,8 +183,10 @@ def test_backup(juju: Juju, cloud_credentials, cloud_configs) -> None:
 
 
 @pytest.mark.abort_on_fail
-def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -> None:
+def test_restore_on_same_cluster(juju: Juju, cloud_configs_aws) -> None:
     """Test to restore a backup to the same mysql cluster."""
+    cloud_configs, cloud_credentials = cloud_configs_aws
+
     logger.info("Scaling mysql application to 1 unit")
     scale_app_units(juju, DATABASE_APP_NAME, 1)
 
@@ -298,8 +279,10 @@ def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -
 
 
 @pytest.mark.abort_on_fail
-def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_configs) -> None:
+def test_restore_on_new_cluster(juju: Juju, charm, cloud_configs_aws) -> None:
     """Test to restore a backup on a new mysql cluster."""
+    cloud_configs, cloud_credentials = cloud_configs_aws
+
     logger.info("Deploying a new mysql cluster")
 
     new_mysql_application_name = "another-mysql-k8s"
