@@ -6,7 +6,8 @@
 import logging
 import typing
 
-from charms.mysql.v0.mysql import MySQLExecError, MySQLTextLogs
+from charms.mysql.v0.mysql import MySQLExecError
+from mysql_shell import LogType
 from ops.charm import CharmEvents
 from ops.framework import EventBase, EventSource, Object
 
@@ -54,10 +55,10 @@ class RotateMySQLLogs(Object):
 
         try:
             self.charm._mysql._execute_commands(["logrotate", "-f", LOG_ROTATE_CONFIG_FILE])
-            logs_to_flush = list(MySQLTextLogs)
-            if not self.charm.config.plugin_audit_enabled:
-                logs_to_flush.remove(MySQLTextLogs.AUDIT)
-
-            self.charm._mysql.flush_mysql_logs(logs_to_flush)
         except MySQLExecError:
             logger.warning("Failed to rotate MySQL logs")
+            return
+
+        self.charm._mysql.flush_mysql_logs(list(LogType))
+        if self.charm.config.plugin_audit_enabled:
+            self.charm._mysql.flush_mysql_audit_log()

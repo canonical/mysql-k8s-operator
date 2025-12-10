@@ -23,6 +23,7 @@ from charms.mysql.v0.mysql import (
     MySQLSetClusterPrimaryError,
     MySQLSetVariableError,
 )
+from mysql_shell import InstanceState
 from ops import Container, JujuVersion
 from ops.model import BlockedStatus, MaintenanceStatus, RelationDataContent
 from ops.pebble import ChangeError
@@ -82,14 +83,6 @@ class MySQLK8sUpgrade(DataUpgrade):
         """Run pre-upgrade checks."""
         fail_message = "Pre-upgrade check failed. Cannot upgrade."
 
-        def _count_online_instances(status_dict: dict) -> int:
-            """Return the number of online instances from status dict."""
-            return [
-                item["status"]
-                for item in status_dict["defaultreplicaset"]["topology"].values()
-                if not item.get("instanceerrors", [])
-            ].count("online")
-
         try:
             # ensure cluster node addresses are consistent in cluster metadata
             # https://github.com/canonical/mysql-k8s-operator/issues/327
@@ -101,15 +94,8 @@ class MySQLK8sUpgrade(DataUpgrade):
                 resolution="Check the cluster status",
             ) from e
 
-        if cluster_status := self.charm._mysql.get_cluster_status(extended=True):
-            if _count_online_instances(cluster_status) < self.charm.app.planned_units():
-                # case any not fully online unit is found
-                raise ClusterNotReadyError(
-                    message=fail_message,
-                    cause="Not all units are online",
-                    resolution="Ensure all units are online in the cluster",
-                )
-        else:
+        status = self.charm._mysql.get_cluster_status(extended=True)
+        if not status:
             # case cluster status is not available
             # it may be due to the refresh being ran before
             # the pre-upgrade-check action
@@ -117,6 +103,15 @@ class MySQLK8sUpgrade(DataUpgrade):
                 message=fail_message,
                 cause="Failed to retrieve cluster status",
                 resolution="Ensure that mysqld is running for this unit",
+            )
+
+        num_online = self.charm._mysql.get_cluster_node_count(node_status=InstanceState.ONLINE)
+        if num_online < self.charm.app.planned_units():
+            # case any not fully online unit is found
+            raise ClusterNotReadyError(
+                message=fail_message,
+                cause="Not all units are online",
+                resolution="Ensure all units are online in the cluster",
             )
 
         try:
@@ -175,7 +170,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         for unit in self.app_units:
             unit_address = self.charm.get_unit_address(unit)
             self.charm._mysql.set_dynamic_variable(
-                variable="innodb_fast_shutdown", value="0", instance_address=unit_address
+                variable="innodb_fast_shutdown", value=0, instance_address=unit_address
             )
 
         self.charm.k8s_helpers.set_rolling_update_partition(partition=self.highest_ordinal)
@@ -259,7 +254,7 @@ class MySQLK8sUpgrade(DataUpgrade):
         # complete upgrade for the unit
         logger.debug("Upgraded unit is healthy. Set upgrade state to `completed`")
         try:
-            self.charm.unit.set_workload_version(self.charm._mysql.get_mysql_version() or "unset")
+            self.charm.unit.set_workload_version(self.charm._mysql.get_mysql_version())
         except MySQLGetMySQLVersionError:
             # don't fail on this, just log it
             logger.warning("Failed to get MySQL version")

@@ -6,13 +6,13 @@
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple
 
 import jinja2
 from charms.mysql.v0.mysql import (
+    ADMIN_PORT,
     Error,
     MySQLBase,
-    MySQLClientError,
     MySQLExecError,
     MySQLGetClusterEndpointsError,
     MySQLServiceNotRunningError,
@@ -36,7 +36,6 @@ from constants import (
     CONTAINER_NAME,
     LOG_ROTATE_CONFIG_FILE,
     MYSQL_BINLOGS_COLLECTOR_SERVICE,
-    MYSQL_CLI_LOCATION,
     MYSQL_DATA_DIR,
     MYSQL_LOG_DIR,
     MYSQL_LOG_ERROR,
@@ -53,6 +52,7 @@ from constants import (
     XTRABACKUP_PLUGIN_DIR,
 )
 from k8s_helpers import KubernetesClientError, KubernetesHelpers
+from mysql_k8s_executor import ContainerExecutor, ExecutionError
 from utils import any_memory_to_bytes
 
 logger = logging.getLogger(__name__)
@@ -67,10 +67,6 @@ class MySQLResetRootPasswordAndStartMySQLDError(Error):
 
 class MySQLInitialiseMySQLDError(Error):
     """Exception raised when there is an issue initialising an instance."""
-
-
-class MySQLCreateCustomConfigFileError(Error):
-    """Exception raised when there is an issue creating custom config file."""
 
 
 class MySQLCreateDatabaseError(Error):
@@ -106,10 +102,6 @@ class MySQLRetrieveBackupWithXBCloudError(Error):
 
 class MySQLPrepareBackupForRestoreError(Error):
     """Exception raised when there is an error preparing a backup for restore."""
-
-
-class MySQLEmptyDataDirectoryError(Error):
-    """Exception raised when there is an error emptying the mysql data directory."""
 
 
 class MySQLRestoreBackupError(Error):
@@ -164,6 +156,10 @@ class MySQL(MySQLBase):
             k8s_helper: KubernetesHelpers object
             charm: charm object
         """
+        self.container = container
+        self.k8s_helper = k8s_helper
+        self.charm = charm
+
         super().__init__(
             instance_address=instance_address,
             socket_path=MYSQLD_SOCK_FILE,
@@ -178,10 +174,27 @@ class MySQL(MySQLBase):
             monitoring_password=monitoring_password,
             backups_user=backups_user,
             backups_password=backups_password,
+            mysqlsh_path=MYSQLSH_LOCATION,
+            executor_class=ContainerExecutor,
         )
-        self.container = container
-        self.k8s_helper = k8s_helper
-        self.charm = charm
+
+    def _build_cluster_tcp_executor(self, host: str, port: int = 3306):
+        """Build a TCP executor for the cluster operations."""
+        executor = super()._build_cluster_tcp_executor(host=host, port=port)
+        executor.set_container(self.container)
+        return executor
+
+    def _build_instance_tcp_executor(self, host: str, port: int = ADMIN_PORT):
+        """Build a TCP executor for the instance operations."""
+        executor = super()._build_instance_tcp_executor(host=host, port=port)
+        executor.set_container(self.container)
+        return executor
+
+    def _build_instance_sock_executor(self):
+        """Build a socket executor for the instance operations."""
+        executor = super()._build_instance_sock_executor()
+        executor.set_container(self.container)
+        return executor
 
     def fix_data_dir(self, container: Container) -> None:
         """Ensure the data directory for mysql is writable for the "mysql" user.
@@ -287,9 +300,9 @@ class MySQL(MySQLBase):
             raise MySQLServiceNotRunningError
 
         try:
-            if check_port and not self.check_mysqlcli_connection():
-                raise MySQLServiceNotRunningError("Connection with mysqlcli not possible")
-        except MySQLClientError:
+            if check_port and not self.check_mysqlsh_connection():
+                raise MySQLServiceNotRunningError("Connection with mysqlsh not possible")
+        except ExecutionError:
             raise MySQLServiceNotRunningError from None
 
         logger.debug("MySQL connection possible")
@@ -354,10 +367,7 @@ class MySQL(MySQLBase):
             group,
         )
 
-    def delete_temp_backup_directory(
-        self,
-        from_directory: str = MYSQL_DATA_DIR,
-    ) -> None:
+    def delete_temp_backup_directory(self, from_directory: str = MYSQL_DATA_DIR) -> None:
         """Delete the temp backup directory in the data directory."""
         super().delete_temp_backup_directory(
             from_directory,
@@ -448,12 +458,15 @@ class MySQL(MySQLBase):
 
         members_in_cluster = [
             member["address"]
-            for member in cluster_status["defaultreplicaset"]["topology"].values()
+            for member in cluster_status["defaultReplicaSet"]["topology"].values()
         ]
 
         if unit_address in members_in_cluster:
             raise MySQLWaitUntilUnitRemovedFromClusterError("Remove member still in cluster")
 
+    # TODO:
+    #  Remove when migrating to MySQL 8.4
+    #  (when breaking changes are allowed)
     def create_database_legacy(self, database_name: str) -> None:
         """Creates a database.
 
@@ -463,22 +476,22 @@ class MySQL(MySQLBase):
         Raises:
             MySQLCreateDatabaseError if there is an issue creating specified database
         """
+        executor = self._build_instance_tcp_executor(self.instance_address)
+
         try:
-            create_database_commands = (
-                "shell.connect_to_primary()",
-                f'session.run_sql("CREATE DATABASE IF NOT EXISTS `{database_name}`;")',
+            executor.execute_py(
+                "\n".join([
+                    "shell.connect_to_primary()",
+                    f"session.run_sql('CREATE DATABASE IF NOT EXISTS `{database_name}`;')",
+                ]),
             )
-
-            self._run_mysqlsh_script(
-                "\n".join(create_database_commands),
-                user=self.server_config_user,
-                host=self.instance_address,
-                password=self.server_config_password,
-            )
-        except MySQLClientError as e:
+        except ExecutionError as e:
             logger.exception(f"Failed to create database {database_name}", exc_info=e)
-            raise MySQLCreateDatabaseError(e.message) from None
+            raise MySQLCreateDatabaseError() from None
 
+    # TODO:
+    #  Remove when migrating to MySQL 8.4
+    #  (when breaking changes are allowed)
     def create_user_legacy(
         self, username: str, password: str, label: str, hostname: str = "%"
     ) -> None:
@@ -493,26 +506,23 @@ class MySQL(MySQLBase):
         Raises:
             MySQLCreateUserError if there is an issue creating specified user
         """
+        executor = self._build_instance_tcp_executor(self.instance_address)
+
         try:
             escaped_user_attributes = json.dumps({"label": label}).replace('"', r"\"")
-            create_user_commands = (
-                "shell.connect_to_primary()",
-                (
-                    f'session.run_sql("CREATE USER `{username}`@`{hostname}` IDENTIFIED'
-                    f" BY '{password}' ATTRIBUTE '{escaped_user_attributes}';\")"
-                ),
+            executor.execute_py(
+                "\n".join([
+                    "shell.connect_to_primary()",
+                    f"session.run_sql('CREATE USER `{username}`@`{hostname}` IDENTIFIED BY \\'{password}\\' ATTRIBUTE \\'{escaped_user_attributes}\\';')",
+                ]),
             )
-
-            self._run_mysqlsh_script(
-                "\n".join(create_user_commands),
-                user=self.server_config_user,
-                host=self.instance_address,
-                password=self.server_config_password,
-            )
-        except MySQLClientError as e:
+        except ExecutionError:
             logger.exception(f"Failed to create user {username}@{hostname}")
-            raise MySQLCreateUserError(e.message) from None
+            raise MySQLCreateUserError() from None
 
+    # TODO:
+    #  Remove when migrating to MySQL 8.4
+    #  (when breaking changes are allowed)
     def escalate_user_privileges(self, username: str, hostname: str = "%") -> None:
         """Escalates the provided user's privileges.
 
@@ -523,37 +533,37 @@ class MySQL(MySQLBase):
         Raises:
             MySQLEscalateUserPrivilegesError if there is an error escalating user privileges
         """
+        executor = self._build_instance_tcp_executor(self.instance_address)
+
+        super_privileges_to_revoke = ", ".join([
+            "SYSTEM_USER",
+            "SYSTEM_VARIABLES_ADMIN",
+            "SUPER",
+            "REPLICATION_SLAVE_ADMIN",
+            "GROUP_REPLICATION_ADMIN",
+            "BINLOG_ADMIN",
+            "SET_USER_ID",
+            "ENCRYPTION_KEY_ADMIN",
+            "VERSION_TOKEN_ADMIN",
+            "CONNECTION_ADMIN",
+        ])
+
         try:
-            super_privileges_to_revoke = (
-                "SYSTEM_USER",
-                "SYSTEM_VARIABLES_ADMIN",
-                "SUPER",
-                "REPLICATION_SLAVE_ADMIN",
-                "GROUP_REPLICATION_ADMIN",
-                "BINLOG_ADMIN",
-                "SET_USER_ID",
-                "ENCRYPTION_KEY_ADMIN",
-                "VERSION_TOKEN_ADMIN",
-                "CONNECTION_ADMIN",
+            executor.execute_py(
+                "\n".join([
+                    "shell.connect_to_primary()",
+                    f"session.run_sql('GRANT ALL ON *.* TO `{username}`@`{hostname}` WITH GRANT OPTION;')",
+                    f"session.run_sql('REVOKE {super_privileges_to_revoke} ON *.* FROM `{username}`@`{hostname}`;')",
+                    "session.run_sql('FLUSH PRIVILEGES;')",
+                ]),
             )
-
-            escalate_user_privileges_commands = (
-                "shell.connect_to_primary()",
-                f'session.run_sql("GRANT ALL ON *.* TO `{username}`@`{hostname}` WITH GRANT OPTION;")',
-                f'session.run_sql("REVOKE {", ".join(super_privileges_to_revoke)} ON *.* FROM `{username}`@`{hostname}`;")',
-                'session.run_sql("FLUSH PRIVILEGES;")',
-            )
-
-            self._run_mysqlsh_script(
-                "\n".join(escalate_user_privileges_commands),
-                user=self.server_config_user,
-                host=self.instance_address,
-                password=self.server_config_password,
-            )
-        except MySQLClientError as e:
+        except ExecutionError:
             logger.exception(f"Failed to escalate user privileges for {username}@{hostname}")
-            raise MySQLEscalateUserPrivilegesError(e.message) from None
+            raise MySQLEscalateUserPrivilegesError() from None
 
+    # TODO:
+    #  Remove when migrating to MySQL 8.4
+    #  (when breaking changes are allowed)
     def delete_users_with_label(self, label_name: str, label_value: str) -> None:
         """Delete users with the provided label.
 
@@ -564,41 +574,45 @@ class MySQL(MySQLBase):
         Raises:
             MySQLDeleteUsersWIthLabelError if there is an error deleting users for the label
         """
-        get_label_users = (
-            "SELECT CONCAT(user.user, '@', user.host) FROM mysql.user AS user "  # noqa: S608
-            "JOIN information_schema.user_attributes AS attributes"
-            " ON (user.user = attributes.user AND user.host = attributes.host) "
-            f'WHERE attributes.attribute LIKE \'%"{label_name}": "{label_value}"%\'',
+        executor = self._build_instance_tcp_executor(self.instance_address)
+
+        get_label_users_selector = f'%"{label_name}": "{label_value}"%'
+        get_label_users_query = (
+            "SELECT user.user, user.host"
+            "FROM mysql.user AS user "
+            "JOIN information_schema.user_attributes AS attributes "
+            "   ON (user.user = attributes.user AND user.host = attributes.host) "
+            f"WHERE attributes.attribute LIKE '{get_label_users_selector}'"
         )
 
         try:
-            output = self._run_mysqlcli_script(
-                get_label_users,
-                user=self.server_config_user,
-                password=self.server_config_password,
-            )
-            users = [f"'{user[0].split('@')[0]}'@'{user[0].split('@')[1]}'" for user in output]
+            rows = executor.execute_sql(get_label_users_query)
+            users = [f"\\'{row['user']}\\'@\\'{row['host']}\\'" for row in rows]
 
             if len(users) == 0:
                 logger.debug(f"There are no users to drop for label {label_name}={label_value}")
                 return
 
-            # Using server_config_user as we are sure it has drop user grants
-            drop_users_command = (
-                "shell.connect_to_primary()",
-                f'session.run_sql("DROP USER IF EXISTS {", ".join(users)};")',
+            users = ", ".join(users)
+            executor.execute_py(
+                "\n".join([
+                    "shell.connect_to_primary()",
+                    f"session.run_sql('DROP USER IF EXISTS {users};')",
+                ]),
             )
-            self._run_mysqlsh_script(
-                "\n".join(drop_users_command),
-                user=self.server_config_user,
-                host=self.instance_address,
-                password=self.server_config_password,
-            )
-        except MySQLClientError as e:
-            logger.exception(
-                f"Failed to query and delete users for label {label_name}={label_value}"
-            )
-            raise MySQLDeleteUsersWithLabelError(e.message) from None
+        except ExecutionError:
+            logger.exception(f"Failed to query and delete users for {label_name}={label_value}")
+            raise MySQLDeleteUsersWithLabelError() from None
+
+    def drop_group_replication_metadata_schema(self) -> None:
+        """Drop the group replication metadata schema from current unit."""
+        executor = self._build_instance_tcp_executor(self.instance_address)
+
+        try:
+            executor.execute_py("dba.drop_metadata_schema()")
+        except ExecutionError:
+            logger.error("Failed to drop group replication metadata schema")
+            raise
 
     def is_mysqld_running(self) -> bool:
         """Returns whether server is connectable and mysqld is running."""
@@ -674,106 +688,9 @@ class MySQL(MySQLBase):
             )
             raise MySQLExecError from None
 
-    def _run_mysqlsh_script(
-        self,
-        script: str,
-        user: str,
-        host: str,
-        password: str,
-        timeout: Optional[int] = None,
-        exception_as_warning: bool = False,
-        verbose: int = 0,
-    ) -> str:
-        """Execute a MySQL shell script.
-
-        Raises ExecError if the script gets a non-zero return code.
-
-        Args:
-            script: mysql-shell python script string
-            user: User to invoke the mysqlsh script with
-            host: Host to run the script on
-            password: Password to invoke the mysqlsh script
-            verbose: mysqlsh verbosity level
-            timeout: timeout to wait for the script
-            exception_as_warning: (optional) whether the exception should be treated as warning
-
-        Returns:
-            stdout of the script
-        """
-        prepend_cmd = "shell.options.set('useWizards', False)\nprint('###')\n"
-        script = prepend_cmd + script
-
-        # render command with remove file after run
-        cmd = [
-            MYSQLSH_LOCATION,
-            "--passwords-from-stdin",
-            f"--uri={user}@{host}",
-            "--python",
-            f"--verbose={verbose}",
-            "-c",
-            script,
-        ]
-
-        try:
-            process = self.container.exec(cmd, timeout=timeout, stdin=password)
-            stdout, _ = process.wait_output()
-            return stdout.split("###")[1].strip()
-        except (ExecError, ChangeError) as e:
-            if exception_as_warning:
-                logger.warning("Failed to execute mysql-shell command")
-            else:
-                self.strip_off_passwords_from_exception(e)
-                logger.exception("Failed to execute mysql-shell command")
-            raise MySQLClientError from None
-
-    def _run_mysqlcli_script(
-        self,
-        script: Union[Tuple[Any, ...], List[Any]],
-        user: str = "root",
-        password: Optional[str] = None,
-        timeout: Optional[int] = None,
-        exception_as_warning: bool = False,
-        **_,
-    ) -> list:
-        """Execute a MySQL CLI script.
-
-        Execute SQL script as instance root user.
-        Raises ExecError if the script gets a non-zero return code.
-
-        Args:
-            script: raw SQL script string
-            user: user to run the script
-            password: root password to use for the script when needed
-            timeout: a timeout to execute the mysqlcli script
-            exception_as_warning: (optional) whether the exception should be treated as warning
-        """
-        command = [
-            MYSQL_CLI_LOCATION,
-            "-u",
-            user,
-            "-N",
-            f"--socket={MYSQLD_SOCK_FILE}",
-            "-e",
-            ";".join(script),
-        ]
-
-        try:
-            if password:
-                # password is needed after user
-                command.insert(3, "-p")
-                process = self.container.exec(command, timeout=timeout, stdin=password)
-            else:
-                process = self.container.exec(command, timeout=timeout)
-
-            stdout, _ = process.wait_output()
-            return [line.split("\t") for line in stdout.strip().split("\n")] if stdout else []
-        except (ExecError, ChangeError) as e:
-            if exception_as_warning:
-                logger.warning("Failed to execute MySQL cli command")
-            else:
-                self.strip_off_passwords_from_exception(e)
-                logger.exception("Failed to execute MySQL cli command")
-            raise MySQLClientError from None
+    def _file_exists(self, path: str) -> bool:
+        """Check if a file exists."""
+        return self.container.exists(path)
 
     def write_content_to_file(
         self,
@@ -825,24 +742,6 @@ class MySQL(MySQLBase):
         logger.debug("Resetting MySQL data directory.")
         for item in content_set:
             self.container.remove_path(f"{MYSQL_DATA_DIR}/{item}", recursive=True)
-
-    def check_if_mysqld_process_stopped(self) -> bool:
-        """Checks if the mysqld process is stopped on the container."""
-        command = ["ps", "-eo", "comm,stat"]
-
-        try:
-            process = self.container.exec(command)
-            stdout, _ = process.wait_output()
-
-            for line in stdout.strip().split("\n"):
-                [comm, stat] = line.split()
-
-                if comm == MYSQLD_SERVICE:
-                    return "T" in stat
-
-            return True
-        except ExecError as e:
-            raise MySQLClientError(e.stderr or "") from None
 
     def get_available_memory(self) -> int:
         """Get available memory for the container in bytes."""
@@ -921,14 +820,6 @@ class MySQL(MySQLBase):
     def fetch_error_log(self) -> Optional[str]:
         """Fetch the MySQL error log."""
         return self.read_file_content(MYSQL_LOG_ERROR)
-
-    def _file_exists(self, path: str) -> bool:
-        """Check if a file exists.
-
-        Args:
-            path: Path to the file to check
-        """
-        return self.container.exists(path)
 
     def reconcile_binlogs_collection(
         self, force_restart: bool = False, ignore_inactive_error: bool = False

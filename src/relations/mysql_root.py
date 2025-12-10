@@ -126,7 +126,7 @@ class MySQLRootRelation(Object):
                 )
                 return
 
-            relation_databag[self.charm.unit]["host"] = primary_address.split(":")[0]
+            relation_databag[self.charm.unit]["host"] = primary_address
 
     def _on_config_changed(self, _) -> None:
         """Handle the change of the username/database config."""
@@ -228,7 +228,7 @@ class MySQLRootRelation(Object):
 
         updates = {
             "database": database,
-            "host": primary_address.split(":")[0],
+            "host": primary_address,
             "password": password,
             "port": "3306",
             "root_password": root_password,

@@ -156,7 +156,7 @@ class MySQLRelation(Object):
             self.charm.unit.status = BlockedStatus("Failed to retrieve cluster primary address")
             return
 
-        if host != primary_address.split(":")[0]:
+        if host != primary_address:
             # Trigger a peer relation changed event in order to refresh the relation data
             update_status_count = int(self.charm.app_peer_data.get("update_status_count", "0"))
             self.charm.app_peer_data["update_status_count"] = str(update_status_count + 1)
@@ -193,7 +193,7 @@ class MySQLRelation(Object):
             logger.error("Unable to query the cluster primary address")
             self.charm.unit.status = BlockedStatus("Failed to retrieve cluster primary address")
             return
-        updates["host"] = primary_address.split(":")[0]
+        updates["host"] = primary_address
 
         self.model.get_relation(LEGACY_MYSQL).data[self.charm.unit].update(updates)
 
@@ -271,7 +271,7 @@ class MySQLRelation(Object):
 
         updates = {
             "database": database,
-            "host": primary_address.split(":")[0],
+            "host": primary_address,
             "password": password,
             "port": "3306",
             "root_password": self.charm.get_secret("app", ROOT_PASSWORD_KEY),
