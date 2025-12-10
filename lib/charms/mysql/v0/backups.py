@@ -57,7 +57,6 @@ from charms.data_platform_libs.v0.s3 import (
     S3Requirer,
 )
 from charms.mysql.v0.mysql import (
-    MySQLClusterState,
     MySQLConfigureInstanceError,
     MySQLCreateClusterError,
     MySQLCreateClusterSetError,
@@ -67,8 +66,6 @@ from charms.mysql.v0.mysql import (
     MySQLExecuteBackupCommandsError,
     MySQLInitializeJujuOperationsTableError,
     MySQLKillSessionError,
-    MySQLMemberState,
-    MySQLNoMemberStateError,
     MySQLOfflineModeAndHiddenInstanceExistsError,
     MySQLPrepareBackupForRestoreError,
     MySQLRescanClusterError,
@@ -95,6 +92,8 @@ from constants import (
     SERVER_CONFIG_PASSWORD_KEY,
     SERVER_CONFIG_USERNAME,
 )
+from mysql_shell.models.cluster import ClusterStatus
+from mysql_shell.models.instance import InstanceRole, InstanceState
 from ops.charm import ActionEvent
 from ops.framework import Object
 from ops.jujuversion import JujuVersion
@@ -107,13 +106,10 @@ S3_INTEGRATOR_RELATION_NAME = "s3-parameters"
 
 # The unique Charmhub library identifier, never change it
 LIBID = "183844304be247129572309a5fb1e47c"
-
-# Increment this major API version when introducing breaking changes
 LIBAPI = 0
+LIBPATCH = 19
 
-# Increment this PATCH version before using `charmcraft publish-lib` or reset
-# to 0 if you are raising the major API version
-LIBPATCH = 18
+PYDEPS = ["mysql_shell_client ~= 0.6"]
 
 ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE = "S3 repository claimed by another cluster"
 MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
@@ -374,8 +370,8 @@ class MySQLBackups(Object):
         if not cluster_status:
             return False, "Cluster status unknown"
 
-        cluster_status = cluster_status["defaultreplicaset"]["status"]
-        if cluster_status not in [MySQLClusterState.OK, MySQLClusterState.OK_PARTIAL]:
+        cluster_status = cluster_status["defaultReplicaSet"]["status"]
+        if cluster_status not in [ClusterStatus.OK, ClusterStatus.OK_PARTIAL]:
             return False, "Cluster is not in a healthy state"
 
         return True, None
@@ -399,14 +395,15 @@ class MySQLBackups(Object):
         logger.info("Checking state and role of unit")
 
         try:
-            state, role = self.charm._mysql.get_member_state()
-        except (MySQLNoMemberStateError, MySQLUnableToGetMemberStateError):
+            role = self.charm._mysql.get_member_role()
+            state = self.charm._mysql.get_member_state()
+        except MySQLUnableToGetMemberStateError:
             return False, "Error obtaining member state"
 
-        if role == "primary" and self.charm.app.planned_units() > 1:
+        if role == InstanceRole.PRIMARY and self.charm.app.planned_units() > 1:
             return False, "Unit cannot perform backups as it is the cluster primary"
 
-        if state not in [MySQLMemberState.ONLINE]:
+        if state not in [InstanceState.ONLINE]:
             return False, f"Unit cannot perform backups as its state is {state}"
 
         return True, None
