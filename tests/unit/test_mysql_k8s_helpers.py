@@ -6,12 +6,11 @@ import unittest
 from unittest.mock import MagicMock, call, patch
 
 import tenacity
-from charms.mysql.v0.mysql import MySQLClientError
 from ops.pebble import ExecError, PathError
 
 from constants import PEER
 from mysql_k8s_helpers import (
-    MYSQLD_SOCK_FILE,
+    ExecutionError,
     MySQL,
     MySQLCreateDatabaseError,
     MySQLCreateUserError,
@@ -23,19 +22,19 @@ from mysql_k8s_helpers import (
 )
 
 GET_CLUSTER_STATUS_RETURN = {
-    "defaultreplicaset": {
+    "defaultReplicaSet": {
         "status": "no_quorum",
         "topology": {
             "mysql-0": {
-                "status": "online",
+                "status": "ONLINE",
                 "address": "mysql-0.mysql-endpoints",
             },
             "mysql-2": {
-                "status": "unreachable",
+                "status": "UNREACHABLE",
                 "address": "mysql-2.mysql-endpoints",
             },
             "mysql-1": {
-                "status": "(missing)",
+                "status": "(MISSING)",
                 "address": "mysql-1.mysql-endpoints",
             },
         },
@@ -45,6 +44,8 @@ GET_CLUSTER_STATUS_RETURN = {
 
 class TestMySQL(unittest.TestCase):
     def setUp(self):
+        self.mock_executor_cls = MagicMock()
+        self.mock_executor = self.mock_executor_cls.return_value
         self.mysql = MySQL(
             "127.0.0.1",
             "test_cluster",
@@ -62,6 +63,7 @@ class TestMySQL(unittest.TestCase):
             None,
             None,
         )
+        self.mysql.executor_class = self.mock_executor_cls
 
     @patch("ops.pebble.ExecProcess")
     @patch("ops.model.Container")
@@ -103,61 +105,45 @@ class TestMySQL(unittest.TestCase):
 
         self.assertTrue(not self.mysql.wait_until_mysql_connection(check_port=False))
 
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_create_database_legacy(self, _run_mysqlsh_script):
+    def test_create_database_legacy(self):
         """Test successful execution of create_database_legacy."""
-        _expected_create_database_commands = (
+        commands = [
             "shell.connect_to_primary()",
-            'session.run_sql("CREATE DATABASE IF NOT EXISTS `test_database`;")',
-        )
+            "session.run_sql('CREATE DATABASE IF NOT EXISTS `test_database`;')",
+        ]
 
         self.mysql.create_database_legacy("test_database")
+        self.mock_executor.execute_py.assert_called_once_with("\n".join(commands))
 
-        _run_mysqlsh_script.assert_called_once_with(
-            "\n".join(_expected_create_database_commands),
-            user="serverconfig",
-            host="127.0.0.1",
-            password="serverconfigpassword",
-        )
-
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_create_database_legacy_exception(self, _run_mysqlsh_script):
+    def test_create_database_legacy_exception(self):
         """Test exception while executing create_database_legacy."""
-        _run_mysqlsh_script.side_effect = MySQLClientError("Error creating database")
+        self.mock_executor.execute_py.side_effect = ExecutionError
 
         with self.assertRaises(MySQLCreateDatabaseError):
             self.mysql.create_database_legacy("test_database")
 
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_create_user_legacy(self, _run_mysqlsh_script):
+    def test_create_user_legacy(self):
         """Test successful execution of create_user_legacy."""
         _escaped_attributes = json.dumps({"label": "test_label"}).replace('"', r"\"")
-        _expected_create_user_commands = (
+
+        commands = [
             "shell.connect_to_primary()",
-            f"session.run_sql(\"CREATE USER `test_user`@`%` IDENTIFIED BY 'test_password' ATTRIBUTE '{_escaped_attributes}';\")",
-        )
+            f"session.run_sql('CREATE USER `test_user`@`%` IDENTIFIED BY \\'test_password\\' ATTRIBUTE \\'{_escaped_attributes}\\';')",
+        ]
 
         self.mysql.create_user_legacy("test_user", "test_password", "test_label")
+        self.mock_executor.execute_py.assert_called_once_with("\n".join(commands))
 
-        _run_mysqlsh_script.assert_called_once_with(
-            "\n".join(_expected_create_user_commands),
-            user="serverconfig",
-            host="127.0.0.1",
-            password="serverconfigpassword",
-        )
-
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_create_user_legacy_exception(self, _run_mysqlsh_script):
+    def test_create_user_legacy_exception(self):
         """Test exception while executing create_user_legacy."""
-        _run_mysqlsh_script.side_effect = MySQLClientError("Error creating user")
+        self.mock_executor.execute_py.side_effect = ExecutionError
 
         with self.assertRaises(MySQLCreateUserError):
             self.mysql.create_user_legacy("test_user", "test_password", "test_label")
 
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_escalate_user_privileges(self, _run_mysqlsh_script):
+    def test_escalate_user_privileges(self):
         """Test successful execution of escalate_user_privileges."""
-        super_privileges_to_revoke = (
+        super_privileges_to_revoke = [
             "SYSTEM_USER",
             "SYSTEM_VARIABLES_ADMIN",
             "SUPER",
@@ -168,161 +154,61 @@ class TestMySQL(unittest.TestCase):
             "ENCRYPTION_KEY_ADMIN",
             "VERSION_TOKEN_ADMIN",
             "CONNECTION_ADMIN",
-        )
+        ]
 
-        _expected_escalate_user_privileges_commands = (
+        commands = [
             "shell.connect_to_primary()",
-            'session.run_sql("GRANT ALL ON *.* TO `test_user`@`%` WITH GRANT OPTION;")',
-            f'session.run_sql("REVOKE {", ".join(super_privileges_to_revoke)} ON *.* FROM `test_user`@`%`;")',
-            'session.run_sql("FLUSH PRIVILEGES;")',
-        )
+            "session.run_sql('GRANT ALL ON *.* TO `test_user`@`%` WITH GRANT OPTION;')",
+            f"session.run_sql('REVOKE {', '.join(super_privileges_to_revoke)} ON *.* FROM `test_user`@`%`;')",
+            "session.run_sql('FLUSH PRIVILEGES;')",
+        ]
 
         self.mysql.escalate_user_privileges("test_user")
+        self.mock_executor.execute_py.assert_called_once_with("\n".join(commands))
 
-        _run_mysqlsh_script.assert_called_once_with(
-            "\n".join(_expected_escalate_user_privileges_commands),
-            user="serverconfig",
-            host="127.0.0.1",
-            password="serverconfigpassword",
-        )
-
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_escalate_user_privileges_exception(self, _run_mysqlsh_script):
+    def test_escalate_user_privileges_exception(self):
         """Test exception while executing escalate_user_privileges."""
-        _run_mysqlsh_script.side_effect = MySQLClientError("Error escalating user privileges")
+        self.mock_executor.execute_py.side_effect = ExecutionError
 
         with self.assertRaises(MySQLEscalateUserPrivilegesError):
             self.mysql.escalate_user_privileges("test_user")
 
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_delete_users_with_label(self, _run_mysqlsh_script, _run_mysqlcli_script):
+    def test_delete_users_with_label(self):
         """Test successful execution of delete_users_with_label."""
-        _expected_get_label_users_commands = (
-            "SELECT CONCAT(user.user, '@', user.host) FROM mysql.user AS user "
-            "JOIN information_schema.user_attributes AS attributes"
-            " ON (user.user = attributes.user AND user.host = attributes.host) "
-            'WHERE attributes.attribute LIKE \'%"test_label_name": "test_label_value"%\'',
+        search_query = (
+            "SELECT user.user, user.host"
+            "FROM mysql.user AS user "
+            "JOIN information_schema.user_attributes AS attributes "
+            "   ON (user.user = attributes.user AND user.host = attributes.host) "
+            'WHERE attributes.attribute LIKE \'%"test_label_name": "test_label_value"%\''
         )
 
-        _run_mysqlcli_script.return_value = [
-            [
-                "test_user@%",
-            ],
-            [
-                "test_user_2@localhost",
-            ],
+        drop_commands = [
+            "shell.connect_to_primary()",
+            "session.run_sql('DROP USER IF EXISTS \\'test_user\\'@\\'%\\', \\'test_user_2\\'@\\'localhost\\';')",
         ]
 
-        _expected_drop_users_commands = (
-            "shell.connect_to_primary()",
-            "session.run_sql(\"DROP USER IF EXISTS 'test_user'@'%', 'test_user_2'@'localhost';\")",
-        )
+        self.mock_executor.execute_sql.return_value = [
+            {"user": "test_user", "host": "%"},
+            {"user": "test_user_2", "host": "localhost"},
+        ]
 
         self.mysql.delete_users_with_label("test_label_name", "test_label_value")
+        self.mock_executor.execute_sql.assert_called_once_with(search_query)
+        self.mock_executor.execute_py.assert_called_once_with("\n".join(drop_commands))
 
-        _run_mysqlcli_script.assert_called_once_with(
-            _expected_get_label_users_commands,
-            user="serverconfig",
-            password="serverconfigpassword",
-        )
-        _run_mysqlsh_script.assert_called_once_with(
-            "\n".join(_expected_drop_users_commands),
-            user="serverconfig",
-            host="127.0.0.1",
-            password="serverconfigpassword",
-        )
-
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlcli_script")
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script")
-    def test_delete_users_with_label_exception(self, _run_mysqlsh_script, _run_mysqlcli_script):
+    def test_delete_users_with_label_exception(self):
         """Test exception while executing delete_users_with_label."""
-        _run_mysqlcli_script.side_effect = MySQLClientError("Error getting label users")
+        self.mock_executor.execute_sql.side_effect = ExecutionError
 
         with self.assertRaises(MySQLDeleteUsersWithLabelError):
             self.mysql.delete_users_with_label("test_label_name", "test_label_value")
 
-        _run_mysqlcli_script.reset_mock()
-        _run_mysqlsh_script.side_effect = MySQLClientError("Error dropping users")
+        self.mock_executor.execute_sql.reset_mock()
+        self.mock_executor.execute_py.side_effect = ExecutionError
 
         with self.assertRaises(MySQLDeleteUsersWithLabelError):
             self.mysql.delete_users_with_label("test_label_name", "test_label_value")
-
-    @patch("ops.model.Container")
-    def test_run_mysqlsh_script(self, _container):
-        """Test a successful execution of run_mysqlsh_script."""
-        _container.exec.return_value = MagicMock()
-        _container.exec.return_value.wait_output.return_value = (
-            "garbage_that_mysqlsh_output###stdout",
-            "stderr",
-        )
-        self.mysql.container = _container
-
-        script = "shell.options.set('useWizards', False)\nprint('###')\nscript"
-        output = self.mysql._run_mysqlsh_script(
-            "script",
-            user="serverconfig",
-            password="serverconfigpassword",
-            host="127.0.0.1:3306",
-            timeout=10,
-        )
-        self.assertEqual(output, "stdout")
-
-        _container.exec.assert_called_once_with(
-            [
-                "/usr/bin/mysqlsh",
-                "--passwords-from-stdin",
-                "--uri=serverconfig@127.0.0.1:3306",
-                "--python",
-                "--verbose=0",
-                "-c",
-                script,
-            ],
-            timeout=10,
-            stdin="serverconfigpassword",
-        )
-
-    @patch("ops.model.Container")
-    def test_run_mysqlcli_script(self, _container):
-        """Test a execution of run_mysqlcli_script."""
-        _container.exec.return_value = MagicMock()
-        _container.exec.return_value.wait_output.return_value = (
-            "",
-            None,
-        )
-        self.mysql.container = _container
-
-        self.mysql._run_mysqlcli_script(("script",))
-
-        _container.exec.assert_called_once_with(
-            [
-                "/usr/bin/mysql",
-                "-u",
-                "root",
-                "-N",
-                f"--socket={MYSQLD_SOCK_FILE}",
-                "-e",
-                "script",
-            ],
-            timeout=None,
-        )
-
-        _container.reset_mock()
-        self.mysql._run_mysqlcli_script(("script",), password="rootpassword")
-        _container.exec.assert_called_once_with(
-            [
-                "/usr/bin/mysql",
-                "-u",
-                "root",
-                "-p",
-                "-N",
-                f"--socket={MYSQLD_SOCK_FILE}",
-                "-e",
-                "script",
-            ],
-            timeout=None,
-            stdin="rootpassword",
-        )
 
     @patch("mysql_k8s_helpers.MySQL.get_cluster_status", return_value=GET_CLUSTER_STATUS_RETURN)
     def test_wait_until_unit_removed_from_cluster(self, _get_cluster_status):
