@@ -54,6 +54,8 @@ MOVE_RESTORED_CLUSTER_TO_ANOTHER_S3_REPOSITORY_ERROR = (
     "Move restored cluster to another S3 repository"
 )
 
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
+
 backup_id, backups_by_cloud, value_before_backup, value_after_backup = None, None, None, None
 MICROCEPH_BUCKET = "testbucket"
 
