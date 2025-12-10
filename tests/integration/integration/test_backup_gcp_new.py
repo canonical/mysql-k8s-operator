@@ -24,7 +24,7 @@ from ..helpers_ha import (
     get_mysql_primary_unit,
     get_mysql_server_credentials,
     get_unit_address,
-    insert_mysql_test_data,
+    insert_mysql_data_and_validate_replication,
     rotate_mysql_server_credentials,
     scale_app_units,
     wait_for_apps_status,
@@ -152,11 +152,13 @@ def test_backup(juju: Juju, cloud_credentials, cloud_configs) -> None:
     # insert data into cluster before backup
     logger.info("Inserting value before backup")
     value_before_backup = generate_random_string(255)
-    insert_mysql_test_data(juju, DATABASE_APP_NAME, TABLE_NAME, value_before_backup)
+    credentials = get_mysql_server_credentials(juju, primary_unit_name)
+    insert_mysql_data_and_validate_replication(
+        juju, DATABASE_APP_NAME, DATABASE_NAME, TABLE_NAME, value_before_backup, credentials
+    )
 
     logger.info("Setting s3 config")
     juju.config(S3_INTEGRATOR, cloud_configs)
-
     logger.info("Syncing credentials")
     s3_unit_name = get_app_units(juju, S3_INTEGRATOR)[0]
     juju.run(
@@ -174,21 +176,20 @@ def test_backup(juju: Juju, cloud_credentials, cloud_configs) -> None:
 
     # list backups
     logger.info("Listing existing backup ids")
+
     results = juju.run(zeroth_unit_name, "list-backups").results
     output = results["backups"]
     backup_ids = [line.split("|")[0].strip() for line in output.split("\n")[2:]]
 
     # create backup
     logger.info("Creating backup")
-    results = juju.run(
-        non_primary_unit_names[0],
-        "create-backup",
-        wait=5 * MINUTE_SECS,
-    ).results
+
+    results = juju.run(non_primary_unit_names[0], "create-backup", wait=5 * MINUTE_SECS).results
     backup_id = results["backup-id"]
 
     # list backups again and ensure new backup id exists
     logger.info("Listing backup ids post backup")
+
     results = juju.run(zeroth_unit_name, "list-backups").results
     output = results["backups"]
     new_backup_ids = [line.split("|")[0].strip() for line in output.split("\n")[2:]]
@@ -198,7 +199,9 @@ def test_backup(juju: Juju, cloud_credentials, cloud_configs) -> None:
     # insert data into cluster after backup
     logger.info("Inserting value after backup")
     value_after_backup = generate_random_string(255)
-    insert_mysql_test_data(juju, DATABASE_APP_NAME, TABLE_NAME, value_after_backup)
+    insert_mysql_data_and_validate_replication(
+        juju, DATABASE_APP_NAME, DATABASE_NAME, TABLE_NAME, value_after_backup, credentials
+    )
 
 
 @pytest.mark.abort_on_fail
@@ -229,6 +232,7 @@ def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -
 
     # restore the backup
     logger.info(f"Restoring {backup_id=}")
+
     juju.run(mysql_unit_name, "restore", params={"backup-id": backup_id})
 
     # ensure the correct inserted values exist
@@ -251,10 +255,11 @@ def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -
     # insert data into cluster after restore
     logger.info("Inserting value after restore")
     value_after_restore = generate_random_string(255)
-    insert_mysql_test_data(juju, DATABASE_APP_NAME, TABLE_NAME, value_after_restore)
+    insert_mysql_data_and_validate_replication(
+        juju, DATABASE_APP_NAME, DATABASE_NAME, TABLE_NAME, value_after_restore, credentials
+    )
 
     logger.info("Ensuring that pre-backup and post-restore values exist in the database")
-    credentials = get_mysql_server_credentials(juju, mysql_unit_name)
     values = execute_queries_on_unit(
         mysql_unit_address,
         credentials["username"],
@@ -325,7 +330,7 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
     # rotate all credentials
     logger.info("Rotating all mysql credentials")
 
-    primary_unit_name = get_app_units(juju, new_mysql_application_name)[0]
+    primary_unit_name = get_mysql_primary_unit(juju, new_mysql_application_name)
     primary_unit_address = get_unit_address(juju, new_mysql_application_name, primary_unit_name)
 
     rotate_mysql_server_credentials(
@@ -340,6 +345,7 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
 
     # set the s3 config and credentials
     logger.info("Syncing credentials")
+
     juju.config(S3_INTEGRATOR, cloud_configs)
     s3_unit_name = get_app_units(juju, S3_INTEGRATOR)[0]
     juju.run(
@@ -364,6 +370,7 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
 
     # restore the backup
     logger.info(f"Restoring {backup_id=}")
+
     juju.run(primary_unit_name, "restore", params={"backup-id": backup_id})
 
     # ensure the correct inserted values exist
@@ -383,7 +390,14 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
     # insert data into cluster after restore
     logger.info("Inserting value after restore")
     value_after_restore = generate_random_string(255)
-    insert_mysql_test_data(juju, new_mysql_application_name, TABLE_NAME, value_after_restore)
+    insert_mysql_data_and_validate_replication(
+        juju,
+        new_mysql_application_name,
+        DATABASE_NAME,
+        TABLE_NAME,
+        value_after_restore,
+        server_config_credentials,
+    )
 
     logger.info("Ensuring that pre-backup and post-restore values exist in the database")
 
