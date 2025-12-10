@@ -29,7 +29,7 @@ from ..helpers_ha import (
     get_mysql_primary_unit,
     get_mysql_server_credentials,
     get_unit_address,
-    insert_mysql_test_data,
+    insert_mysql_data_and_validate_replication,
     rotate_mysql_server_credentials,
     scale_app_units,
     wait_for_apps_status,
@@ -209,11 +209,13 @@ def test_backup(juju: Juju, charm, cloud_credentials, cloud_configs) -> None:
     # insert data into cluster before
     logger.info("Inserting value before backup")
     value_before_backup = generate_random_string(255)
-    insert_mysql_test_data(juju, DATABASE_APP_NAME, TABLE_NAME, value_before_backup)
+    credentials = get_mysql_server_credentials(juju, primary_unit)
+    insert_mysql_data_and_validate_replication(
+        juju, DATABASE_APP_NAME, DATABASE_NAME, TABLE_NAME, value_before_backup, credentials
+    )
 
     logger.info("Setting s3 config")
     juju.config(S3_INTEGRATOR, cloud_configs)
-
     logger.info("Syncing credentials")
     s3_unit = get_app_units(juju, S3_INTEGRATOR)[0]
     task = juju.run(
@@ -233,7 +235,6 @@ def test_backup(juju: Juju, charm, cloud_credentials, cloud_configs) -> None:
 
     # list backups
     logger.info("Listing existing backup ids")
-
     results = juju.run(zeroth_unit, "list-backups")
     results.raise_on_failure()
     output = results.results["backups"]
@@ -241,7 +242,6 @@ def test_backup(juju: Juju, charm, cloud_credentials, cloud_configs) -> None:
 
     # create backup
     logger.info("Creating backup")
-
     results = juju.run(non_primary_units[0], "create-backup", wait=5 * MINUTE_SECS)
     results.raise_on_failure()
     backup_id = results.results["backup-id"]
@@ -259,7 +259,9 @@ def test_backup(juju: Juju, charm, cloud_credentials, cloud_configs) -> None:
     # insert data into cluster after backup
     logger.info("Inserting value after backup")
     value_after_backup = generate_random_string(255)
-    insert_mysql_test_data(juju, DATABASE_APP_NAME, TABLE_NAME, value_after_backup)
+    insert_mysql_data_and_validate_replication(
+        juju, DATABASE_APP_NAME, DATABASE_NAME, TABLE_NAME, value_after_backup, credentials
+    )
 
 
 @pytest.mark.abort_on_fail
@@ -293,7 +295,6 @@ def test_restore_on_same_cluster(juju: Juju, charm, cloud_credentials, cloud_con
 
     # restore the backup
     logger.info(f"Restoring {backup_id=}")
-
     results = juju.run(
         mysql_unit, "restore", params={"backup-id": backup_id}, wait=10 * MINUTE_SECS
     )
@@ -317,10 +318,11 @@ def test_restore_on_same_cluster(juju: Juju, charm, cloud_credentials, cloud_con
     # insert data into cluster after restore
     logger.info("Inserting value after restore")
     value_after_restore = generate_random_string(255)
-    insert_mysql_test_data(juju, DATABASE_APP_NAME, TABLE_NAME, value_after_restore)
+    insert_mysql_data_and_validate_replication(
+        juju, DATABASE_APP_NAME, DATABASE_NAME, TABLE_NAME, value_after_restore, credentials
+    )
 
     logger.info("Ensuring that pre-backup and post-restore values exist in the database")
-
     values = execute_queries_on_unit(
         mysql_unit_address,
         credentials["username"],
@@ -429,7 +431,6 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
 
     # restore the backup
     logger.info(f"Restoring {backup_id=}")
-
     results = juju.run(
         primary_mysql, "restore", params={"backup-id": backup_id}, wait=10 * MINUTE_SECS
     )
@@ -452,10 +453,16 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
     # insert data into cluster after restore
     logger.info("Inserting value after restore")
     value_after_restore = generate_random_string(255)
-    insert_mysql_test_data(juju, new_mysql_application_name, TABLE_NAME, value_after_restore)
+    insert_mysql_data_and_validate_replication(
+        juju,
+        new_mysql_application_name,
+        DATABASE_NAME,
+        TABLE_NAME,
+        value_after_restore,
+        server_config_credentials,
+    )
 
     logger.info("Ensuring that pre-backup and post-restore values exist in the database")
-
     values = execute_queries_on_unit(
         primary_unit_address,
         server_config_credentials["username"],
