@@ -1,10 +1,14 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import logging
+
 import pytest
 from jubilant_backports import Juju
 
 from .backups_ha import build_and_deploy_operations, pitr_operations
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @pytest.mark.abort_on_fail
