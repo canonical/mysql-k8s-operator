@@ -146,8 +146,8 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
-            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if member["status"] == "online"
+            for _, member in cluster_status["defaultReplicaSet"]["topology"].items()
+            if member["status"] == "ONLINE"
         ]
         assert len(online_member_addresses) == 5
 
@@ -166,15 +166,15 @@ async def test_scale_up_and_down(ops_test: OpsTest) -> None:
         cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
-            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if member["status"] == "online"
+            for _, member in cluster_status["defaultReplicaSet"]["topology"].items()
+            if member["status"] == "ONLINE"
         ]
         assert len(online_member_addresses) == 1
 
         not_online_member_addresses = [
             member["address"]
-            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if member["status"] != "online"
+            for _, member in cluster_status["defaultReplicaSet"]["topology"].items()
+            if member["status"] != "ONLINE"
         ]
         assert len(not_online_member_addresses) == 0
 
@@ -190,8 +190,8 @@ async def test_scale_up_after_scale_down(ops_test: OpsTest) -> None:
         cluster_status = await get_cluster_status(random_unit)
         online_member_addresses = [
             member["address"]
-            for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-            if member["status"] == "online"
+            for _, member in cluster_status["defaultReplicaSet"]["topology"].items()
+            if member["status"] == "ONLINE"
         ]
         assert len(online_member_addresses) == 3
 
@@ -212,8 +212,8 @@ async def test_scale_up_from_zero(ops_test: OpsTest) -> None:
     cluster_status = await get_cluster_status(random_unit)
     online_member_addresses = [
         member["address"]
-        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-        if member["status"] == "online"
+        for _, member in cluster_status["defaultReplicaSet"]["topology"].items()
+        if member["status"] == "ONLINE"
     ]
     assert len(online_member_addresses) == 3
 

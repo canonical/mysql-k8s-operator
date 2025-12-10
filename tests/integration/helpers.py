@@ -130,7 +130,7 @@ async def get_primary_unit(
     primary_label = next(
         iter([
             label
-            for label, member in cluster_status["defaultreplicaset"]["topology"].items()
+            for label, member in cluster_status["defaultReplicaSet"]["topology"].items()
             if member["mode"] == "r/w"
         ])
     )

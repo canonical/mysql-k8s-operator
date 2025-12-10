@@ -246,7 +246,7 @@ def test_standby_promotion(first_model: str, second_model: str, continuous_write
         cluster_set=True,
     )
 
-    assert cluster_set_status["clusters"]["cuzco"]["clusterrole"] == "primary", (
+    assert cluster_set_status["clusters"]["cuzco"]["clusterrole"] == "PRIMARY", (
         "standby not promoted to primary"
     )
 
@@ -287,10 +287,10 @@ def test_failover(first_model: str, second_model: str) -> None:
         cluster_set=True,
     )
 
-    assert cluster_set_status["clusters"]["lima"]["clusterrole"] == "primary", (
+    assert cluster_set_status["clusters"]["lima"]["clusterrole"] == "PRIMARY", (
         "standby not promoted to primary",
     )
-    assert cluster_set_status["clusters"]["cuzco"]["globalstatus"] == "invalidated", (
+    assert cluster_set_status["clusters"]["cuzco"]["globalStatus"] == "INVALIDATED", (
         "old primary not invalidated"
     )
 
