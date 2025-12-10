@@ -31,6 +31,8 @@ from charms.mysql.v0.async_replication import (
 from charms.mysql.v0.backups import S3_INTEGRATOR_RELATION_NAME, MySQLBackups
 from charms.mysql.v0.mysql import (
     BYTES_1MB,
+    UNIT_ADD_LOCKNAME,
+    InstanceStatus,
     MySQLAddInstanceToClusterError,
     MySQLCharmBase,
     MySQLConfigureInstanceError,
@@ -39,7 +41,6 @@ from charms.mysql.v0.mysql import (
     MySQLCreateClusterError,
     MySQLCreateClusterSetError,
     MySQLGetClusterPrimaryAddressError,
-    MySQLGetMySQLVersionError,
     MySQLInitializeJujuOperationsTableError,
     MySQLLockAcquisitionError,
     MySQLNoMemberStateError,
@@ -308,6 +309,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         return self.get_unit_address(self.unit)
 
     @property
+    def is_unit_primary(self) -> bool:
+        """Return True if this unit is a primary unit."""
+        return self._mysql.get_primary_label() == self.unit_label
+
+    @property
     def is_new_unit(self) -> bool:
         """Return whether the unit is a clean state.
 
@@ -407,10 +413,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
     def _get_primary_from_online_peer(self) -> Optional[str]:
         """Get the primary address from an online peer."""
         for unit in self.peers.units:
-            if self.peers.data[unit].get("member-state") == "online":
+            # TODO:
+            #  Remove `.lower()` when migrating to MySQL 8.4
+            #  (when breaking changes are allowed)
+            if self.peers.data[unit].get("member-state") == InstanceStatus.ONLINE.lower():
                 try:
                     return self._mysql.get_cluster_primary_address(
-                        connect_instance_address=self.get_unit_address(unit),
+                        connect_instance_host=self.get_unit_address(unit),
                     )
                 except MySQLGetClusterPrimaryAddressError:
                     # try next unit
@@ -464,20 +473,18 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     )
                     return
 
-                # If instance is part of a replica cluster, locks are managed by the
+                # If instance is part of a replica cluster, locks are managed by
                 # the primary cluster primary (i.e. cluster set global primary)
-                lock_instance = None
-                if self._mysql.is_cluster_replica(from_instance=cluster_primary):
-                    lock_instance = self._mysql.get_cluster_set_global_primary_address(
-                        connect_instance_address=cluster_primary
-                    )
+                from_instance = None
+                if self._mysql.is_cluster_replica():
+                    from_instance = self._mysql.get_cluster_set_global_primary_address()
 
                 # add random delay to mitigate collisions when multiple units are joining
                 # due the difference between the time we test for locks and acquire them
                 # Not used for cryptographic purpose
                 sleep(random.uniform(0, 1.5))  # noqa: S311
 
-                if self._mysql.are_locks_acquired(from_instance=lock_instance or cluster_primary):
+                if self._mysql.are_locks_acquired(from_instance, UNIT_ADD_LOCKNAME):
                     self.unit.status = WaitingStatus("waiting to join the cluster")
                     logger.info("waiting: cluster lock is held")
                     return
@@ -488,25 +495,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 # harmless otherwise
                 self._mysql.stop_group_replication()
 
-                # If instance already in cluster, before adding instance to cluster,
-                # remove the instance from the cluster and call rescan_cluster()
-                # without adding/removing instances to clean up stale users
-                if (
-                    instance_label
-                    in self._mysql.get_cluster_status(from_instance=cluster_primary)[
-                        "defaultreplicaset"
-                    ]["topology"]
-                ):
-                    self._mysql.execute_remove_instance(
-                        connect_instance=cluster_primary, force=True
-                    )
-                    self._mysql.rescan_cluster(from_instance=cluster_primary)
-
                 self._mysql.add_instance_to_cluster(
                     instance_address=instance_address,
                     instance_unit_label=instance_label,
-                    from_instance=cluster_primary,
-                    lock_instance=lock_instance,
+                    from_instance=from_instance,
                 )
             except MySQLAddInstanceToClusterError:
                 logger.info(f"Unable to add instance {instance_address} to cluster.")
@@ -516,7 +508,10 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                 logger.info("waiting: failed to acquire lock when adding instance to cluster")
                 return
 
-        self.unit_peer_data["member-state"] = "online"
+        # TODO:
+        #  Remove `.lower()` when migrating to MySQL 8.4
+        #  (when breaking changes are allowed)
+        self.unit_peer_data["member-state"] = InstanceStatus.OFFLINE.lower()
         self.unit.status = ActiveStatus(self.active_status_message)
         logger.info(f"Instance {instance_label} added to cluster")
 
@@ -575,7 +570,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             container.restart(MYSQLD_SERVICE)
             return
 
-        if self.app.planned_units() > 1 and self._mysql.is_unit_primary(self.unit_label):
+        if self.app.planned_units() > 1 and self.is_unit_primary:
             try:
                 new_primary = self.get_unit_address(self.peers.units.pop())
                 logger.debug(f"Switching primary to {new_primary}")
@@ -789,13 +784,9 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             else:
                 container.start(MYSQLD_EXPORTER_SERVICE)
 
-        try:
-            # Set workload version
-            if workload_version := self._mysql.get_mysql_version():
-                self.unit.set_workload_version(workload_version)
-        except MySQLGetMySQLVersionError:
-            # Do not block the charm if the version cannot be retrieved
-            pass
+        # Set workload version
+        if workload_version := self._mysql.get_mysql_version():
+            self.unit.set_workload_version(workload_version)
 
     def _mysql_pebble_ready_checks(self, event) -> bool:
         """Executes some checks to see if it is safe to execute the pebble ready handler."""
@@ -892,9 +883,8 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         # retrieve and persist state for every unit
         try:
-            state, role = self._mysql.get_member_state()
-            self.unit_peer_data["member-state"] = state
-            self.unit_peer_data["member-role"] = role
+            role = self._mysql.get_member_role()
+            state = self._mysql.get_member_state()
         except (MySQLNoMemberStateError, MySQLUnableToGetMemberStateError):
             logger.error("Error getting member state. Avoiding potential cluster crash recovery")
             self.unit.status = MaintenanceStatus("Unable to get member state")
@@ -902,25 +892,32 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         logger.info(f"Unit workload member-state is {state} with member-role {role}")
 
+        # TODO:
+        #  Remove `.lower()` when migrating to MySQL 8.4
+        #  (when breaking changes are allowed)
+        self.unit_peer_data["member-state"] = state.lower()
+        self.unit_peer_data["member-role"] = role.lower()
+
         # set unit status based on member-{state,role}
         self.unit.status = (
             ActiveStatus(self.active_status_message)
-            if state == "online"
+            if state == InstanceStatus.ONLINE
             else MaintenanceStatus(state)
         )
 
-        if state == "recovering":
+        if state == InstanceStatus.RECOVERING:
             return True
 
-        if state == "offline":
+        if state == InstanceStatus.OFFLINE:
             # Group Replication is active but the member does not belong to any group
             all_states = {
                 self.peers.data[unit].get("member-state", "unknown") for unit in self.peers.units
             }
+            all_states.add(InstanceStatus.OFFLINE)
 
             # Add state 'offline' for this unit (self.peers.unit does not
             # include this unit)
-            if (all_states | {"offline"} == {"offline"} and self.unit.is_leader()) or (
+            if (all_states == {InstanceStatus.OFFLINE} and self.unit.is_leader()) or (
                 only_single_uninitialized_node_across_cluster and all_states == {"waiting"}
             ):
                 # All instance are off, reboot cluster from outage from the leader unit
@@ -971,7 +968,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         # Not used for cryptographic purpose
         sleep(random.uniform(0, 1.5))  # noqa: S311
 
-        if self._mysql.are_locks_acquired(from_instance=cluster_primary):
+        if self._mysql.are_locks_acquired(cluster_primary, UNIT_ADD_LOCKNAME):
             logger.info("waiting: cluster lock is held")
             return
         try:
@@ -985,6 +982,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
 
         self._mysql.remove_instance(
             unit_label=self.unit_label,
+            from_instance=cluster_primary,
             auto_dissolve=False,
         )
         self._mysql.add_instance_to_cluster(
@@ -1103,10 +1101,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
         if not self._mysql.is_instance_in_cluster(self.unit_label):
             return
 
-        if (
-            self._mysql.get_primary_label() == self.unit_label
-            and self.unit.name.split("/")[1] != "0"
-        ):
+        if self.is_unit_primary and self.unit.name.split("/")[1] != "0":
             # Preemptively switch primary to unit 0
             logger.info("Switching primary to unit 0")
             try:
@@ -1116,15 +1111,15 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             except MySQLSetClusterPrimaryError:
                 logger.warning("Failed to switch primary to unit 0")
 
-        # If instance is part of a replica cluster, locks are managed by the
+        # If instance is part of a replica cluster, locks are managed by
         # the primary cluster primary (i.e. cluster set global primary)
-        lock_instance = None
+        from_instance = None
         if self._mysql.is_cluster_replica():
-            lock_instance = self._mysql.get_cluster_set_global_primary_address()
+            from_instance = self._mysql.get_cluster_set_global_primary_address()
 
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)
-        self._mysql.remove_instance(self.unit_label, lock_instance=lock_instance)
+        self._mysql.remove_instance(self.unit_label, from_instance=from_instance)
 
         # Inform other hooks of current status
         self.unit_peer_data["unit-status"] = "removing"

@@ -297,7 +297,8 @@ class MySQLProvider(Object):
             return
 
         users = self.charm._mysql.get_mysql_router_users_for_unit(
-            relation_id=event.relation.id, mysql_router_unit_name=event.departing_unit.name
+            relation_id=event.relation.id,
+            mysql_router_unit_name=event.departing_unit.name,
         )
         if not users:
             return
@@ -308,14 +309,17 @@ class MySQLProvider(Object):
             )
             return
 
-        user = users[0]
+        user_name = users[0].username
+        user_attrs = users[0].attributes
+        router_id = user_attrs["router_id"]
+
         try:
-            self.charm._mysql.delete_user(user.username)
-            logger.info(f"Deleted router user {user.username}")
+            self.charm._mysql.delete_user(user_name)
+            logger.info(f"Deleted router user {user_name}")
         except MySQLDeleteUserError:
-            logger.error(f"Failed to delete user {user.username}")
+            logger.error(f"Failed to delete user {user_name}")
         try:
-            self.charm._mysql.remove_router_from_cluster_metadata(user.router_id)
-            logger.info(f"Removed router from metadata {user.router_id}")
+            self.charm._mysql.remove_router_from_cluster_metadata(router_id)
+            logger.info(f"Removed router from metadata {router_id}")
         except MySQLRemoveRouterFromMetadataError:
-            logger.error(f"Failed to remove router from metadata with ID {user.router_id}")
+            logger.error(f"Failed to remove router from metadata with ID {router_id}")
