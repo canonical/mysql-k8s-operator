@@ -110,7 +110,12 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
     juju.integrate(DATABASE_APP_NAME, S3_INTEGRATOR)
 
     juju.wait(
-        ready=wait_for_apps_status(jubilant_backports.all_blocked, S3_INTEGRATOR),
+        ready=lambda status: all((
+            *(
+                wait_for_unit_status(S3_INTEGRATOR, unit_name, "blocked")(status)
+                for unit_name in status.get_units(S3_INTEGRATOR)
+            ),
+        )),
         timeout=TIMEOUT,
     )
 

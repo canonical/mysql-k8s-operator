@@ -21,6 +21,7 @@ from ..helpers_ha import (
     rotate_mysql_server_credentials,
     scale_app_units,
     wait_for_apps_status,
+    wait_for_unit_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -95,7 +96,12 @@ def build_and_deploy_operations(
 
     logger.info("Configuring s3 integrator and integrating it with mysql")
     juju.wait(
-        ready=wait_for_apps_status(jubilant_backports.all_blocked, S3_INTEGRATOR),
+        ready=lambda status: all((
+            *(
+                wait_for_unit_status(S3_INTEGRATOR, unit_name, "blocked")(status)
+                for unit_name in status.get_units(S3_INTEGRATOR)
+            ),
+        )),
         timeout=TIMEOUT,
     )
     juju.config(S3_INTEGRATOR, cloud_configs)
