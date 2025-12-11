@@ -3,9 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
-import os
 import socket
-import uuid
 from pathlib import Path
 
 import boto3
@@ -15,11 +13,10 @@ from jubilant_backports import Juju
 
 from constants import CLUSTER_ADMIN_USERNAME, ROOT_USERNAME, SERVER_CONFIG_USERNAME
 
-from ..helpers import generate_random_string
+from ..helpers import execute_queries_on_unit, generate_random_string
 from ..helpers_ha import (
     CHARM_METADATA,
     MINUTE_SECS,
-    execute_queries_on_unit,
     get_app_units,
     get_mysql_primary_unit,
     get_mysql_server_credentials,
@@ -28,6 +25,7 @@ from ..helpers_ha import (
     rotate_mysql_server_credentials,
     scale_app_units,
     wait_for_apps_status,
+    wait_for_unit_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -54,33 +52,12 @@ logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 backup_id, value_before_backup, value_after_backup = None, None, None
 
 
-@pytest.fixture(scope="session")
-def cloud_credentials() -> dict[str, str]:
-    """Read cloud credentials."""
-    return {
-        "access-key": os.environ["GCP_ACCESS_KEY"],
-        "secret-key": os.environ["GCP_SECRET_KEY"],
-    }
-
-
-@pytest.fixture(scope="session")
-def cloud_configs() -> dict[str, str]:
-    # Add UUID to path to avoid conflict with tests running in parallel (e.g. multiple Juju
-    # versions on a PR, multiple PRs)
-    path = f"mysql-k8s/{uuid.uuid4()}"
-
-    return {
-        "endpoint": "https://storage.googleapis.com",
-        "bucket": "data-charms-testing",
-        "path": path,
-        "region": "",
-    }
-
-
 @pytest.fixture(scope="session", autouse=True)
-def clean_backups_from_buckets(cloud_credentials, cloud_configs):
+def clean_backups_from_buckets(cloud_configs_gcp):
     """Teardown to clean up created backups from clouds."""
     yield
+
+    cloud_configs, cloud_credentials = cloud_configs_gcp
 
     logger.info("Cleaning backups from buckets")
     session = boto3.session.Session(  # pyright: ignore
@@ -139,9 +116,11 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
 
 
 @pytest.mark.abort_on_fail
-def test_backup(juju: Juju, cloud_credentials, cloud_configs) -> None:
+def test_backup(juju: Juju, cloud_configs_gcp) -> None:
     """Test to create a backup and list backups."""
     global backup_id, value_before_backup, value_after_backup
+
+    cloud_configs, cloud_credentials = cloud_configs_gcp
 
     app_units = get_app_units(juju, DATABASE_APP_NAME)
     zeroth_unit_name = app_units[0]
@@ -205,8 +184,10 @@ def test_backup(juju: Juju, cloud_credentials, cloud_configs) -> None:
 
 
 @pytest.mark.abort_on_fail
-def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -> None:
+def test_restore_on_same_cluster(juju: Juju, cloud_configs_gcp) -> None:
     """Test to restore a backup to the same mysql cluster."""
+    cloud_configs, cloud_credentials = cloud_configs_gcp
+
     logger.info("Scaling mysql application to 1 unit")
     scale_app_units(juju, DATABASE_APP_NAME, 1)
 
@@ -215,6 +196,7 @@ def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -
 
     # set the s3 config and credentials
     logger.info("Syncing credentials")
+
     juju.config(S3_INTEGRATOR, cloud_configs)
     s3_unit_name = get_app_units(juju, S3_INTEGRATOR)[0]
     juju.run(
@@ -237,7 +219,8 @@ def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -
 
     # ensure the correct inserted values exist
     logger.info(
-        "Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not"
+        "Ensuring that the pre-backup inserted value exists in database, "
+        "while post-backup inserted value does not"
     )
     select_values_sql = [f"SELECT id FROM `{DATABASE_NAME}`.`{TABLE_NAME}`"]
 
@@ -260,6 +243,7 @@ def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -
     )
 
     logger.info("Ensuring that pre-backup and post-restore values exist in the database")
+
     values = execute_queries_on_unit(
         mysql_unit_address,
         credentials["username"],
@@ -270,10 +254,16 @@ def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -
     assert sorted(values) == sorted([value_before_backup, value_after_restore])
 
     logger.info("Scaling mysql application to 3 units")
-    scale_app_units(juju, DATABASE_APP_NAME, 3)
+    juju.add_unit(DATABASE_APP_NAME, num_units=2)
 
     juju.wait(
-        ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
+        ready=lambda status: all((
+            jubilant_backports.all_agents_idle(status, DATABASE_APP_NAME),
+            *(
+                wait_for_unit_status(DATABASE_APP_NAME, unit_name, "active")(status)
+                for unit_name in status.get_units(DATABASE_APP_NAME)
+            ),
+        )),
         timeout=TIMEOUT,
     )
 
@@ -297,8 +287,10 @@ def test_restore_on_same_cluster(juju: Juju, cloud_credentials, cloud_configs) -
 
 
 @pytest.mark.abort_on_fail
-def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_configs) -> None:
+def test_restore_on_new_cluster(juju: Juju, charm, cloud_configs_gcp) -> None:
     """Test to restore a backup on a new mysql cluster."""
+    cloud_configs, cloud_credentials = cloud_configs_gcp
+
     logger.info("Deploying a new mysql cluster")
 
     new_mysql_application_name = "another-mysql-k8s"
@@ -337,7 +329,7 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
         juju, primary_unit_name, CLUSTER_ADMIN_USERNAME, CLUSTER_ADMIN_PASSWORD
     )
     rotate_mysql_server_credentials(
-        juju, primary_unit_name, SERVER_CONFIG_USERNAME, SERVER_CONFIG_USERNAME
+        juju, primary_unit_name, SERVER_CONFIG_USERNAME, SERVER_CONFIG_PASSWORD
     )
     rotate_mysql_server_credentials(juju, primary_unit_name, ROOT_USERNAME, ROOT_PASSWORD)
 
@@ -362,7 +354,7 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
     )
 
     logger.info("Waiting for blocked application status with another cluster S3 repository")
-    juju.wait(
+    juju.wait(  # Might take a few minutes to get past this
         ready=lambda status: status.apps[new_mysql_application_name].app_status.message
         == ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE,
         timeout=TIMEOUT,
@@ -411,9 +403,15 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_credentials, cloud_conf
     assert sorted(values) == sorted([value_before_backup, value_after_restore])
 
     logger.info("Scaling mysql application to 3 units")
-    scale_app_units(juju, new_mysql_application_name, 3)
+    juju.add_unit(new_mysql_application_name, num_units=2)
     juju.wait(
-        ready=wait_for_apps_status(jubilant_backports.all_active, new_mysql_application_name),
+        ready=lambda status: all((
+            jubilant_backports.all_agents_idle(status, new_mysql_application_name),
+            *(
+                wait_for_unit_status(new_mysql_application_name, unit_name, "active")(status)
+                for unit_name in status.get_units(new_mysql_application_name)
+            ),
+        )),
         timeout=TIMEOUT,
     )
 
