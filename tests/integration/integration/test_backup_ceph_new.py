@@ -61,6 +61,7 @@ MICROCEPH_BUCKET = "testbucket"
 
 @dataclasses.dataclass(frozen=True)
 class MicrocephConnectionInformation:
+    endpoint_url: str
     access_key_id: str
     secret_access_key: str
     bucket: str
@@ -68,8 +69,15 @@ class MicrocephConnectionInformation:
 
 @pytest.fixture(scope="session")
 def microceph():
-    if not os.environ.get("CI") == "true":
-        raise Exception("Not running on CI. Skipping microceph installation")
+    if os.environ.get("CI") != "true":
+        logging.info("Not running on CI. Skipping microceph installation")
+        return MicrocephConnectionInformation(
+            os.environ["CEPH_ENDPOINT_URL"],
+            os.environ["CEPH_ACCESS_KEY"],
+            os.environ["CEPH_SECRET_KEY"],
+            MICROCEPH_BUCKET,
+        )
+
     logger.info("Setting up microceph")
     subprocess.run(["sudo", "snap", "install", "microceph"], check=True)
     subprocess.run(["sudo", "microceph", "cluster", "bootstrap"], check=True)
@@ -111,7 +119,9 @@ def microceph():
         else:
             break
     logger.info("Set up microceph")
-    return MicrocephConnectionInformation(key_id, secret_key, MICROCEPH_BUCKET)
+    return MicrocephConnectionInformation(
+        f"http://{host_ip}", key_id, secret_key, MICROCEPH_BUCKET
+    )
 
 
 @pytest.fixture(scope="session")
@@ -126,7 +136,7 @@ def cloud_credentials(microceph) -> dict[str, str]:
 @pytest.fixture(scope="session")
 def cloud_configs(microceph) -> dict[str, str]:
     return {
-        "endpoint": f"http://{host_ip}",
+        "endpoint": microceph.endpoint_url,
         "bucket": microceph.bucket,
         "path": "mysql-k8s",
         "region": "",
