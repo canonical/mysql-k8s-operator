@@ -23,10 +23,10 @@ from ..helpers_ha import (
     get_mysql_server_credentials,
     get_unit_address,
     insert_mysql_data_and_validate_replication,
-    insert_mysql_test_data,
     rotate_mysql_server_credentials,
     scale_app_units,
     wait_for_apps_status,
+    wait_for_unit_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -179,7 +179,9 @@ def test_backup(juju: Juju, cloud_configs_aws) -> None:
     # insert data into cluster after backup
     logger.info("Inserting value after backup")
     value_after_backup = generate_random_string(255)
-    insert_mysql_test_data(juju, DATABASE_APP_NAME, TABLE_NAME, value_after_backup)
+    insert_mysql_data_and_validate_replication(
+        juju, DATABASE_APP_NAME, DATABASE_NAME, TABLE_NAME, value_after_backup, credentials
+    )
 
 
 @pytest.mark.abort_on_fail
@@ -218,7 +220,8 @@ def test_restore_on_same_cluster(juju: Juju, cloud_configs_aws) -> None:
 
     # ensure the correct inserted values exist
     logger.info(
-        "Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not"
+        "Ensuring that the pre-backup inserted value exists in database, "
+        "while post-backup inserted value does not"
     )
     select_values_sql = [f"SELECT id FROM `{DATABASE_NAME}`.`{TABLE_NAME}`"]
 
@@ -252,10 +255,16 @@ def test_restore_on_same_cluster(juju: Juju, cloud_configs_aws) -> None:
     assert sorted(values) == sorted([value_before_backup, value_after_restore])
 
     logger.info("Scaling mysql application to 3 units")
-    scale_app_units(juju, DATABASE_APP_NAME, 3)
+    juju.add_unit(DATABASE_APP_NAME, num_units=2)
 
     juju.wait(
-        ready=wait_for_apps_status(jubilant_backports.all_active, DATABASE_APP_NAME),
+        ready=lambda status: all((
+            jubilant_backports.all_agents_idle(status, DATABASE_APP_NAME),
+            *(
+                wait_for_unit_status(DATABASE_APP_NAME, unit_name, "active")(status)
+                for unit_name in status.get_units(DATABASE_APP_NAME)
+            ),
+        )),
         timeout=TIMEOUT,
     )
 
@@ -321,7 +330,7 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_configs_aws) -> None:
         juju, primary_unit_name, CLUSTER_ADMIN_USERNAME, CLUSTER_ADMIN_PASSWORD
     )
     rotate_mysql_server_credentials(
-        juju, primary_unit_name, SERVER_CONFIG_USERNAME, SERVER_CONFIG_USERNAME
+        juju, primary_unit_name, SERVER_CONFIG_USERNAME, SERVER_CONFIG_PASSWORD
     )
     rotate_mysql_server_credentials(juju, primary_unit_name, ROOT_USERNAME, ROOT_PASSWORD)
 
@@ -346,7 +355,7 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_configs_aws) -> None:
     )
 
     logger.info("Waiting for blocked application status with another cluster S3 repository")
-    juju.wait(
+    juju.wait(  # Might take a few minutes to get past this
         ready=lambda status: status.apps[new_mysql_application_name].app_status.message
         == ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE,
         timeout=TIMEOUT,
@@ -395,9 +404,15 @@ def test_restore_on_new_cluster(juju: Juju, charm, cloud_configs_aws) -> None:
     assert sorted(values) == sorted([value_before_backup, value_after_restore])
 
     logger.info("Scaling mysql application to 3 units")
-    scale_app_units(juju, new_mysql_application_name, 3)
+    juju.add_unit(new_mysql_application_name, num_units=2)
     juju.wait(
-        ready=wait_for_apps_status(jubilant_backports.all_active, new_mysql_application_name),
+        ready=lambda status: all((
+            jubilant_backports.all_agents_idle(status, new_mysql_application_name),
+            *(
+                wait_for_unit_status(new_mysql_application_name, unit_name, "active")(status)
+                for unit_name in status.get_units(new_mysql_application_name)
+            ),
+        )),
         timeout=TIMEOUT,
     )
 
