@@ -256,7 +256,6 @@ def scale_app_units(juju: Juju, app_name: str, num_units: int) -> None:
     app_units = get_app_units(juju, app_name)
     app_units_diff = num_units - len(app_units)
 
-    scale_func = None
     if app_units_diff > 0:
         scale_func = juju.add_unit
     if app_units_diff < 0:
