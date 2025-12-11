@@ -5,7 +5,8 @@ import logging
 
 import boto3
 import jubilant_backports
-from jubilant_backports import Juju
+import pytest
+from jubilant_backports import Juju, TaskError
 
 from constants import SERVER_CONFIG_USERNAME
 
@@ -16,7 +17,7 @@ from ..helpers_ha import (
     get_app_units,
     get_mysql_primary_unit,
     get_unit_address,
-    insert_mysql_test_data,
+    insert_mysql_data_and_validate_replication,
     rotate_mysql_server_credentials,
     scale_app_units,
     wait_for_apps_status,
@@ -29,6 +30,7 @@ S3_INTEGRATOR_CHANNEL = "1/stable"
 MYSQL_APPLICATION_NAME = "mysql-k8s"
 TIMEOUT = 10 * MINUTE_SECS
 CLUSTER_NAME = "test_cluster"
+SERVER_CONFIG_USER = "serverconfig"
 SERVER_CONFIG_PASSWORD = "serverconfigpassword"
 DATABASE_NAME = "backup-database"
 TABLE_NAME = "backup-table"
@@ -82,7 +84,6 @@ def build_and_deploy_operations(
 
     juju.wait(
         ready=wait_for_apps_status(jubilant_backports.all_active, MYSQL_APPLICATION_NAME),
-        error=jubilant_backports.any_blocked,
         timeout=15 * MINUTE_SECS,
     )
 
@@ -132,6 +133,8 @@ def pitr_operations(
     non_primary_unit_names = [unit for unit in app_units if unit != primary_unit_name]
     primary_ip = get_unit_address(juju, MYSQL_APPLICATION_NAME, primary_unit_name)
 
+    credentials = {"username": SERVER_CONFIG_USER, "password": SERVER_CONFIG_PASSWORD}
+
     logger.info("Creating backup")
     results = juju.run(
         non_primary_unit_names[0],
@@ -142,7 +145,9 @@ def pitr_operations(
 
     logger.info("Creating test data 1")
     td1 = generate_random_string(255)
-    insert_mysql_test_data(juju, MYSQL_APPLICATION_NAME, TABLE_NAME, td1)
+    insert_mysql_data_and_validate_replication(
+        juju, MYSQL_APPLICATION_NAME, DATABASE_NAME, TABLE_NAME, td1, credentials
+    )
 
     ts = execute_queries_on_unit(
         primary_ip,
@@ -158,7 +163,9 @@ def pitr_operations(
 
     logger.info("Creating test data 2")
     td2 = generate_random_string(255)
-    insert_mysql_test_data(juju, MYSQL_APPLICATION_NAME, TABLE_NAME, td2)
+    insert_mysql_data_and_validate_replication(
+        juju, MYSQL_APPLICATION_NAME, DATABASE_NAME, TABLE_NAME, td2, credentials
+    )
 
     execute_queries_on_unit(
         primary_ip,
@@ -174,14 +181,12 @@ def pitr_operations(
     del primary_unit_name
 
     logger.info(f"Restoring backup {backup_id} with bad restore-to-time parameter")
-    result = juju.run(
-        first_mysql_unit_name,
-        "restore",
-        params={"backup-id": backup_id, "restore-to-time": "bad"},
-    )
-    assert result.status == "failed", (
-        "restore should fail with bad restore-to-time parameter, but it succeeded"
-    )
+    with pytest.raises(TaskError, match="Bad restore-to-time format"):
+        juju.run(
+            first_mysql_unit_name,
+            "restore",
+            params={"backup-id": backup_id, "restore-to-time": "bad"},
+        )
 
     logger.info(f"Restoring backup {backup_id} with year_before restore-to-time parameter")
     juju.run(
@@ -190,9 +195,9 @@ def pitr_operations(
         params={"backup-id": backup_id, "restore-to-time": ts_year_before},
     )
     juju.wait(
-        ready=wait_for_apps_status(
-            jubilant_backports.all_active, MYSQL_APPLICATION_NAME, S3_INTEGRATOR
-        ),
+        ready=lambda status: all((
+            jubilant_backports.all_agents_idle(status, MYSQL_APPLICATION_NAME, S3_INTEGRATOR),
+        )),
         timeout=TIMEOUT,
     )
     assert check_test_data_existence(first_mysql_ip, should_not_exist=[td1, td2]), (
@@ -206,9 +211,9 @@ def pitr_operations(
         params={"backup-id": backup_id, "restore-to-time": ts_year_after},
     )
     juju.wait(
-        ready=wait_for_apps_status(
-            jubilant_backports.all_active, MYSQL_APPLICATION_NAME, S3_INTEGRATOR
-        ),
+        ready=lambda status: all((
+            jubilant_backports.all_agents_idle(status, MYSQL_APPLICATION_NAME, S3_INTEGRATOR),
+        )),
         timeout=TIMEOUT,
     )
     assert check_test_data_existence(first_mysql_ip, should_exist=[td1, td2]), (
@@ -222,9 +227,9 @@ def pitr_operations(
         params={"backup-id": backup_id, "restore-to-time": ts},
     )
     juju.wait(
-        ready=wait_for_apps_status(
-            jubilant_backports.all_active, MYSQL_APPLICATION_NAME, S3_INTEGRATOR
-        ),
+        ready=lambda status: all((
+            jubilant_backports.all_agents_idle(status, MYSQL_APPLICATION_NAME, S3_INTEGRATOR),
+        )),
         timeout=TIMEOUT,
     )
     assert check_test_data_existence(first_mysql_ip, should_exist=[td1], should_not_exist=[td2]), (
@@ -238,9 +243,9 @@ def pitr_operations(
         params={"backup-id": backup_id, "restore-to-time": "latest"},
     )
     juju.wait(
-        ready=wait_for_apps_status(
-            jubilant_backports.all_active, MYSQL_APPLICATION_NAME, S3_INTEGRATOR
-        ),
+        ready=lambda status: all((
+            jubilant_backports.all_agents_idle(status, MYSQL_APPLICATION_NAME, S3_INTEGRATOR),
+        )),
         timeout=TIMEOUT,
     )
     assert check_test_data_existence(first_mysql_ip, should_exist=[td1, td2]), (
