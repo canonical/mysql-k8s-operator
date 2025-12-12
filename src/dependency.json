@@ -9,6 +9,6 @@
     "dependencies": {},
     "name": "charmed-mysql",
     "upgrade_supported": ">8.0.31",
-    "version": "8.0.42"
+    "version": "8.0.44"
   }
 }
