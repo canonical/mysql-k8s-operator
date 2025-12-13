@@ -1,0 +1,33 @@
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:71 Running action to get app connection data
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:80 Creating 10 connections
+[32mINFO    [0m mysql.connector:__init__.py:149 package: mysql.connector.plugins
+[32mINFO    [0m mysql.connector:__init__.py:150 plugin_name: caching_sha2_password
+[32mINFO    [0m mysql.connector:__init__.py:154 AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:84 Ensure all connections are established
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:90 Ensure no more client connections are possible
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:96 Get cluster status while connections are saturated
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.12   unsupported  01:50:09Z
+
+App    Version                  Status  Scale  Charm           Channel      Rev  Address        Exposed  Message
+app    0.0.2                    active      1  mysql-test-app  latest/edge   85  10.152.183.89  no       
+mysql  8.0.44-0ubuntu0.22.04.1  active      1  mysql-k8s                      0  10.152.183.69  no       
+
+Unit      Workload  Agent      Address      Ports  Message
+app/0*    active    idle       10.1.16.138         
+mysql/0*  active    executing  10.1.16.137         Primary
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-0: 01:49:56 ERROR unit.mysql/0.juju-log upgrade:2: Failed to execute MySQL cli command
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-mysql-0/charm/src/mysql_k8s_helpers.py", line 768, in _run_mysqlcli_script
+    stdout, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-mysql-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1771, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['/usr/bin/mysql', '-u', 'clusteradmin', '-p', '-N', '--socket=/var/run/mysqld/mysqld.sock', '-e', 'SELECT MEMBER_STATE, MEMBER_ROLE, MEMBER_ID, @@server_uuid FROM performance_schema.replication_group_members'], stdout='', stderr='Enter password: ERROR 1040 (HY000): Too many connections\n'
+unit-mysql-0: 01:49:56 ERROR unit.mysql/0.juju-log upgrade:2: Failed to get member state: mysqld daemon is down
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
