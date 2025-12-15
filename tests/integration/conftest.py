@@ -57,7 +57,7 @@ def cloud_configs_gcp() -> tuple[dict[str, str], dict[str, str]]:
         "endpoint": "https://storage.googleapis.com",
         "bucket": "data-charms-testing",
         "path": f"mysql-k8s/{uuid.uuid4()}",
-        "region": "",
+        "region": "us-east-1",
     }
     credentials = {
         "access-key": os.environ["GCP_ACCESS_KEY"],
