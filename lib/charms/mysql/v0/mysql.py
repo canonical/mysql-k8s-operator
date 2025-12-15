@@ -70,6 +70,7 @@ import re
 import sys
 import time
 from abc import ABC, abstractmethod
+from contextlib import suppress
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -120,7 +121,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 99
+LIBPATCH = 100
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -724,14 +725,9 @@ class MySQLCharmBase(CharmBase, ABC):
             return False
 
         for unit in self.app_units:
-            try:
-                if (
-                    unit != self.unit
-                    and self._mysql.cluster_metadata_exists(self.get_unit_address(unit, PEER))
-                ) or self._mysql.cluster_metadata_exists():
+            with suppress(MySQLClusterMetadataExistsError):
+                if self._mysql.cluster_metadata_exists(self.get_unit_address(unit, PEER)):
                     return True
-            except MySQLClusterMetadataExistsError:
-                pass
 
         return False
 
