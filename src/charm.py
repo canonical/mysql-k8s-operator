@@ -464,20 +464,16 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     )
                     return
 
-                # If instance is part of a replica cluster, locks are managed by the
-                # the primary cluster primary (i.e. cluster set global primary)
-                lock_instance = None
-                if self._mysql.is_cluster_replica(from_instance=cluster_primary):
-                    lock_instance = self._mysql.get_cluster_set_global_primary_address(
-                        connect_instance_address=cluster_primary
-                    )
+                lock_instance = self._mysql.get_cluster_set_global_primary_address(
+                    connect_instance_address=cluster_primary
+                )
 
                 # add random delay to mitigate collisions when multiple units are joining
                 # due the difference between the time we test for locks and acquire them
                 # Not used for cryptographic purpose
                 sleep(random.uniform(0, 1.5))  # noqa: S311
 
-                if self._mysql.are_locks_acquired(from_instance=lock_instance or cluster_primary):
+                if self._mysql.are_locks_acquired(from_instance=lock_instance):
                     self.unit.status = WaitingStatus("waiting to join the cluster")
                     logger.info("waiting: cluster lock is held")
                     return
@@ -966,31 +962,37 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             logger.warning("Instance does not have ONLINE peers. Cannot perform manual rejoin")
             return
 
+        lock_instance = self._mysql.get_cluster_set_global_primary_address(
+            connect_instance_address=cluster_primary
+        )
+
         # add random delay to mitigate collisions when multiple units are rejoining
         # due the difference between the time we test for locks and acquire them
         # Not used for cryptographic purpose
         sleep(random.uniform(0, 1.5))  # noqa: S311
 
-        if self._mysql.are_locks_acquired(from_instance=cluster_primary):
+        if self._mysql.are_locks_acquired(from_instance=lock_instance):
             logger.info("waiting: cluster lock is held")
             return
         try:
             self._mysql.rejoin_instance_to_cluster(
                 unit_address=self.unit_address,
                 unit_label=self.unit_label,
-                from_instance=cluster_primary,
+                from_instance=lock_instance,
             )
         except MySQLRejoinInstanceToClusterError:
             logger.warning("Can't rejoin instance to cluster. Falling back to remove and add.")
 
         self._mysql.remove_instance(
             unit_label=self.unit_label,
+            lock_instance=lock_instance,
             auto_dissolve=False,
         )
         self._mysql.add_instance_to_cluster(
             instance_address=self.unit_address,
             instance_unit_label=self.unit_label,
             from_instance=cluster_primary,
+            lock_instance=lock_instance,
         )
 
     def update_endpoints(self) -> None:
@@ -1116,11 +1118,7 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             except MySQLSetClusterPrimaryError:
                 logger.warning("Failed to switch primary to unit 0")
 
-        # If instance is part of a replica cluster, locks are managed by the
-        # the primary cluster primary (i.e. cluster set global primary)
-        lock_instance = None
-        if self._mysql.is_cluster_replica():
-            lock_instance = self._mysql.get_cluster_set_global_primary_address()
+        lock_instance = self._mysql.get_cluster_set_global_primary_address()
 
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)
