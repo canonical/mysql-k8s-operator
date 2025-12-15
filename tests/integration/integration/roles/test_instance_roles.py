@@ -42,11 +42,13 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
         INTEGRATOR_APP_NAME,
         f"{INTEGRATOR_APP_NAME}1",
         base="ubuntu@24.04",
+        force=True,  # https://github.com/canonical/jubilant/issues/233
     )
     juju.deploy(
         INTEGRATOR_APP_NAME,
         f"{INTEGRATOR_APP_NAME}2",
-        base="ubuntu@22.04",
+        base="ubuntu@24.04",
+        force=True,  # https://github.com/canonical/jubilant/issues/233
     )
 
     juju.wait(
