@@ -1,0 +1,288 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.12   unsupported  02:27:44Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.162  no       Last written value=364
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.86   no       Last written value=352
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.40   no       Last written value=506
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.21   no       Last written value=482
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.62   no       Last written value=350
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.124  no       Last written value=376
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.36   no       Last written value=361
+mysql    8.0.44-0ubuntu0.22.04.1  active      1  mysql-k8s                        0  10.152.183.94   no       
+router0  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.76   no       
+router1  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.218  no       
+router2  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.143  no       
+router3  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.180  no       
+router4  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.97   no       
+router5  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.102  no       
+router6  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.46   no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.206.74         Last written value=364
+app1/0*     active    idle   10.1.206.81         Last written value=352
+app2/0*     active    idle   10.1.206.75         Last written value=506
+app3/0*     active    idle   10.1.206.79         Last written value=482
+app4/0*     active    idle   10.1.206.80         Last written value=350
+app5/0*     active    idle   10.1.206.78         Last written value=376
+app6/0*     active    idle   10.1.206.86         Last written value=361
+mysql/0*    active    idle   10.1.206.73         Primary
+router0/0*  active    idle   10.1.206.77         
+router1/0*  active    idle   10.1.206.85         
+router2/0*  active    idle   10.1.206.76         
+router3/0*  active    idle   10.1.206.82         
+router4/0*  active    idle   10.1.206.83         
+router5/0*  active    idle   10.1.206.87         
+router6/0*  active    idle   10.1.206.84         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router6-0: 02:16:34 ERROR unit.router6/0.juju-log mysql-router-peers:36: common.mysql_shell:Failed to run MySQL Shell script:
+import json
+import mysqlsh
+import traceback
+
+try:
+    # Disable wizards in this script, since it will be invoked without --no-wizard
+    shell.options.set('useWizards', False)
+    import json
+
+    cluster_set = dba.get_cluster_set()
+    routers = cluster_set.list_routers()
+    # mysqlsh objects are weird—they quack (i.e. duck typing) like standard Python objects (e.g. list,
+    # dict), but do not serialize to JSON correctly.
+    # Cast to str & load from JSON str before serializing
+    routers = json.loads(str(routers))
+    with open("/tmp/mysqlsh_output.json", "w") as file:
+        json.dump(routers, file)
+except mysqlsh.DBError as exception:
+    error = {
+        "message": str(exception),
+        "code": exception.code,
+        "traceback_message": "".join(traceback.format_exception(exception)),
+    }
+else:
+    error = None
+with open("/tmp/mysqlsh_error.json", "w") as file:
+    json.dump(error, file)
+
+MySQL client error 1040
+MySQL Shell traceback:
+Traceback (most recent call last):
+  File "<string>", line 10, in <module>
+mysqlsh.DBError: MySQL Error (1040): Dba.get_cluster_set: Too many connections
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 99, in _run_code
+    raise ShellDBError(**exception)
+common.mysql_shell.ShellDBError: MySQL Error (1040): Dba.get_cluster_set: Too many connections
+unit-router6-0: 02:16:34 ERROR unit.router6/0.juju-log mysql-router-peers:36: root:Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router6-0/charm/src/charm.py", line 470, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router6-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/common/abstract_charm.py", line 345, in reconcile
+    workload_.reconcile(
+  File "/var/lib/juju/agents/unit-router6-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/common/workload.py", line 409, in reconcile
+    require_rebootstrap = require_rebootstrap or not self.shell.is_router_in_cluster_set(
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 288, in is_router_in_cluster_set
+    self._run_code(
+  File "/var/lib/juju/agents/unit-router6-0/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 99, in _run_code
+    raise ShellDBError(**exception)
+common.mysql_shell.ShellDBError: MySQL Error (1040): Dba.get_cluster_set: Too many connections
+unit-router6-0: 02:16:35 ERROR juju.worker.uniter.operation hook "mysql-router-peers-relation-joined" (via hook dispatching script: dispatch) failed: exit status 1
+unit-router0-0: 02:19:38 ERROR unit.router0/0.juju-log tls:5: common.mysql_shell:Failed to run MySQL Shell script:
+import json
+import mysqlsh
+import traceback
+
+try:
+    # Disable wizards in this script, since it will be invoked without --no-wizard
+    shell.options.set('useWizards', False)
+    import json
+
+    cluster_set = dba.get_cluster_set()
+    routers = cluster_set.list_routers()
+    # mysqlsh objects are weird—they quack (i.e. duck typing) like standard Python objects (e.g. list,
+    # dict), but do not serialize to JSON correctly.
+    # Cast to str & load from JSON str before serializing
+    routers = json.loads(str(routers))
+    with open("/tmp/mysqlsh_output.json", "w") as file:
+        json.dump(routers, file)
+except mysqlsh.DBError as exception:
+    error = {
+        "message": str(exception),
+        "code": exception.code,
+        "traceback_message": "".join(traceback.format_exception(exception)),
+    }
+else:
+    error = None
+with open("/tmp/mysqlsh_error.json", "w") as file:
+    json.dump(error, file)
+
+stderr:
+Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory
+MySQL Error 1040 (HY000): Too many connections
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/rock.py", line 254, in _run_command
+    output, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1441, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['mysqlsh', '--passwords-from-stdin', '--uri', 'relation-38_624c704509334a@mysql-primary.testing.svc.cluster.local.:3306', '--python', '--file', '/tmp/mysqlsh_script.py'], stdout="\x1b[1mPlease provide the password for 'relation-38_624c704509334a@mysql-primary.testing.svc.cluster.local.:3306': \x1b[0m", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 1040 (HY000): Too many connections\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 74, in _run_code
+    self._container.run_mysql_shell(
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/common/container.py", line 236, in run_mysql_shell
+    return self._run_command(args, timeout=timeout, input=input)
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/rock.py", line 256, in _run_command
+    raise common.container.CalledProcessError(
+common.container.CalledProcessError: Command '['mysqlsh', '--passwords-from-stdin', '--uri', 'relation-38_624c704509334a@mysql-primary.testing.svc.cluster.local.:3306', '--python', '--file', '/tmp/mysqlsh_script.py']' returned non-zero exit status 1.
+unit-router0-0: 02:19:38 ERROR unit.router0/0.juju-log tls:5: root:Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/rock.py", line 254, in _run_command
+    output, _ = process.wait_output()
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/pebble.py", line 1441, in wait_output
+    raise ExecError[AnyStr](self._command, exit_code, out_value, err_value)
+ops.pebble.ExecError: non-zero exit code 1 executing ['mysqlsh', '--passwords-from-stdin', '--uri', 'relation-38_624c704509334a@mysql-primary.testing.svc.cluster.local.:3306', '--python', '--file', '/tmp/mysqlsh_script.py'], stdout="\x1b[1mPlease provide the password for 'relation-38_624c704509334a@mysql-primary.testing.svc.cluster.local.:3306': \x1b[0m", stderr='Cannot set LC_ALL to locale en_US.UTF-8: No such file or directory\nMySQL Error 1040 (HY000): Too many connections\n'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/charm.py", line 470, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/common/abstract_charm.py", line 345, in reconcile
+    workload_.reconcile(
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/common/workload.py", line 409, in reconcile
+    require_rebootstrap = require_rebootstrap or not self.shell.is_router_in_cluster_set(
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 288, in is_router_in_cluster_set
+    self._run_code(
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 74, in _run_code
+    self._container.run_mysql_shell(
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/venv/lib/python3.10/site-packages/common/container.py", line 236, in run_mysql_shell
+    return self._run_command(args, timeout=timeout, input=input)
+  File "/var/lib/juju/agents/unit-router0-0/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router0-0/charm/src/rock.py", line 256, in _run_command
+    raise common.container.CalledProcessError(
+common.container.CalledProcessError: Command '['mysqlsh', '--passwords-from-stdin', '--uri', 'relation-38_624c704509334a@mysql-primary.testing.svc.cluster.local.:3306', '--python', '--file', '/tmp/mysqlsh_script.py']' returned non-zero exit status 1.
+unit-router4-1: 02:19:38 ERROR unit.router4/1.juju-log refresh-v-three:25: common.mysql_shell:Failed to run MySQL Shell script:
+import json
+import mysqlsh
+import traceback
+
+try:
+    # Disable wizards in this script, since it will be invoked without --no-wizard
+    shell.options.set('useWizards', False)
+    import json
+
+    cluster_set = dba.get_cluster_set()
+    routers = cluster_set.list_routers()
+    # mysqlsh objects are weird—they quack (i.e. duck typing) like standard Python objects (e.g. list,
+    # dict), but do not serialize to JSON correctly.
+    # Cast to str & load from JSON str before serializing
+    routers = json.loads(str(routers))
+    with open("/tmp/mysqlsh_output.json", "w") as file:
+        json.dump(routers, file)
+except mysqlsh.DBError as exception:
+    error = {
+        "message": str(exception),
+        "code": exception.code,
+        "traceback_message": "".join(traceback.format_exception(exception)),
+    }
+else:
+    error = None
+with open("/tmp/mysqlsh_error.json", "w") as file:
+    json.dump(error, file)
+
+MySQL client error 1040
+MySQL Shell traceback:
+Traceback (most recent call last):
+  File "<string>", line 10, in <module>
+mysqlsh.DBError: MySQL Error (1040): Dba.get_cluster_set: Too many connections
+
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 99, in _run_code
+    raise ShellDBError(**exception)
+common.mysql_shell.ShellDBError: MySQL Error (1040): Dba.get_cluster_set: Too many connections
+unit-router4-1: 02:19:38 ERROR unit.router4/1.juju-log refresh-v-three:25: root:Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-router4-1/charm/src/charm.py", line 470, in <module>
+    ops.main.main(KubernetesRouterCharm)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 436, in main
+    _emit_charm_event(charm, dispatcher.event_name)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/main.py", line 144, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 351, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/ops/framework.py", line 942, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/common/abstract_charm.py", line 345, in reconcile
+    workload_.reconcile(
+  File "/var/lib/juju/agents/unit-router4-1/charm/lib/charms/tempo_coordinator_k8s/v0/charm_tracing.py", line 735, in wrapped_function
+    return callable(*args, **kwargs)  # type: ignore
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/common/workload.py", line 409, in reconcile
+    require_rebootstrap = require_rebootstrap or not self.shell.is_router_in_cluster_set(
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 288, in is_router_in_cluster_set
+    self._run_code(
+  File "/var/lib/juju/agents/unit-router4-1/charm/venv/lib/python3.10/site-packages/common/mysql_shell/__init__.py", line 99, in _run_code
+    raise ShellDBError(**exception)
+common.mysql_shell.ShellDBError: MySQL Error (1040): Dba.get_cluster_set: Too many connections
+unit-router0-0: 02:19:38 ERROR juju.worker.uniter.operation hook "tls-relation-changed" (via hook dispatching script: dispatch) failed: exit status 1
+unit-router4-1: 02:19:39 ERROR juju.worker.uniter.operation hook "refresh-v-three-relation-joined" (via hook dispatching script: dispatch) failed: exit status 1
+unit-router0-0: 02:26:16 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-0: 02:26:16 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-0: 02:26:17 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-0: 02:26:17 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-0: 02:26:17 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router4-0: 02:26:17 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-1: 02:26:17 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router1-0: 02:26:18 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-2: 02:26:18 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-0: 02:26:20 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app2-0: 02:27:06 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-app3-0: 02:27:32 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
