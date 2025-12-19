@@ -888,7 +888,9 @@ class MySQLBackups(Object):
             "ACCESS_KEY_ID": s3_parameters["access-key"],
             "SECRET_ACCESS_KEY": s3_parameters["secret-key"],
             "S3_BUCKET_URL": bucket_url,
-            "DEFAULT_REGION": s3_parameters["region"],
+            # For STORAGE_TYPE=s3, region is mandatory,
+            # see https://github.com/canonical/mysql-pitr-helper/blob/ed858df/collector/collector.go#L51
+            "DEFAULT_REGION": s3_parameters["region"] or "us-east-1",
         }
 
     def _is_mysql_timestamp(self, timestamp: str) -> bool:

@@ -17,6 +17,7 @@ from lightkube.core.client import Client
 from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.resources.core_v1 import Endpoints, PersistentVolume, PersistentVolumeClaim, Pod
 from tenacity import (
+    RetryError,
     Retrying,
     retry,
     stop_after_attempt,
@@ -255,7 +256,6 @@ def scale_app_units(juju: Juju, app_name: str, num_units: int) -> None:
     app_units = get_app_units(juju, app_name)
     app_units_diff = num_units - len(app_units)
 
-    scale_func = None
     if app_units_diff > 0:
         scale_func = juju.add_unit
     if app_units_diff < 0:
@@ -440,6 +440,32 @@ def get_mysql_server_credentials(
     return credentials_task.results
 
 
+def rotate_mysql_server_credentials(
+    juju: Juju,
+    unit_name: str,
+    username: str = SERVER_CONFIG_USERNAME,
+    password: str | None = None,
+) -> None:
+    """Helper to run an action to rotate server config credentials.
+
+    Args:
+        juju: The Juju model
+        unit_name: The juju unit on which to run the rotate-password action for server-config credentials
+        username: The username to rotate the password for
+        password: The new password to set
+    """
+    params = {"username": username}
+    if password is not None:
+        params["password"] = password
+
+    rotate_task = juju.run(
+        unit=unit_name,
+        action="set-password",
+        params=params,
+    )
+    rotate_task.raise_on_failure()
+
+
 def get_mysql_max_written_value(juju: Juju, app_name: str, unit_name: str) -> int:
     """Retrieve the max written value in the MySQL database.
 
@@ -620,6 +646,61 @@ def stop_mysqld_service(juju: Juju, unit_name: str) -> None:
         with attempt:
             if get_unit_process_id(juju, unit_name, MYSQLD_SERVICE) is not None:
                 raise Exception("Failed to stop the mysqld process")
+
+
+def insert_mysql_data_and_validate_replication(
+    juju: Juju,
+    app_name: str,
+    database_name: str,
+    table_name: str,
+    value: str,
+    credentials: dict,
+) -> None:
+    """Inserts data into the mysql cluster and validates its replication.
+
+    Args:
+        juju: The Juju model.
+        app_name: The application name.
+        database_name: The database name.
+        table_name: The table name.
+        value: The value to insert.
+        credentials: The credentials to authenticate.
+    """
+    primary_unit_name = get_mysql_primary_unit(juju, app_name)
+
+    insert_value_sql = [
+        f"CREATE DATABASE IF NOT EXISTS `{database_name}`",
+        f"CREATE TABLE IF NOT EXISTS `{database_name}`.`{table_name}` (id varchar(255), primary key (id))",
+        f"INSERT INTO `{database_name}`.`{table_name}` (id) VALUES ('{value}')",
+    ]
+
+    execute_queries_on_unit(
+        get_unit_address(juju, app_name, primary_unit_name),
+        credentials["username"],
+        credentials["password"],
+        insert_value_sql,
+        commit=True,
+    )
+
+    select_value_sql = [
+        f"SELECT id FROM `{database_name}`.`{table_name}` WHERE id = '{value}'",
+    ]
+
+    try:
+        for attempt in Retrying(stop=stop_after_delay(5 * 60), wait=wait_fixed(10)):
+            with attempt:
+                for unit_name in get_app_units(juju, app_name):
+                    unit_address = get_unit_address(juju, app_name, unit_name)
+
+                    output = execute_queries_on_unit(
+                        unit_address,
+                        credentials["username"],
+                        credentials["password"],
+                        select_value_sql,
+                    )
+                    assert output[0] == value
+    except RetryError as exc:
+        raise RuntimeError("Cannot query inserted data from all units") from exc
 
 
 def wait_for_apps_status(jubilant_status_func: JujuAppsStatusFn, *apps: str) -> JujuModelStatusFn:

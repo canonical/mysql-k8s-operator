@@ -39,7 +39,7 @@ async def credentials(ops_test: OpsTest):
 @pytest.fixture(scope="session")
 def cloud_configs_aws() -> tuple[dict[str, str], dict[str, str]]:
     configs = {
-        "endpoint": "https://s3.amazonaws.com",
+        "endpoint": os.getenv("AWS_ENDPOINT_URL", "https://s3.amazonaws.com"),
         "bucket": "data-charms-testing",
         "path": f"mysql-k8s/{uuid.uuid4()}",
         "region": "us-east-1",
@@ -57,7 +57,7 @@ def cloud_configs_gcp() -> tuple[dict[str, str], dict[str, str]]:
         "endpoint": "https://storage.googleapis.com",
         "bucket": "data-charms-testing",
         "path": f"mysql-k8s/{uuid.uuid4()}",
-        "region": "",
+        "region": "us-east-1",
     }
     credentials = {
         "access-key": os.environ["GCP_ACCESS_KEY"],
