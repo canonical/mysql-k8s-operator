@@ -12,22 +12,22 @@ from constants import DB_RELATION_NAME
 APP_NAME = "mysql-k8s"
 
 SAMPLE_CLUSTER_STATUS = {
-    "defaultreplicaset": {
+    "defaultReplicaSet": {
         "topology": {
             "mysql-k8s/0": {
                 "address": "2.2.2.2:3306",
-                "mode": "r/w",
-                "status": "online",
+                "mode": "R/W",
+                "status": "ONLINE",
             },
             "mysql-k8s/1": {
                 "address": "2.2.2.1:3306",
-                "mode": "r/o",
+                "mode": "R/O",
                 "status": "gone_away",
             },
             "mysql-k8s/2": {
                 "address": "2.2.2.3:3306",
-                "mode": "r/0",
-                "status": "online",
+                "mode": "R/O",
+                "status": "ONLINE",
             },
         }
     }
