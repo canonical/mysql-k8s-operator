@@ -1,0 +1,7 @@
+summary: test_saturate_max_connections_new.py
+environment:
+  TEST_MODULE: test_saturate_max_connections_new.py
+execute: |
+  tox run -e integration -- "tests/integration/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
+artifacts:
+  - allure-results
