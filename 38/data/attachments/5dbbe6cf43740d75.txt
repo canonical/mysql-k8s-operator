@@ -1,0 +1,34 @@
+[32mINFO    [0m integration.integration.test_tls:test_tls.py:210 Removing relation
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.12   unsupported  01:48:37Z
+
+App                       Version                  Status  Scale  Charm                     Channel   Rev  Address         Exposed  Message
+mysql-k8s                 8.0.44-0ubuntu0.22.04.1  active      3  mysql-k8s                             0  10.152.183.149  no       
+self-signed-certificates                           active      1  self-signed-certificates  1/stable  317  10.152.183.165  no       
+
+Unit                         Workload  Agent  Address      Ports  Message
+mysql-k8s/0*                 active    idle   10.1.206.75         
+mysql-k8s/1                  active    idle   10.1.206.77         
+mysql-k8s/2                  active    idle   10.1.206.76         
+self-signed-certificates/0*  active    idle   10.1.206.78         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-self-signed-certificates-0: 01:46:58 ERROR unit.self-signed-certificates/0.juju-log certificates:3: At least 1 matching relation ID not found with the relation name 'send-ca-cert'
+unit-self-signed-certificates-0: 01:47:00 ERROR unit.self-signed-certificates/0.juju-log certificates:3: At least 1 matching relation ID not found with the relation name 'send-ca-cert'
+unit-self-signed-certificates-0: 01:47:03 ERROR unit.self-signed-certificates/0.juju-log certificates:3: At least 1 matching relation ID not found with the relation name 'send-ca-cert'
+unit-self-signed-certificates-0: 01:47:05 ERROR unit.self-signed-certificates/0.juju-log certificates:3: At least 1 matching relation ID not found with the relation name 'send-ca-cert'
+unit-self-signed-certificates-0: 01:47:28 ERROR unit.self-signed-certificates/0.juju-log certificates:3: At least 1 matching relation ID not found with the relation name 'send-ca-cert'
+unit-mysql-k8s-0: 01:47:32 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-self-signed-certificates-0: 01:47:33 ERROR unit.self-signed-certificates/0.juju-log certificates:3: At least 1 matching relation ID not found with the relation name 'send-ca-cert'
+unit-mysql-k8s-1: 01:47:34 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-self-signed-certificates-0: 01:47:37 ERROR unit.self-signed-certificates/0.juju-log certificates:3: At least 1 matching relation ID not found with the relation name 'send-ca-cert'
+unit-mysql-k8s-0: 01:47:38 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:47:39 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-1: 01:47:40 ERROR unit.mysql-k8s/1.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-0: 01:47:41 ERROR unit.mysql-k8s/0.juju-log certificates:3: An unknown certificate expiring.
+unit-mysql-k8s-2: 01:47:44 ERROR unit.mysql-k8s/2.juju-log certificates:3: An unknown certificate expiring.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

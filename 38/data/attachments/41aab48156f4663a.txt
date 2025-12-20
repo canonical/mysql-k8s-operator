@@ -1,0 +1,48 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m root:conftest.py:33 Clearing continuous writes
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-test-app/0 clear-continuous-writes
+[32mINFO    [0m root:conftest.py:35 Starting continuous writes
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-test-app/0 start-continuous-writes
+[32mINFO    [0m root:test_self_healing_node_drain.py:71 Ensuring that all instances have incrementing continuous writes
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmp5f0ez3pr
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/2 get-password --params /root/snap/juju/common/tmpqq3v40c8
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/0 get-password --params /root/snap/juju/common/tmpq7x_t93g
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/1 get-password --params /root/snap/juju/common/tmppkzsmap1
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/2 get-password --params /root/snap/juju/common/tmpbvxrvjw_
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/2 get-cluster-status --wait 300s --params /root/snap/juju/common/tmp69efe0en
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.126:16443/api/v1/namespaces/testing/pods/mysql-k8s-2 "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.126:16443/api/v1/namespaces/testing/pods/mysql-k8s-2 "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.126:16443/api/v1/namespaces/testing/persistentvolumeclaims/mysql-k8s-database-fcc3695f-mysql-k8s-2 "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.126:16443/api/v1/namespaces/testing/pods/mysql-k8s-2 "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: GET https://10.1.0.126:16443/api/v1/persistentvolumes "HTTP/1.1 200 OK"
+[32mINFO    [0m root:test_self_healing_node_drain.py:79 Evicting primary node mysql-k8s/2 and deleting its PVCs
+[32mINFO    [0m root:test_self_healing_node_drain.py:101 Evicting pod mysql-k8s-2
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: POST https://10.1.0.126:16443/api/v1/namespaces/testing/pods/mysql-k8s-2/eviction "HTTP/1.1 201 Created"
+[32mINFO    [0m root:test_self_healing_node_drain.py:137 Deleting PVC mysql-k8s-database-fcc3695f-mysql-k8s-2
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: DELETE https://10.1.0.126:16443/api/v1/namespaces/testing/persistentvolumeclaims/mysql-k8s-database-fcc3695f-mysql-k8s-2?gracePeriodSeconds=0 "HTTP/1.1 200 OK"
+[32mINFO    [0m root:test_self_healing_node_drain.py:120 Deleting PV pvc-d06f85bb-25fa-47bb-ba8d-31e3f4e34bea
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: DELETE https://10.1.0.126:16443/api/v1/persistentvolumes/pvc-d06f85bb-25fa-47bb-ba8d-31e3f4e34bea?gracePeriodSeconds=0 "HTTP/1.1 200 OK"
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju model-config --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju model-config --model testing update-status-hook-interval=90s
+[32mINFO    [0m root:test_self_healing_node_drain.py:85 Waiting for evicted primary pod to be rescheduled
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju model-config --model testing update-status-hook-interval=5m
+[32mINFO    [0m root:test_self_healing_node_drain.py:92 Ensuring that all instances have incrementing continuous writes
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmpcsfpgzvf
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/1 get-password --params /root/snap/juju/common/tmpo6sbetw3
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/0 get-password --params /root/snap/juju/common/tmpaq2l4ic4
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/1 get-password --params /root/snap/juju/common/tmpxurlhpnp
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/2 get-password --params /root/snap/juju/common/tmpv4ugjxsg
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m root:conftest.py:40 Clearing continuous writes
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-test-app/0 clear-continuous-writes
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju debug-log --model testing --limit 1000
