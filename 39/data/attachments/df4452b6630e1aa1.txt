@@ -1,0 +1,32 @@
+[32mINFO    [0m integration.conftest:conftest.py:31 Getting credentials for the MySQL cluster
+[32mINFO    [0m integration.integration.test_backup_ceph:test_backup_ceph.py:259 Scaling mysql application to 1 unit
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 1 units, current : 3)
+[32mINFO    [0m integration.integration.test_backup_ceph:test_backup_ceph.py:268 Syncing credentials
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  s3-integrator/0 [idle] active: 
+[32mINFO    [0m integration.integration.test_backup_ceph:test_backup_ceph.py:284 Restoring backup_id='2025-12-21T01:48:37Z'
+[32mINFO    [0m integration.integration.test_backup_ceph:test_backup_ceph.py:289 Ensuring that the pre-backup inserted value exists in database, while post-backup inserted value does not
+[32mINFO    [0m integration.integration.test_backup_ceph:test_backup_ceph.py:303 Inserting value after restore
+[32mINFO    [0m integration.integration.test_backup_ceph:test_backup_ceph.py:311 Ensuring that pre-backup and post-restore values exist in the database
+[32mINFO    [0m integration.integration.test_backup_ceph:test_backup_ceph.py:322 Scaling mysql application to 3 units
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s (waiting for exactly 3 units, current : 1)
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [executing] waiting: waiting to get cluster primary from peers
+  mysql-k8s/2 [executing] waiting: waiting to get cluster primary from peers
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [executing] active: Primary
+  mysql-k8s/1 [executing] active: 
+  mysql-k8s/2 [executing] waiting: waiting to join the cluster
+[32mINFO    [0m juju.model:model.py:3211 Waiting for model:
+  mysql-k8s/0 [idle] active: Primary
+  mysql-k8s/1 [idle] active: 
+  mysql-k8s/2 [idle] active: 
+[32mINFO    [0m integration.integration.test_backup_ceph:test_backup_ceph.py:330 Ensuring inserted values before backup and after restore exist on all units
