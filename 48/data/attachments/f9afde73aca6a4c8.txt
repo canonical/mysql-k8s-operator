@@ -1,0 +1,37 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/2 get-cluster-status --wait 300s --params /root/snap/juju/common/tmpzroaohcu
+[32mINFO    [0m root:test_primary_switchover.py:60 Current primary unit: mysql-k8s/1
+[32mINFO    [0m root:test_primary_switchover.py:66 Unit selected for promotion: mysql-k8s/0
+[32mINFO    [0m root:test_primary_switchover.py:68 Simulate quorum loss
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju model-config --model testing update-status-hook-interval=45s
+[32mINFO    [0m root:test_primary_switchover.py:73 Waiting to settle in error state
+[32mINFO    [0m root:test_primary_switchover.py:84 Attempting to promote a unit to primary after quorum loss...
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/0 promote-to-primary --wait 600s --params /root/snap/juju/common/tmpvg7gk5vp
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju model-config --model testing update-status-hook-interval=15s
+[32mINFO    [0m root:test_primary_switchover.py:95 Waiting for all units to become active after switchover...
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/2 get-cluster-status --wait 300s --params /root/snap/juju/common/tmp5bhjfno5
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.12   unsupported  01:53:56Z
+
+App             Version                  Status  Scale  Charm           Channel      Rev  Address         Exposed  Message
+mysql-k8s       8.0.44-0ubuntu0.22.04.1  active      3  mysql-k8s                      0  10.152.183.224  no       
+mysql-test-app  0.0.2                    active      1  mysql-test-app  latest/edge   85  10.152.183.217  no       Last written value=365
+
+Unit               Workload  Agent  Address      Ports  Message
+mysql-k8s/0        active    idle   10.1.206.77         Primary
+mysql-k8s/1        active    idle   10.1.206.84         
+mysql-k8s/2*       active    idle   10.1.206.83         
+mysql-test-app/0*  active    idle   10.1.206.82         Last written value=365
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-mysql-k8s-1: 01:49:57 ERROR unit.mysql-k8s/1.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+unit-mysql-k8s-2: 01:49:57 ERROR unit.mysql-k8s/2.juju-log Cluster upgrade failed, ensure pre-upgrade checks are ran first.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju debug-log --model testing --limit 1000

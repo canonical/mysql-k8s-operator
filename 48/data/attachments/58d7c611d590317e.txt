@@ -1,0 +1,3 @@
+[32mINFO    [0m root:test_async_replication.py:258 Freezing mysqld on primary cluster units
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing-other --format json
