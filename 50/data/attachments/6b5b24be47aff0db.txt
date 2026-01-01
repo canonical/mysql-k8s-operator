@@ -1,0 +1,15 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju config --model testing data-integrator1 database-name=preserved extra-user-roles=
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing data-integrator1 mysql-k8s
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju config --model testing data-integrator2 database-name=throwaway extra-user-roles=charmed_dba_preserved_00
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing data-integrator2 mysql-k8s
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/1 get-cluster-status --wait 300s --params /root/snap/juju/common/tmps275hxhi
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json data-integrator2/0 get-credentials
+[32mINFO    [0m root:test_database_dba_role.py:104 Checking that the database-level DBA role cannot create new databases
+[32mINFO    [0m root:test_database_dba_role.py:114 Checking that the database-level DBA role can see all databases
+[32mINFO    [0m root:test_database_dba_role.py:123 Checking that the database-level DBA role can create a new table
+[32mINFO    [0m root:test_database_dba_role.py:134 Checking that the database-level DBA role can write into an existing table
+[32mINFO    [0m root:test_database_dba_role.py:145 Checking that the database-level DBA role can read from an existing table
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju debug-log --model testing --limit 1000
