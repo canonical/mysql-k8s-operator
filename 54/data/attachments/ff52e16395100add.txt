@@ -1,0 +1,53 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.12   unsupported  02:17:43Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.41   no       Last written value=412
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.118  no       Last written value=359
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.36   no       Last written value=367
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.88   no       Last written value=373
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.20   no       Last written value=351
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.203  no       Last written value=338
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.135  no       Last written value=370
+mysql    8.0.44-0ubuntu0.22.04.1  active      1  mysql-k8s                        0  10.152.183.67   no       
+router0  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.115  no       
+router1  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.82   no       
+router2  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.157  no       
+router3  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.106  no       
+router4  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.158  no       
+router5  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.37   no       
+router6  8.0.42                   active      1  mysql-router-k8s  8.0/edge     868  10.152.183.160  no       
+
+Unit        Workload  Agent  Address      Ports  Message
+app0/0*     active    idle   10.1.206.74         Last written value=412
+app1/0*     active    idle   10.1.206.83         Last written value=359
+app2/0*     active    idle   10.1.206.75         Last written value=367
+app3/0*     active    idle   10.1.206.84         Last written value=373
+app4/0*     active    idle   10.1.206.77         Last written value=351
+app5/0*     active    idle   10.1.206.78         Last written value=338
+app6/0*     active    idle   10.1.206.80         Last written value=370
+mysql/0*    active    idle   10.1.206.73         Primary
+router0/0*  active    idle   10.1.206.76         
+router1/0*  active    idle   10.1.206.82         
+router2/0*  active    idle   10.1.206.86         
+router3/0*  active    idle   10.1.206.81         
+router4/0*  active    idle   10.1.206.79         
+router5/0*  active    idle   10.1.206.85         
+router6/0*  active    idle   10.1.206.87         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router0-0: 02:16:38 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-0: 02:16:38 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-0: 02:16:38 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-0: 02:16:38 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-0: 02:16:39 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router1-0: 02:16:39 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-1: 02:16:39 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router4-0: 02:16:39 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-0: 02:16:39 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-2: 02:16:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...

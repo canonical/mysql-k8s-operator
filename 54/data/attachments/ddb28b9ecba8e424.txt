@@ -1,0 +1,11 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmpu2pkj058
+[32mINFO    [0m root:test_self_healing_setup_crash.py:53 Scaling to 3 units
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju add-unit --model testing mysql-k8s --num-units 2
+[32mINFO    [0m root:test_self_healing_setup_crash.py:61 Deleting pod
+[32mINFO    [0m httpx:_client.py:1026 HTTP Request: DELETE https://10.1.1.41:16443/api/v1/namespaces/testing/pods/mysql-k8s-0 "HTTP/1.1 200 OK"
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju model-config --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju model-config --model testing update-status-hook-interval=60s
+[32mINFO    [0m root:test_self_healing_setup_crash.py:65 Waiting until cluster is fully active
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju model-config --model testing update-status-hook-interval=5m
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju debug-log --model testing --limit 1000
