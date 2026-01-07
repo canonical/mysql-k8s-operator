@@ -1,6 +1,6 @@
-summary: test_backup_ceph.py
+summary: test_backup_ceph_new.py
 environment:
-  TEST_MODULE: test_backup_ceph.py
+  TEST_MODULE: test_backup_ceph_new.py
 execute: |
   tox run -e integration -- "tests/integration/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
 artifacts:

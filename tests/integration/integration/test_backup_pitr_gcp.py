@@ -1,22 +1,25 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import pytest
-from pytest_operator.plugin import OpsTest
+import logging
 
-from .backups import build_and_deploy_operations, pitr_operations
+import pytest
+from jubilant_backports import Juju
+
+from .helpers_backups import build_and_deploy_operations, pitr_operations
+
+logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy_gcp(
-    ops_test: OpsTest, cloud_configs_gcp: tuple[dict[str, str], dict[str, str]], charm
+def test_build_and_deploy_gcp(
+    juju: Juju, cloud_configs_gcp: tuple[dict[str, str], dict[str, str]], charm
 ) -> None:
-    """Build and deploy for AWS."""
-    await build_and_deploy_operations(ops_test, charm, cloud_configs_gcp[0], cloud_configs_gcp[1])
+    """Build and deploy for GCP."""
+    build_and_deploy_operations(juju, charm, cloud_configs_gcp[0], cloud_configs_gcp[1])
 
 
-async def test_pitr_aws(
-    ops_test: OpsTest, cloud_configs_gcp: tuple[dict[str, str], dict[str, str]]
-) -> None:
+@pytest.mark.abort_on_fail
+def test_pitr_gcp(juju: Juju, cloud_configs_gcp: tuple[dict[str, str], dict[str, str]]) -> None:
     """Pitr tests."""
-    await pitr_operations(ops_test, cloud_configs_gcp[0], cloud_configs_gcp[1])
+    pitr_operations(juju, cloud_configs_gcp[0], cloud_configs_gcp[1])
