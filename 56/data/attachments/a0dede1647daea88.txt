@@ -1,0 +1,6 @@
+[32mINFO    [0m root:test_async_replication.py:121 Creating offers in first model
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju offer db1:replication-offer
+[32mINFO    [0m root:test_async_replication.py:125 Consuming offer in second model
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju consume --model testing-other testing.db1
