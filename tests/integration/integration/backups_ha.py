@@ -32,7 +32,6 @@ S3_INTEGRATOR_CHANNEL = "1/stable"
 MYSQL_APPLICATION_NAME = "mysql-k8s"
 TIMEOUT = 10 * MINUTE_SECS
 CLUSTER_NAME = "test_cluster"
-SERVER_CONFIG_USER = "serverconfig"
 SERVER_CONFIG_PASSWORD = "serverconfigpassword"
 DATABASE_NAME = "backup-database"
 TABLE_NAME = "backup-table"
