@@ -199,9 +199,6 @@ def pitr_operations(
     logger.info("Scaling down to 1 unit")
     scale_app_units(juju, MYSQL_APPLICATION_NAME, 1)
 
-    del primary_ip
-    del primary_unit_name
-
     logger.info(f"Restoring backup {backup_id} with bad restore-to-time parameter")
     with pytest.raises(TaskError, match="Bad restore-to-time format"):
         juju.run(
