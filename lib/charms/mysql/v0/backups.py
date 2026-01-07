@@ -890,7 +890,7 @@ class MySQLBackups(Object):
             "S3_BUCKET_URL": bucket_url,
             # For STORAGE_TYPE=s3, region is mandatory,
             # see https://github.com/canonical/mysql-pitr-helper/blob/ed858df/collector/collector.go#L51
-            "DEFAULT_REGION": s3_parameters["region"] or "us-east-1",
+            "DEFAULT_REGION": s3_parameters.get("region", "us-east-1"),
         }
 
     def _is_mysql_timestamp(self, timestamp: str) -> bool:
