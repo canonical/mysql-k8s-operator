@@ -28,6 +28,9 @@ from ..helpers_ha import (
     wait_for_apps_status,
     wait_for_unit_status,
 )
+from ..helpers_ha import (
+    TEST_DATABASE_NAME as DATABASE_NAME,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +43,6 @@ CLUSTER_NAME = "test_cluster"
 CLUSTER_ADMIN_PASSWORD = "clusteradminpassword"
 SERVER_CONFIG_PASSWORD = "serverconfigpassword"
 ROOT_PASSWORD = "rootpassword"
-DATABASE_NAME = "backup-database"
 TABLE_NAME = "backup-table"
 CLOUD = "gcp"
 ANOTHER_S3_CLUSTER_REPOSITORY_ERROR_MESSAGE = "S3 repository claimed by another cluster"
