@@ -1,6 +1,6 @@
-summary: test_backup_pitr_aws_new.py
+summary: test_backup_pitr_aws.py
 environment:
-  TEST_MODULE: test_backup_pitr_aws_new.py
+  TEST_MODULE: test_backup_pitr_aws.py
 execute: |
   tox run -e integration -- "tests/integration/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
 artifacts:
