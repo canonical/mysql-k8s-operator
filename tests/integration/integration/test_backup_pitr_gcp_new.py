@@ -6,7 +6,7 @@ import logging
 import pytest
 from jubilant_backports import Juju
 
-from .backups_ha import build_and_deploy_operations, pitr_operations
+from .helpers_backups import build_and_deploy_operations, pitr_operations
 
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
