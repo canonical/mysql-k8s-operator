@@ -107,7 +107,7 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
 
     logger.info("Deploying s3-integrator")
 
-    juju.deploy(S3_INTEGRATOR, channel="stable", base="ubuntu@22.04")
+    juju.deploy(S3_INTEGRATOR, channel="1/stable", base="ubuntu@22.04")
     juju.integrate(DATABASE_APP_NAME, S3_INTEGRATOR)
 
     juju.wait(
