@@ -270,7 +270,7 @@ def test_restore_on_same_cluster(juju: Juju, cloud_configs_aws) -> None:
         TABLE_NAME,
         value_after_restore,
     )
-    insert_mysql_test_data(
+    verify_mysql_test_data(
         juju,
         DATABASE_APP_NAME,
         TABLE_NAME,
