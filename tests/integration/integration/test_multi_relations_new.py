@@ -60,6 +60,7 @@ def test_relate_all(juju: Juju):
 
     juju.wait(
         jubilant_backports.all_active,
+        delay=5.0,
         timeout=25 * MINUTE_SECS,
     )
 
@@ -73,6 +74,7 @@ def test_scale_out(juju: Juju):
 
     juju.wait(
         jubilant_backports.all_active,
+        delay=5.0,
         timeout=30 * MINUTE_SECS,
     )
 
@@ -86,5 +88,6 @@ def test_scale_in(juju: Juju):
 
     juju.wait(
         jubilant_backports.all_active,
+        delay=5.0,
         timeout=15 * MINUTE_SECS,
     )
