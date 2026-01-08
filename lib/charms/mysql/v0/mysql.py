@@ -120,7 +120,7 @@ LIBID = "8c1428f06b1b4ec8bf98b7d980a38a8c"
 # Increment this major API version when introducing breaking changes
 LIBAPI = 0
 
-LIBPATCH = 98
+LIBPATCH = 99
 
 UNIT_TEARDOWN_LOCKNAME = "unit-teardown"
 UNIT_ADD_LOCKNAME = "unit-add"
@@ -820,9 +820,11 @@ class MySQLCharmBase(CharmBase, ABC):
         cos_relations = self.model.relations.get(COS_AGENT_RELATION_NAME, [])
         active_cos_relations = list(
             filter(
-                lambda relation: not (
-                    isinstance(self.current_event, RelationBrokenEvent)
-                    and self.current_event.relation.id == relation.id
+                lambda relation: (
+                    not (
+                        isinstance(self.current_event, RelationBrokenEvent)
+                        and self.current_event.relation.id == relation.id
+                    )
                 ),
                 cos_relations,
             )
@@ -1170,6 +1172,7 @@ class MySQLBase(ABC):
             "gtid_mode": "ON",
             "enforce_gtid_consistency": "ON",
             "activate_all_roles_on_login": "ON",
+            "max_connect_errors": "10000",
         }
 
         if audit_log_enabled:
