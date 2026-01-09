@@ -464,7 +464,13 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
                     )
                     return
 
-                lock_instance = self._mysql.get_cluster_set_global_primary_address(cluster_primary)
+                # If instance is part of a replica cluster, locks are managed by the
+                # the primary cluster primary (i.e. cluster set global primary)
+                lock_instance = None
+                if self._mysql.is_cluster_replica(from_instance=cluster_primary):
+                    lock_instance = self._mysql.get_cluster_set_global_primary_address(
+                        connect_instance_address=cluster_primary
+                    )
 
                 # add random delay to mitigate collisions when multiple units are joining
                 # due the difference between the time we test for locks and acquire them
@@ -1110,7 +1116,11 @@ class MySQLOperatorCharm(MySQLCharmBase, TypedCharmBase[CharmConfig]):
             except MySQLSetClusterPrimaryError:
                 logger.warning("Failed to switch primary to unit 0")
 
-        lock_instance = self._mysql.get_cluster_set_global_primary_address()
+        # If instance is part of a replica cluster, locks are managed by the
+        # the primary cluster primary (i.e. cluster set global primary)
+        lock_instance = None
+        if self._mysql.is_cluster_replica():
+            lock_instance = self._mysql.get_cluster_set_global_primary_address()
 
         # The following operation uses locks to ensure that only one instance is removed
         # from the cluster at a time (to avoid split-brain or lack of majority issues)
