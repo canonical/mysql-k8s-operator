@@ -9,10 +9,11 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
-from ..helpers_ha import CHARM_METADATA, MINUTE_SECS, scale_app_units
+from ..helpers_ha import CHARM_METADATA, MINUTE_SECS
 
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
+MYSQL_APP_NAME = "mysql"
 SCALE_APPS = 7
 SCALE_UNITS = 3
 
@@ -24,7 +25,7 @@ def test_build_and_deploy(juju: Juju, charm):
 
     juju.deploy(
         charm,
-        "mysql",
+        MYSQL_APP_NAME,
         config=config,
         num_units=1,
         resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
@@ -55,7 +56,7 @@ def test_build_and_deploy(juju: Juju, charm):
 def test_relate_all(juju: Juju):
     """Relate all the applications to the database."""
     for idx in range(SCALE_APPS):
-        juju.integrate("mysql:database", f"router{idx}:backend-database")
+        juju.integrate(f"{MYSQL_APP_NAME}:database", f"router{idx}:backend-database")
         juju.integrate(f"app{idx}:database", f"router{idx}:database")
 
     juju.wait(
@@ -68,9 +69,9 @@ def test_relate_all(juju: Juju):
 @pytest.mark.abort_on_fail
 def test_scale_out(juju: Juju):
     """Scale database and routers."""
-    scale_app_units(juju, "mysql", SCALE_UNITS)
+    juju.add_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1)
     for idx in range(SCALE_APPS):
-        scale_app_units(juju, f"router{idx}", SCALE_UNITS)
+        juju.add_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
 
     juju.wait(
         jubilant_backports.all_active,
@@ -82,9 +83,9 @@ def test_scale_out(juju: Juju):
 @pytest.mark.abort_on_fail
 def test_scale_in(juju: Juju):
     """Scale database and routers."""
-    scale_app_units(juju, "mysql", 1)
+    juju.remove_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1)
     for idx in range(SCALE_APPS):
-        scale_app_units(juju, f"router{idx}", 1)
+        juju.remove_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
 
     juju.wait(
         jubilant_backports.all_active,
