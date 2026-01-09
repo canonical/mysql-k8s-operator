@@ -4,13 +4,13 @@
 
 import logging
 
-import jubilant_backports
 from jubilant_backports import Juju
 
 from .. import markers
-from ..helpers_ha import CHARM_METADATA
+from ..helpers_ha import CHARM_METADATA, MINUTE_SECS, wait_for_unit_status
 
-APP_NAME = CHARM_METADATA["name"]
+APP_NAME = "mysql"
+TIMEOUT = 5 * MINUTE_SECS
 
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
@@ -29,7 +29,15 @@ def test_arm_charm_on_amd_host(juju: Juju) -> None:
         base="ubuntu@22.04",
     )
 
-    juju.wait(ready=jubilant_backports.all_error, timeout=300)
+    juju.wait(
+        ready=lambda status: all((
+            *(
+                wait_for_unit_status(APP_NAME, unit_name, "error")(status)
+                for unit_name in status.get_units(APP_NAME)
+            ),
+        )),
+        timeout=TIMEOUT,
+    )
 
 
 @markers.arm64_only
@@ -46,7 +54,15 @@ def test_amd_charm_on_arm_host(juju: Juju) -> None:
         base="ubuntu@22.04",
     )
 
-    juju.wait(ready=jubilant_backports.all_error, timeout=300)
+    juju.wait(
+        ready=lambda status: all((
+            *(
+                wait_for_unit_status(APP_NAME, unit_name, "error")(status)
+                for unit_name in status.get_units(APP_NAME)
+            ),
+        )),
+        timeout=TIMEOUT,
+    )
 
 
 # TODO: add s390x test
