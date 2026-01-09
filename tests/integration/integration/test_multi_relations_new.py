@@ -2,6 +2,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 import logging
+from time import sleep
 
 import jubilant_backports
 import pytest
@@ -106,8 +107,10 @@ def test_scale_out(juju: Juju):
 @pytest.mark.abort_on_fail
 def test_scale_in(juju: Juju):
     """Scale database and routers."""
+    # CPU stress is at maximum, do things slowly
     juju.remove_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1)
     for idx in range(SCALE_APPS):
+        sleep(5)
         juju.remove_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
 
     try:
