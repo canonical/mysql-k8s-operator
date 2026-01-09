@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-
-
 import logging
 
 import jubilant_backports
 import pytest
-from jubilant_backports import Juju
+from jubilant_backports import CLIError, Juju
+from tenacity import RetryError, Retrying, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from ..helpers_ha import CHARM_METADATA, MINUTE_SECS
 
@@ -59,11 +58,23 @@ def test_relate_all(juju: Juju):
         juju.integrate(f"{MYSQL_APP_NAME}:database", f"router{idx}:backend-database")
         juju.integrate(f"app{idx}:database", f"router{idx}:database")
 
-    juju.wait(
-        jubilant_backports.all_active,
-        delay=5.0,
-        timeout=25 * MINUTE_SECS,
-    )
+    try:
+        for attempt in Retrying(
+            retry=retry_if_exception_type(CLIError),
+            stop=stop_after_attempt(10),
+            wait=wait_fixed(10),
+        ):
+            with attempt:
+                juju.wait(
+                    jubilant_backports.all_active,
+                    delay=5.0,
+                    timeout=25 * MINUTE_SECS,
+                )
+
+    except RetryError as exc:
+        raise AssertionError(
+            "Operation failed after max attempts"
+        ) from exc.last_attempt.exception()
 
 
 @pytest.mark.abort_on_fail
@@ -73,11 +84,23 @@ def test_scale_out(juju: Juju):
     for idx in range(SCALE_APPS):
         juju.add_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
 
-    juju.wait(
-        jubilant_backports.all_active,
-        delay=5.0,
-        timeout=30 * MINUTE_SECS,
-    )
+    try:
+        for attempt in Retrying(
+            retry=retry_if_exception_type(CLIError),
+            stop=stop_after_attempt(10),
+            wait=wait_fixed(10),
+        ):
+            with attempt:
+                juju.wait(
+                    jubilant_backports.all_active,
+                    delay=5.0,
+                    timeout=25 * MINUTE_SECS,
+                )
+
+    except RetryError as exc:
+        raise AssertionError(
+            "Operation failed after max attempts"
+        ) from exc.last_attempt.exception()
 
 
 @pytest.mark.abort_on_fail
@@ -87,8 +110,20 @@ def test_scale_in(juju: Juju):
     for idx in range(SCALE_APPS):
         juju.remove_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
 
-    juju.wait(
-        jubilant_backports.all_active,
-        delay=5.0,
-        timeout=15 * MINUTE_SECS,
-    )
+    try:
+        for attempt in Retrying(
+            retry=retry_if_exception_type(CLIError),
+            stop=stop_after_attempt(10),
+            wait=wait_fixed(10),
+        ):
+            with attempt:
+                juju.wait(
+                    jubilant_backports.all_active,
+                    delay=5.0,
+                    timeout=25 * MINUTE_SECS,
+                )
+
+    except RetryError as exc:
+        raise AssertionError(
+            "Operation failed after max attempts"
+        ) from exc.last_attempt.exception()
