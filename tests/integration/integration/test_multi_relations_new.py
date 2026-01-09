@@ -8,7 +8,7 @@ import pytest
 from jubilant_backports import CLIError, Juju
 from tenacity import RetryError, Retrying, retry_if_exception_type, stop_after_attempt, wait_fixed
 
-from ..helpers_ha import CHARM_METADATA, MINUTE_SECS
+from ..helpers_ha import CHARM_METADATA, MINUTE_SECS, wait_for_apps_status
 
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
@@ -49,6 +49,44 @@ def test_build_and_deploy(juju: Juju, charm):
             trust=True,
             base="ubuntu@22.04",
         )
+
+    # Wait until deployment is complete in attempt to reduce CPU stress
+    try:
+        for attempt in Retrying(
+            retry=retry_if_exception_type(CLIError),
+            stop=stop_after_attempt(10),
+            wait=wait_fixed(10),
+        ):
+            with attempt:
+                juju.wait(
+                    wait_for_apps_status(
+                        jubilant_backports.all_active,
+                        MYSQL_APP_NAME,
+                    ),
+                    delay=5.0,
+                    timeout=25 * MINUTE_SECS,
+                )
+                juju.wait(
+                    wait_for_apps_status(
+                        jubilant_backports.all_waiting,
+                        *(f"app{idx}" for idx in range(SCALE_APPS)),
+                    ),
+                    delay=5.0,
+                    timeout=25 * MINUTE_SECS,
+                )
+                juju.wait(
+                    lambda status: all(
+                        status.apps[f"router{idx}"].app_status.current == "blocked"
+                        for idx in range(SCALE_APPS)
+                    ),
+                    delay=5.0,
+                    timeout=25 * MINUTE_SECS,
+                )
+
+    except RetryError as exc:
+        raise AssertionError(
+            "Operation failed after max attempts"
+        ) from exc.last_attempt.exception()
 
 
 @pytest.mark.abort_on_fail
