@@ -8,7 +8,7 @@ import pytest
 from jubilant_backports import CLIError, Juju
 from tenacity import RetryError, Retrying, retry_if_exception_type, stop_after_attempt, wait_fixed
 
-from ..helpers_ha import CHARM_METADATA, MINUTE_SECS, wait_for_apps_status
+from ..helpers_ha import CHARM_METADATA, MINUTE_SECS, wait_for_apps_status, wait_for_unit_status
 
 logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
@@ -73,10 +73,13 @@ def test_build_and_deploy(juju: Juju, charm):
     )
     _r(
         lambda: juju.wait(
-            lambda status: all(
-                status.apps[f"router{idx}"].app_status.current == "blocked"
-                for idx in range(SCALE_APPS)
-            ),
+            ready=lambda status: all((
+                *(
+                    wait_for_unit_status(f"router{idx}", unit_name, "waiting")(status)
+                    for idx in range(SCALE_APPS)
+                    for unit_name in status.get_units(f"router{idx}")
+                ),
+            )),
             delay=5.0,
             timeout=25 * MINUTE_SECS,
         )
