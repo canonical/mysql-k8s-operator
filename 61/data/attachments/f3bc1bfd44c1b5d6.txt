@@ -1,0 +1,5 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju config --model testing data-integrator1 database-name=charmed_dml_db extra-user-roles=
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing data-integrator1 mysql-k8s
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju config --model testing data-integrator2 database-name=throwaway extra-user-roles=charmed_dml
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing data-integrator2 mysql-k8s
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju debug-log --model testing --limit 1000

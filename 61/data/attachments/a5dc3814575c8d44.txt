@@ -1,0 +1,10 @@
+[32mINFO    [0m root:test_async_replication.py:258 Freezing mysqld on primary cluster units
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing-other --format json
+[32mINFO    [0m root:test_async_replication.py:271 Promoting standby cluster to primary with force flag
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json db1/0 promote-to-primary --wait 300s --params /root/snap/juju/common/tmpnshg5uwn
+[32mINFO    [0m root:test_async_replication.py:283 Checking clusters statuses
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json db1/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmpa684fsmp
+[32mINFO    [0m root:test_async_replication.py:298 Unfreezing mysqld on primary cluster units
