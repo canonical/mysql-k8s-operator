@@ -51,7 +51,7 @@ def test_build_and_deploy(juju: Juju, charm):
         )
 
     # Wait until deployment is complete in attempt to reduce CPU stress
-    _r(
+    retry_if_cli_error(
         lambda: juju.wait(
             wait_for_apps_status(
                 jubilant_backports.all_active,
@@ -61,7 +61,7 @@ def test_build_and_deploy(juju: Juju, charm):
             timeout=25 * MINUTE_SECS,
         )
     )
-    _r(
+    retry_if_cli_error(
         lambda: juju.wait(
             wait_for_apps_status(
                 jubilant_backports.all_waiting,
@@ -71,7 +71,7 @@ def test_build_and_deploy(juju: Juju, charm):
             timeout=25 * MINUTE_SECS,
         )
     )
-    _r(
+    retry_if_cli_error(
         lambda: juju.wait(
             ready=lambda status: all((
                 *(
@@ -90,14 +90,16 @@ def test_build_and_deploy(juju: Juju, charm):
 def test_relate_all(juju: Juju):
     """Relate all the applications to the database."""
     for idx in range(SCALE_APPS):
-        _r(
+        retry_if_cli_error(
             lambda idx=idx: juju.integrate(
                 f"{MYSQL_APP_NAME}:database", f"router{idx}:backend-database"
             )
         )
-        _r(lambda idx=idx: juju.integrate(f"app{idx}:database", f"router{idx}:database"))
+        retry_if_cli_error(
+            lambda idx=idx: juju.integrate(f"app{idx}:database", f"router{idx}:database")
+        )
 
-    _r(
+    retry_if_cli_error(
         lambda: juju.wait(
             jubilant_backports.all_active,
             delay=5.0,
@@ -109,11 +111,13 @@ def test_relate_all(juju: Juju):
 @pytest.mark.abort_on_fail
 def test_scale_out(juju: Juju):
     """Scale database and routers."""
-    _r(lambda: juju.add_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1))
+    retry_if_cli_error(lambda: juju.add_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1))
     for idx in range(SCALE_APPS):
-        _r(lambda idx=idx: juju.add_unit(f"router{idx}", num_units=SCALE_UNITS - 1))
+        retry_if_cli_error(
+            lambda idx=idx: juju.add_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
+        )
 
-    _r(
+    retry_if_cli_error(
         lambda: juju.wait(
             jubilant_backports.all_active,
             delay=5.0,
@@ -125,11 +129,13 @@ def test_scale_out(juju: Juju):
 @pytest.mark.abort_on_fail
 def test_scale_in(juju: Juju):
     """Scale database and routers."""
-    _r(lambda: juju.remove_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1))
+    retry_if_cli_error(lambda: juju.remove_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1))
     for idx in range(SCALE_APPS):
-        _r(lambda idx=idx: juju.remove_unit(f"router{idx}", num_units=SCALE_UNITS - 1))
+        retry_if_cli_error(
+            lambda idx=idx: juju.remove_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
+        )
 
-    _r(
+    retry_if_cli_error(
         lambda: juju.wait(
             jubilant_backports.all_active,
             delay=5.0,
@@ -154,6 +160,3 @@ def retry_if_cli_error(fn, *, max_attempts=10):
         raise AssertionError(
             f"Operation failed after {max_attempts} attempts"
         ) from exc.last_attempt.exception()
-
-
-_r = retry_if_cli_error
