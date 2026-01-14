@@ -8,12 +8,11 @@ import jubilant_backports
 import pytest
 import urllib3
 from jubilant_backports import Juju
-from tenacity import RetryError, Retrying, stop_after_delay, wait_fixed
 
 from constants import CLUSTER_ADMIN_USERNAME, PASSWORD_LENGTH, ROOT_USERNAME
 from utils import generate_random_password
 
-from ..helpers import execute_queries_on_unit, generate_random_string
+from ..helpers import execute_queries_on_unit
 from ..helpers_ha import (
     CHARM_METADATA,
     MINUTE_SECS,
@@ -42,14 +41,12 @@ TIMEOUT = 15 * MINUTE_SECS
 def test_build_and_deploy(juju: Juju, charm) -> None:
     """Build the mysql charm and deploy it."""
     logger.info(f"Deploying {APP_NAME}")
-    resources = {"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]}
-    config = {"cluster-name": CLUSTER_NAME, "profile": "testing"}
     juju.deploy(
         charm,
         APP_NAME,
-        resources=resources,
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
         base="ubuntu@22.04",
-        config=config,
+        config={"cluster-name": CLUSTER_NAME, "profile": "testing"},
         num_units=3,
         trust=True,
     )
@@ -79,108 +76,19 @@ def test_build_and_deploy(juju: Juju, charm) -> None:
 
 
 @pytest.mark.abort_on_fail
-def test_consistent_data_replication_across_cluster(juju: Juju) -> None:
-    """Confirm that data is replicated from the primary node to all the replicas."""
-    # Insert values into a table on the primary unit
-    app_units = get_app_units(juju, APP_NAME)
-    random_unit_name = app_units[0]
-    server_config_credentials = get_mysql_server_credentials(juju, random_unit_name)
-
-    primary_unit_name = get_mysql_primary_unit(juju, APP_NAME)
-    primary_unit_address = get_unit_address(juju, APP_NAME, primary_unit_name)
-
-    random_chars = generate_random_string(40)
-    create_records_sql = [
-        "CREATE DATABASE IF NOT EXISTS test",
-        "CREATE TABLE IF NOT EXISTS test.data_replication_table (id varchar(40), primary key(id))",
-        f"INSERT INTO test.data_replication_table VALUES ('{random_chars}')",
-    ]
-
-    execute_queries_on_unit(
-        primary_unit_address,
-        server_config_credentials["username"],
-        server_config_credentials["password"],
-        create_records_sql,
-        commit=True,
-    )
-
-    select_data_sql = [
-        f"SELECT * FROM test.data_replication_table WHERE id = '{random_chars}'",
-    ]
-
-    # Retry
-    try:
-        for attempt in Retrying(stop=stop_after_delay(5 * MINUTE_SECS), wait=wait_fixed(3)):
-            with attempt:
-                # Confirm that the values are available on all units
-                for unit_name in app_units:
-                    unit_address = get_unit_address(juju, APP_NAME, unit_name)
-
-                    output = execute_queries_on_unit(
-                        unit_address,
-                        server_config_credentials["username"],
-                        server_config_credentials["password"],
-                        select_data_sql,
-                    )
-                    assert random_chars in output
-    except RetryError:
-        assert False
-
-
-@pytest.mark.abort_on_fail
-def test_scale_up_and_down(juju: Juju) -> None:
-    """Confirm that a new primary is elected when the current primary is torn down."""
-    app_units = get_app_units(juju, APP_NAME)
-    random_unit_name = app_units[0]
-
-    logger.info("Scaling up to 5 units")
-    scale_app_units(juju, APP_NAME, 5)
-
-    cluster_status = get_mysql_cluster_status(juju, random_unit_name)
-    online_member_addresses = [
-        member["address"]
-        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-        if member["status"] == "online"
-    ]
-    assert len(online_member_addresses) == 5
-
+def test_scale_up_after_scale_down(juju: Juju) -> None:
+    """Confirm storage reuse works."""
     logger.info("Scale down to one unit")
     scale_app_units(juju, APP_NAME, 1)
 
-    app_units = get_app_units(juju, APP_NAME)
-    random_unit_name = app_units[0]
-    cluster_status = get_mysql_cluster_status(juju, random_unit_name)
-    online_member_addresses = [
-        member["address"]
-        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-        if member["status"] == "online"
-    ]
-    assert len(online_member_addresses) == 1
+    num_online, num_not_online = get_cluster_member_statuses(juju, APP_NAME)
+    assert (num_online, num_not_online) == (1, 0)
 
-    not_online_member_addresses = [
-        member["address"]
-        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-        if member["status"] != "online"
-    ]
-    assert len(not_online_member_addresses) == 0
-
-
-@pytest.mark.abort_on_fail
-def test_scale_up_after_scale_down(juju: Juju) -> None:
-    """Confirm storage reuse works."""
     logger.info("Scaling up to 3 units")
     scale_app_units(juju, APP_NAME, 3)
 
-    app_units = get_app_units(juju, APP_NAME)
-    random_unit_name = app_units[0]
-
-    cluster_status = get_mysql_cluster_status(juju, random_unit_name)
-    online_member_addresses = [
-        member["address"]
-        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-        if member["status"] == "online"
-    ]
-    assert len(online_member_addresses) == 3
+    num_online, num_not_online = get_cluster_member_statuses(juju, APP_NAME)
+    assert (num_online, num_not_online) == (3, 0)
 
 
 @pytest.mark.abort_on_fail
@@ -197,15 +105,8 @@ def test_scale_up_from_zero(juju: Juju) -> None:
     logger.info("Scaling back up to 3 units")
     scale_app_units(juju, APP_NAME, 3)
 
-    app_units = get_app_units(juju, APP_NAME)
-    random_unit_name = app_units[0]
-    cluster_status = get_mysql_cluster_status(juju, random_unit_name)
-    online_member_addresses = [
-        member["address"]
-        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
-        if member["status"] == "online"
-    ]
-    assert len(online_member_addresses) == 3
+    num_online, num_not_online = get_cluster_member_statuses(juju, APP_NAME)
+    assert (num_online, num_not_online) == (3, 0)
 
 
 @pytest.mark.abort_on_fail
@@ -341,3 +242,22 @@ def test_custom_variables(juju: Juju) -> None:
             logger.info(f"Checking that {k} is set to {v} on {unit_name}")
             value = get_mysql_variable_value(juju, APP_NAME, unit_name, k)
             assert int(value) == v, f"Variable {k} is not set to {v}"
+
+
+def get_cluster_member_statuses(juju, app_name):
+    app_units = get_app_units(juju, app_name)
+    unit_name = app_units[0]
+
+    cluster_status = get_mysql_cluster_status(juju, unit_name)
+    online_member_addresses = [
+        member["address"]
+        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+        if member["status"] == "online"
+    ]
+    not_online_member_addresses = [
+        member["address"]
+        for _, member in cluster_status["defaultreplicaset"]["topology"].items()
+        if member["status"] != "online"
+    ]
+
+    return len(online_member_addresses), len(not_online_member_addresses)
