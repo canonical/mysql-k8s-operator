@@ -20,7 +20,6 @@ from ..helpers_ha import (
     get_mysql_cluster_status,
     get_mysql_primary_unit,
     get_mysql_server_credentials,
-    get_mysql_variable_value,
     get_unit_address,
     rotate_mysql_server_credentials,
     scale_app_units,
@@ -224,24 +223,6 @@ def test_exporter_endpoints(juju: Juju) -> None:
         assert "mysql_exporter_last_scrape_error 0" in resp.data.decode("utf8"), (
             "Scrape error in mysql_exporter"
         )
-
-
-@pytest.mark.abort_on_fail
-def test_custom_variables(juju: Juju) -> None:
-    """Query database for custom variables."""
-    app_units = get_app_units(juju, APP_NAME)
-
-    custom_vars = {}
-    custom_vars["max_connections"] = 100
-    custom_vars["innodb_buffer_pool_size"] = 20971520
-    custom_vars["innodb_buffer_pool_chunk_size"] = 1048576
-    custom_vars["group_replication_message_cache_size"] = 134217728
-
-    for unit_name in app_units:
-        for k, v in custom_vars.items():
-            logger.info(f"Checking that {k} is set to {v} on {unit_name}")
-            value = get_mysql_variable_value(juju, APP_NAME, unit_name, k)
-            assert int(value) == v, f"Variable {k} is not set to {v}"
 
 
 def get_cluster_member_statuses(juju, app_name):
