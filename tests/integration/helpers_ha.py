@@ -255,7 +255,6 @@ def scale_app_units(juju: Juju, app_name: str, num_units: int) -> None:
     app_units = get_app_units(juju, app_name)
     app_units_diff = num_units - len(app_units)
 
-    scale_func = None
     if app_units_diff > 0:
         scale_func = juju.add_unit
     if app_units_diff < 0:
@@ -438,6 +437,32 @@ def get_mysql_server_credentials(
     credentials_task.raise_on_failure()
 
     return credentials_task.results
+
+
+def rotate_mysql_server_credentials(
+    juju: Juju,
+    unit_name: str,
+    username: str = SERVER_CONFIG_USERNAME,
+    password: str | None = None,
+) -> None:
+    """Helper to run an action to rotate server config credentials.
+
+    Args:
+        juju: The Juju model
+        unit_name: The juju unit on which to run the rotate-password action for server-config credentials
+        username: The username to rotate the password for
+        password: The new password to set
+    """
+    params = {"username": username}
+    if password is not None:
+        params["password"] = password
+
+    rotate_task = juju.run(
+        unit=unit_name,
+        action="set-password",
+        params=params,
+    )
+    rotate_task.raise_on_failure()
 
 
 def get_mysql_max_written_value(juju: Juju, app_name: str, unit_name: str) -> int:
