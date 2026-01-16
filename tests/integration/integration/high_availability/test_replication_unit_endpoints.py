@@ -25,8 +25,6 @@ MYSQL_TEST_APP_NAME_2 = "mysql-test-app2"
 
 MINUTE_SECS = 60
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 
 @pytest.mark.abort_on_fail
 def test_deploy_highly_available_cluster_1(juju: Juju, charm: str) -> None:

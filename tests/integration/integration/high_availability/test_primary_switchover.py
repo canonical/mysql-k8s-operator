@@ -18,8 +18,6 @@ from ...helpers_ha import (
 
 CHARM_NAME = "mysql-k8s"
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 
 @pytest.mark.abort_on_fail
 def test_cluster_switchover(juju: Juju, highly_available_cluster) -> None:

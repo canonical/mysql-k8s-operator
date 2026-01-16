@@ -2,8 +2,6 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import logging
-
 import jubilant_backports
 import pytest
 from jubilant_backports import Juju
@@ -22,8 +20,6 @@ from ...helpers_ha import (
 
 DATABASE_APP_NAME = CHARM_METADATA["name"]
 INTEGRATOR_APP_NAME = "data-integrator"
-
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
 
 
 @pytest.mark.abort_on_fail

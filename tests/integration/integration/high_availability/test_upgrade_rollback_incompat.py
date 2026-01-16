@@ -28,8 +28,6 @@ MYSQL_APP_NAME = "mysql-k8s"
 
 MINUTE_SECS = 60
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 
 # TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
 # (details: https://github.com/canonical/mysql-operator/pull/472#discussion_r1659300069)

@@ -27,8 +27,6 @@ MYSQL_TEST_APP_NAME = "mysql-test-app"
 
 MINUTE_SECS = 60
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 
 @contextmanager
 def continuous_writes(juju: Juju) -> Generator:
