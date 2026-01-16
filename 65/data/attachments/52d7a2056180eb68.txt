@@ -1,0 +1,62 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:790 Model status:
+
+Model    Controller          Cloud/Region        Version  SLA          Timestamp
+testing  concierge-microk8s  microk8s/localhost  3.6.12   unsupported  02:00:40Z
+
+App      Version                  Status  Scale  Charm             Channel      Rev  Address         Exposed  Message
+app0     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.62   no       Last written value=349
+app1     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.138  no       Last written value=387
+app2     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.82   no       Last written value=351
+app3     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.40   no       Last written value=349
+app4     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.25   no       Last written value=447
+app5     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.175  no       Last written value=288
+app6     0.0.2                    active      1  mysql-test-app    latest/edge   85  10.152.183.214  no       Last written value=420
+mysql    8.0.44-0ubuntu0.22.04.1  active      1  mysql-k8s                        0  10.152.183.246  no       
+router0  8.0.44                   active      1  mysql-router-k8s  8.0/edge     871  10.152.183.94   no       
+router1  8.0.44                   active      1  mysql-router-k8s  8.0/edge     871  10.152.183.71   no       
+router2  8.0.44                   active      1  mysql-router-k8s  8.0/edge     871  10.152.183.32   no       
+router3  8.0.44                   active      1  mysql-router-k8s  8.0/edge     871  10.152.183.98   no       
+router4  8.0.44                   active      1  mysql-router-k8s  8.0/edge     871  10.152.183.152  no       
+router5  8.0.44                   active      1  mysql-router-k8s  8.0/edge     871  10.152.183.151  no       
+router6  8.0.44                   active      1  mysql-router-k8s  8.0/edge     871  10.152.183.96   no       
+
+Unit        Workload  Agent  Address     Ports  Message
+app0/0*     active    idle   10.1.60.11         Last written value=349
+app1/0*     active    idle   10.1.60.14         Last written value=387
+app2/0*     active    idle   10.1.60.12         Last written value=351
+app3/0*     active    idle   10.1.60.13         Last written value=349
+app4/0*     active    idle   10.1.60.15         Last written value=447
+app5/0*     active    idle   10.1.60.19         Last written value=288
+app6/0*     active    idle   10.1.60.23         Last written value=420
+mysql/0*    active    idle   10.1.60.10         Primary
+router0/0*  active    idle   10.1.60.20         
+router1/0*  active    idle   10.1.60.16         
+router2/0*  active    idle   10.1.60.18         
+router3/0*  active    idle   10.1.60.21         
+router4/0*  active    idle   10.1.60.17         
+router5/0*  active    idle   10.1.60.22         
+router6/0*  active    idle   10.1.60.24         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:796 Juju error logs:
+
+unit-router5-0: 01:59:37 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router1-0: 01:59:37 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router3-0: 01:59:37 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router0-0: 01:59:37 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router6-0: 01:59:38 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router2-0: 01:59:38 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router4-0: 01:59:38 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-1: 01:59:38 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-2: 01:59:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-mysql-0: 01:59:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+unit-router5-0: 01:59:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.172:17070: connect: connection refused
+unit-router1-0: 01:59:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.172:17070: connect: connection refused
+unit-router3-0: 01:59:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.172:17070: connect: connection refused
+unit-router0-0: 01:59:40 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.172:17070: connect: connection refused
+unit-router4-0: 01:59:41 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.172:17070: connect: connection refused
+unit-router2-0: 01:59:41 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.172:17070: connect: connection refused
+unit-mysql-1: 01:59:42 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.172:17070: connect: connection refused
+unit-router6-0: 01:59:42 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: logsender dial failed: cannot connect to /logsink: dial tcp 10.152.183.172:17070: connect: connection refused
+unit-app4-0: 02:00:27 ERROR juju.worker.dependency "log-sender" manifold worker returned unexpected error: sending log message: websocket: close 1005 (no status): websocket: close sent
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:862 Forgetting main...
