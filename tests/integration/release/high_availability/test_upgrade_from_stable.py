@@ -122,8 +122,7 @@ def run_upgrade_check(juju: Juju) -> None:
     mysql_leader = get_app_leader(juju, MYSQL_APP_NAME)
 
     logging.info("Run pre-upgrade-check action")
-    task = juju.run(unit=mysql_leader, action="pre-upgrade-check")
-    task.raise_on_failure()
+    juju.run(unit=mysql_leader, action="pre-upgrade-check")
 
     logging.info("Assert primary is set to leader")
     mysql_primary = get_mysql_primary_unit(juju, MYSQL_APP_NAME)
@@ -161,8 +160,7 @@ def upgrade_from_stable(juju: Juju, charm: str) -> None:
         # due it being immediately rolled when the partition
         # is patched in the stateful set
         with suppress(TaskError):
-            task = juju.run(unit=mysql_app_leader, action="resume-upgrade")
-            task.raise_on_failure()
+            juju.run(unit=mysql_app_leader, action="resume-upgrade")
 
     logging.info("Wait for upgrade to complete")
     juju.wait(

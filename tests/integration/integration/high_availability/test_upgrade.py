@@ -79,8 +79,7 @@ def test_pre_upgrade_check(juju: Juju) -> None:
     mysql_units = get_app_units(juju, MYSQL_APP_NAME)
 
     logging.info("Run pre-upgrade-check action")
-    task = juju.run(unit=mysql_leader, action="pre-upgrade-check")
-    task.raise_on_failure()
+    juju.run(unit=mysql_leader, action="pre-upgrade-check")
 
     logging.info("Assert slow shutdown is enabled")
     for unit_name in mysql_units:
@@ -124,8 +123,7 @@ def test_upgrade_from_edge(juju: Juju, charm: str, continuous_writes) -> None:
         # due it being immediately rolled when the partition
         # is patched in the stateful set
         with suppress(TaskError):
-            task = juju.run(unit=mysql_app_leader, action="resume-upgrade")
-            task.raise_on_failure()
+            juju.run(unit=mysql_app_leader, action="resume-upgrade")
 
     logging.info("Wait for upgrade to complete")
     juju.wait(
@@ -145,8 +143,7 @@ def test_fail_and_rollback(juju: Juju, charm: str, continuous_writes) -> None:
     mysql_upgrade_unit = get_unit_by_number(juju, MYSQL_APP_NAME, 2)
 
     logging.info("Run pre-upgrade-check action")
-    task = juju.run(unit=mysql_app_leader, action="pre-upgrade-check")
-    task.raise_on_failure()
+    juju.run(unit=mysql_app_leader, action="pre-upgrade-check")
 
     tmp_folder = Path("tmp")
     tmp_folder.mkdir(exist_ok=True)
@@ -171,8 +168,7 @@ def test_fail_and_rollback(juju: Juju, charm: str, continuous_writes) -> None:
     check_mysql_units_writes_increment(juju, MYSQL_APP_NAME, mysql_remaining_units)
 
     logging.info("Re-run pre-upgrade-check action")
-    task = juju.run(unit=mysql_app_leader, action="pre-upgrade-check")
-    task.raise_on_failure()
+    juju.run(unit=mysql_app_leader, action="pre-upgrade-check")
 
     logging.info("Re-refresh the charm")
     juju.refresh(app=MYSQL_APP_NAME, path=charm)
@@ -190,8 +186,7 @@ def test_fail_and_rollback(juju: Juju, charm: str, continuous_writes) -> None:
         # due it being immediately rolled when the partition
         # is patched in the stateful set
         with suppress(TaskError):
-            task = juju.run(unit=mysql_app_leader, action="resume-upgrade")
-            task.raise_on_failure()
+            juju.run(unit=mysql_app_leader, action="resume-upgrade")
 
     logging.info("Wait for upgrade to recover")
     juju.wait(

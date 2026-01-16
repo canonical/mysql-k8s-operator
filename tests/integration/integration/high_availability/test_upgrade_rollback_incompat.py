@@ -67,8 +67,7 @@ def test_pre_upgrade_check(juju: Juju) -> None:
     mysql_leader = get_app_leader(juju, MYSQL_APP_NAME)
 
     logging.info("Run pre-upgrade-check action")
-    task = juju.run(unit=mysql_leader, action="pre-upgrade-check")
-    task.raise_on_failure()
+    juju.run(unit=mysql_leader, action="pre-upgrade-check")
 
 
 # TODO: remove AMD64 marker after next incompatible MySQL server version is released in our snap
@@ -122,8 +121,7 @@ def test_rollback(juju: Juju, charm: str) -> None:
     time.sleep(10)
 
     logging.info("Run pre-upgrade-check action")
-    task = juju.run(unit=mysql_app_leader, action="pre-upgrade-check")
-    task.raise_on_failure()
+    juju.run(unit=mysql_app_leader, action="pre-upgrade-check")
 
     time.sleep(20)
 
@@ -160,8 +158,7 @@ def test_rollback(juju: Juju, charm: str) -> None:
         # due it being immediately rolled when the partition
         # is patched in the stateful set
         with suppress(TaskError):
-            task = juju.run(unit=mysql_app_leader, action="resume-upgrade")
-            task.raise_on_failure()
+            juju.run(unit=mysql_app_leader, action="resume-upgrade")
 
     logging.info("Wait for upgrade to complete")
     juju.wait(

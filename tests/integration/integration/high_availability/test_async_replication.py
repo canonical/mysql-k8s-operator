@@ -190,12 +190,11 @@ def test_create_replication(first_model: str, second_model: str) -> None:
     model_2 = Juju(model=second_model)
 
     logging.info("Running create replication action")
-    task = model_1.run(
+    model_1.run(
         unit=get_app_leader(model_1, MYSQL_APP_1),
         action="create-replication",
         wait=5 * MINUTE_SECS,
     )
-    task.raise_on_failure()
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
@@ -228,12 +227,11 @@ def test_standby_promotion(first_model: str, second_model: str, continuous_write
     model_2_mysql_leader = get_app_leader(model_2, MYSQL_APP_2)
 
     logging.info("Promoting standby cluster to primary")
-    promotion_task = model_2.run(
+    model_2.run(
         unit=model_2_mysql_leader,
         action="promote-to-primary",
         params={"scope": "cluster"},
     )
-    promotion_task.raise_on_failure()
 
     results = get_mysql_max_written_values(first_model, second_model)
     assert len(results) == 6
@@ -272,13 +270,12 @@ def test_failover(first_model: str, second_model: str) -> None:
     model_1 = Juju(model=first_model)
     model_1_mysql_leader = get_app_leader(model_1, MYSQL_APP_1)
 
-    promotion_task = model_1.run(
+    model_1.run(
         unit=model_1_mysql_leader,
         action="promote-to-primary",
         params={"scope": "cluster", "force": True},
         wait=5 * MINUTE_SECS,
     )
-    promotion_task.raise_on_failure()
 
     logging.info("Checking clusters statuses")
     cluster_set_status = get_mysql_cluster_status(
@@ -312,15 +309,12 @@ def test_rejoin_invalidated_cluster(
 ) -> None:
     """Test rejoin invalidated cluster with."""
     model_1 = Juju(model=first_model)
-    model_1_mysql_leader = get_app_leader(model_1, MYSQL_APP_1)
-
-    task = model_1.run(
-        unit=model_1_mysql_leader,
+    model_1.run(
+        unit=get_app_leader(model_1, MYSQL_APP_1),
         action="rejoin-cluster",
         params={"cluster-name": "cuzco"},
         wait=5 * MINUTE_SECS,
     )
-    task.raise_on_failure()
 
     results = get_mysql_max_written_values(first_model, second_model)
     assert len(results) == 6
@@ -362,12 +356,11 @@ def test_unrelate_and_relate(first_model: str, second_model: str, continuous_wri
     )
 
     logging.info("Running create replication action")
-    task = model_1.run(
+    model_1.run(
         unit=get_app_leader(model_1, MYSQL_APP_1),
         action="create-replication",
         wait=5 * MINUTE_SECS,
     )
-    task.raise_on_failure()
 
     logging.info("Waiting for the applications to settle")
     model_1.wait(
@@ -391,12 +384,11 @@ def get_mysql_max_written_values(first_model: str, second_model: str) -> list[in
     model_2 = Juju(model=second_model)
 
     logging.info("Stopping continuous writes")
-    stopping_task = model_1.run(
+    model_1.run(
         unit=get_app_leader(model_1, MYSQL_TEST_APP_NAME),
         action="stop-continuous-writes",
         params={},
     )
-    stopping_task.raise_on_failure()
 
     time.sleep(5)
     results = []

@@ -386,7 +386,6 @@ def get_mysql_cluster_status(juju: Juju, unit: str, cluster_set: bool = False) -
         params={"cluster-set": cluster_set},
         wait=5 * MINUTE_SECS,
     )
-    task.raise_on_failure()
 
     return task.results["status"]
 
@@ -434,7 +433,6 @@ def get_mysql_server_credentials(
         action="get-password",
         params={"username": username},
     )
-    credentials_task.raise_on_failure()
 
     return credentials_task.results
 
@@ -457,12 +455,11 @@ def rotate_mysql_server_credentials(
     if password is not None:
         params["password"] = password
 
-    rotate_task = juju.run(
+    juju.run(
         unit=unit_name,
         action="set-password",
         params=params,
     )
-    rotate_task.raise_on_failure()
 
 
 def get_mysql_max_written_value(juju: Juju, app_name: str, unit_name: str) -> int:

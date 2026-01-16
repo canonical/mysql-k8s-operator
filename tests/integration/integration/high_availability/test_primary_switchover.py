@@ -40,8 +40,11 @@ def test_cluster_switchover(juju: Juju, highly_available_cluster) -> None:
     new_primary_unit = app_units.pop()
     logging.info(f"New primary unit selected: {new_primary_unit}")
 
-    switchover_task = juju.run(new_primary_unit, "promote-to-primary", {"scope": "unit"})
-    assert switchover_task.status == "completed", "Switchover failed"
+    juju.run(
+        unit=new_primary_unit,
+        action="promote-to-primary",
+        params={"scope": "unit"},
+    )
 
     assert get_mysql_primary_unit(juju, app_name) == new_primary_unit, "Switchover failed"
 
@@ -82,16 +85,14 @@ def test_cluster_failover_after_majority_loss(juju: Juju, highly_available_clust
     )
 
     logging.info("Attempting to promote a unit to primary after quorum loss...")
-    failover_task = juju.run(
-        unit_to_promote,
-        "promote-to-primary",
-        {"scope": "unit", "force": True},
+    juju.run(
+        unit=unit_to_promote,
+        action="promote-to-primary",
+        params={"scope": "unit", "force": True},
         wait=600,
     )
 
     juju.model_config({"update-status-hook-interval": "15s"})
-
-    assert failover_task.status == "completed", "Switchover failed"
     logging.info("Waiting for all units to become active after switchover...")
     juju.wait(all_active, timeout=60 * 10, delay=5)
 
