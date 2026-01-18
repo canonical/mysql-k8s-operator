@@ -1,0 +1,3 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing ./mysql-k8s_ubuntu@22.04-amd64.charm mysql-k8s --base ubuntu@22.04 --config profile=testing --config plugin-audit-enabled=false --num-units 3 --resource mysql-image=ghcr.io/canonical/charmed-mysql@sha256:0f5fe7d7679b1881afde24ecfb9d14a9daade790ec787087aa5d8de1d7b00b21 --trust
+[32mINFO    [0m root:test_upgrade_rollback_incompat.py:53 Wait for applications to become active
