@@ -23,8 +23,6 @@ APPLICATION_ENDPOINT = "database"
 
 APPS = [DATABASE_APP_NAME, APPLICATION_APP_NAME]
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed

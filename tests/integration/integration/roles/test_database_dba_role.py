@@ -23,8 +23,6 @@ from ...helpers_ha import (
 DATABASE_APP_NAME = CHARM_METADATA["name"]
 INTEGRATOR_APP_NAME = "data-integrator"
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 
 @pytest.mark.abort_on_fail
 def test_build_and_deploy(juju: Juju, charm) -> None:

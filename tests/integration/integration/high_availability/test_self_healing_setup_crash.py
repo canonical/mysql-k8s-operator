@@ -18,8 +18,6 @@ from ...helpers_ha import (
 MYSQL_APP_NAME = "mysql-k8s"
 MINUTE_SECS = 60
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 
 @pytest.mark.abort_on_fail
 def test_deploy_single_unit_cluster(juju: Juju, charm: str) -> None:

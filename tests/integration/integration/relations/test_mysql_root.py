@@ -19,8 +19,6 @@ DATABASE_ENDPOINT = "mysql-root"
 APPLICATION_APP_NAME = "mysql-test-app"
 APPLICATION_ENDPOINT = "mysql"
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
