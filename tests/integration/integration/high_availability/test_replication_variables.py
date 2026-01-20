@@ -18,8 +18,6 @@ from ...helpers_ha import (
 
 logger = logging.getLogger(__name__)
 
-logging.getLogger("jubilant.wait").setLevel(logging.WARNING)
-
 APP_NAME = CHARM_METADATA["name"]
 CLUSTER_NAME = "test_cluster"
 TIMEOUT = 15 * MINUTE_SECS
