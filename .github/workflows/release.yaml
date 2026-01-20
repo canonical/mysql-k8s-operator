@@ -19,7 +19,7 @@ on:
 jobs:
   build:
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v40.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v40.1.0
 
   lib-check:
     name: Check libraries
@@ -66,7 +66,7 @@ jobs:
       - lib-check
       - integration-tests
       - release-tests
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@v40.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm_edge.yaml@v40.1.0
     with:
       track: '8.0'
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
