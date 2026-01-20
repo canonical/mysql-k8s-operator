@@ -2,49 +2,43 @@
 # See LICENSE file for licensing details.
 
 import logging
-from pathlib import Path
 
+import jubilant_backports
 import pytest
-import yaml
+from jubilant_backports import Juju
 from mysql.connector.errors import OperationalError
-from pytest_operator.plugin import OpsTest
 
 from ..connector import create_db_connections
-from ..helpers import get_unit_address
-from ..juju_ import run_action
+from ..helpers_ha import CHARM_METADATA, MINUTE_SECS, get_app_units, get_unit_address
 
 logger = logging.getLogger(__name__)
 
 MYSQL_APP_NAME = "mysql"
 TEST_APP_NAME = "app"
 CONNECTIONS = 10
-METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, charm) -> None:
+def test_build_and_deploy(juju: Juju, charm) -> None:
     """Build the charm and deploy 1 units to ensure a cluster is formed."""
-    config = {"profile-limit-memory": "2000", "experimental-max-connections": CONNECTIONS}
-    resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-
-    await ops_test.model.deploy(
+    juju.deploy(
         charm,
-        application_name=MYSQL_APP_NAME,
-        config=config,
+        MYSQL_APP_NAME,
+        config={"profile-limit-memory": "2000", "experimental-max-connections": CONNECTIONS},
         num_units=1,
         base="ubuntu@22.04",
-        resources=resources,
+        resources={"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]},
         trust=True,
     )
 
 
 @pytest.mark.abort_on_fail
-async def test_deploy_and_relate_test_app(ops_test: OpsTest) -> None:
+def test_deploy_and_relate_test_app(juju: Juju) -> None:
     config = {"auto_start_writes": False, "sleep_interval": "500"}
     logger.info("Deploying test app")
-    await ops_test.model.deploy(
+    juju.deploy(
         "mysql-test-app",
-        application_name=TEST_APP_NAME,
+        TEST_APP_NAME,
         num_units=1,
         base="ubuntu@22.04",
         config=config,
@@ -52,24 +46,24 @@ async def test_deploy_and_relate_test_app(ops_test: OpsTest) -> None:
     )
 
     logger.info("Relating test app to mysql")
-    await ops_test.model.relate(MYSQL_APP_NAME, f"{TEST_APP_NAME}:database")
+    juju.integrate(MYSQL_APP_NAME, f"{TEST_APP_NAME}:database")
 
     logger.info("Waiting all to be active")
-    await ops_test.model.block_until(
-        lambda: all(unit.workload_status == "active" for unit in ops_test.model.units.values()),
-        timeout=60 * 10,
-        wait_period=5,
+    juju.wait(
+        jubilant_backports.all_active,
+        timeout=10 * MINUTE_SECS,
     )
 
 
 @pytest.mark.abort_on_fail
-async def test_saturate_max_connections(ops_test: OpsTest) -> None:
-    app_unit = ops_test.model.applications[TEST_APP_NAME].units[0]
-    mysql_unit = ops_test.model.applications[MYSQL_APP_NAME].units[0]
+def test_saturate_max_connections(juju: Juju) -> None:
+    app_unit_name = get_app_units(juju, TEST_APP_NAME)[0]
+    mysql_unit_name = get_app_units(juju, MYSQL_APP_NAME)[0]
 
-    host_ip = await get_unit_address(ops_test, mysql_unit.name)
+    host_ip = get_unit_address(juju, MYSQL_APP_NAME, mysql_unit_name)
+
     logger.info("Running action to get app connection data")
-    credentials = await run_action(app_unit, "get-client-connection-data")
+    credentials = juju.run(app_unit_name, "get-client-connection-data").results
     if "return-code" in credentials:
         # juju 2.9 dont have the return-code key
         del credentials["return-code"]
@@ -94,4 +88,4 @@ async def test_saturate_max_connections(ops_test: OpsTest) -> None:
         create_db_connections(1, **credentials)
 
     logger.info("Get cluster status while connections are saturated")
-    _ = await run_action(mysql_unit, "get-cluster-status")
+    juju.run(mysql_unit_name, "get-cluster-status")

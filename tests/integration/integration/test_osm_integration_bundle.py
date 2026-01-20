@@ -1,174 +1,150 @@
 #!/usr/bin/env python3
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
-
-import asyncio
 import logging
-from pathlib import Path
 
+import jubilant_backports
 import pytest
-import yaml
-from pytest_operator.plugin import OpsTest
-from tenacity import AsyncRetrying, RetryError, stop_after_attempt, wait_fixed
+from jubilant_backports import Juju
+from tenacity import RetryError, Retrying, stop_after_attempt, wait_fixed
+
+from constants import ROOT_USERNAME
 
 from .. import markers
-from ..helpers import (
+from ..helpers_ha import (
+    CHARM_METADATA,
+    MINUTE_SECS,
     execute_queries_on_unit,
-    get_server_config_credentials,
+    get_app_units,
+    get_mysql_server_credentials,
     get_unit_address,
-    is_relation_joined,
+    wait_for_apps_status,
 )
 
 logger = logging.getLogger(__name__)
 
-METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-APP_NAME = METADATA["name"]
+APP_NAME = CHARM_METADATA["name"]
 CLUSTER_NAME = "test_cluster"
+TIMEOUT = 20 * MINUTE_SECS
 
 
 # TODO: deploy and relate osm-grafana once it can be use with MySQL Group Replication
 @markers.juju3
 @markers.amd64_only  # kafka-k8s charm not available for arm64
-async def test_deploy_and_relate_osm_bundle(ops_test: OpsTest, charm) -> None:
+def test_deploy_and_relate_osm_bundle(juju: Juju, charm) -> None:
     """Test the deployment and relation with osm bundle with mysql replacing mariadb."""
-    async with ops_test.fast_forward("60s"):
-        resources = {"mysql-image": METADATA["resources"]["mysql-image"]["upstream-source"]}
-        config = {
-            "mysql-root-interface-user": "keystone",
-            "mysql-root-interface-database": "keystone",
-            "profile": "testing",
-        }
+    resources = {"mysql-image": CHARM_METADATA["resources"]["mysql-image"]["upstream-source"]}
+    config = {
+        "mysql-root-interface-user": "keystone",
+        "mysql-root-interface-database": "keystone",
+        "profile": "testing",
+    }
 
-        osm_pol_resources = {
-            "image": "opensourcemano/pol:testing-daily",
-        }
+    logger.info("Deploying mysql")
+    juju.deploy(
+        charm,
+        APP_NAME,
+        resources=resources,
+        config=config,
+        num_units=1,
+        base="ubuntu@22.04",
+        trust=True,
+    )
 
-        osm_keystone_deploy_commands = [
-            "deploy",
-            "--channel=latest/beta",
-            "--resource",
-            "keystone-image=opensourcemano/keystone:testing-daily",
-            "osm-keystone",
-            "--base",
-            "ubuntu@22.04",
-        ]
+    logger.info("Deploying osm-keystone")
+    juju.deploy(
+        "osm-keystone",
+        channel="latest/beta",
+        base="ubuntu@22.04",
+        resources={"keystone-image": "opensourcemano/keystone:testing-daily"},
+    )
 
-        await asyncio.gather(
-            ops_test.model.deploy(
-                charm,
-                application_name=APP_NAME,
-                resources=resources,
-                config=config,
-                num_units=1,
-                base="ubuntu@22.04",
-                trust=True,
-            ),
-            # Deploy the osm-keystone charm
-            # (using ops_test.juju instead of ops_test.deploy as the latter does
-            # not correctly deploy with the correct resources)
-            ops_test.juju(*osm_keystone_deploy_commands),
-            ops_test.model.deploy(
-                "osm-pol",
-                application_name="osm-pol",
-                channel="latest/beta",
-                resources=osm_pol_resources,
-                trust=True,
-                base="ubuntu@22.04",
-            ),
-            ops_test.model.deploy(
-                "kafka-k8s",
-                application_name="kafka",
-                trust=True,
-                channel="latest/stable",
-                base="ubuntu@20.04",
-            ),
-            ops_test.model.deploy(
-                "zookeeper-k8s",
-                application_name="zookeeper",
-                channel="latest/stable",
-                base="ubuntu@20.04",
-            ),
-            ops_test.model.deploy(
-                "mongodb-k8s",
-                application_name="mongodb",
-                channel="6/stable",
-                base="ubuntu@22.04",
-            ),
-        )
+    logger.info("Deploying osm-pol")
+    juju.deploy(
+        "osm-pol",
+        "osm-pol",
+        channel="latest/beta",
+        resources={"image": "opensourcemano/pol:testing-daily"},
+        trust=True,
+        base="ubuntu@22.04",
+    )
 
-        # cannot block until "osm-keystone" units are available since they are not
-        # registered with ops_test.model.applications (due to the way it's deployed)
-        await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, "mongodb"],
-            status="active",
-            timeout=1000,
-        )
-        await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications["osm-pol"].units) == 1,
-            timeout=1000,
-        )
-        await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications["kafka"].units) == 1,
-            timeout=1000,
-        )
-        await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications["zookeeper"].units) == 1,
-            timeout=1000,
-        )
-        await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications["mongodb"].units) == 1,
-            timeout=1000,
-        )
+    logger.info("Deploying kafka")
+    juju.deploy(
+        "kafka-k8s",
+        "kafka",
+        trust=True,
+        channel="latest/stable",
+        base="ubuntu@20.04",
+    )
 
-        logger.info("Relate kafka and zookeeper")
-        await ops_test.model.relate("kafka:zookeeper", "zookeeper:zookeeper")
-        await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, "zookeeper", "zookeeper"),
-            timeout=1000,
-        )
+    logger.info("Deploying zookeeper")
+    juju.deploy(
+        "zookeeper-k8s",
+        "zookeeper",
+        channel="latest/stable",
+        base="ubuntu@20.04",
+    )
 
-        await ops_test.model.block_until(
-            lambda: ops_test.model.applications["zookeeper"].status == "active",
-            timeout=1000,
-        )
+    logger.info("Deploying mongodb")
+    juju.deploy(
+        "mongodb-k8s",
+        "mongodb",
+        channel="6/stable",
+        base="ubuntu@22.04",
+        trust=True,
+    )
 
-        logger.info("Relate keystone and mysql")
-        await ops_test.model.relate("osm-keystone:db", f"{APP_NAME}:mysql-root")
-        await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, "db", "mysql-root"), timeout=1000
-        )
-        await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, "osm-keystone"],
-            status="active",
-            # osm-keystone is initially in blocked status
-            raise_on_blocked=False,
-            timeout=1000,
-        )
+    # Wait for mysql and mongodb to become active
+    logger.info("Waiting for mysql and mongodb to become active")
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, APP_NAME, "mongodb"),
+        timeout=TIMEOUT,
+    )
 
-        logger.info("Relate osm-pol and mongo")
-        await ops_test.model.relate("osm-pol:mongodb", "mongodb:database")
-        await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, "mongodb", "database"), timeout=1000
-        )
+    logger.info("Waiting for all apps to have units")
+    juju.wait(
+        ready=lambda status: (
+            len(status.apps["osm-pol"].units) >= 1
+            and len(status.apps["kafka"].units) >= 1
+            and len(status.apps["zookeeper"].units) >= 1
+            and len(status.apps["mongodb"].units) >= 1
+        ),
+        timeout=TIMEOUT,
+    )
 
-        logger.info("Relate osm-pol and kafka")
-        await ops_test.model.relate("osm-pol:kafka", "kafka:kafka")
-        await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, "kafka", "kafka"), timeout=1000
-        )
+    logger.info("Relate kafka and zookeeper")
+    juju.integrate("kafka:zookeeper", "zookeeper:zookeeper")
 
-        logger.info("Relate osm-pol and mysql")
-        await ops_test.model.relate("osm-pol:mysql", f"{APP_NAME}:mysql-root")
-        await ops_test.model.block_until(
-            lambda: is_relation_joined(ops_test, "mysql", "mysql-root"),
-            timeout=1000,
-        )
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, "zookeeper"),
+        timeout=TIMEOUT,
+    )
+
+    logger.info("Relate keystone and mysql")
+    juju.integrate("osm-keystone:db", f"{APP_NAME}:mysql-root")
+
+    logger.info("Waiting for keystone and mysql to settle")
+    juju.wait(
+        ready=wait_for_apps_status(jubilant_backports.all_active, APP_NAME, "osm-keystone"),
+        error=wait_for_apps_status(jubilant_backports.any_error, APP_NAME, "osm-keystone"),
+        timeout=TIMEOUT,
+    )
+
+    logger.info("Relate osm-pol and mongo")
+    juju.integrate("osm-pol:mongodb", "mongodb:database")
+
+    logger.info("Relate osm-pol and kafka")
+    juju.integrate("osm-pol:kafka", "kafka:kafka")
+
+    logger.info("Relate osm-pol and mysql")
+    juju.integrate("osm-pol:mysql", f"{APP_NAME}:mysql-root")
 
 
 @pytest.mark.abort_on_fail
 @markers.juju3
 @markers.amd64_only  # kafka-k8s charm not available for arm64
-async def test_osm_pol_operations(ops_test: OpsTest) -> None:
+def test_osm_pol_operations(juju: Juju) -> None:
     """Test the existence of databases and tables created by osm-pol's migrations."""
     show_databases_sql = [
         "SHOW DATABASES",
@@ -177,16 +153,17 @@ async def test_osm_pol_operations(ops_test: OpsTest) -> None:
         "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'pol'",
     ]
 
-    db_unit = ops_test.model.applications[APP_NAME].units[0]
-    server_config_credentials = await get_server_config_credentials(db_unit)
+    app_units = get_app_units(juju, APP_NAME)
+    db_unit = app_units[0]
+    server_config_credentials = get_mysql_server_credentials(juju, db_unit, ROOT_USERNAME)
 
     # Retry until osm-pol runs migrations since it is not possible to wait_for_idle
     # as osm-pol throws intermittent pod errors (due to being a podspec charm)
     try:
-        async for attempt in AsyncRetrying(stop=stop_after_attempt(30), wait=wait_fixed(30)):
+        for attempt in Retrying(stop=stop_after_attempt(30), wait=wait_fixed(30)):
             with attempt:
-                for unit in ops_test.model.applications[APP_NAME].units:
-                    unit_address = await get_unit_address(ops_test, unit.name)
+                for unit_name in app_units:
+                    unit_address = get_unit_address(juju, APP_NAME, unit_name)
 
                     # test that the `keystone` and `pol` databases exist
                     output = execute_queries_on_unit(
