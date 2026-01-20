@@ -4,9 +4,9 @@
 [project]
 name = "mysql-k8s-operator"  # Charm is not meant to be packaged
 dependencies = [
-  "ops~=2.15",
+  "ops~=3.5",
   "lightkube~=0.15.0",
-  "tenacity~=8.2",
+  "tenacity~=9.1",
   "boto3~=1.28",
   "jinja2~=3.1",
   "pyyaml~=6.0",
@@ -16,19 +16,19 @@ requires-python = "~=3.10"
 [dependency-groups]
 charm-libs = [
     # data_platform_libs/v0/data_interfaces.py
-    "ops>=2.0.0",
+    "ops>=3.5.0",
     # data_platform_libs/v0/upgrade.py
     "poetry-core",
     # data_platform_libs/v0/upgrade.py requires pydantic ^1.10
     # data_platform_libs/v0/data_models.py requires pydantic ^1.10
     # tempo_coordinator_k8s/v0/charm_tracing.py requires pydantic
-    "pydantic~=1.10",
+    "pydantic~=2.12",
     # tls_certificates_interface/v1/tls_certificates.py
     # tls_certificates lib uses a feature only available in cryptography >=42.0.5
     "cryptography>=42.0.5",
     "jsonschema",
     # loki_k8s/v0/loki_push_api.py and prometheus_k8s/v0/prometheus_scrape.py
-    "cosl>=0.0.50",
+    "cosl>=1.4.0",
     # tempo_coordinator_k8s/v0/charm_tracing.py
     "opentelemetry-exporter-otlp-proto-http==1.21.0",
 ]
@@ -41,26 +41,26 @@ lint = [
     "shellcheck-py~=0.9.0",
 ]
 unit = [
-    "pytest~=7.4",
+    "pytest~=9.0",
     "pytest-mock~=3.11",
     "coverage[toml]~=7.2",
     "parameterized~=0.9.0",
 ]
 integration = [
-    "pytest~=7.4",
+    "pytest~=9.0",
     "pytest-operator~=0.28.0",
     "juju~=3.6",
-    "ops~=2.15",
+    "ops~=3.5",
     "mysql-connector-python~=9.1.0",
-    "tenacity~=8.2",
+    "tenacity~=9.1",
     "boto3~=1.28",
     "pyyaml~=6.0",
     "urllib3~=2.0",
     "lightkube~=0.15.0",
-    "kubernetes~=27.2.0",
+    "kubernetes~=35.0.0",
     "allure-pytest~=2.13",
     "allure-pytest-default-results~=0.1.2",
-    "pytest-asyncio~=0.21.1",
+    "pytest-asyncio~=1.3.0",
     "jubilant-backports~=1.4",
 ]
 
