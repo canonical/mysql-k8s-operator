@@ -163,7 +163,8 @@ class TestCharm(unittest.TestCase):
     @patch("mysql_k8s_helpers.MySQL.initialise_mysqld")
     @patch("mysql_k8s_helpers.MySQL.fix_data_dir")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster")
-    @patch("mysql_k8s_helpers.MySQL.get_member_state", return_value=("online", "primary"))
+    @patch("mysql_k8s_helpers.MySQL.get_member_state", return_value="ONLINE")
+    @patch("mysql_k8s_helpers.MySQL.get_member_role", return_value="PRIMARY")
     @patch(
         "mysql_k8s_helpers.MySQL.get_innodb_buffer_pool_parameters",
         return_value=(123456, None, None),
@@ -177,6 +178,7 @@ class TestCharm(unittest.TestCase):
         __,
         _get_max_connections,
         _get_innodb_buffer_pool_parameters,
+        _get_member_role,
         _get_member_state,
         _is_instance_in_cluster,
         _initialise_mysqld,
@@ -246,7 +248,8 @@ class TestCharm(unittest.TestCase):
         _unit_initialized,
     ):
         mock_mysql.is_data_dir_initialised.return_value = False
-        mock_mysql.get_member_state.return_value = ("online", "primary")
+        mock_mysql.get_member_role.return_value = "PRIMARY"
+        mock_mysql.get_member_state.return_value = "ONLINE"
         self.harness.set_can_connect("mysql", True)
         self.harness.set_leader()
 
@@ -375,14 +378,12 @@ class TestCharm(unittest.TestCase):
 
     @patch("charm.MySQLOperatorCharm.get_unit_address", return_value="mysql-k8s.somedomain")
     @patch("charm.MySQLOperatorCharm.unit_initialized", return_value=True)
-    @patch("charms.mysql.v0.mysql.MySQLBase.is_cluster_replica", return_value=False)
+    @patch("mysql_k8s_helpers.MySQL.is_cluster_replica", return_value=False)
     @patch("mysql_k8s_helpers.MySQL.remove_instance")
     @patch("mysql_k8s_helpers.MySQL.get_primary_label")
     @patch("mysql_k8s_helpers.MySQL.is_instance_in_cluster", return_value=True)
-    @patch("mysql_k8s_helpers.MySQL._run_mysqlsh_script", return_value="{}")
     def test_database_storage_detaching(
         self,
-        _,
         mock_is_instance_in_cluster,
         mock_get_primary_label,
         mock_remove_instance,
@@ -398,7 +399,7 @@ class TestCharm(unittest.TestCase):
         mock_get_primary_label.return_value = self.charm.unit_label
 
         self.charm._on_database_storage_detaching(None)
-        mock_remove_instance.assert_called_once_with(self.charm.unit_label, lock_instance=None)
+        mock_remove_instance.assert_called_once_with(self.charm.unit_label, from_instance=None)
 
         self.assertEqual(
             self.harness.get_relation_data(self.peer_relation_id, self.charm.unit.name)[

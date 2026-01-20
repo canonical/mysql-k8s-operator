@@ -4,12 +4,12 @@
 [project]
 name = "mysql-k8s-operator"  # Charm is not meant to be packaged
 dependencies = [
-  "ops~=2.15",
-  "lightkube~=0.15.0",
-  "tenacity~=8.2",
-  "boto3~=1.28",
-  "jinja2~=3.1",
-  "pyyaml~=6.0",
+    "boto3~=1.28",
+    "jinja2~=3.1",
+    "lightkube~=0.15.0",
+    "ops~=2.15",
+    "pyyaml~=6.0",
+    "tenacity~=8.2",
 ]
 requires-python = "~=3.10"
 
@@ -23,6 +23,8 @@ charm-libs = [
     # data_platform_libs/v0/data_models.py requires pydantic ^1.10
     # tempo_coordinator_k8s/v0/charm_tracing.py requires pydantic
     "pydantic~=1.10",
+    # mysql/v0/*.py"
+    "mysql_shell_client~=0.6",
     # tls_certificates_interface/v1/tls_certificates.py
     # tls_certificates lib uses a feature only available in cryptography >=42.0.5
     "cryptography>=42.0.5",

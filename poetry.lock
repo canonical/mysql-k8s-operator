@@ -1208,6 +1208,23 @@ gssapi = ["gssapi (==1.8.3)"]
 telemetry = ["opentelemetry-api (==1.18.0)", "opentelemetry-exporter-otlp-proto-http (==1.18.0)", "opentelemetry-sdk (==1.18.0)"]
 
 [[package]]
+name = "mysql-shell-client"
+version = "0.6.1"
+description = "Python client for MySQL Shell"
+optional = false
+python-versions = ">=3.10"
+groups = ["charm-libs"]
+files = [
+    {file = "mysql_shell_client-0.6.1-py3-none-any.whl", hash = "sha256:364bfddb6003aeaf4599057f29d0e2d76f4463e998adf397c7ca1918f97485b2"},
+    {file = "mysql_shell_client-0.6.1.tar.gz", hash = "sha256:4d67003aaf049c3003b931b95bd1f6ceb3fa129f252d4f7c6c41646869404dff"},
+]
+
+[package.extras]
+format = ["ruff (>=0.9,<1.0)"]
+lint = ["codespell (>=2.3,<3.0)", "ruff (>=0.9,<1.0)"]
+test = ["coverage (>=7.6,<8.0)", "pytest (>=8.3,<9.0)"]
+
+[[package]]
 name = "oauthlib"
 version = "3.2.2"
 description = "A generic, spec-compliant, thorough implementation of the OAuth request-signing logic"
@@ -2465,4 +2482,4 @@ test = ["big-O", "importlib-resources ; python_version < \"3.9\"", "jaraco.funct
 [metadata]
 lock-version = "2.1"
 python-versions = "~=3.10"
-content-hash = "a914a89c31c4705d529b3c0c8f201b2d13c0946e6788cd03a9961e11262fe50b"
+content-hash = "967e4e13222da4f822b94d30e187d85b91a2b4ea105d1c902cb9967612b27577"

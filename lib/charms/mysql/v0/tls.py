@@ -41,6 +41,7 @@ from constants import (
     TLS_SSL_CERT_FILE,
     TLS_SSL_KEY_FILE,
 )
+from mysql_shell.models import InstanceState
 from ops.charm import ActionEvent
 from ops.framework import Object
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
@@ -49,7 +50,9 @@ logger = logging.getLogger(__name__)
 
 LIBID = "eb73947deedd4380a3a90d527e0878eb"
 LIBAPI = 0
-LIBPATCH = 10
+LIBPATCH = 11
+
+PYDEPS = ["mysql_shell_client ~= 0.6"]
 
 SCOPE = "unit"
 
@@ -107,8 +110,8 @@ class MySQLTLS(Object):
             logger.debug("TLS is already enabled.")
             return
 
-        state, _ = self.charm._mysql.get_member_state()
-        if state != "online":
+        state = self.charm._mysql.get_member_state()
+        if state != InstanceState.ONLINE:
             logger.debug("Unit not initialized yet, deferring TLS configuration.")
             event.defer()
             return
@@ -130,8 +133,8 @@ class MySQLTLS(Object):
                 require_tls=True,
             )
 
-            # kill any unencrypted sessions to force clients to reconnect
-            self.charm._mysql.kill_unencrypted_sessions()
+            # kill all sessions to force clients to reconnect
+            self.charm._mysql.kill_client_sessions()
         except MySQLTLSSetupError:
             logger.error("Failed to set custom TLS configuration.")
             self.charm.unit.status = BlockedStatus("Failed to set TLS configuration.")
