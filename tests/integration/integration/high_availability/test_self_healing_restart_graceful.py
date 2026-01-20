@@ -7,10 +7,10 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
-from ...helpers import execute_queries_on_unit
 from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
+    execute_queries_on_unit,
     get_mysql_primary_unit,
     get_mysql_server_credentials,
     get_unit_address,

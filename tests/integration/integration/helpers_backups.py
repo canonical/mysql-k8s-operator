@@ -10,10 +10,11 @@ from jubilant_backports import Juju, TaskError
 
 from constants import SERVER_CONFIG_USERNAME
 
-from ..helpers import execute_queries_on_unit, generate_random_string
 from ..helpers_ha import (
     CHARM_METADATA,
     MINUTE_SECS,
+    execute_queries_on_unit,
+    generate_random_string,
     get_app_units,
     get_mysql_primary_unit,
     get_unit_address,

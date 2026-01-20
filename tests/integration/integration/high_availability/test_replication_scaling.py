@@ -7,9 +7,9 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
-from ...helpers import generate_random_string
 from ...helpers_ha import (
     CHARM_METADATA,
+    generate_random_string,
     insert_mysql_test_data,
     remove_mysql_test_data,
     scale_app_units,

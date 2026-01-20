@@ -10,11 +10,11 @@ from jubilant_backports import Juju
 
 from constants import CONTAINER_NAME
 
-from ...helpers import generate_random_string
 from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_units_writes_increment,
     exec_k8s_container_command,
+    generate_random_string,
     get_mysql_primary_unit,
     get_unit_process_id,
     insert_mysql_test_data,

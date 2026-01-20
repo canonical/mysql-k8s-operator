@@ -12,10 +12,10 @@ from jubilant_backports import Juju
 from constants import CLUSTER_ADMIN_USERNAME, PASSWORD_LENGTH, ROOT_USERNAME
 from utils import generate_random_password
 
-from ..helpers import execute_queries_on_unit
 from ..helpers_ha import (
     CHARM_METADATA,
     MINUTE_SECS,
+    execute_queries_on_unit,
     get_app_units,
     get_mysql_cluster_status,
     get_mysql_primary_unit,

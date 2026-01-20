@@ -7,12 +7,12 @@ import jubilant_backports
 import pytest
 from jubilant_backports import Juju
 
-from ...helpers import generate_random_string
 from ...helpers_ha import (
     CHARM_METADATA,
     check_mysql_instances_online,
     check_mysql_units_writes_increment,
     delete_k8s_pod,
+    generate_random_string,
     get_mysql_primary_unit,
     insert_mysql_test_data,
     remove_mysql_test_data,
