@@ -1,0 +1,11 @@
+[32mINFO    [0m root:test_primary_switchover.py:68 Testing cluster switchover...
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmpi_hwdhbf
+[32mINFO    [0m root:test_primary_switchover.py:77 Current primary unit: mysql-k8s/0
+[32mINFO    [0m root:test_primary_switchover.py:79 Selecting a new primary unit for switchover...
+[32mINFO    [0m root:test_primary_switchover.py:82 New primary unit selected: mysql-k8s/2
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/2 promote-to-primary --params /root/snap/juju/common/tmpfrygi8xg
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json mysql-k8s/0 get-cluster-status --wait 300s --params /root/snap/juju/common/tmpgo2fixt5
