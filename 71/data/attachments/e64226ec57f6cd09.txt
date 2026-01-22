@@ -1,0 +1,10 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:65 Running action to get app connection data
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju run --model testing --format json app/0 get-client-connection-data
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:74 Creating 10 connections
+[32mINFO    [0m mysql.connector:__init__.py:149 package: mysql.connector.plugins
+[32mINFO    [0m mysql.connector:__init__.py:150 plugin_name: caching_sha2_password
+[32mINFO    [0m mysql.connector:__init__.py:154 AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju debug-log --model testing --limit 1000

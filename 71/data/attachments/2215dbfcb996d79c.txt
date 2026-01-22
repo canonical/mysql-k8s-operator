@@ -1,0 +1,26 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:43 Deploying mysql
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing ./mysql-k8s_ubuntu@22.04-amd64.charm mysql-k8s --base ubuntu@22.04 --config mysql-root-interface-user=keystone --config mysql-root-interface-database=keystone --config profile=testing --resource mysql-image=ghcr.io/canonical/charmed-mysql@sha256:672f20830d66678a3ece7285048700d6e52a9393202eb51e9749eb35031559c4 --trust
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:54 Deploying osm-keystone
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing osm-keystone --base ubuntu@22.04 --channel latest/beta --resource keystone-image=opensourcemano/keystone:testing-daily
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:62 Deploying osm-pol
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing osm-pol osm-pol --base ubuntu@22.04 --channel latest/beta --resource image=opensourcemano/pol:testing-daily --trust
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:72 Deploying kafka
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing kafka-k8s kafka --base ubuntu@20.04 --channel latest/stable --trust
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:81 Deploying zookeeper
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing zookeeper-k8s zookeeper --base ubuntu@20.04 --channel latest/stable
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:89 Deploying mongodb
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mongodb-k8s mongodb --base ubuntu@22.04 --channel 6/stable --trust
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:99 Waiting for mysql and mongodb to become active
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:105 Waiting for all apps to have units
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:116 Relate kafka and zookeeper
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing kafka:zookeeper zookeeper:zookeeper
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:124 Relate keystone and mysql
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing osm-keystone:db mysql-k8s:mysql-root
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:127 Waiting for keystone and mysql to settle
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:134 Relate osm-pol and mongo
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing osm-pol:mongodb mongodb:database
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:137 Relate osm-pol and kafka
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing osm-pol:kafka kafka:kafka
+[32mINFO    [0m integration.integration.test_osm_integration_bundle:test_osm_integration_bundle.py:140 Relate osm-pol and mysql
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing osm-pol:mysql mysql-k8s:mysql-root
