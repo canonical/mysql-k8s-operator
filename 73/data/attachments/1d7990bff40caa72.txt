@@ -1,0 +1,5 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m integration.integration.test_cos_integration_bundle:test_cos_integration_bundle.py:42 Deploying grafana_agent_integration bundle
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing /root/spread_project/tmp9sw06d3u.yaml grafana-agent-integration --trust
+[32mINFO    [0m integration.integration.test_cos_integration_bundle:test_cos_integration_bundle.py:45 Waiting until mysql-k8s becomes active
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju debug-log --model testing --limit 1000

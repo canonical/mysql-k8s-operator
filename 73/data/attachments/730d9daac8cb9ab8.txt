@@ -1,0 +1,10 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m integration.integration.test_tls:test_tls.py:109 Deploy TLS operator
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing self-signed-certificates --base ubuntu@24.04 --channel 1/stable --config 'ca-common-name=Test CA'
+[32mINFO    [0m integration.integration.test_tls:test_tls.py:122 Relate to TLS operator
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing mysql-k8s self-signed-certificates
+[32mINFO    [0m integration.integration.test_tls:test_tls.py:129 Asserting connections after relation
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju status --model testing --format json
+[32mINFO    [0m integration.integration.test_tls:test_tls.py:142 Assert TLS file exists
