@@ -1,0 +1,16 @@
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju version --format json
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing ./mysql-k8s_ubuntu@22.04-amd64.charm mysql --base ubuntu@22.04 --config profile=testing --resource mysql-image=ghcr.io/canonical/charmed-mysql@sha256:672f20830d66678a3ece7285048700d6e52a9393202eb51e9749eb35031559c4 --trust
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-test-app app0 --base ubuntu@22.04 --channel latest/edge --config database_name=database0 --config sleep_interval=2000
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-router-k8s router0 --base ubuntu@22.04 --channel 8.0/edge --trust
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-test-app app1 --base ubuntu@22.04 --channel latest/edge --config database_name=database1 --config sleep_interval=2000
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-router-k8s router1 --base ubuntu@22.04 --channel 8.0/edge --trust
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-test-app app2 --base ubuntu@22.04 --channel latest/edge --config database_name=database2 --config sleep_interval=2000
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-router-k8s router2 --base ubuntu@22.04 --channel 8.0/edge --trust
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-test-app app3 --base ubuntu@22.04 --channel latest/edge --config database_name=database3 --config sleep_interval=2000
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-router-k8s router3 --base ubuntu@22.04 --channel 8.0/edge --trust
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-test-app app4 --base ubuntu@22.04 --channel latest/edge --config database_name=database4 --config sleep_interval=2000
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-router-k8s router4 --base ubuntu@22.04 --channel 8.0/edge --trust
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-test-app app5 --base ubuntu@22.04 --channel latest/edge --config database_name=database5 --config sleep_interval=2000
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-router-k8s router5 --base ubuntu@22.04 --channel 8.0/edge --trust
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-test-app app6 --base ubuntu@22.04 --channel latest/edge --config database_name=database6 --config sleep_interval=2000
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-router-k8s router6 --base ubuntu@22.04 --channel 8.0/edge --trust

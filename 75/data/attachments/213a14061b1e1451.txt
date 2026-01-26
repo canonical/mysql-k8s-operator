@@ -1,0 +1,5 @@
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:38 Deploying test app
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju deploy --model testing mysql-test-app app --base ubuntu@22.04 --channel latest/edge --config auto_start_writes=false --config sleep_interval=500
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:48 Relating test app to mysql
+[32mINFO    [0m jubilant:_juju.py:316 cli: juju integrate --model testing mysql app:database
+[32mINFO    [0m integration.integration.test_saturate_max_connections:test_saturate_max_connections.py:51 Waiting all to be active
