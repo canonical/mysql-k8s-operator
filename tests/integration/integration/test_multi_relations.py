@@ -48,38 +48,32 @@ def test_build_and_deploy(juju: Juju, charm):
         )
 
     # Wait until deployment is complete in attempt to reduce CPU stress
-    retry_if_cli_error(
-        lambda: juju.wait(
-            wait_for_apps_status(
-                jubilant_backports.all_active,
-                MYSQL_APP_NAME,
-            ),
-            delay=5.0,
-            timeout=25 * MINUTE_SECS,
-        )
+    juju.wait(
+        wait_for_apps_status(
+            jubilant_backports.all_active,
+            MYSQL_APP_NAME,
+        ),
+        delay=5.0,
+        timeout=25 * MINUTE_SECS,
     )
-    retry_if_cli_error(
-        lambda: juju.wait(
-            wait_for_apps_status(
-                jubilant_backports.all_waiting,
-                *(f"app{idx}" for idx in range(SCALE_APPS)),
-            ),
-            delay=5.0,
-            timeout=25 * MINUTE_SECS,
-        )
+    juju.wait(
+        wait_for_apps_status(
+            jubilant_backports.all_waiting,
+            *(f"app{idx}" for idx in range(SCALE_APPS)),
+        ),
+        delay=5.0,
+        timeout=25 * MINUTE_SECS,
     )
-    retry_if_cli_error(
-        lambda: juju.wait(
-            ready=lambda status: all((
-                *(
-                    wait_for_unit_status(f"router{idx}", unit_name, "waiting")(status)
-                    for idx in range(SCALE_APPS)
-                    for unit_name in status.get_units(f"router{idx}")
-                ),
-            )),
-            delay=5.0,
-            timeout=25 * MINUTE_SECS,
-        )
+    juju.wait(
+        ready=lambda status: all((
+            *(
+                wait_for_unit_status(f"router{idx}", unit_name, "waiting")(status)
+                for idx in range(SCALE_APPS)
+                for unit_name in status.get_units(f"router{idx}")
+            ),
+        )),
+        delay=5.0,
+        timeout=25 * MINUTE_SECS,
     )
 
 
@@ -87,57 +81,41 @@ def test_build_and_deploy(juju: Juju, charm):
 def test_relate_all(juju: Juju):
     """Relate all the applications to the database."""
     for idx in range(SCALE_APPS):
-        retry_if_cli_error(
-            lambda idx=idx: juju.integrate(
-                f"{MYSQL_APP_NAME}:database", f"router{idx}:backend-database"
-            )
-        )
-        retry_if_cli_error(
-            lambda idx=idx: juju.integrate(f"app{idx}:database", f"router{idx}:database")
-        )
+        juju.integrate(f"{MYSQL_APP_NAME}:database", f"router{idx}:backend-database")
+        juju.integrate(f"app{idx}:database", f"router{idx}:database")
 
-    retry_if_cli_error(
-        lambda: juju.wait(
-            jubilant_backports.all_active,
-            delay=5.0,
-            timeout=25 * MINUTE_SECS,
-        )
+    juju.wait(
+        jubilant_backports.all_active,
+        delay=5.0,
+        timeout=25 * MINUTE_SECS,
     )
 
 
 @pytest.mark.abort_on_fail
 def test_scale_out(juju: Juju):
     """Scale database and routers."""
-    retry_if_cli_error(lambda: juju.add_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1))
+    juju.add_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1)
     for idx in range(SCALE_APPS):
-        retry_if_cli_error(
-            lambda idx=idx: juju.add_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
-        )
+        juju.add_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
 
-    retry_if_cli_error(
-        lambda: juju.wait(
-            jubilant_backports.all_active,
-            delay=5.0,
-            timeout=30 * MINUTE_SECS,
-        )
+    juju.wait(
+        jubilant_backports.all_active,
+        delay=5.0,
+        timeout=30 * MINUTE_SECS,
     )
 
 
 @pytest.mark.abort_on_fail
 def test_scale_in(juju: Juju):
     """Scale database and routers."""
-    retry_if_cli_error(lambda: juju.remove_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1))
+    juju.remove_unit(MYSQL_APP_NAME, num_units=SCALE_UNITS - 1)
     for idx in range(SCALE_APPS):
-        retry_if_cli_error(
-            lambda idx=idx: juju.remove_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
-        )
+        juju.remove_unit(f"router{idx}", num_units=SCALE_UNITS - 1)
 
-    retry_if_cli_error(
-        lambda: juju.wait(
-            jubilant_backports.all_active,
-            delay=5.0,
-            timeout=15 * MINUTE_SECS,
-        )
+    juju.wait(
+        jubilant_backports.all_active,
+        delay=5.0,
+        timeout=15 * MINUTE_SECS,
     )
 
 
